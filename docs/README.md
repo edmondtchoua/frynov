@@ -18,7 +18,7 @@ Bienvenue dans la documentation officielle de **ETech ERP Africa**, un ERP SaaS 
 |--------|--------|----------|
 | Auth | ✅ Stable | [auth.md](modules/auth.md) |
 | Catalog | ✅ Stable | [catalog.md](modules/catalog.md) |
-| Inventory | 🔜 En cours | — |
+| Inventory | ✅ Stable | [inventory.md](modules/inventory.md) |
 | Orders | 🔜 Planifié | — |
 | Payments | 🔜 Planifié | — |
 | Delivery | 🔜 Planifié | — |
@@ -29,6 +29,7 @@ Bienvenue dans la documentation officielle de **ETech ERP Africa**, un ERP SaaS 
 | Authentification | [api/auth.md](api/auth.md) |
 | Catalogue produits | [api/catalog.md](api/catalog.md) |
 | Étiquettes & codes | [api/labels.md](api/labels.md) |
+| Inventaire & stock | [api/inventory.md](api/inventory.md) |
 
 ### Guides techniques
 | Guide | Description |
@@ -43,6 +44,7 @@ Bienvenue dans la documentation officielle de **ETech ERP Africa**, un ERP SaaS 
 | [Prise en main](user/getting-started.md) | Présentation, premier login, concept tenant |
 | [Catalogue & produits](user/catalog.md) | Gérer produits, catégories, variantes |
 | [Étiquettes produits](user/labels.md) | Imprimer étiquettes thermique et A4 |
+| [Stock & inventaire](user/inventory.md) | Gérer les entrées/sorties, inventaires, alertes |
 
 ---
 

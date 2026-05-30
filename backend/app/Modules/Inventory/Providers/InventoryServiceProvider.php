@@ -2,8 +2,8 @@
 
 namespace App\Modules\Inventory\Providers;
 
-use App\Modules\Inventory\Repositories\InventoryRepositoryInterface;
-use App\Modules\Inventory\Repositories\EloquentInventoryRepository;
+use App\Modules\Inventory\Services\InventoryService;
+use App\Modules\Inventory\Services\StockService;
 use App\Shared\ModuleServiceProvider;
 
 class InventoryServiceProvider extends ModuleServiceProvider
@@ -13,16 +13,16 @@ class InventoryServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
-// Binding interface → implémentation concrète
-$this->app->bind(
-    InventoryRepositoryInterface::class,
-    EloquentInventoryRepository::class,
-);
+        $this->app->singleton(StockService::class);
+
+        $this->app->singleton(InventoryService::class, function ($app) {
+            return new InventoryService($app->make(StockService::class));
+        });
     }
 
     public function boot(): void
     {
-$this->loadMigrationsFrom($this->modulePath('database/migrations'));
-$this->loadRoutesFrom($this->modulePath('routes/api.php'));
+        $this->loadMigrationsFrom($this->modulePath('database/migrations'));
+        $this->loadRoutesFrom($this->modulePath('routes/api.php'));
     }
 }

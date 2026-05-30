@@ -180,11 +180,56 @@ Index : `UNIQUE(product_id, sku)`
 
 ---
 
+---
+
+## Table `stocks`
+
+Stock courant par produit ou par variante (une ligne par produit/variante).
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid index | |
+| `product_id` | uuid FK products | |
+| `variant_id` | uuid nullable | Si NULL : stock du produit de base |
+| `quantity` | int unsigned | Quantité physique actuelle |
+| `reserved_quantity` | int unsigned | Réservé pour commandes en attente |
+| `low_stock_threshold` | smallint | Seuil d'alerte stock bas (défaut 5) |
+
+**Règle :** un produit avec variantes n'a pas de ligne stock propre — seules ses variantes en ont.
+
+**Disponible = `quantity − reserved_quantity`** (toujours ≥ 0)
+
+---
+
+## Table `stock_movements`
+
+Audit trail immutable de chaque opération de stock.
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| `id` | uuid PK | |
+| `tenant_id` | uuid index | |
+| `stock_id` | uuid FK stocks | |
+| `product_id` | uuid index | Dénormalisé pour requêtes rapides |
+| `variant_id` | uuid nullable | |
+| `type` | varchar(20) | `in`, `out`, `adjustment`, `return` |
+| `quantity` | int unsigned | Toujours positif |
+| `quantity_before` | int | Snapshot avant opération |
+| `quantity_after` | int | Snapshot après opération |
+| `reason` | varchar(50) | `delivery`, `sale`, `loss`, `return`, `count`, `manual` |
+| `reference` | varchar(100) nullable | Ex: `BL-2026-001`, `CMD-2026-042` |
+| `note` | text nullable | Note libre |
+| `performed_by` | uuid nullable | ID de l'utilisateur |
+
+Index : `(stock_id, created_at)`, `(tenant_id, type)`
+
+---
+
 ## Évolution du schéma
 
 | Module | Tables à venir |
 |--------|---------------|
-| Inventory | `stock_movements`, `warehouses` |
 | Orders | `orders`, `order_lines` |
 | Payments | `payments`, `payment_methods` |
 | Customers | `customers`, `customer_addresses` |

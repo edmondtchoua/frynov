@@ -2,50 +2,75 @@
 
 namespace App\Modules\Inventory\Services;
 
-use App\Modules\Inventory\Models\Inventory;
-use App\Modules\Inventory\Repositories\InventoryRepositoryInterface;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Modules\Inventory\Models\Stock;
+use App\Modules\Inventory\Models\StockMovement;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class InventoryService
 {
-    public function __construct(
-private readonly InventoryRepositoryInterface $repository,
-    ) {}
+    public function __construct(private readonly StockService $stock) {}
 
-    public function list(string $tenantId, array $filters = []): LengthAwarePaginator
+    /**
+     * Process a full delivery: bulk moveIn for multiple products/variants.
+     *
+     * Each item: ['product_id', 'variant_id'?, 'quantity', 'reference'?, 'note'?]
+     */
+    public function receiveDelivery(array $items, string $tenantId, string $performedBy): array
     {
-return $this->repository->all($tenantId, $filters);
+        $movements = [];
+
+        foreach ($items as $item) {
+            $stockRow = $this->stock->findOrCreate(
+                $tenantId,
+                $item['product_id'],
+                $item['variant_id'] ?? null,
+            );
+
+            $movements[] = $this->stock->moveIn(
+                $stockRow,
+                $item['quantity'],
+                StockMovement::REASON_DELIVERY,
+                $item['reference'] ?? null,
+                $item['note'] ?? null,
+                $performedBy,
+            );
+        }
+
+        return $movements;
     }
 
-    public function findOrFail(string $id, string $tenantId): Inventory
+    /**
+     * Process a physical inventory count: adjust each item to its counted quantity.
+     *
+     * Each item: ['product_id', 'variant_id'?, 'counted_quantity', 'note'?]
+     */
+    public function processCount(array $items, string $tenantId, string $performedBy): array
     {
-$model = $this->repository->findById($id, $tenantId);
+        $movements = [];
 
-if (! $model) {
-    abort(404);
-}
+        foreach ($items as $item) {
+            $stockRow = $this->stock->findOrCreate(
+                $tenantId,
+                $item['product_id'],
+                $item['variant_id'] ?? null,
+            );
 
-return $model;
+            $movements[] = $this->stock->adjust(
+                $stockRow,
+                $item['counted_quantity'],
+                StockMovement::REASON_COUNT,
+                $item['note'] ?? null,
+                $performedBy,
+            );
+        }
+
+        return $movements;
     }
 
-    public function create(array $data, string $tenantId): Inventory
+    public function movementHistory(Stock $stock, int $perPage = 20): LengthAwarePaginator
     {
-return $this->repository->create([
-    ...$data,
-    'tenant_id' => $tenantId,
-]);
-    }
-
-    public function update(string $id, array $data, string $tenantId): Inventory
-    {
-$model = $this->findOrFail($id, $tenantId);
-
-return $this->repository->update($model, $data);
-    }
-
-    public function delete(string $id, string $tenantId): void
-    {
-$model = $this->findOrFail($id, $tenantId);
-$this->repository->delete($model);
+        return StockMovement::where('stock_id', $stock->id)
+            ->latest()
+            ->paginate($perPage);
     }
 }

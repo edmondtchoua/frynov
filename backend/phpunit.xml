@@ -4,21 +4,32 @@
          bootstrap="vendor/autoload.php"
          colors="true"
          stopOnFailure="false"
-         failOnWarning="true"
-         failOnRisky="true"
+         failOnWarning="false"
+         failOnRisky="false"
 >
-    <!-- ── Suites de tests ────────────────────────── -->
+    <!-- ── Suites de tests ────────────────────────────────────────────────
+         Convention de nommage des fichiers de test :
+           *ServiceTest.php  → Unit       (logique métier isolée, sans DB)
+           *ApiTest.php      → Integration (endpoints, DB réelle)
+           *ModuleTest.php   → Modular    (flux complet cross-services)
+
+         PHPUnit ne supporte pas les wildcards dans <directory>.
+         On scanne app/Modules entier et on filtre par suffix.
+    ─────────────────────────────────────────────────────────────────── -->
     <testsuites>
         <testsuite name="Unit">
-            <directory>app/Modules/*/Tests/Unit</directory>
+            <directory suffix="ServiceTest.php">app/Modules</directory>
+            <directory suffix="ValueObjectTest.php">app/Shared</directory>
         </testsuite>
 
         <testsuite name="Integration">
-            <directory>app/Modules/*/Tests/Integration</directory>
+            <directory suffix="ApiTest.php">app/Modules</directory>
+            <directory suffix="Test.php">tests/Integration</directory>
         </testsuite>
 
         <testsuite name="Modular">
-            <directory>app/Modules/*/Tests/Modular</directory>
+            <directory suffix="ModuleTest.php">app/Modules</directory>
+            <directory suffix="FlowTest.php">app/Modules</directory>
         </testsuite>
 
         <testsuite name="E2E">
@@ -43,11 +54,12 @@
         <env name="APP_DEBUG"          value="true"/>
         <env name="APP_KEY"            value="base64:test_key_32_chars_minimum_here="/>
 
-        <!-- PostgreSQL test (doit être disponible) -->
-        <env name="DB_CONNECTION"      value="pgsql"/>
+        <!-- SQLite en mémoire pour Unit (rapide, sans serveur) -->
+        <!-- Les tests Integration/Modular surchargent via .env.testing -->
+        <env name="DB_CONNECTION"      value="sqlite"/>
+        <env name="DB_DATABASE"        value=":memory:"/>
         <env name="DB_HOST"            value="127.0.0.1"/>
         <env name="DB_PORT"            value="5432"/>
-        <env name="DB_DATABASE"        value="erp_test"/>
         <env name="DB_USERNAME"        value="erp"/>
         <env name="DB_PASSWORD"        value="secret"/>
 

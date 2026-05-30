@@ -1,7 +1,187 @@
 <template>
-  <div class="empty-state">
-    <div class="empty-state-icon">🔨</div>
-    <h3>OrderList</h3>
-    <p>Module en cours d'implémentation.</p>
+  <div>
+    <div class="page-header">
+      <h2>Commandes</h2>
+      <RouterLink to="/orders/new" class="btn btn-primary">
+        + Nouvelle commande
+      </RouterLink>
+    </div>
+
+    <!-- Status tabs -->
+    <div class="status-tabs">
+      <button
+        v-for="tab in tabs"
+        :key="tab.value"
+        class="tab-btn"
+        :class="{ active: activeTab === tab.value }"
+        @click="activeTab = tab.value"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <div class="card" style="margin-top: 1rem; padding: 0; overflow: hidden;">
+      <!-- Loading -->
+      <div v-if="loading" class="loading-center">
+        <span class="spinner-sm"></span>
+        Chargement…
+      </div>
+
+      <!-- Error -->
+      <div v-else-if="error" class="empty-state">
+        <div class="empty-state-icon">⚠️</div>
+        <h3>Erreur de chargement</h3>
+        <p>{{ error }}</p>
+        <button class="btn btn-secondary" style="margin-top:1rem" @click="load">Réessayer</button>
+      </div>
+
+      <!-- Empty -->
+      <div v-else-if="orders.length === 0" class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <h3>Aucune commande</h3>
+        <p>Les commandes apparaîtront ici.</p>
+      </div>
+
+      <!-- Table -->
+      <table v-else class="data-table">
+        <thead>
+          <tr>
+            <th>N°</th>
+            <th>Statut</th>
+            <th>Articles</th>
+            <th>Total</th>
+            <th>Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="order in orders" :key="order.id">
+            <td>
+              <RouterLink :to="`/orders/${order.id}`" style="font-weight:600; color:#059669;">
+                {{ order.number }}
+              </RouterLink>
+            </td>
+            <td>
+              <span class="badge" :class="statusBadge(order.status)">
+                {{ statusLabel(order.status) }}
+              </span>
+            </td>
+            <td>{{ order.lines.length }} article{{ order.lines.length > 1 ? 's' : '' }}</td>
+            <td>{{ formatMoney(order.total_amount) }}</td>
+            <td>{{ formatDate(order.created_at) }}</td>
+            <td>
+              <RouterLink :to="`/orders/${order.id}`" class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.8rem;">
+                Voir
+              </RouterLink>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="meta && meta.last_page > 1" class="pagination">
+      <button class="btn btn-secondary" :disabled="page === 1" @click="page--">‹ Préc.</button>
+      <span>Page {{ meta.current_page }} / {{ meta.last_page }}</span>
+      <button class="btn btn-secondary" :disabled="page >= meta.last_page" @click="page++">Suiv. ›</button>
+    </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, watch, onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
+import { orderService } from '../services/orderService'
+import type { Order } from '../types'
+
+const tabs = [
+  { label: 'Toutes',     value: '' },
+  { label: 'Brouillons', value: 'draft' },
+  { label: 'Confirmées', value: 'confirmed' },
+  { label: 'Livrées',    value: 'fulfilled' },
+  { label: 'Annulées',   value: 'cancelled' },
+]
+
+const activeTab = ref('')
+const orders    = ref<Order[]>([])
+const meta      = ref<any>(null)
+const page      = ref(1)
+const loading   = ref(false)
+const error     = ref<string | null>(null)
+
+async function load() {
+  loading.value = true
+  error.value   = null
+  try {
+    const res = await orderService.list({
+      status:   activeTab.value || undefined,
+      page:     page.value,
+      per_page: 20,
+    })
+    orders.value = res.data
+    meta.value   = res.meta
+  } catch {
+    error.value = 'Impossible de charger les commandes.'
+  } finally {
+    loading.value = false
+  }
+}
+
+watch([activeTab, page], () => load())
+onMounted(() => load())
+
+function statusLabel(s: string) {
+  return { draft: 'Brouillon', confirmed: 'Confirmée', fulfilled: 'Livrée', cancelled: 'Annulée' }[s] ?? s
+}
+
+function statusBadge(s: string) {
+  return { draft: 'badge-gray', confirmed: 'badge-blue', fulfilled: 'badge-green', cancelled: 'badge-red' }[s] ?? ''
+}
+
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat('fr-SN', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(cents)
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('fr-SN', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+</script>
+
+<style scoped>
+.status-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.25rem;
+  width: fit-content;
+}
+
+.tab-btn {
+  padding: 0.4rem 0.9rem;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: #6b7280;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab-btn.active {
+  background: #059669;
+  color: white;
+  font-weight: 600;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+</style>

@@ -2,8 +2,8 @@
 
 namespace App\Modules\Orders\Providers;
 
-use App\Modules\Orders\Repositories\OrdersRepositoryInterface;
-use App\Modules\Orders\Repositories\EloquentOrdersRepository;
+use App\Modules\Inventory\Services\StockService;
+use App\Modules\Orders\Services\OrderService;
 use App\Shared\ModuleServiceProvider;
 
 class OrdersServiceProvider extends ModuleServiceProvider
@@ -13,16 +13,14 @@ class OrdersServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
-// Binding interface → implémentation concrète
-$this->app->bind(
-    OrdersRepositoryInterface::class,
-    EloquentOrdersRepository::class,
-);
+        $this->app->singleton(OrderService::class, function ($app) {
+            return new OrderService($app->make(StockService::class));
+        });
     }
 
     public function boot(): void
     {
-$this->loadMigrationsFrom($this->modulePath('database/migrations'));
-$this->loadRoutesFrom($this->modulePath('routes/api.php'));
+        $this->loadMigrationsFrom($this->modulePath('database/migrations'));
+        $this->loadRoutesFrom($this->modulePath('routes/api.php'));
     }
 }

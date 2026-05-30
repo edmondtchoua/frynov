@@ -16,13 +16,13 @@
 | Auth | ✅ Livré | 30 | Sanctum, Spatie teams, multitenant |
 | Catalog | ✅ Livré | 36 | Products, Categories, Variants, SKU, QR/Barcode, Labels |
 | Inventory | ✅ Livré | 25 | Stock, StockMovement, Redis anti-oversell, scan-to-action |
-| **Orders** | 🔨 En cours | — | Prochain |
-| **Customers** | 🔨 En cours | — | Prochain |
+| **Orders** | ✅ Livré | 26 | Order lifecycle, stock reservation, anti-oversell, 6 endpoints |
+| **Customers** | 🔨 Prochain | — | |
 | Payments | ⏳ Planifié | — | |
 | Delivery | ⏳ Planifié | — | |
 | Sync | 💤 Différé | — | Phase 2 |
 
-**Backend MVP : 40% complet. Tests : 95 passent.**
+**Backend MVP : 55% complet. Tests : 117 passent.**
 
 ---
 
@@ -30,15 +30,15 @@
 
 | Couche | Statut | Remarques |
 |--------|--------|-----------|
-| Stack / config | ✅ Configuré | package.json, vite, tsconfig, vitest |
-| Foundation (API client, router, stores) | 🔨 En cours | |
-| Auth UI (login, layout) | 🔨 En cours | |
-| Catalog UI | ⏳ Planifié | Après foundation |
-| Inventory UI | ⏳ Planifié | |
-| Orders UI | ⏳ Planifié | |
-| Reports | ⏳ Planifié | |
+| Stack / config | ✅ Livré | package.json, vite, tsconfig, vitest |
+| Foundation (API client, router, stores) | ✅ Livré | Axios interceptors, Pinia auth, guards |
+| Auth UI (login, layouts) | ✅ Livré | LoginView, AppLayout, AuthLayout |
+| Orders UI | ✅ Livré | OrderListView, OrderCreateView, OrderDetailView |
+| Catalog UI | 🔨 Prochain | Remplacer stubs ProductListView, etc. |
+| Inventory UI | 🔨 Prochain | Remplacer stubs StockListView, etc. |
+| Reports / Dashboard KPIs | ⏳ Planifié | Phase 2 |
 
-**Frontend MVP : 5% complet (stack configurée, aucun code applicatif).**
+**Frontend MVP : 35% complet (foundation + auth + orders).**
 
 ---
 
@@ -59,7 +59,8 @@
 |---------|--------|
 | Architecture, guides dev | ✅ |
 | Auth, Catalog, Inventory (tech + user) | ✅ |
-| Orders, Customers, Payments, Delivery | ⏳ À écrire avec les modules |
+| Orders (tech + API + user) | ✅ |
+| Customers, Payments, Delivery | ⏳ À écrire avec les modules |
 
 ---
 

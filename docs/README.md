@@ -19,7 +19,7 @@ Bienvenue dans la documentation officielle de **ETech ERP Africa**, un ERP SaaS 
 | Auth | ✅ Stable | [auth.md](modules/auth.md) |
 | Catalog | ✅ Stable | [catalog.md](modules/catalog.md) |
 | Inventory | ✅ Stable | [inventory.md](modules/inventory.md) |
-| Orders | 🔜 Planifié | — |
+| Orders | ✅ Stable | [orders.md](modules/orders.md) |
 | Payments | 🔜 Planifié | — |
 | Delivery | 🔜 Planifié | — |
 
@@ -30,6 +30,7 @@ Bienvenue dans la documentation officielle de **ETech ERP Africa**, un ERP SaaS 
 | Catalogue produits | [api/catalog.md](api/catalog.md) |
 | Étiquettes & codes | [api/labels.md](api/labels.md) |
 | Inventaire & stock | [api/inventory.md](api/inventory.md) |
+| Commandes | [api/orders.md](api/orders.md) |
 
 ### Guides techniques
 | Guide | Description |
@@ -45,6 +46,7 @@ Bienvenue dans la documentation officielle de **ETech ERP Africa**, un ERP SaaS 
 | [Catalogue & produits](user/catalog.md) | Gérer produits, catégories, variantes |
 | [Étiquettes produits](user/labels.md) | Imprimer étiquettes thermique et A4 |
 | [Stock & inventaire](user/inventory.md) | Gérer les entrées/sorties, inventaires, alertes |
+| [Commandes](user/orders.md) | Créer, confirmer, livrer et annuler des commandes |
 
 ---
 
@@ -52,7 +54,8 @@ Bienvenue dans la documentation officielle de **ETech ERP Africa**, un ERP SaaS 
 
 | Élément | Valeur |
 |---------|--------|
-| Version | 0.1.0 (Phase 1 — Backend Core) |
+| Version | 0.2.0 (Phase 1 — Backend + Frontend Core) |
 | Backend | Laravel 13 / PHP 8.3 |
+| Frontend | Vue 3 / Vite / TypeScript / PrimeVue 4 |
 | Base de données | MySQL 8 (production) · SQLite (tests) |
 | Dernière mise à jour | 2026-05-30 |

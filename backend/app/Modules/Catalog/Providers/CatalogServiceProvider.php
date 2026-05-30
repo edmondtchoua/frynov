@@ -2,9 +2,10 @@
 
 namespace App\Modules\Catalog\Providers;
 
-use App\Modules\Catalog\Repositories\CatalogRepositoryInterface;
-use App\Modules\Catalog\Repositories\EloquentCatalogRepository;
+use App\Modules\Catalog\Services\ProductCodeService;
 use App\Shared\ModuleServiceProvider;
+use Picqer\Barcode\BarcodeGeneratorSVG;
+use SimpleSoftwareIO\QrCode\Generator as QrCodeGenerator;
 
 class CatalogServiceProvider extends ModuleServiceProvider
 {
@@ -13,16 +14,17 @@ class CatalogServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
-// Binding interface → implémentation concrète
-$this->app->bind(
-    CatalogRepositoryInterface::class,
-    EloquentCatalogRepository::class,
-);
+        // Bind ProductCodeService with its infrastructure dependencies
+        $this->app->singleton(ProductCodeService::class, function ($app) {
+            return new ProductCodeService(
+                new QrCodeGenerator(),
+                new BarcodeGeneratorSVG(),
+            );
+        });
     }
 
     public function boot(): void
     {
-$this->loadMigrationsFrom($this->modulePath('database/migrations'));
-$this->loadRoutesFrom($this->modulePath('routes/api.php'));
+        parent::boot();
     }
 }

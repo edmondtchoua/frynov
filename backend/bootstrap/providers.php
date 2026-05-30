@@ -8,6 +8,7 @@ return [
 
     // ── Modules ERP ──────────────────────────────────
     TenantsServiceProvider::class,
+    App\Modules\Auth\Providers\AuthServiceProvider::class,
     // Les autres modules seront ajoutés ici automatiquement
     // par `php artisan make:module`
     App\Modules\Orders\Providers\OrdersServiceProvider::class,

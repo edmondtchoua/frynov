@@ -2,40 +2,31 @@
 
 namespace App\Shared;
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
-/**
- * Classe de base pour tous les ServiceProviders de modules.
- * Chaque module étend cette classe et surcharge les méthodes nécessaires.
- */
 abstract class ModuleServiceProvider extends ServiceProvider
 {
-    /**
-     * Nom du module (utilisé pour les routes, views, lang, etc.)
-     * Exemple : 'orders', 'inventory', 'catalog'
-     */
-    protected string $moduleName = '';
-
-    /**
-     * Namespace du module.
-     * Exemple : 'App\Modules\Orders'
-     */
+    protected string $moduleName      = '';
     protected string $moduleNamespace = '';
 
     public function boot(): void
     {
-        $this->loadMigrationsFrom($this->modulePath('database/migrations'));
-        $this->loadRoutesFrom($this->modulePath('routes/api.php'));
+        $migrations = $this->modulePath('database/migrations');
+
+        if (is_dir($migrations)) {
+            $this->loadMigrationsFrom($migrations);
+        }
+
+        $routes = $this->modulePath('routes/api.php');
+
+        if (file_exists($routes)) {
+            $this->loadApiRoutes($routes);
+        }
     }
 
-    public function register(): void
-    {
-        $this->app->register($this->moduleEventServiceProvider());
-    }
+    public function register(): void {}
 
-    /**
-     * Chemin absolu vers un sous-dossier du module.
-     */
     protected function modulePath(string $path = ''): string
     {
         $base = app_path("Modules/{$this->moduleName}");
@@ -44,11 +35,13 @@ abstract class ModuleServiceProvider extends ServiceProvider
     }
 
     /**
-     * Retourne le nom FQCN du EventServiceProvider du module.
-     * Le module peut surcharger cette méthode si il n'en a pas.
+     * Load routes under the 'api' middleware group with /api prefix.
+     * Module route files only need to define their own prefix (e.g. Route::prefix('orders')).
      */
-    protected function moduleEventServiceProvider(): string
+    protected function loadApiRoutes(string $path): void
     {
-        return "{$this->moduleNamespace}\\Providers\\EventServiceProvider";
+        Route::middleware('api')
+            ->prefix('api')
+            ->group($path);
     }
 }

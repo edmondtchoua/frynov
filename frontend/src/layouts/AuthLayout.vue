@@ -1,61 +1,94 @@
 <template>
   <div class="auth-layout">
-    <div class="auth-card">
-      <div class="auth-logo">
-        <span class="logo-icon">🌍</span>
-        <span class="logo-text">ETech <strong>ERP</strong></span>
+    <div class="auth-bg-decoration" aria-hidden="true"></div>
+
+    <div class="auth-panel">
+      <!-- Logo -->
+      <RouterLink to="/" class="auth-logo-link">
+        <NexoraLogo variant="light" />
+      </RouterLink>
+
+      <!-- Card -->
+      <div class="auth-card">
+        <slot />
       </div>
-      <slot />
+
+      <!-- Footer -->
+      <p class="auth-footer">
+        &copy; {{ year }} Nexora ERP &mdash; Smart business. Real growth.
+      </p>
     </div>
-    <div class="auth-footer">Africa · Commerce · Innovation</div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { RouterLink } from 'vue-router'
+import NexoraLogo from '@/shared/components/NexoraLogo.vue'
+
+const year = new Date().getFullYear()
+</script>
 
 <style scoped>
 .auth-layout {
   min-height: 100vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
-  padding: 1rem;
+  background: var(--gray-50);
+  padding: 1.5rem 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative background element */
+.auth-bg-decoration {
+  position: fixed;
+  top: -40%;
+  right: -20%;
+  width: 800px;
+  height: 800px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-panel {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-logo-link {
+  text-decoration: none;
 }
 
 .auth-card {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-lg);
   padding: 2.5rem 2rem;
   width: 100%;
-  max-width: 420px;
 }
-
-.auth-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-  font-size: 1.5rem;
-  color: #064e3b;
-}
-
-.logo-icon { font-size: 2rem; }
-
-.logo-text {
-  font-size: 1.4rem;
-  color: #374151;
-  letter-spacing: -0.5px;
-}
-
-.logo-text strong { color: #059669; }
 
 .auth-footer {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.8rem;
-  letter-spacing: 1px;
-  text-transform: uppercase;
+  font-size: var(--text-xs);
+  color: var(--gray-400);
+  text-align: center;
+  margin: 0;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 2rem 1.25rem;
+    border-radius: var(--radius-lg);
+  }
 }
 </style>

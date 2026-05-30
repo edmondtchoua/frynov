@@ -1,7 +1,16 @@
 <template>
-  <component :is="layoutComponent">
+  <!-- Landing / public pages — self-contained layout -->
+  <RouterView v-if="!layoutComponent" />
+
+  <!-- Auth layout (login, register) -->
+  <AuthLayout v-else-if="layoutComponent === 'auth'">
     <RouterView />
-  </component>
+  </AuthLayout>
+
+  <!-- App shell (authenticated) -->
+  <AppLayout v-else>
+    <RouterView />
+  </AppLayout>
 </template>
 
 <script setup lang="ts">
@@ -12,7 +21,11 @@ import AuthLayout from '@/layouts/AuthLayout.vue'
 
 const route = useRoute()
 
-const layoutComponent = computed(() =>
-  route.meta.layout === 'auth' ? AuthLayout : AppLayout,
-)
+// 'app' | 'auth' | undefined (landing/public pages manage their own layout)
+const layoutComponent = computed(() => {
+  const layout = route.meta.layout
+  if (layout === 'auth') return 'auth'
+  if (layout === 'app')  return 'app'
+  return null
+})
 </script>

@@ -3,7 +3,21 @@ import { setupGuards } from './guards'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  scrollBehavior: (to, _from, savedPosition) => {
+    if (savedPosition) return savedPosition
+    if (to.hash) return { el: to.hash, behavior: 'smooth' }
+    return { top: 0 }
+  },
   routes: [
+
+    // ── Public / Landing ───────────────────────────────────────────────────
+    {
+      path: '/',
+      name: 'landing',
+      component: () => import('@/pages/LandingView.vue'),
+      meta: { public: true },
+    },
+
     // ── Auth ──────────────────────────────────────────────────────────────
     {
       path: '/login',
@@ -11,12 +25,22 @@ const router = createRouter({
       component: () => import('@/modules/auth/views/LoginView.vue'),
       meta: { layout: 'auth', public: true },
     },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('@/modules/auth/views/RegisterView.vue'),
+      meta: { layout: 'auth', public: true },
+    },
+
+    // ── Onboarding ────────────────────────────────────────────────────────
+    {
+      path: '/onboarding',
+      name: 'onboarding',
+      component: () => import('@/modules/onboarding/views/OnboardingView.vue'),
+      meta: { public: true },
+    },
 
     // ── App ───────────────────────────────────────────────────────────────
-    {
-      path: '/',
-      redirect: '/dashboard',
-    },
     {
       path: '/dashboard',
       name: 'dashboard',
@@ -86,7 +110,7 @@ const router = createRouter({
           component: () => import('@/modules/orders/views/OrderListView.vue'),
         },
         {
-          path: 'create',
+          path: 'new',
           name: 'orders.create',
           component: () => import('@/modules/orders/views/OrderCreateView.vue'),
         },
@@ -114,6 +138,14 @@ const router = createRouter({
           component: () => import('@/modules/customers/views/CustomerDetailView.vue'),
         },
       ],
+    },
+
+    // ── Settings ──────────────────────────────────────────────────────────
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('@/modules/settings/views/SettingsView.vue'),
+      meta: { layout: 'app' },
     },
 
     // ── 404 ───────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-# Plan d'implémentation — ETech ERP Africa
+# Plan d'implémentation — Nexora ERP
 
 > Document vivant — mis à jour à chaque session.  
 > Dernière révision : **2026-05-30**  
@@ -16,7 +16,7 @@
 | Auth | ✅ Livré | 30 | Sanctum, Spatie teams, multitenant |
 | Catalog | ✅ Livré | 36 | Products, Categories, Variants, SKU, QR/Barcode, Labels |
 | Inventory | ✅ Livré | 25 | Stock, StockMovement, Redis anti-oversell, scan-to-action |
-| **Orders** | ✅ Livré | 26 | Order lifecycle, stock reservation, anti-oversell, 6 endpoints |
+| Orders | ✅ Livré | 26 | Order lifecycle, stock reservation, anti-oversell, 6 endpoints |
 | **Customers** | 🔨 Prochain | — | |
 | Payments | ⏳ Planifié | — | |
 | Delivery | ⏳ Planifié | — | |
@@ -26,19 +26,28 @@
 
 ---
 
-### Frontend (Vue 3 + Vite + TypeScript + PrimeVue)
+### Frontend (Vue 3 + Vite + TypeScript + PrimeVue 4)
 
 | Couche | Statut | Remarques |
 |--------|--------|-----------|
-| Stack / config | ✅ Livré | package.json, vite, tsconfig, vitest |
+| Stack / config | ✅ Livré | package.json `nexora-erp-frontend`, vite, tsconfig, vitest |
+| **Design system** | ✅ Livré | CSS custom properties, tokens couleurs, composants utilitaires |
+| **NexoraLogo** | ✅ Livré | Composant SVG réutilisable, 3 variantes (light/dark/color) |
 | Foundation (API client, router, stores) | ✅ Livré | Axios interceptors, Pinia auth, guards |
-| Auth UI (login, layouts) | ✅ Livré | LoginView, AppLayout, AuthLayout |
+| **AppLayout** | ✅ Livré | Sidebar responsive, hamburger mobile, sidebar overlay, SVG nav |
+| **AuthLayout** | ✅ Livré | Logo Nexora, fond gradient, footer marque |
+| Auth UI (login, register) | ✅ Livré | LoginView, RegisterView (4 champs, jauge force MDP) |
+| **Landing page** | ✅ Livré | Hero, features, how-it-works, modules, FAQ accordéon, footer |
+| **Onboarding wizard** | ✅ Livré | 5 étapes, card-choices, auto-suggestion modules, transitions |
+| **Dashboard** | ✅ Livré | KPI cards avec SVG icons, CSS tokens, actions rapides |
+| **Settings** | ✅ Livré | 5 onglets (entreprise, équipe, abonnement, intégrations, notifs) |
 | Orders UI | ✅ Livré | OrderListView, OrderCreateView, OrderDetailView |
 | Catalog UI | 🔨 Prochain | Remplacer stubs ProductListView, etc. |
 | Inventory UI | 🔨 Prochain | Remplacer stubs StockListView, etc. |
-| Reports / Dashboard KPIs | ⏳ Planifié | Phase 2 |
+| Customers UI | ⏳ Planifié | Avec module Customers backend |
+| Reports / Dashboard KPIs | ⏳ Planifié | Phase 2 — endpoints backend requis |
 
-**Frontend MVP : 35% complet (foundation + auth + orders).**
+**Frontend MVP : 60% complet.**
 
 ---
 
@@ -61,6 +70,90 @@
 | Auth, Catalog, Inventory (tech + user) | ✅ |
 | Orders (tech + API + user) | ✅ |
 | Customers, Payments, Delivery | ⏳ À écrire avec les modules |
+
+---
+
+## Design system — Nexora ERP
+
+### Identité visuelle
+
+| Token | Valeur | Usage |
+|-------|--------|-------|
+| `--brand-primary` | `#10b981` | Vert émeraude — CTA primaire |
+| `--brand-primary-dark` | `#059669` | Hover boutons primaires |
+| `--brand-secondary` | `#3b82f6` | Bleu — liens, boutons secondaires |
+| `--sidebar-bg` | `#1e293b` | Slate foncé — sidebar app |
+| `--color-error` | `#ef4444` | Erreurs, alertes stock |
+| `--color-warning` | `#f59e0b` | Avertissements |
+| `--radius-lg` | `10px` | Cards, panels |
+| `--sidebar-width` | `248px` | Largeur sidebar desktop |
+| `--topbar-height` | `60px` | Hauteur barre haute |
+
+### Composants globaux (`src/assets/main.css`)
+
+- `.btn`, `.btn-primary`, `.btn-secondary`, `.btn-blue`, `.btn-danger`, `.btn-ghost`
+- `.btn-sm`, `.btn-lg`, `.btn-xl`
+- `.badge-*` (success/warning/error/gray/blue)
+- `.alert`, `.alert-error`, `.alert-success`
+- `.data-table` avec hover rows
+- `.form-group`, `.form-input`, `.form-label`, `.form-error`
+- `.card`, `.page-header`
+- `.spinner-sm`, `.spinner-white`
+- `.empty-state`, `.loading-center`
+- `.hide-mobile`, `.show-mobile-only`
+
+### Responsive breakpoints
+
+| Breakpoint | Valeur | Impact |
+|-----------|--------|--------|
+| Mobile | `≤ 768px` | Sidebar fixe + hamburger, grids 1 col, textes réduits |
+| Tablet | `≤ 1024px` | Grids 2 cols |
+| Desktop | `> 1024px` | Layout standard 3 cols |
+
+---
+
+## Architecture frontend
+
+```
+src/
+├── assets/
+│   └── main.css                 ← Design system complet (CSS custom props)
+├── layouts/
+│   ├── AppLayout.vue            ← Shell app (sidebar + topbar responsive)
+│   └── AuthLayout.vue           ← Centré, NexoraLogo, carte
+├── pages/
+│   └── LandingView.vue          ← Landing page publique (autonome, sans shell)
+├── shared/
+│   └── components/
+│       └── NexoraLogo.vue       ← Logo SVG réutilisable
+├── modules/
+│   ├── auth/views/
+│   │   ├── LoginView.vue
+│   │   └── RegisterView.vue     ← 4 champs + jauge force mot de passe
+│   ├── onboarding/views/
+│   │   └── OnboardingView.vue   ← Wizard 5 étapes, card-choices
+│   ├── dashboard/views/
+│   │   └── DashboardView.vue    ← KPIs + actions rapides
+│   ├── settings/views/
+│   │   └── SettingsView.vue     ← 5 onglets (entreprise, équipe, facturation...)
+│   ├── catalog/views/           ← Stubs (ProductList, ProductForm, CategoryList)
+│   ├── inventory/views/         ← Stubs (StockList, StockAlerts, MovementHistory)
+│   ├── orders/views/            ← OrderList, OrderCreate, OrderDetail
+│   └── customers/views/         ← À créer avec module Customers
+└── router/
+    ├── index.ts                 ← Routes modulaires, lazy loading
+    └── guards.ts                ← Auth guard, tenant guard
+```
+
+### Système de layouts (App.vue)
+
+```
+meta.layout = undefined  →  <RouterView />  (page gère son propre shell)
+meta.layout = 'auth'     →  <AuthLayout>    (login, register)
+meta.layout = 'app'      →  <AppLayout>     (toutes les vues authentifiées)
+```
+
+Pages sans layout (`meta.public: true` sans `meta.layout`) : landing, onboarding.
 
 ---
 
@@ -91,43 +184,22 @@ Customers → Orders (optionnel en Phase 1)
 ---
 
 ### Phase 1 — MVP Backend + Frontend admin
-**Objectif : application web complète et fonctionnelle pour gérer une boutique**  
+**Objectif : application web complète et fonctionnelle**  
 **Durée estimée totale : mois 3 → mois 7**
 
 ---
 
-#### Sprint 1 — Foundation Frontend + Orders backend
-**Durée : 1 semaine**
+#### Sprint 1 — Foundation Frontend + Orders backend ✅
+**Statut : LIVRÉ**
 
-**Backend — Orders**
-
-| Livrable | Description |
-|----------|-------------|
-| Migration `orders` | tenant, customer_id?, reference, status, total, currency, note |
-| Migration `order_lines` | order, product, variant?, sku snapshot, qty, unit_price, total |
-| `Order` model | statuts : pending → paid → fulfilled → cancelled |
-| `OrderLine` model | snapshot produit au moment de la commande |
-| `OrderService` | create (réserve stock) · fulfill (moveOut) · cancel (release) |
-| `OrderController` | CRUD + confirm + cancel + fulfill |
-| Tests unit | OrderService : create, fulfill, cancel, oversell check |
-| Tests intégration | OrderApiTest : CRUD HTTP complet |
-| Tests modular | Order↔Stock : création réserve, annulation libère |
-
-**Frontend — Foundation**
-
-| Livrable | Description |
-|----------|-------------|
-| `src/api/client.ts` | Axios instance, interceptors (Bearer token, X-Tenant-Slug, 401 redirect) |
-| `src/stores/auth.ts` | Pinia : login, logout, user, token (localStorage) |
-| `src/stores/tenant.ts` | Tenant courant, slug |
-| `src/router/index.ts` | Routes par module, lazy loading |
-| `src/router/guards.ts` | Auth guard, tenant guard |
-| `src/App.vue` | Root component |
-| `src/main.ts` | Bootstrap Vue + Pinia + Router + PrimeVue |
-| `src/layouts/AppLayout.vue` | Sidebar nav + topbar + slot content |
-| `src/layouts/AuthLayout.vue` | Centré, card login |
-| `src/modules/auth/views/LoginView.vue` | Form email/password + gestion erreurs |
-| Tests Vitest | authStore : login/logout/token persistance |
+- Backend Orders : migrations, Order/OrderLine models, OrderService (create/confirm/fulfill/cancel), OrderController (6 endpoints), tests (8 unit + 12 intégration + 4 modular cross-module)
+- Frontend foundation : Axios client, Pinia stores, router avec guards
+- Frontend auth : LoginView, RegisterView, AppLayout, AuthLayout
+- Frontend orders : OrderListView, OrderCreateView, OrderDetailView
+- Design system Nexora ERP : CSS custom properties, composants utilitaires
+- Pages publiques : LandingView (hero + features + FAQ), OnboardingView (wizard 5 étapes)
+- Dashboard : DashboardView avec SVG icons, CSS tokens, actions rapides
+- Settings : SettingsView (5 onglets)
 
 ---
 
@@ -149,10 +221,10 @@ Customers → Orders (optionnel en Phase 1)
 
 | Livrable | Description |
 |----------|-------------|
-| `ProductList.vue` | Table paginée + filtre statut/catégorie + recherche |
-| `ProductForm.vue` | Création/édition produit, prix, statut |
+| `ProductListView.vue` | Table paginée + filtre statut/catégorie + recherche |
+| `ProductFormView.vue` | Création/édition produit, prix, statut |
 | `VariantPanel.vue` | Gestion variantes (ajout, suppression) |
-| `CategoryTree.vue` | Arbre hiérarchique des catégories |
+| `CategoryListView.vue` | Arbre hiérarchique des catégories |
 | `LabelPrint.vue` | Sélecteur format + copies → ouvre HTML dans onglet |
 | `productService.ts` | Appels API Catalog |
 | Tests Vitest | productStore, productService mock |
@@ -167,7 +239,7 @@ Customers → Orders (optionnel en Phase 1)
 | Livrable | Description |
 |----------|-------------|
 | Migration `payments` | order_id, amount, currency, method, reference, paid_at |
-| `Payment` model | méthodes : cash, orange_money, wave, mtn_money, card, transfer |
+| `Payment` model | méthodes : cash, mobile_money (Orange/Wave/MTN), card, transfer |
 | `PaymentService` | record() · balance() · isFullyPaid() |
 | Intégration Orders | markPaid() quand fully paid |
 | Tests | Unit + Integration |
@@ -176,17 +248,17 @@ Customers → Orders (optionnel en Phase 1)
 
 | Livrable | Description |
 |----------|-------------|
-| `StockList.vue` | Table produits + badges vert/orange/rouge |
-| `StockAlerts.vue` | Bandeau + page alertes stock bas |
+| `StockListView.vue` | Table produits + badges vert/orange/rouge |
+| `StockAlertsView.vue` | Bandeau + page alertes stock bas |
 | `MoveStockForm.vue` | Formulaires entrée/sortie/ajustement |
 | `BarcodeScanner.vue` | Input texte (douchette USB → keydown) → résolution SKU |
-| `MovementHistory.vue` | Timeline mouvements par produit |
+| `MovementHistoryView.vue` | Timeline mouvements par produit |
 | `inventoryService.ts` | Appels API Inventory |
 | Tests Vitest | inventoryStore, BarcodeScanner input |
 
 ---
 
-#### Sprint 4 — Delivery backend + Orders UI
+#### Sprint 4 — Delivery backend + Customers UI
 **Durée : 1 semaine**
 
 **Backend — Delivery**
@@ -198,21 +270,19 @@ Customers → Orders (optionnel en Phase 1)
 | `DeliveryService` | dispatch(), confirmDelivery(), fail() |
 | Tests | Unit + Integration |
 
-**Frontend — Orders + Customers UI**
+**Frontend — Customers UI**
 
 | Livrable | Description |
 |----------|-------------|
-| `OrderList.vue` | Filtres statut/date/client |
-| `OrderCreate.vue` | Sélection client, ajout produits (search/scan), prix |
-| `OrderDetail.vue` | Timeline statut, lignes, total, actions |
+| `CustomerListView.vue` | CRUD + historique commandes |
+| `CustomerDetailView.vue` | Fiche client, commandes liées |
 | `PaymentRecord.vue` | Form enregistrement paiement (méthode + montant) |
-| `CustomerList.vue` | CRUD + historique commandes |
-| `CustomerForm.vue` | Fiche client |
-| Tests Vitest | orderStore, orderService mock |
+| `customerService.ts` | Appels API Customers |
+| Tests Vitest | customerStore, customerService mock |
 
 ---
 
-#### Sprint 5 — Dashboard + Reports + Polish
+#### Sprint 5 — Dashboard réel + Reports + Polish
 **Durée : 1 semaine**
 
 **Backend**
@@ -226,10 +296,10 @@ Customers → Orders (optionnel en Phase 1)
 
 | Livrable | Description |
 |----------|-------------|
-| `Dashboard.vue` | KPIs jour : CA, nb commandes, stock bas |
+| Dashboard KPIs réels | Connexion aux endpoints reports |
 | `SalesReport.vue` | CA par période + chart, top produits |
 | `StockReport.vue` | Valeur stock, rotation, ruptures |
-| Internationalisation | i18n FR (structure posée, anglais possible plus tard) |
+| Internationalisation | i18n FR (structure posée) |
 | Tests Playwright | Login → créer commande → payer → vérifier stock |
 
 ---
@@ -255,8 +325,8 @@ Customers → Orders (optionnel en Phase 1)
 |----------|-------------|
 | Shopify connector | Sync commandes, produits, stock |
 | WooCommerce connector | Sync bidirectionnel |
-| Mobile Money API | Orange Money, Wave, MTN (webhooks) |
-| API publique v1 | Docs OpenAPI, rate limiting, webhooks sortants |
+| Mobile Money API | webhooks sortants |
+| API publique v1 | Docs OpenAPI, rate limiting, webhooks |
 | Multi-dépôt | Warehouses, transferts inter-dépôts |
 
 ---
@@ -286,11 +356,11 @@ Customers → Orders (optionnel en Phase 1)
 
 ```
 Mois 1-3  ✅ Auth + Catalog + Inventory (backend complet)
-Mois 4    🔨 Sprint 1: Orders backend + Frontend foundation + Auth UI
+Mois 4    ✅ Sprint 1: Orders backend + Frontend foundation + Auth UI + Design system
 Mois 4    🔨 Sprint 2: Customers backend + Catalog UI
 Mois 5    ⏳ Sprint 3: Payments backend + Inventory UI + début Flutter
-Mois 5    ⏳ Sprint 4: Delivery backend + Orders UI
-Mois 6    ⏳ Sprint 5: Reports + Dashboard + Polish + Flutter POS
+Mois 5    ⏳ Sprint 4: Delivery backend + Customers UI
+Mois 6    ⏳ Sprint 5: Reports + Dashboard réel + Polish + Flutter POS
 Mois 7    🎯 MVP livré — Beta terrain (3-5 boutiques pilotes)
 Mois 7-12 🔮 Phase 2: Connecteurs + API publique + Mobile Money
 ```

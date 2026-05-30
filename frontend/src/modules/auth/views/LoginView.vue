@@ -1,62 +1,88 @@
 <template>
   <div class="login-form">
-    <h2 class="form-title">Connexion</h2>
-    <p class="form-subtitle">Accédez à votre espace de gestion</p>
+    <div class="form-header">
+      <h2>Connexion</h2>
+      <p>Bienvenue sur Nexora ERP</p>
+    </div>
 
     <form @submit.prevent="handleSubmit" novalidate>
 
-      <div class="field">
-        <label for="email">Adresse email</label>
+      <div class="form-group">
+        <label class="form-label" for="email">Adresse email</label>
         <input
           id="email"
           v-model="form.email"
           type="email"
-          placeholder="vous@boutique.sn"
+          class="form-input"
+          :class="{ error: errors.email }"
+          placeholder="admin@mycompany.com"
           autocomplete="email"
-          :class="{ 'input-error': errors.email }"
           @input="clearError('email')"
         />
-        <span v-if="errors.email" class="error-msg">{{ errors.email }}</span>
+        <span v-if="errors.email" class="form-error">{{ errors.email }}</span>
       </div>
 
-      <div class="field">
-        <label for="password">Mot de passe</label>
+      <div class="form-group" style="margin-bottom: 0.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <label class="form-label" for="password">Mot de passe</label>
+          <a href="#" class="forgot-link">Mot de passe oublié ?</a>
+        </div>
         <div class="password-wrap">
           <input
             id="password"
             v-model="form.password"
             :type="showPassword ? 'text' : 'password'"
+            class="form-input"
+            :class="{ error: errors.password }"
             placeholder="••••••••"
             autocomplete="current-password"
-            :class="{ 'input-error': errors.password }"
             @input="clearError('password')"
           />
           <button
             type="button"
             class="toggle-pass"
+            :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
             @click="showPassword = !showPassword"
-            :aria-label="showPassword ? 'Masquer' : 'Afficher'"
-          >{{ showPassword ? '🙈' : '👁' }}</button>
+          >
+            <svg v-if="!showPassword" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="currentColor" stroke-width="1.4"/>
+              <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.4"/>
+            </svg>
+            <svg v-else width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 2l12 12M6.5 6.7A2 2 0 009.4 9.5M4.4 4.5C2.8 5.5 1 8 1 8s2.5 5 7 5c1.4 0 2.7-.4 3.7-1M7 3.1C7.3 3 7.7 3 8 3c4.5 0 7 5 7 5s-.8 1.5-2 2.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </button>
         </div>
-        <span v-if="errors.password" class="error-msg">{{ errors.password }}</span>
+        <span v-if="errors.password" class="form-error">{{ errors.password }}</span>
       </div>
 
-      <div v-if="globalError" class="alert-error" role="alert">
+      <div v-if="globalError" class="alert alert-error" role="alert" style="margin: 1rem 0;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
+          <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M8 5v3.5M8 10.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
         {{ globalError }}
       </div>
 
-      <button type="submit" class="btn-submit" :disabled="loading">
-        <span v-if="loading" class="spinner"></span>
-        <span>{{ loading ? 'Connexion…' : 'Se connecter' }}</span>
+      <button type="submit" class="btn btn-primary btn-xl" :disabled="loading" style="width: 100%; margin-top: 1.25rem; justify-content: center;">
+        <span v-if="loading" class="spinner-sm spinner-white"></span>
+        {{ loading ? 'Connexion…' : 'Se connecter' }}
       </button>
 
     </form>
+
+    <div class="divider-text" style="margin: 1.5rem 0;">ou</div>
+
+    <p class="signup-cta">
+      Pas encore de compte ?
+      <RouterLink to="/register" class="signup-link">Créer un espace de travail</RouterLink>
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import type { AxiosError } from 'axios'
 import type { ApiError } from '@/api/types'
@@ -65,10 +91,10 @@ const router = useRouter()
 const route  = useRoute()
 const auth   = useAuthStore()
 
-const form = reactive({ email: '', password: '' })
-const errors = reactive<Record<string, string>>({})
-const globalError = ref('')
-const loading     = ref(false)
+const form         = reactive({ email: '', password: '' })
+const errors       = reactive<Record<string, string>>({})
+const globalError  = ref('')
+const loading      = ref(false)
 const showPassword = ref(false)
 
 function clearError(field: string) {
@@ -77,11 +103,10 @@ function clearError(field: string) {
 }
 
 async function handleSubmit() {
-  // Client-side validation
   if (!form.email)    { errors.email    = 'L\'email est requis'; return }
   if (!form.password) { errors.password = 'Le mot de passe est requis'; return }
 
-  loading.value = true
+  loading.value    = true
   globalError.value = ''
 
   try {
@@ -95,14 +120,14 @@ async function handleSubmit() {
     if (status === 401) {
       globalError.value = 'Email ou mot de passe incorrect.'
     } else if (status === 403) {
-      globalError.value = 'Votre compte ou votre boutique est suspendu.'
+      globalError.value = 'Votre compte est désactivé. Contactez votre administrateur.'
     } else if (status === 422) {
       const validationErrors = axiosErr.response?.data?.errors ?? {}
       Object.entries(validationErrors).forEach(([field, msgs]) => {
         errors[field] = msgs[0]
       })
     } else {
-      globalError.value = 'Impossible de se connecter. Vérifiez votre connexion.'
+      globalError.value = 'Connexion impossible. Vérifiez votre connexion internet.'
     }
   } finally {
     loading.value = false
@@ -111,52 +136,25 @@ async function handleSubmit() {
 </script>
 
 <style scoped>
-.login-form { }
+.form-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
 
-.form-title {
-  font-size: 1.4rem;
+.form-header h2 {
+  font-size: var(--text-2xl);
   font-weight: 700;
-  color: #111827;
-  margin: 0 0 0.3rem;
-  text-align: center;
+  color: var(--gray-900);
+  margin-bottom: 0.3rem;
 }
 
-.form-subtitle {
-  font-size: 0.875rem;
-  color: #6b7280;
-  text-align: center;
-  margin: 0 0 2rem;
+.form-header p {
+  font-size: var(--text-sm);
+  color: var(--gray-500);
+  margin: 0;
 }
-
-.field {
-  margin-bottom: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.field label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-}
-
-.field input {
-  padding: 0.65rem 0.875rem;
-  border: 1.5px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.15s;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.field input:focus { border-color: #059669; box-shadow: 0 0 0 3px rgba(5,150,105,0.1); }
-.field input.input-error { border-color: #dc2626; }
 
 .password-wrap { position: relative; }
-.password-wrap input { padding-right: 2.5rem; }
 
 .toggle-pass {
   position: absolute;
@@ -166,55 +164,35 @@ async function handleSubmit() {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 1rem;
   padding: 0;
-  line-height: 1;
-}
-
-.error-msg {
-  font-size: 0.8rem;
-  color: #dc2626;
-}
-
-.alert-error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  margin-bottom: 1.25rem;
-}
-
-.btn-submit {
-  width: 100%;
-  padding: 0.75rem;
-  background: #059669;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
+  color: var(--gray-400);
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  transition: color 0.15s;
+}
+.toggle-pass:hover { color: var(--gray-700); }
+
+.forgot-link {
+  font-size: var(--text-xs);
+  color: var(--brand-secondary);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.forgot-link:hover { color: var(--brand-secondary-dark); text-decoration: underline; }
+
+.signup-cta {
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--gray-500);
+  margin: 0;
 }
 
-.btn-submit:hover:not(:disabled) { background: #047857; }
-.btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255,255,255,0.4);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  flex-shrink: 0;
+.signup-link {
+  color: var(--brand-secondary);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s;
 }
-
-@keyframes spin { to { transform: rotate(360deg); } }
+.signup-link:hover { color: var(--brand-secondary-dark); text-decoration: underline; }
 </style>

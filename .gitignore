@@ -1,0 +1,65 @@
+# ── OS ────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── IDE ───────────────────────────────────────
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ── Backend Laravel ───────────────────────────
+backend/vendor/
+backend/.env
+backend/.env.testing
+backend/.env.production
+backend/storage/logs/*.log
+backend/storage/framework/cache/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+backend/bootstrap/cache/*.php
+backend/coverage/
+backend/coverage-*.xml
+backend/junit-*.xml
+
+# ── Frontend Vue 3 ────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/.env.local
+frontend/.env.production
+
+# ── Mobile Flutter ────────────────────────────
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/build/
+mobile/android/.gradle
+mobile/android/local.properties
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/*.g.dart
+mobile/*.freezed.dart
+
+# ── Docker ────────────────────────────────────
+infra/ssl/*.pem
+infra/ssl/*.key
+infra/ssl/*.crt
+
+# ── Secrets ───────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+
+# ── Logs et temporaires ───────────────────────
+*.log
+*.tmp
+*.swp
+*.bak

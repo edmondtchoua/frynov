@@ -1,0 +1,25 @@
+# ─────────────────────────────────────────────
+#  CODEOWNERS — Reviewers automatiques par zone
+#  Syntaxe : pattern   @user-ou-@org/team
+# ─────────────────────────────────────────────
+
+# Défaut global (si aucun pattern plus précis)
+*                                   @votre-org/lead-dev
+
+# Sync Engine et connecteurs — critique, review senior obligatoire
+backend/app/Modules/Sync/**         @votre-org/lead-dev
+backend/app/Modules/Inventory/**    @votre-org/lead-dev
+
+# Module paiements — sensible
+backend/app/Modules/Payments/**     @votre-org/lead-dev
+
+# GitHub Actions et infra
+.github/**                          @votre-org/lead-dev
+infra/**                            @votre-org/lead-dev
+docker-compose*.yml                 @votre-org/lead-dev
+
+# Frontend
+frontend/**                         @votre-org/frontend-dev
+
+# Mobile
+mobile/**                           @votre-org/mobile-dev

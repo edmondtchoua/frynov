@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         stopOnFailure="false"
+         failOnWarning="true"
+         failOnRisky="true"
+>
+    <!-- ── Suites de tests ────────────────────────── -->
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>app/Modules/*/Tests/Unit</directory>
+        </testsuite>
+
+        <testsuite name="Integration">
+            <directory>app/Modules/*/Tests/Integration</directory>
+        </testsuite>
+
+        <testsuite name="Modular">
+            <directory>app/Modules/*/Tests/Modular</directory>
+        </testsuite>
+
+        <testsuite name="E2E">
+            <directory>tests/E2E</directory>
+        </testsuite>
+    </testsuites>
+
+    <!-- ── Coverage ───────────────────────────────── -->
+    <source>
+        <include>
+            <directory>app/Modules</directory>
+        </include>
+        <exclude>
+            <directory>app/Modules/*/Tests</directory>
+            <directory>app/Modules/*/Http/Resources</directory>
+        </exclude>
+    </source>
+
+    <!-- ── Variables d'environnement de test ─────── -->
+    <php>
+        <env name="APP_ENV"            value="testing"/>
+        <env name="APP_DEBUG"          value="true"/>
+        <env name="APP_KEY"            value="base64:test_key_32_chars_minimum_here="/>
+
+        <!-- PostgreSQL test (doit être disponible) -->
+        <env name="DB_CONNECTION"      value="pgsql"/>
+        <env name="DB_HOST"            value="127.0.0.1"/>
+        <env name="DB_PORT"            value="5432"/>
+        <env name="DB_DATABASE"        value="erp_test"/>
+        <env name="DB_USERNAME"        value="erp"/>
+        <env name="DB_PASSWORD"        value="secret"/>
+
+        <!-- Redis en array (in-memory) pour les tests -->
+        <env name="REDIS_CLIENT"       value="array"/>
+        <env name="CACHE_STORE"        value="array"/>
+        <env name="SESSION_DRIVER"     value="array"/>
+
+        <!-- Queue synchrone : les jobs s'exécutent immédiatement -->
+        <env name="QUEUE_CONNECTION"   value="sync"/>
+
+        <!-- Mail null : ne pas envoyer d'emails en test -->
+        <env name="MAIL_MAILER"        value="array"/>
+
+        <!-- S3 fake -->
+        <env name="FILESYSTEM_DISK"    value="local"/>
+
+        <!-- Désactiver Telescope en test -->
+        <env name="TELESCOPE_ENABLED"  value="false"/>
+    </php>
+</phpunit>

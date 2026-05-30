@@ -1,0 +1,266 @@
+name: CD — Release sur Tag
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-beta.*'
+
+env:
+  DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+  APP_VERSION:     ${{ github.ref_name }}
+
+jobs:
+  # ────────────────────────────────────────────
+  #  SUITE COMPLÈTE DE TESTS
+  # ────────────────────────────────────────────
+  full-tests:
+    name: Full Test Suite
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB:       erp_test
+          POSTGRES_USER:     erp
+          POSTGRES_PASSWORD: secret
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U erp"
+          --health-interval 10s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 10s
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql, redis, zip, gd, bcmath
+          coverage: xdebug
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+        working-directory: backend
+
+      - name: Run migrations
+        run: php artisan migrate --env=testing --force
+        working-directory: backend
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: erp_test
+          DB_USERNAME: erp
+          DB_PASSWORD: secret
+
+      - name: Run ALL test suites
+        run: php artisan test --parallel --coverage-clover=coverage-full.xml
+        working-directory: backend
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: erp_test
+          DB_USERNAME: erp
+          DB_PASSWORD: secret
+          REDIS_HOST: 127.0.0.1
+          QUEUE_CONNECTION: sync
+
+      - name: Upload full coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: backend/coverage-full.xml
+          flags: release
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # ────────────────────────────────────────────
+  #  BUILD DOCKER
+  # ────────────────────────────────────────────
+  build-docker:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: full-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.DOCKER_REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build & push backend
+        uses: docker/build-push-action@v5
+        with:
+          context:   ./backend
+          file:      ./backend/Dockerfile
+          target:    production
+          push:      true
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/erp-backend:${{ env.APP_VERSION }}
+            ${{ env.DOCKER_REGISTRY }}/erp-backend:latest
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context:   ./frontend
+          file:      ./frontend/Dockerfile
+          target:    production
+          push:      true
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL_PROD }}
+            VITE_APP_ENV=production
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/erp-frontend:${{ env.APP_VERSION }}
+            ${{ env.DOCKER_REGISTRY }}/erp-frontend:latest
+
+  # ────────────────────────────────────────────
+  #  DÉPLOIEMENT STAGING
+  # ────────────────────────────────────────────
+  deploy-staging:
+    name: Deploy → Staging
+    runs-on: ubuntu-latest
+    needs: build-docker
+    environment:
+      name: staging
+      url: https://staging.votreerp.com
+    steps:
+      - name: Deploy to staging via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host:     ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key:      ${{ secrets.STAGING_SSH_KEY }}
+          envs:     APP_VERSION
+          script: |
+            set -e
+            cd /opt/erp-staging
+
+            echo "==> Pulling images for $APP_VERSION"
+            APP_VERSION=$APP_VERSION docker compose -f docker-compose.prod.yml pull
+
+            echo "==> Starting containers"
+            APP_VERSION=$APP_VERSION docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            echo "==> Running migrations"
+            docker compose -f docker-compose.prod.yml exec -T app \
+              php artisan migrate --force
+
+            echo "==> Clearing caches"
+            docker compose -f docker-compose.prod.yml exec -T app \
+              php artisan optimize
+
+            echo "==> Restarting queue workers"
+            docker compose -f docker-compose.prod.yml exec -T app \
+              php artisan queue:restart
+
+            echo "==> Deployed $APP_VERSION to staging ✓"
+
+  # ────────────────────────────────────────────
+  #  SMOKE TEST STAGING
+  # ────────────────────────────────────────────
+  smoke-test-staging:
+    name: Smoke Test Staging
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    steps:
+      - name: Wait for staging to be healthy
+        run: |
+          for i in $(seq 1 10); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              https://staging.votreerp.com/api/health)
+            if [ "$STATUS" = "200" ]; then
+              echo "Staging is healthy (HTTP $STATUS)"
+              exit 0
+            fi
+            echo "Attempt $i: HTTP $STATUS — waiting 10s"
+            sleep 10
+          done
+          echo "Staging health check failed"
+          exit 1
+
+  # ────────────────────────────────────────────
+  #  DÉPLOIEMENT PRODUCTION (approbation manuelle)
+  # ────────────────────────────────────────────
+  deploy-production:
+    name: Deploy → Production
+    runs-on: ubuntu-latest
+    needs: smoke-test-staging
+    if: "!contains(github.ref_name, 'alpha') && !contains(github.ref_name, 'beta')"
+    environment:
+      name: production
+      url: https://app.votreerp.com
+    steps:
+      - name: Deploy to production via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host:     ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key:      ${{ secrets.PROD_SSH_KEY }}
+          envs:     APP_VERSION
+          script: |
+            set -e
+            cd /opt/erp-production
+
+            echo "==> Pulling images for $APP_VERSION"
+            APP_VERSION=$APP_VERSION docker compose -f docker-compose.prod.yml pull
+
+            echo "==> Zero-downtime deploy"
+            APP_VERSION=$APP_VERSION docker compose -f docker-compose.prod.yml up -d \
+              --remove-orphans --no-recreate
+
+            echo "==> Updating app container"
+            docker compose -f docker-compose.prod.yml up -d --force-recreate app
+
+            echo "==> Running migrations"
+            docker compose -f docker-compose.prod.yml exec -T app \
+              php artisan migrate --force
+
+            echo "==> Optimizing"
+            docker compose -f docker-compose.prod.yml exec -T app \
+              php artisan optimize
+
+            echo "==> Restarting workers"
+            docker compose -f docker-compose.prod.yml exec -T app \
+              php artisan queue:restart
+
+            echo "==> Production deploy $APP_VERSION done ✓"
+
+  # ────────────────────────────────────────────
+  #  MERGE VERS MAIN APRÈS PROD
+  # ────────────────────────────────────────────
+  merge-to-main:
+    name: Merge tag → main
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PAT_MERGE }}
+
+      - name: Merge tag into main
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout main
+          git merge "${{ github.ref_name }}" \
+            --no-ff \
+            -m "chore: merge release ${{ github.ref_name }} into main [skip ci]"
+          git push origin main

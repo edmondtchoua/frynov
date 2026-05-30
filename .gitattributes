@@ -1,0 +1,23 @@
+# ── Normalisation des fins de ligne ──────────
+* text=auto eol=lf
+
+# Fichiers toujours LF (scripts, configs)
+*.sh        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+Makefile    text eol=lf
+Dockerfile  text eol=lf
+*.sql       text eol=lf
+*.php       text eol=lf
+*.ts        text eol=lf
+*.vue       text eol=lf
+*.json      text eol=lf
+*.toml      text eol=lf
+
+# Fichiers binaires — pas de conversion
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary

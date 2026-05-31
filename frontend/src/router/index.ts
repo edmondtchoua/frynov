@@ -166,6 +166,37 @@ const router = createRouter({
       ],
     },
 
+    // ── Suppliers ─────────────────────────────────────────────────────────
+    {
+      path: '/suppliers',
+      meta: { layout: 'app' },
+      children: [
+        {
+          path: '',
+          name: 'suppliers.list',
+          component: () => import('@/modules/suppliers/views/SupplierListView.vue'),
+        },
+      ],
+    },
+
+    // ── Import / Export ───────────────────────────────────────────────────
+    {
+      path: '/import',
+      meta: { layout: 'app' },
+      children: [
+        {
+          path: 'history',
+          name: 'import.history',
+          component: () => import('@/modules/import-export/views/ImportHistoryView.vue'),
+        },
+        {
+          path: 'new',
+          name: 'import.wizard',
+          component: () => import('@/modules/import-export/views/ImportWizardView.vue'),
+        },
+      ],
+    },
+
     // ── Settings ──────────────────────────────────────────────────────────
     {
       path: '/settings',

@@ -18,4 +18,6 @@ return [
     App\Modules\Delivery\Providers\DeliveryServiceProvider::class,
     App\Modules\Customers\Providers\CustomersServiceProvider::class,
     App\Modules\Sync\Providers\SyncServiceProvider::class,
+    App\Modules\Suppliers\Providers\SuppliersServiceProvider::class,
+    App\Modules\ImportExport\Providers\ImportExportServiceProvider::class,
 ];

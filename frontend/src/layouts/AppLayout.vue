@@ -189,6 +189,18 @@ const mainNavItems = [
     label: 'Clients',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M1 14c0-3.3 2.2-5 5-5s5 1.7 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M12 7a2 2 0 010-4M15 14c0-2.2-1.3-3.5-3-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
   },
+  {
+    name: 'suppliers',
+    to: '/suppliers',
+    label: 'Fournisseurs',
+    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 12V5l5-3 5 3v7" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 16v-4h4v4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M11 12h4V7l-4-2" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+  },
+  {
+    name: 'import',
+    to: '/import/history',
+    label: 'Import / Export',
+    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+  },
 ]
 
 const pageTitles: Record<string, string> = {
@@ -205,6 +217,11 @@ const pageTitles: Record<string, string> = {
   'orders.show':            'Commande',
   'customers.list':         'Clients',
   'customers.show':         'Client',
+  'suppliers.list':         'Fournisseurs',
+  'import.history':         'Import / Export',
+  'import.wizard':          'Nouvel import',
+  'payments.list':          'Paiements',
+  'deliveries.list':        'Livraisons',
   settings:                 'Paramètres',
 }
 

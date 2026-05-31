@@ -17,6 +17,7 @@ class Product extends Model
     protected $fillable = [
         'tenant_id',
         'category_id',
+        'supplier_id',
         'sku',
         'name',
         'description',
@@ -88,6 +89,11 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(\App\Modules\Suppliers\Models\Supplier::class);
     }
 
     public function variants(): HasMany

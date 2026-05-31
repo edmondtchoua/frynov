@@ -19,6 +19,8 @@
     <testsuites>
         <testsuite name="Unit">
             <directory suffix="ServiceTest.php">app/Modules</directory>
+            <directory suffix="ParserTest.php">app/Modules</directory>
+            <directory suffix="MapperTest.php">app/Modules</directory>
             <directory suffix="ValueObjectTest.php">app/Shared</directory>
         </testsuite>
 

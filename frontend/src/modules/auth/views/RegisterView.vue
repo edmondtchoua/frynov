@@ -129,8 +129,11 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
+import { authService } from '../services/authService'
+import { useAuthStore } from '@/stores/auth'
 
-const router = useRouter()
+const router   = useRouter()
+const authStore = useAuthStore()
 
 const form = reactive({ company: '', name: '', email: '', password: '' })
 const errors = reactive<Record<string, string>>({})
@@ -173,24 +176,34 @@ function validate(): boolean {
 async function handleSubmit() {
   if (!validate()) return
 
-  loading.value    = true
+  loading.value     = true
   globalError.value = ''
 
   try {
-    // TODO: call register API when endpoint exists
-    // await authService.register(form)
-    // For now, redirect to onboarding
-    await new Promise(r => setTimeout(r, 800)) // simulate API
+    const response = await authService.register({
+      company_name:          form.company,
+      name:                  form.name,
+      email:                 form.email,
+      password:              form.password,
+      password_confirmation: form.password,
+    })
+
+    // Persist session in store
+    authStore.setToken(response.token)
+    authStore.setUser(response.user)
+
     router.push('/onboarding')
   } catch (err: any) {
     const status = err?.response?.status
     if (status === 422) {
       const validationErrors = err.response?.data?.errors ?? {}
       Object.entries(validationErrors).forEach(([field, msgs]: [string, any]) => {
-        errors[field] = msgs[0]
+        // Map backend field names to form field names
+        const key = field === 'company_name' ? 'company' : field
+        errors[key] = Array.isArray(msgs) ? msgs[0] : msgs
       })
     } else {
-      globalError.value = 'Impossible de créer le compte. Réessayez.'
+      globalError.value = err.response?.data?.message ?? 'Impossible de créer le compte. Réessayez.'
     }
   } finally {
     loading.value = false

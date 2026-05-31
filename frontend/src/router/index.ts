@@ -223,6 +223,39 @@ const router = createRouter({
       meta: { layout: 'app' },
     },
 
+    // ── Admin back-office ─────────────────────────────────────────────────
+    {
+      path: '/admin',
+      meta: { layout: 'admin', requiresSuperAdmin: true },
+      children: [
+        {
+          path: '',
+          name: 'admin.dashboard',
+          component: () => import('@/modules/admin/views/AdminDashboardView.vue'),
+        },
+        {
+          path: 'tenants',
+          name: 'admin.tenants',
+          component: () => import('@/modules/admin/views/TenantListView.vue'),
+        },
+        {
+          path: 'modules',
+          name: 'admin.modules',
+          component: () => import('@/modules/admin/views/ModuleListView.vue'),
+        },
+        {
+          path: 'plans',
+          name: 'admin.plans',
+          component: () => import('@/modules/admin/views/PlanListView.vue'),
+        },
+        {
+          path: 'audit',
+          name: 'admin.audit',
+          component: () => import('@/modules/admin/views/AuditLogView.vue'),
+        },
+      ],
+    },
+
     // ── 404 ───────────────────────────────────────────────────────────────
     {
       path: '/:pathMatch(.*)*',

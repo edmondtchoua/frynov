@@ -21,4 +21,6 @@ return [
     App\Modules\Suppliers\Providers\SuppliersServiceProvider::class,
     App\Modules\ImportExport\Providers\ImportExportServiceProvider::class,
     App\Modules\Reports\Providers\ReportsServiceProvider::class,
+    App\Modules\Billing\Providers\BillingServiceProvider::class,
+    App\Modules\Platform\Providers\PlatformServiceProvider::class,
 ];

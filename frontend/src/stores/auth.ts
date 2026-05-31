@@ -33,6 +33,17 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /** Used after registration (or any flow that already has a token + user). */
+  function setToken(t: string) {
+    token.value = t
+    localStorage.setItem('auth_token', t)
+  }
+
+  function setUser(u: AuthUser) {
+    user.value = u
+    localStorage.setItem('tenant_slug', u.tenant?.slug ?? '')
+  }
+
   function $reset() {
     user.value  = null
     token.value = null
@@ -40,5 +51,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('tenant_slug')
   }
 
-  return { user, token, isAuthenticated, login, logout, fetchCurrentUser, $reset }
+  return { user, token, isAuthenticated, login, logout, fetchCurrentUser, setToken, setUser, $reset }
 })

@@ -1,9 +1,14 @@
 import client from '@/api/client'
-import type { AuthResponse, LoginCredentials } from '../types'
+import type { AuthResponse, LoginCredentials, RegisterPayload } from '../types'
 
 export const authService = {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const { data } = await client.post<AuthResponse>('/api/auth/login', credentials)
+    return data
+  },
+
+  async register(payload: RegisterPayload): Promise<AuthResponse> {
+    const { data } = await client.post<AuthResponse>('/api/auth/register', payload)
     return data
   },
 

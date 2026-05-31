@@ -2,9 +2,11 @@
 
 namespace App\Modules\Tenants\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Tenant extends Model
@@ -17,6 +19,7 @@ class Tenant extends Model
         'domain',
         'plan',
         'status',
+        'subscription_status',
         'settings',
     ];
 
@@ -32,5 +35,12 @@ class Tenant extends Model
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    // ── Relations ──────────────────────────────────────────────────────────────
+
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
     }
 }

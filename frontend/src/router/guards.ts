@@ -10,12 +10,20 @@ export function setupGuards(router: Router) {
       await auth.fetchCurrentUser()
     }
 
-    const isPublic = to.meta.public === true
+    const isPublic       = to.meta.public === true
+    const needsSuperAdmin = to.meta.requiresSuperAdmin === true
 
+    // Not logged in → redirect to login
     if (!isPublic && !auth.isAuthenticated) {
       return { name: 'login', query: { redirect: to.fullPath } }
     }
 
+    // Admin area → must be super_admin
+    if (needsSuperAdmin && auth.user && !auth.user.is_super_admin) {
+      return { name: 'dashboard' }
+    }
+
+    // Already logged in → skip auth pages
     if (to.name === 'login' && auth.isAuthenticated) {
       return { name: 'dashboard' }
     }

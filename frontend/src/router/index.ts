@@ -140,6 +140,32 @@ const router = createRouter({
       ],
     },
 
+    // ── Payments ──────────────────────────────────────────────────────────
+    {
+      path: '/payments',
+      meta: { layout: 'app' },
+      children: [
+        {
+          path: '',
+          name: 'payments.list',
+          component: () => import('@/modules/payments/views/PaymentListView.vue'),
+        },
+      ],
+    },
+
+    // ── Deliveries ────────────────────────────────────────────────────────
+    {
+      path: '/deliveries',
+      meta: { layout: 'app' },
+      children: [
+        {
+          path: '',
+          name: 'deliveries.list',
+          component: () => import('@/modules/deliveries/views/DeliveryListView.vue'),
+        },
+      ],
+    },
+
     // ── Settings ──────────────────────────────────────────────────────────
     {
       path: '/settings',

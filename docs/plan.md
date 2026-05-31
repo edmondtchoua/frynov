@@ -19,10 +19,10 @@
 | Orders | ✅ Livré | 26 | Order lifecycle, stock reservation, anti-oversell, 6 endpoints |
 | Customers | ✅ Livré | 25 | CRUD + search + typeahead, orders relation, tenant isolation |
 | **Payments** | ✅ Livré | 23 | record/void/balance/isFullyPaid, split payments, tenant isolation |
-| Delivery | ⏳ Planifié | — | Sprint 4 |
+| **Delivery** | ✅ Livré | 26 | pending→dispatched→delivered→failed, order relation, tenant isolation |
 | Sync | 💤 Différé | — | Phase 2 |
 
-**Backend MVP : 75% complet. Tests : 169 passent.**
+**Backend MVP : 90% complet. Tests : 195 passent.**
 
 ---
 
@@ -45,10 +45,11 @@
 | Catalog UI | ✅ Livré | ProductListView, ProductFormView, CategoryListView |
 | Customers UI | ✅ Livré | CustomerListView (avatars, modal inline), CustomerDetailView |
 | **Inventory UI** | ✅ Livré | StockListView (move modal), StockAlertsView (cards + progress bar), MovementHistoryView (timeline) |
-| Payments UI | ⏳ Planifié | Sprint 4 — PaymentRecord form |
+| **Payments UI** | ✅ Livré | PaymentListView (global ledger, void), OrderDetailView enrichi (balance panel + modal) |
+| **Delivery UI** | ✅ Livré | DeliveryListView (dispatch/deliver/fail actions), OrderDetailView panel livraison |
 | Reports / Dashboard KPIs | ⏳ Planifié | Sprint 5 — endpoints backend requis |
 
-**Frontend MVP : 75% complet.**
+**Frontend MVP : 90% complet.**
 
 ---
 
@@ -259,8 +260,8 @@ Customers → Orders (optionnel en Phase 1)
 
 ---
 
-#### Sprint 4 — Delivery backend + Customers UI
-**Durée : 1 semaine**
+#### Sprint 4 — Delivery backend + Payments UI + Delivery UI ✅
+**Statut : LIVRÉ**
 
 **Backend — Delivery**
 
@@ -360,7 +361,7 @@ Mois 1-3  ✅ Auth + Catalog + Inventory (backend complet)
 Mois 4    ✅ Sprint 1: Orders backend + Frontend foundation + Auth UI + Design system
 Mois 4    ✅ Sprint 2: Customers backend + Catalog UI + Customers UI
 Mois 5    ✅ Sprint 3: Payments backend + Inventory UI (StockList, Alerts, Timeline)
-Mois 5    ⏳ Sprint 4: Delivery backend + Customers UI
+Mois 5    ✅ Sprint 4: Delivery backend + Payments UI + Delivery UI
 Mois 6    ⏳ Sprint 5: Reports + Dashboard réel + Polish + Flutter POS
 Mois 7    🎯 MVP livré — Beta terrain (3-5 boutiques pilotes)
 Mois 7-12 🔮 Phase 2: Connecteurs + API publique + Mobile Money

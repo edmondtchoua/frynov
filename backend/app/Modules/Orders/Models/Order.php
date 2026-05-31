@@ -54,6 +54,11 @@ class Order extends Model
         return $this->hasMany(\App\Modules\Payments\Models\Payment::class);
     }
 
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(\App\Modules\Delivery\Models\Delivery::class);
+    }
+
     public function isDraft(): bool     { return $this->status === self::STATUS_DRAFT; }
     public function isConfirmed(): bool { return $this->status === self::STATUS_CONFIRMED; }
     public function isFulfilled(): bool { return $this->status === self::STATUS_FULFILLED; }

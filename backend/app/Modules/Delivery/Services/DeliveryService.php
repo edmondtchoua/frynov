@@ -3,49 +3,94 @@
 namespace App\Modules\Delivery\Services;
 
 use App\Modules\Delivery\Models\Delivery;
-use App\Modules\Delivery\Repositories\DeliveryRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class DeliveryService
 {
-    public function __construct(
-private readonly DeliveryRepositoryInterface $repository,
-    ) {}
+    // ── Queries ────────────────────────────────────────────────────────────────
 
     public function list(string $tenantId, array $filters = []): LengthAwarePaginator
     {
-return $this->repository->all($tenantId, $filters);
+        $q = Delivery::forTenant($tenantId)->with('order');
+
+        if (!empty($filters['status']))   $q->where('status', $filters['status']);
+        if (!empty($filters['order_id'])) $q->where('order_id', $filters['order_id']);
+
+        return $q->latest()->paginate((int) ($filters['per_page'] ?? 20));
     }
 
     public function findOrFail(string $id, string $tenantId): Delivery
     {
-$model = $this->repository->findById($id, $tenantId);
-
-if (! $model) {
-    abort(404);
-}
-
-return $model;
+        return Delivery::forTenant($tenantId)
+            ->with('order')
+            ->findOrFail($id);
     }
 
-    public function create(array $data, string $tenantId): Delivery
+    public function listForOrder(string $orderId, string $tenantId): Collection
     {
-return $this->repository->create([
-    ...$data,
-    'tenant_id' => $tenantId,
-]);
+        return Delivery::forTenant($tenantId)
+            ->where('order_id', $orderId)
+            ->latest()
+            ->get();
     }
 
-    public function update(string $id, array $data, string $tenantId): Delivery
-    {
-$model = $this->findOrFail($id, $tenantId);
+    // ── Commands ───────────────────────────────────────────────────────────────
 
-return $this->repository->update($model, $data);
+    public function create(array $data, string $tenantId, string $userId): Delivery
+    {
+        return Delivery::create([
+            ...$data,
+            'tenant_id'    => $tenantId,
+            'performed_by' => $userId,
+            'status'       => Delivery::STATUS_PENDING,
+        ]);
     }
 
-    public function delete(string $id, string $tenantId): void
+    public function dispatch(Delivery $delivery): Delivery
     {
-$model = $this->findOrFail($id, $tenantId);
-$this->repository->delete($model);
+        if (!$delivery->canBeDispatched()) {
+            throw new \DomainException(
+                "Cannot dispatch a delivery with status '{$delivery->status}'."
+            );
+        }
+
+        $delivery->update([
+            'status'        => Delivery::STATUS_DISPATCHED,
+            'dispatched_at' => now(),
+        ]);
+
+        return $delivery->fresh('order');
+    }
+
+    public function confirm(Delivery $delivery): Delivery
+    {
+        if (!$delivery->canBeDelivered()) {
+            throw new \DomainException(
+                "Cannot confirm delivery with status '{$delivery->status}'."
+            );
+        }
+
+        $delivery->update([
+            'status'       => Delivery::STATUS_DELIVERED,
+            'delivered_at' => now(),
+        ]);
+
+        return $delivery->fresh('order');
+    }
+
+    public function fail(Delivery $delivery, string $reason): Delivery
+    {
+        if (!$delivery->canBeFailed()) {
+            throw new \DomainException('Cannot fail an already delivered delivery.');
+        }
+
+        $delivery->update([
+            'status'        => Delivery::STATUS_FAILED,
+            'failed_at'     => now(),
+            'failed_reason' => $reason,
+        ]);
+
+        return $delivery->fresh('order');
     }
 }

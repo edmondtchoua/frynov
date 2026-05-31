@@ -17,12 +17,12 @@
 | Catalog | ✅ Livré | 36 | Products, Categories, Variants, SKU, QR/Barcode, Labels |
 | Inventory | ✅ Livré | 25 | Stock, StockMovement, Redis anti-oversell, scan-to-action |
 | Orders | ✅ Livré | 26 | Order lifecycle, stock reservation, anti-oversell, 6 endpoints |
-| **Customers** | 🔨 Prochain | — | |
-| Payments | ⏳ Planifié | — | |
-| Delivery | ⏳ Planifié | — | |
+| Customers | ✅ Livré | 25 | CRUD + search + typeahead, orders relation, tenant isolation |
+| **Payments** | ✅ Livré | 23 | record/void/balance/isFullyPaid, split payments, tenant isolation |
+| Delivery | ⏳ Planifié | — | Sprint 4 |
 | Sync | 💤 Différé | — | Phase 2 |
 
-**Backend MVP : 55% complet. Tests : 117 passent.**
+**Backend MVP : 75% complet. Tests : 169 passent.**
 
 ---
 
@@ -42,12 +42,13 @@
 | **Dashboard** | ✅ Livré | KPI cards avec SVG icons, CSS tokens, actions rapides |
 | **Settings** | ✅ Livré | 5 onglets (entreprise, équipe, abonnement, intégrations, notifs) |
 | Orders UI | ✅ Livré | OrderListView, OrderCreateView, OrderDetailView |
-| Catalog UI | 🔨 Prochain | Remplacer stubs ProductListView, etc. |
-| Inventory UI | 🔨 Prochain | Remplacer stubs StockListView, etc. |
-| Customers UI | ⏳ Planifié | Avec module Customers backend |
-| Reports / Dashboard KPIs | ⏳ Planifié | Phase 2 — endpoints backend requis |
+| Catalog UI | ✅ Livré | ProductListView, ProductFormView, CategoryListView |
+| Customers UI | ✅ Livré | CustomerListView (avatars, modal inline), CustomerDetailView |
+| **Inventory UI** | ✅ Livré | StockListView (move modal), StockAlertsView (cards + progress bar), MovementHistoryView (timeline) |
+| Payments UI | ⏳ Planifié | Sprint 4 — PaymentRecord form |
+| Reports / Dashboard KPIs | ⏳ Planifié | Sprint 5 — endpoints backend requis |
 
-**Frontend MVP : 60% complet.**
+**Frontend MVP : 75% complet.**
 
 ---
 
@@ -136,10 +137,10 @@ src/
 │   │   └── DashboardView.vue    ← KPIs + actions rapides
 │   ├── settings/views/
 │   │   └── SettingsView.vue     ← 5 onglets (entreprise, équipe, facturation...)
-│   ├── catalog/views/           ← Stubs (ProductList, ProductForm, CategoryList)
-│   ├── inventory/views/         ← Stubs (StockList, StockAlerts, MovementHistory)
-│   ├── orders/views/            ← OrderList, OrderCreate, OrderDetail
-│   └── customers/views/         ← À créer avec module Customers
+│   ├── catalog/views/           ← ProductListView, ProductFormView, CategoryListView
+│   ├── inventory/views/         ← StockListView, StockAlertsView, MovementHistoryView
+│   ├── orders/views/            ← OrderListView, OrderCreateView, OrderDetailView
+│   └── customers/views/         ← CustomerListView, CustomerDetailView
 └── router/
     ├── index.ts                 ← Routes modulaires, lazy loading
     └── guards.ts                ← Auth guard, tenant guard
@@ -203,8 +204,8 @@ Customers → Orders (optionnel en Phase 1)
 
 ---
 
-#### Sprint 2 — Customers backend + Catalog UI
-**Durée : 1 semaine**
+#### Sprint 2 — Customers backend + Catalog UI ✅
+**Statut : LIVRÉ**
 
 **Backend — Customers**
 
@@ -231,8 +232,8 @@ Customers → Orders (optionnel en Phase 1)
 
 ---
 
-#### Sprint 3 — Payments backend + Inventory UI
-**Durée : 1 semaine**
+#### Sprint 3 — Payments backend + Inventory UI ✅
+**Statut : LIVRÉ**
 
 **Backend — Payments**
 
@@ -357,8 +358,8 @@ Customers → Orders (optionnel en Phase 1)
 ```
 Mois 1-3  ✅ Auth + Catalog + Inventory (backend complet)
 Mois 4    ✅ Sprint 1: Orders backend + Frontend foundation + Auth UI + Design system
-Mois 4    🔨 Sprint 2: Customers backend + Catalog UI
-Mois 5    ⏳ Sprint 3: Payments backend + Inventory UI + début Flutter
+Mois 4    ✅ Sprint 2: Customers backend + Catalog UI + Customers UI
+Mois 5    ✅ Sprint 3: Payments backend + Inventory UI (StockList, Alerts, Timeline)
 Mois 5    ⏳ Sprint 4: Delivery backend + Customers UI
 Mois 6    ⏳ Sprint 5: Reports + Dashboard réel + Polish + Flutter POS
 Mois 7    🎯 MVP livré — Beta terrain (3-5 boutiques pilotes)

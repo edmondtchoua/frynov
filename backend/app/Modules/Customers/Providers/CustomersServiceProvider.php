@@ -2,8 +2,6 @@
 
 namespace App\Modules\Customers\Providers;
 
-use App\Modules\Customers\Repositories\CustomersRepositoryInterface;
-use App\Modules\Customers\Repositories\EloquentCustomersRepository;
 use App\Shared\ModuleServiceProvider;
 
 class CustomersServiceProvider extends ModuleServiceProvider
@@ -13,16 +11,12 @@ class CustomersServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
-// Binding interface → implémentation concrète
-$this->app->bind(
-    CustomersRepositoryInterface::class,
-    EloquentCustomersRepository::class,
-);
+        // CustomerService is resolved via the container automatically (no interface needed)
     }
 
     public function boot(): void
     {
-$this->loadMigrationsFrom($this->modulePath('database/migrations'));
-$this->loadRoutesFrom($this->modulePath('routes/api.php'));
+        $this->loadMigrationsFrom($this->modulePath('database/migrations'));
+        $this->loadRoutesFrom($this->modulePath('routes/api.php'));
     }
 }

@@ -1,7 +1,366 @@
 <template>
-  <div class="empty-state">
-    <div class="empty-state-icon">🔨</div>
-    <h3>CategoryList</h3>
-    <p>Module en cours d'implémentation.</p>
+  <div>
+    <div class="page-header">
+      <div>
+        <h2>Catégories</h2>
+        <p class="page-subtitle">{{ categories.length }} catégorie{{ categories.length !== 1 ? 's' : '' }}</p>
+      </div>
+      <button class="btn btn-primary" @click="openCreate">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Nouvelle catégorie
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div v-if="loading" class="loading-center" style="min-height: 200px;">
+      <span class="spinner-sm" style="width: 24px; height: 24px; border-width: 3px;"></span>
+    </div>
+
+    <!-- Empty -->
+    <div v-else-if="categories.length === 0" class="empty-state">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+        <rect x="4" y="4" width="32" height="32" rx="8" fill="var(--brand-primary-bg)"/>
+        <path d="M10 14h20M10 20h14M10 26h10" stroke="var(--brand-primary)" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <h3>Aucune catégorie</h3>
+      <p>Organisez vos produits en créant votre première catégorie.</p>
+      <button class="btn btn-primary" @click="openCreate">Créer une catégorie</button>
+    </div>
+
+    <!-- Table -->
+    <div v-else class="card" style="padding: 0; overflow: hidden;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th class="hide-mobile">Parent</th>
+            <th class="hide-mobile">Ordre</th>
+            <th>Statut</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="cat in sortedCategories" :key="cat.id">
+            <td>
+              <div class="cat-name-cell">
+                <span v-if="cat.parent_id" class="child-indent">└</span>
+                <span class="cat-name">{{ cat.name }}</span>
+              </div>
+            </td>
+            <td class="hide-mobile">
+              <span v-if="cat.parent_id" class="badge badge-gray">
+                {{ parentName(cat.parent_id) }}
+              </span>
+              <span v-else class="text-muted">—</span>
+            </td>
+            <td class="hide-mobile">
+              <span class="text-muted">{{ cat.sort_order }}</span>
+            </td>
+            <td>
+              <span :class="cat.is_active ? 'badge badge-success' : 'badge badge-gray'">
+                {{ cat.is_active ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td style="text-align: right;">
+              <div class="row-actions">
+                <button class="btn btn-ghost btn-sm" @click="openEdit(cat)">Éditer</button>
+                <button class="btn btn-ghost btn-sm text-danger" @click="confirmDelete(cat)">
+                  Supprimer
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Create / Edit modal -->
+    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h3>{{ editingId ? 'Modifier la catégorie' : 'Nouvelle catégorie' }}</h3>
+          <button class="modal-close" @click="closeModal">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="cat-name">Nom <span style="color: var(--color-error);">*</span></label>
+            <input
+              id="cat-name"
+              v-model="catForm.name"
+              type="text"
+              class="form-input"
+              :class="{ error: catErrors.name }"
+              placeholder="Ex : Vêtements"
+              @input="delete catErrors.name"
+            />
+            <span v-if="catErrors.name" class="form-error">{{ catErrors.name }}</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cat-parent">Catégorie parente</label>
+            <select id="cat-parent" v-model="catForm.parent_id" class="form-input">
+              <option value="">Aucune (catégorie racine)</option>
+              <option
+                v-for="cat in rootCategories"
+                :key="cat.id"
+                :value="cat.id"
+                :disabled="cat.id === editingId"
+              >{{ cat.name }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cat-description">Description</label>
+            <input
+              id="cat-description"
+              v-model="catForm.description"
+              type="text"
+              class="form-input"
+              placeholder="Description courte…"
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="cat-order">Ordre d'affichage</label>
+              <input
+                id="cat-order"
+                v-model.number="catForm.sort_order"
+                type="number"
+                min="0"
+                class="form-input"
+              />
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Statut</label>
+              <label class="toggle-wrap">
+                <input v-model="catForm.is_active" type="checkbox" class="toggle-input" />
+                <span class="toggle-track">
+                  <span class="toggle-thumb"></span>
+                </span>
+                <span class="toggle-label">{{ catForm.is_active ? 'Active' : 'Inactive' }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-ghost" @click="closeModal">Annuler</button>
+          <button class="btn btn-primary" :disabled="saving" @click="saveCategory">
+            <span v-if="saving" class="spinner-sm spinner-white"></span>
+            {{ saving ? 'Enregistrement…' : (editingId ? 'Mettre à jour' : 'Créer') }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref, reactive, computed, onMounted } from 'vue'
+import { productService } from '../services/productService'
+import type { Category } from '../types'
+
+const categories = ref<Category[]>([])
+const loading    = ref(false)
+const saving     = ref(false)
+const showModal  = ref(false)
+const editingId  = ref<string | null>(null)
+
+const catForm   = reactive({ name: '', parent_id: '', description: '', sort_order: 0, is_active: true })
+const catErrors = reactive<Record<string, string>>({})
+
+const rootCategories = computed(() => categories.value.filter(c => !c.parent_id))
+
+const sortedCategories = computed(() => {
+  const roots    = categories.value.filter(c => !c.parent_id).sort((a, b) => a.sort_order - b.sort_order)
+  const children = categories.value.filter(c => !!c.parent_id).sort((a, b) => a.sort_order - b.sort_order)
+  const result: Category[] = []
+  roots.forEach(r => {
+    result.push(r)
+    children.filter(c => c.parent_id === r.id).forEach(c => result.push(c))
+  })
+  return result
+})
+
+function parentName(parentId: string): string {
+  return categories.value.find(c => c.id === parentId)?.name ?? parentId
+}
+
+async function load() {
+  loading.value = true
+  try {
+    categories.value = await productService.categories.list()
+  } catch {
+    categories.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+function openCreate() {
+  editingId.value    = null
+  catForm.name        = ''
+  catForm.parent_id   = ''
+  catForm.description = ''
+  catForm.sort_order  = 0
+  catForm.is_active   = true
+  Object.keys(catErrors).forEach(k => delete catErrors[k])
+  showModal.value = true
+}
+
+function openEdit(cat: Category) {
+  editingId.value     = cat.id
+  catForm.name        = cat.name
+  catForm.parent_id   = cat.parent_id ?? ''
+  catForm.description = cat.description ?? ''
+  catForm.sort_order  = cat.sort_order
+  catForm.is_active   = cat.is_active
+  showModal.value = true
+}
+
+function closeModal() {
+  showModal.value = false
+  editingId.value = null
+}
+
+async function saveCategory() {
+  if (!catForm.name.trim()) { catErrors.name = 'Le nom est requis'; return }
+  saving.value = true
+  try {
+    const data = {
+      name:        catForm.name,
+      parent_id:   catForm.parent_id || undefined,
+      description: catForm.description || undefined,
+      sort_order:  catForm.sort_order,
+      is_active:   catForm.is_active,
+    }
+    if (editingId.value) {
+      await productService.categories.update(editingId.value, data)
+    } else {
+      await productService.categories.create(data)
+    }
+    closeModal()
+    load()
+  } catch { /* ignore */ } finally {
+    saving.value = false
+  }
+}
+
+async function confirmDelete(cat: Category) {
+  if (!confirm(`Supprimer "${cat.name}" ? Cette action est irréversible.`)) return
+  try {
+    await productService.categories.delete(cat.id)
+    load()
+  } catch { /* ignore */ }
+}
+
+onMounted(load)
+</script>
+
+<style scoped>
+.page-subtitle { color: var(--gray-500); font-size: var(--text-sm); margin-top: 0.2rem; }
+.text-muted    { color: var(--gray-400); font-size: var(--text-sm); }
+.text-danger   { color: var(--color-error); }
+.row-actions   { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+.cat-name-cell { display: flex; align-items: center; gap: 0.5rem; }
+.child-indent  { color: var(--gray-300); font-size: 1rem; }
+.cat-name      { font-weight: 500; color: var(--gray-900); font-size: var(--text-sm); }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+}
+.modal-box {
+  background: white;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 480px;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--gray-100);
+}
+.modal-header h3 { font-size: var(--text-lg); font-weight: 600; margin: 0; }
+.modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gray-400);
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+}
+.modal-close:hover { color: var(--gray-700); background: var(--gray-100); }
+.modal-body   { padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.1rem; }
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--gray-100);
+}
+
+/* ── Toggle ──────────────────────────────────────────────────────────────── */
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+.toggle-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+.toggle-track {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--gray-300);
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle-input:checked + .toggle-track { background: var(--brand-primary); }
+.toggle-thumb {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle-input:checked + .toggle-track .toggle-thumb { transform: translateX(16px); }
+.toggle-label { font-size: var(--text-sm); color: var(--gray-700); }
+</style>

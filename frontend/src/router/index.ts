@@ -197,6 +197,24 @@ const router = createRouter({
       ],
     },
 
+    // ── Reports ───────────────────────────────────────────────────────────────
+    {
+      path: '/reports',
+      meta: { layout: 'app' },
+      children: [
+        {
+          path: 'sales',
+          name: 'reports.sales',
+          component: () => import('@/modules/reports/views/SalesReportView.vue'),
+        },
+        {
+          path: 'stock',
+          name: 'reports.stock',
+          component: () => import('@/modules/reports/views/StockReportView.vue'),
+        },
+      ],
+    },
+
     // ── Settings ──────────────────────────────────────────────────────────
     {
       path: '/settings',

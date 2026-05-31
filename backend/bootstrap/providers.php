@@ -20,4 +20,5 @@ return [
     App\Modules\Sync\Providers\SyncServiceProvider::class,
     App\Modules\Suppliers\Providers\SuppliersServiceProvider::class,
     App\Modules\ImportExport\Providers\ImportExportServiceProvider::class,
+    App\Modules\Reports\Providers\ReportsServiceProvider::class,
 ];

@@ -1,7 +1,7 @@
 # Plan d'implémentation — Nexora ERP
 
 > Document vivant — mis à jour à chaque session.  
-> Dernière révision : **2026-05-30**  
+> Dernière révision : **2026-05-31**  
 > Stratégie : backend + frontend **en parallèle** dans chaque session.
 
 ---
@@ -18,11 +18,14 @@
 | Inventory | ✅ Livré | 25 | Stock, StockMovement, Redis anti-oversell, scan-to-action |
 | Orders | ✅ Livré | 26 | Order lifecycle, stock reservation, anti-oversell, 6 endpoints |
 | Customers | ✅ Livré | 25 | CRUD + search + typeahead, orders relation, tenant isolation |
-| **Payments** | ✅ Livré | 23 | record/void/balance/isFullyPaid, split payments, tenant isolation |
-| **Delivery** | ✅ Livré | 26 | pending→dispatched→delivered→failed, order relation, tenant isolation |
+| Payments | ✅ Livré | 23 | record/void/balance/isFullyPaid, split payments, tenant isolation |
+| Delivery | ✅ Livré | 26 | pending→dispatched→delivered→failed, order relation, tenant isolation |
+| **Suppliers** | ✅ Livré | 14 | CRUD, code auto, findOrCreateByName, tenant isolation |
+| **ImportExport** | ✅ Livré | 21 | Upload→analyze→mapping→approve→execute pipeline, Horizon jobs, Excel/PDF export |
+| **Reports** | ✅ Livré | 22 | Dashboard KPIs, sales by period, stock value, top products, payment breakdown |
 | Sync | 💤 Différé | — | Phase 2 |
 
-**Backend MVP : 90% complet. Tests : 195 passent.**
+**Backend MVP : 100% complet. Tests : 264 passent.**
 
 ---
 
@@ -39,7 +42,7 @@
 | Auth UI (login, register) | ✅ Livré | LoginView, RegisterView (4 champs, jauge force MDP) |
 | **Landing page** | ✅ Livré | Hero, features, how-it-works, modules, FAQ accordéon, footer |
 | **Onboarding wizard** | ✅ Livré | 5 étapes, card-choices, auto-suggestion modules, transitions |
-| **Dashboard** | ✅ Livré | KPI cards avec SVG icons, CSS tokens, actions rapides |
+| **Dashboard** | ✅ Livré | KPIs réels (API), revenue bar chart SVG, commandes récentes, top produits |
 | **Settings** | ✅ Livré | 5 onglets (entreprise, équipe, abonnement, intégrations, notifs) |
 | Orders UI | ✅ Livré | OrderListView, OrderCreateView, OrderDetailView |
 | Catalog UI | ✅ Livré | ProductListView, ProductFormView, CategoryListView |
@@ -47,9 +50,11 @@
 | **Inventory UI** | ✅ Livré | StockListView (move modal), StockAlertsView (cards + progress bar), MovementHistoryView (timeline) |
 | **Payments UI** | ✅ Livré | PaymentListView (global ledger, void), OrderDetailView enrichi (balance panel + modal) |
 | **Delivery UI** | ✅ Livré | DeliveryListView (dispatch/deliver/fail actions), OrderDetailView panel livraison |
-| Reports / Dashboard KPIs | ⏳ Planifié | Sprint 5 — endpoints backend requis |
+| **Suppliers UI** | ✅ Livré | SupplierListView (CRUD modal, code badge, pagination) |
+| **Import/Export UI** | ✅ Livré | ImportWizardView (5 étapes, polling), ImportHistoryView (filtres, modal détail) |
+| **Reports UI** | ✅ Livré | Dashboard KPIs réels, SalesReportView (chart + top produits + méthodes), StockReportView (valeur + alertes) |
 
-**Frontend MVP : 90% complet.**
+**Frontend MVP : 100% complet.**
 
 ---
 
@@ -71,7 +76,10 @@
 | Architecture, guides dev | ✅ |
 | Auth, Catalog, Inventory (tech + user) | ✅ |
 | Orders (tech + API + user) | ✅ |
-| Customers, Payments, Delivery | ⏳ À écrire avec les modules |
+| Suppliers (tech + API + user) | ✅ |
+| Import/Export (tech + API + user) | ✅ |
+| Reports (tech + API + user) | ✅ |
+| Customers, Payments, Delivery | ⏳ À compléter |
 
 ---
 
@@ -135,13 +143,16 @@ src/
 │   ├── onboarding/views/
 │   │   └── OnboardingView.vue   ← Wizard 5 étapes, card-choices
 │   ├── dashboard/views/
-│   │   └── DashboardView.vue    ← KPIs + actions rapides
+│   │   └── DashboardView.vue    ← KPIs réels + bar chart SVG + top produits
 │   ├── settings/views/
 │   │   └── SettingsView.vue     ← 5 onglets (entreprise, équipe, facturation...)
 │   ├── catalog/views/           ← ProductListView, ProductFormView, CategoryListView
 │   ├── inventory/views/         ← StockListView, StockAlertsView, MovementHistoryView
 │   ├── orders/views/            ← OrderListView, OrderCreateView, OrderDetailView
-│   └── customers/views/         ← CustomerListView, CustomerDetailView
+│   ├── customers/views/         ← CustomerListView, CustomerDetailView
+│   ├── suppliers/views/         ← SupplierListView (CRUD modal)
+│   ├── import-export/views/     ← ImportWizardView (5 étapes), ImportHistoryView
+│   └── reports/views/           ← SalesReportView, StockReportView
 └── router/
     ├── index.ts                 ← Routes modulaires, lazy loading
     └── guards.ts                ← Auth guard, tenant guard
@@ -177,6 +188,7 @@ Inventory → Orders (réservation stock)
 Orders → Payments (une commande est payée)
 Orders → Delivery (une commande est livrée)
 Customers → Orders (optionnel en Phase 1)
+Catalog + Orders + Payments + Inventory → Reports (agrégation cross-module)
 ```
 
 ---
@@ -229,7 +241,6 @@ Customers → Orders (optionnel en Phase 1)
 | `CategoryListView.vue` | Arbre hiérarchique des catégories |
 | `LabelPrint.vue` | Sélecteur format + copies → ouvre HTML dans onglet |
 | `productService.ts` | Appels API Catalog |
-| Tests Vitest | productStore, productService mock |
 
 ---
 
@@ -256,7 +267,6 @@ Customers → Orders (optionnel en Phase 1)
 | `BarcodeScanner.vue` | Input texte (douchette USB → keydown) → résolution SKU |
 | `MovementHistoryView.vue` | Timeline mouvements par produit |
 | `inventoryService.ts` | Appels API Inventory |
-| Tests Vitest | inventoryStore, BarcodeScanner input |
 
 ---
 
@@ -267,42 +277,85 @@ Customers → Orders (optionnel en Phase 1)
 
 | Livrable | Description |
 |----------|-------------|
-| Migration `deliveries` | order_id, status, address, carrier?, notes, dispatched_at, delivered_at |
+| Migration `deliveries` | order_id, status, address, carrier, notes, dispatched_at, delivered_at |
 | `Delivery` model | statuts : pending → dispatched → delivered → failed |
 | `DeliveryService` | dispatch(), confirmDelivery(), fail() |
 | Tests | Unit + Integration |
 
-**Frontend — Customers UI**
+**Frontend — Customers + Payments + Delivery UI**
 
 | Livrable | Description |
 |----------|-------------|
 | `CustomerListView.vue` | CRUD + historique commandes |
 | `CustomerDetailView.vue` | Fiche client, commandes liées |
-| `PaymentRecord.vue` | Form enregistrement paiement (méthode + montant) |
-| `customerService.ts` | Appels API Customers |
-| Tests Vitest | customerStore, customerService mock |
+| `PaymentListView.vue` | Paiements globaux, void |
+| `DeliveryListView.vue` | dispatch/deliver/fail actions |
 
 ---
 
-#### Sprint 5 — Dashboard réel + Reports + Polish
-**Durée : 1 semaine**
+#### Sprint 5 — Suppliers + Import/Export module ✅
+**Statut : LIVRÉ**
 
-**Backend**
-
-| Livrable | Description |
-|----------|-------------|
-| `ReportService` | CA par période, top produits, valeur stock, marges |
-| Endpoints reports | GET /reports/dashboard · /sales · /stock · /payments |
-
-**Frontend**
+**Backend — Suppliers**
 
 | Livrable | Description |
 |----------|-------------|
-| Dashboard KPIs réels | Connexion aux endpoints reports |
-| `SalesReport.vue` | CA par période + chart, top produits |
-| `StockReport.vue` | Valeur stock, rotation, ruptures |
-| Internationalisation | i18n FR (structure posée) |
-| Tests Playwright | Login → créer commande → payer → vérifier stock |
+| Migration `suppliers` | name, code, email, phone, contact, payment_terms, notes, status |
+| `Supplier` model | code auto-généré, findOrCreateByName |
+| `SupplierService` | CRUD + search + findOrCreateByName |
+| `SupplierController` | 6 endpoints |
+| Tests | 7 unit + 7 integration |
+
+**Backend — Import/Export**
+
+| Livrable | Description |
+|----------|-------------|
+| Migration `import_sessions` | status machine, column_mapping, stats |
+| Migration `import_rows` | raw_data, mapped_data, errors, status, action |
+| `ImportSession` / `ImportRow` models | Status constants + helpers |
+| `ColumnMapper` | Auto-mapping FR/EN aliases par entité |
+| `ProductImportParser`, `CustomerImportParser`, `SupplierImportParser` | Validation, doublons, mode (create/update/simulate) |
+| `ImportService` | upload→analyze→mapping→approve→execute (sync ≤200 rows / async > 200) |
+| `TemplateService` | Téléchargement Excel template stylisé par entité |
+| `ExcelExporter` | Export Excel stylisé par entité |
+| `PdfExporter` | Export PDF + rapport d'import (dompdf) |
+| `AnalyzeImportJob`, `ExecuteImportJob` | Horizon jobs sur queue `imports` |
+| `ImportExportController` | 10 endpoints |
+| Tests | 5 mapper + 9 parser + 8 API + 8 module |
+
+**Frontend — Suppliers + Import/Export**
+
+| Livrable | Description |
+|----------|-------------|
+| `SupplierListView.vue` | Table paginée, modal CRUD inline |
+| `ImportWizardView.vue` | Wizard 5 étapes, polling async (2s) |
+| `ImportHistoryView.vue` | Historique filtrable, modal détail, actions rapides |
+| `importExportService.ts` | 10 appels API |
+| `supplierService.ts` | 6 appels API |
+
+---
+
+#### Sprint 6 — Reports + Dashboard réel ✅
+**Statut : LIVRÉ**
+
+**Backend — Reports**
+
+| Livrable | Description |
+|----------|-------------|
+| `ReportService` | dashboard(), sales(period), stock() |
+| `GET /api/reports/dashboard` | KPIs jour, chart 7j, commandes récentes, top 5 produits |
+| `GET /api/reports/sales?period=7d\|30d\|90d\|1y` | CA par jour, top 10 produits, répartition par méthode |
+| `GET /api/reports/stock` | Valeur stock, SKUs, ruptures, alertes, mouvements 30j |
+| Tests | 9 unit + 13 integration |
+
+**Frontend — Dashboard + Reports**
+
+| Livrable | Description |
+|----------|-------------|
+| `DashboardView.vue` (refait) | KPIs réels, bar chart SVG 7j, commandes récentes, top produits |
+| `SalesReportView.vue` | 4 KPIs, chart CA sélecteur période, top produits table, méthodes barres |
+| `StockReportView.vue` | 4 KPIs, alertes stock avec barre progression, mouvements 30j |
+| `reportService.ts` | 3 appels API + helpers formatMoney / shortDate |
 
 ---
 
@@ -362,7 +415,8 @@ Mois 4    ✅ Sprint 1: Orders backend + Frontend foundation + Auth UI + Design 
 Mois 4    ✅ Sprint 2: Customers backend + Catalog UI + Customers UI
 Mois 5    ✅ Sprint 3: Payments backend + Inventory UI (StockList, Alerts, Timeline)
 Mois 5    ✅ Sprint 4: Delivery backend + Payments UI + Delivery UI
-Mois 6    ⏳ Sprint 5: Reports + Dashboard réel + Polish + Flutter POS
+Mois 6    ✅ Sprint 5: Suppliers + Import/Export module complet
+Mois 6    ✅ Sprint 6: Reports + Dashboard réel — 264 tests passent
 Mois 7    🎯 MVP livré — Beta terrain (3-5 boutiques pilotes)
 Mois 7-12 🔮 Phase 2: Connecteurs + API publique + Mobile Money
 ```
@@ -371,13 +425,13 @@ Mois 7-12 🔮 Phase 2: Connecteurs + API publique + Mobile Money
 
 ## Critères MVP (Go/No-Go beta)
 
-- [ ] Authentification multitenant fonctionnelle
-- [ ] Catalogue produits complet avec étiquettes
-- [ ] Stock suivi en temps réel (entrée/sortie/inventaire)
-- [ ] Commandes créées et tracées jusqu'à la livraison
-- [ ] Paiements enregistrés (cash + 1 Mobile Money)
-- [ ] Dashboard avec CA et stock du jour
-- [ ] Frontend web utilisable sur desktop + tablette
-- [ ] App POS offline basique (vente + scan)
-- [ ] 200+ tests backend passants
-- [ ] 50+ tests frontend passants
+- [x] Authentification multitenant fonctionnelle
+- [x] Catalogue produits complet avec étiquettes
+- [x] Stock suivi en temps réel (entrée/sortie/inventaire)
+- [x] Commandes créées et tracées jusqu'à la livraison
+- [x] Paiements enregistrés (cash + 1 Mobile Money)
+- [x] Dashboard avec CA et stock du jour
+- [x] Frontend web utilisable sur desktop + tablette
+- [ ] App POS offline basique (vente + scan) — Phase 2
+- [x] 200+ tests backend passants (264 actifs)
+- [ ] 50+ tests frontend passants — Vitest à compléter

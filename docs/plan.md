@@ -1,7 +1,7 @@
 # Plan d'implémentation — Nexora ERP
 
 > Document vivant — mis à jour à chaque session.  
-> Dernière révision : **2026-05-31**  
+> Dernière révision : **2026-05-31 (Sprint 7A)**  
 > Stratégie : backend + frontend **en parallèle** dans chaque session.
 
 ---
@@ -23,9 +23,11 @@
 | **Suppliers** | ✅ Livré | 14 | CRUD, code auto, findOrCreateByName, tenant isolation |
 | **ImportExport** | ✅ Livré | 21 | Upload→analyze→mapping→approve→execute pipeline, Horizon jobs, Excel/PDF export |
 | **Reports** | ✅ Livré | 22 | Dashboard KPIs, sales by period, stock value, top products, payment breakdown |
+| **Billing** | ✅ Livré | 6 | Plan model (starter/pro/enterprise), Subscription lifecycle (trialing/active/suspended/cancelled/pending_approval), SubscriptionService |
+| **Platform** | ✅ Livré | 18 | ErpModule registry, TenantModule activation, AuditLog, ModuleRegistryService, AuditService, Admin back-office API (5 controllers) |
 | Sync | 💤 Différé | — | Phase 2 |
 
-**Backend MVP : 100% complet. Tests : 264 passent.**
+**Backend MVP : 100% complet. Tests : 293 passent.**
 
 ---
 
@@ -53,6 +55,7 @@
 | **Suppliers UI** | ✅ Livré | SupplierListView (CRUD modal, code badge, pagination) |
 | **Import/Export UI** | ✅ Livré | ImportWizardView (5 étapes, polling), ImportHistoryView (filtres, modal détail) |
 | **Reports UI** | ✅ Livré | Dashboard KPIs réels, SalesReportView (chart + top produits + méthodes), StockReportView (valeur + alertes) |
+| **Admin back-office** | ✅ Livré | AdminLayout (dark sidebar), AdminDashboardView (KPIs + recent), TenantListView (search/filter/suspend), ModuleListView (toggle visibility/status), PlanListView, AuditLogView |
 
 **Frontend MVP : 100% complet.**
 
@@ -164,9 +167,12 @@ src/
 meta.layout = undefined  →  <RouterView />  (page gère son propre shell)
 meta.layout = 'auth'     →  <AuthLayout>    (login, register)
 meta.layout = 'app'      →  <AppLayout>     (toutes les vues authentifiées)
+meta.layout = 'admin'    →  <AdminLayout>   (back-office super-admin uniquement)
 ```
 
 Pages sans layout (`meta.public: true` sans `meta.layout`) : landing, onboarding.
+
+Routes `/admin/*` nécessitent `meta.requiresSuperAdmin: true` — guard redirige vers `/dashboard` si non super-admin.
 
 ---
 
@@ -335,6 +341,87 @@ Catalog + Orders + Payments + Inventory → Reports (agrégation cross-module)
 
 ---
 
+#### Sprint 7A — SaaS billing, module registry, admin back-office ✅
+**Statut : LIVRÉ**
+
+**Backend — Billing module**
+
+| Livrable | Description |
+|----------|-------------|
+| `Plan` model + migration | starter (gratuit 14j), pro (15 000 XOF/mois), enterprise (custom) |
+| `Subscription` model + migration | Lifecycle : trialing → active → suspended → cancelled → pending_approval |
+| `SubscriptionService` | createStarter, current, changePlan, suspend, reactivate |
+| `BillingServiceProvider` | Auto-charge migrations et routes du module Billing |
+
+**Backend — Platform module**
+
+| Livrable | Description |
+|----------|-------------|
+| `ErpModule` + migration | 10 modules ERP configurables en DB (code, status, is_core, route_prefix, color) |
+| `TenantModule` + migration | Activation par tenant (active/inactive/suspended/trial) |
+| `AuditLog` + migration | Log immuable (pas d'updated_at), toutes actions sensibles |
+| `plan_modules` pivot | Quels modules sont inclus dans quel plan |
+| `ModuleRegistryService` | listForTenant, activeCodes, tenantHasModule, activate, deactivate, activatePlanModules |
+| `AuditService` | logFromRequest, logCreated/Updated/Deleted, logLogin/Logout, logModuleActivated, logPlanChanged |
+| `RequireAdmin` middleware | Vérifie `is_super_admin`, retourne 403 sinon |
+| `AdminDashboardController` | Stats globales (tenants, users, plans, abonnements par statut, logs récents) |
+| `AdminTenantController` | Liste/détail/suspend/réactiver/changePlan tenants |
+| `AdminModuleController` | Liste modules + stats activations, activer/désactiver pour un tenant |
+| `AdminPlanController` | Liste plans, audit log paginé |
+| `ModulesController` | `GET /api/me/modules` — retourne modules actifs du tenant courant |
+| `PlatformServiceProvider` | Auto-charge migrations + routes Platform |
+
+**Backend — Registration fix (P0)**
+
+| Livrable | Description |
+|----------|-------------|
+| `RegisterRequest` | Accepte `company_name` au lieu de `tenant_id` |
+| `AuthController::register()` | Transaction atomique : provision tenant → créer user → assignRole('admin') → createStarter subscription |
+| `Tenant` model | Ajoute `subscription_status` dans `$fillable`, relation `users()` HasMany |
+
+**Backend — Seeders**
+
+| Livrable | Description |
+|----------|-------------|
+| `RolesAndPermissionsSeeder` | 5 rôles (super-admin/admin/manager/member/viewer), 65 permissions par module et action |
+| `PlansSeeder` | starter, pro, enterprise avec prix et features |
+| `ErpModulesSeeder` | 10 modules avec icônes SVG, couleurs, catégories |
+| `PlanModulesSeeder` | Matrice plan ↔ modules inclus |
+
+**Frontend — Admin back-office**
+
+| Livrable | Description |
+|----------|-------------|
+| `AdminLayout.vue` | Dark sidebar (#0f172a), topbar sticky, nav 5 entrées, badge "Super Admin" |
+| `AdminDashboardView.vue` | KPI grid, abonnements par statut, répartition plans, derniers tenants, activité récente |
+| `TenantListView.vue` | Table paginée avec filtres search/status/plan, actions suspend/réactiver |
+| `ModuleListView.vue` | Grid de cards modules, toggle visibility, sélecteur statut, compteur activations |
+| `PlanListView.vue` | Cards plans avec prix, limites, features |
+| `AuditLogView.vue` | Table paginée des actions sensibles |
+| `adminService.ts` | API complète admin (dashboard, tenants CRUD, modules, plans, audit logs) |
+
+**Frontend — Registration fix (P0)**
+
+| Livrable | Description |
+|----------|-------------|
+| `authService.ts` | Ajout `register(payload: RegisterPayload)` |
+| `auth/types.ts` | Ajout `RegisterPayload`, `ErpModule`, `ModulesResponse`, `subscription_status` dans `Tenant` |
+| `RegisterView.vue` | Appelle vraiment l'API (était `TODO + fake delay`) |
+| `auth store` | Ajout `setToken()` + `setUser()` pour flow registration |
+| `router/guards.ts` | Vérifie `requiresSuperAdmin`, redirige non-admins |
+| `/admin/*` routes | 5 routes admin avec `meta.requiresSuperAdmin: true` + layout `admin` |
+
+**Tests (293/293)**
+
+| Suite | Tests | Description |
+|-------|-------|-------------|
+| `SubscriptionServiceTest` | 6 | createStarter, trialing status, module activation, current, suspend, changePlan |
+| `ModuleRegistryServiceTest` | 9 | listForTenant, activeCodes, tenantHasModule (core/active/trial), activate, deactivate (core protection), activatePlanModules |
+| `RegistrationTest` | 5 | Full flow, company_name requis, email unique, password fort, login post-register |
+| `AdminApiTest` | 9 | Access control (403/401), dashboard, list/show tenants, search, suspend, modules, plans, audit |
+
+---
+
 #### Sprint 6 — Reports + Dashboard réel ✅
 **Statut : LIVRÉ**
 
@@ -417,6 +504,7 @@ Mois 5    ✅ Sprint 3: Payments backend + Inventory UI (StockList, Alerts, Time
 Mois 5    ✅ Sprint 4: Delivery backend + Payments UI + Delivery UI
 Mois 6    ✅ Sprint 5: Suppliers + Import/Export module complet
 Mois 6    ✅ Sprint 6: Reports + Dashboard réel — 264 tests passent
+Mois 6    ✅ Sprint 7A: SaaS billing + module registry + admin back-office — 293 tests passent
 Mois 7    🎯 MVP livré — Beta terrain (3-5 boutiques pilotes)
 Mois 7-12 🔮 Phase 2: Connecteurs + API publique + Mobile Money
 ```
@@ -433,5 +521,5 @@ Mois 7-12 🔮 Phase 2: Connecteurs + API publique + Mobile Money
 - [x] Dashboard avec CA et stock du jour
 - [x] Frontend web utilisable sur desktop + tablette
 - [ ] App POS offline basique (vente + scan) — Phase 2
-- [x] 200+ tests backend passants (264 actifs)
+- [x] 200+ tests backend passants (293 actifs)
 - [ ] 50+ tests frontend passants — Vitest à compléter

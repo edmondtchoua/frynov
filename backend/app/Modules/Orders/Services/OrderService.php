@@ -12,12 +12,16 @@ use App\Modules\Orders\Exceptions\OrderNotFoundException;
 use App\Modules\Orders\Exceptions\OrderStateException;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderLine;
+use App\Modules\Platform\Services\AuditService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class OrderService
 {
-    public function __construct(private readonly StockService $stockService) {}
+    public function __construct(
+        private readonly StockService $stockService,
+        private readonly AuditService $auditService,
+    ) {}
 
     // ── Queries ────────────────────────────────────────────────────────────
 
@@ -54,7 +58,7 @@ class OrderService
      */
     public function create(array $data, string $tenantId, string $userId): Order
     {
-        return DB::transaction(function () use ($data, $tenantId, $userId) {
+        $order = DB::transaction(function () use ($data, $tenantId, $userId) {
             $number = $this->nextOrderNumber($tenantId);
 
             $order = Order::create([
@@ -95,6 +99,15 @@ class OrderService
 
             return $order->load('lines');
         });
+
+        $this->auditService->log(
+            action: 'order.created',
+            tenantId: $order->tenant_id,
+            userId: $userId,
+            subject: $order,
+        );
+
+        return $order;
     }
 
     /**
@@ -129,7 +142,16 @@ class OrderService
             ]);
         });
 
-        return $order->fresh('lines');
+        $confirmed = $order->fresh('lines');
+
+        $this->auditService->log(
+            action: 'order.confirmed',
+            tenantId: $confirmed->tenant_id,
+            userId: $userId,
+            subject: $confirmed,
+        );
+
+        return $confirmed;
     }
 
     /**
@@ -174,7 +196,16 @@ class OrderService
             ]);
         });
 
-        return $order->fresh('lines');
+        $fulfilled = $order->fresh('lines');
+
+        $this->auditService->log(
+            action: 'order.fulfilled',
+            tenantId: $fulfilled->tenant_id,
+            userId: $userId,
+            subject: $fulfilled,
+        );
+
+        return $fulfilled;
     }
 
     /**
@@ -187,6 +218,8 @@ class OrderService
         if (! $order->canBeCancelled()) {
             throw new OrderStateException($order->id, 'cancel', $order->status);
         }
+
+        $oldStatus = $order->status;
 
         DB::transaction(function () use ($order, $userId) {
             if ($order->isConfirmed()) {
@@ -209,7 +242,17 @@ class OrderService
             ]);
         });
 
-        return $order->fresh('lines');
+        $cancelled = $order->fresh('lines');
+
+        $this->auditService->log(
+            action: 'order.cancelled',
+            tenantId: $cancelled->tenant_id,
+            userId: $userId,
+            subject: $cancelled,
+            oldValues: ['status' => $oldStatus],
+        );
+
+        return $cancelled;
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────

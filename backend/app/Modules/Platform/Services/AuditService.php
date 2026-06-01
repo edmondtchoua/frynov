@@ -23,9 +23,13 @@ class AuditService
         /** @var ?User $user */
         $user = $request->user();
 
+        $actor     = auth()->user();
+        $actorRole = $actor?->getRoleNames()->first() ?? 'system';
+
         return AuditLog::create([
             'user_id'      => $user?->id,
             'tenant_id'    => $user?->tenant_id,
+            'actor_role'   => $actorRole,
             'action'       => $action,
             'subject_type' => $subject ? get_class($subject) : null,
             'subject_id'   => $subject?->getKey(),
@@ -48,10 +52,12 @@ class AuditService
         ?array $oldValues = null,
         ?array $newValues = null,
         ?string $notes = null,
+        ?string $actorRole = null,
     ): AuditLog {
         return AuditLog::create([
             'user_id'      => $userId,
             'tenant_id'    => $tenantId,
+            'actor_role'   => $actorRole ?? 'system',
             'action'       => $action,
             'subject_type' => $subject ? get_class($subject) : null,
             'subject_id'   => $subject?->getKey(),

@@ -94,9 +94,10 @@ class WorkspaceController extends Controller
         }
 
         if ($request->has('role')) {
-            $newRole = $request->input('role');
+            $newRole  = $request->input('role');
+            $newRoles = [$newRole];
 
-            DB::transaction(function () use ($user, $newRole, $tenant, &$response) {
+            DB::transaction(function () use ($user, $newRole, $newRoles, $tenant, $request, &$response) {
                 // Guard: cannot demote the only admin
                 if ($user->hasRole('admin') && $newRole !== 'admin') {
                     $adminCount = User::where('tenant_id', $tenant->id)
@@ -111,9 +112,22 @@ class WorkspaceController extends Controller
                     }
                 }
 
+                $oldRoles = $user->getRoleNames();
+
                 // Scope role update to the tenant (Spatie teams)
                 app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
-                $user->syncRoles([$newRole]);
+                $user->syncRoles($newRoles);
+
+                try {
+                    app(\App\Modules\Platform\Services\AuditService::class)->logFromRequest(
+                        $request,
+                        'workspace.role_changed',
+                        $user,
+                        ['old_roles' => $oldRoles],
+                        ['new_roles' => $newRoles, 'changed_by' => $request->user()->id],
+                        'medium',
+                    );
+                } catch (\Throwable) {}
             });
 
             if (isset($response)) {
@@ -167,6 +181,17 @@ class WorkspaceController extends Controller
             $user->delete(); // soft delete — blocks login
             $message = 'Utilisateur désactivé.';
         }
+
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->logFromRequest(
+                $request,
+                $user->trashed() ? 'workspace.user_deactivated' : 'workspace.user_activated',
+                $user,
+                [],
+                ['toggled_by' => $request->user()->id],
+                'medium',
+            );
+        } catch (\Throwable) {}
 
         return response()->json([
             'data'    => $this->userToArray($user->refresh()),

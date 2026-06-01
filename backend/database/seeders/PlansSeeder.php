@@ -20,6 +20,9 @@ class PlansSeeder extends Seeder
                 'max_users'             => 3,
                 'max_products'          => 200,
                 'max_monthly_orders'    => 100,
+                'max_agents'            => 3,
+                'max_branches'          => 1,
+                'max_warehouses'        => 1,
                 'trial_days'            => 14,
                 'features'              => [
                     'Tableau de bord',
@@ -42,6 +45,9 @@ class PlansSeeder extends Seeder
                 'max_users'             => 15,
                 'max_products'          => 5000,
                 'max_monthly_orders'    => 2000,
+                'max_agents'            => 10,
+                'max_branches'          => 3,
+                'max_warehouses'        => 3,
                 'trial_days'            => 14,
                 'features'              => [
                     'Tout le plan Starter',
@@ -68,6 +74,9 @@ class PlansSeeder extends Seeder
                 'max_users'             => 0,          // 0 = unlimited
                 'max_products'          => 0,
                 'max_monthly_orders'    => 0,
+                'max_agents'            => null,       // unlimited
+                'max_branches'          => null,
+                'max_warehouses'        => null,
                 'trial_days'            => 30,
                 'features'              => [
                     'Tout le plan Pro',

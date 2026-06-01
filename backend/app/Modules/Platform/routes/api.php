@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Platform\Http\Controllers\AdminAuditController;
 use App\Modules\Platform\Http\Controllers\AdminDashboardController;
 use App\Modules\Platform\Http\Controllers\AdminManualPaymentController;
 use App\Modules\Platform\Http\Controllers\AdminModuleController;
@@ -59,5 +60,6 @@ Route::middleware(['auth:sanctum', RequireAdmin::class])
         Route::delete('promotions/{promotion}', [AdminPromotionController::class, 'destroy'])->name('promotions.destroy');
 
         // Audit log
-        Route::get('audit-logs',            [AdminPlanController::class, 'auditLogs'])->name('audit-logs');
+        Route::get('audit-logs',              [AdminAuditController::class, 'index'])->name('audit-logs.index');
+        Route::post('audit-logs/verify-chain', [AdminAuditController::class, 'verifyChain'])->name('audit-logs.verify-chain');
     });

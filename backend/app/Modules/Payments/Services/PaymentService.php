@@ -39,7 +39,7 @@ class PaymentService
                 }
             }
 
-            return Payment::create([
+            $payment = Payment::create([
                 'tenant_id'       => $tenantId,
                 'order_id'        => $data['order_id']        ?? null,
                 'amount_cents'    => $data['amount_cents'],
@@ -51,6 +51,20 @@ class PaymentService
                 'performed_by'    => $userId,
                 'idempotency_key' => $data['idempotency_key'] ?? null,
             ]);
+
+            try {
+                app(\App\Modules\Platform\Services\AuditService::class)->log(
+                    'payment.recorded',
+                    $tenantId,
+                    $userId,
+                    $payment,
+                    [],
+                    ['amount_cents' => $payment->amount_cents, 'method' => $payment->method, 'order_id' => $payment->order_id],
+                    'low',
+                );
+            } catch (\Throwable) {}
+
+            return $payment;
         });
     }
 

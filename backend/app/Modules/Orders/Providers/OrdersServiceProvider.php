@@ -4,6 +4,7 @@ namespace App\Modules\Orders\Providers;
 
 use App\Modules\Inventory\Services\StockService;
 use App\Modules\Orders\Services\OrderService;
+use App\Modules\Platform\Services\AuditService;
 use App\Shared\ModuleServiceProvider;
 
 class OrdersServiceProvider extends ModuleServiceProvider
@@ -14,7 +15,10 @@ class OrdersServiceProvider extends ModuleServiceProvider
     public function register(): void
     {
         $this->app->singleton(OrderService::class, function ($app) {
-            return new OrderService($app->make(StockService::class));
+            return new OrderService(
+                $app->make(StockService::class),
+                $app->make(AuditService::class),
+            );
         });
     }
 

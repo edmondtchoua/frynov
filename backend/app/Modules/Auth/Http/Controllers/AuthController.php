@@ -10,6 +10,7 @@ use App\Modules\Auth\Http\Resources\UserResource;
 use App\Modules\Auth\Repositories\UserRepositoryInterface;
 use App\Modules\Auth\Services\AuthService;
 use App\Modules\Billing\Services\SubscriptionService;
+use App\Modules\Platform\Services\AuditService;
 use App\Modules\Platform\Services\ModuleRegistryService;
 use App\Modules\Tenants\Services\TenantProvisioningService;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +26,7 @@ class AuthController extends Controller
         private readonly TenantProvisioningService $provisioner,
         private readonly SubscriptionService $subscriptions,
         private readonly ModuleRegistryService $moduleRegistry,
+        private readonly AuditService $audit,
     ) {}
 
     public function login(LoginRequest $request): JsonResponse
@@ -36,10 +38,25 @@ class AuthController extends Controller
                 $request->input('tenant_id') ?? $request->attributes->get('tenant')?->id,
             );
         } catch (InvalidCredentialsException) {
+            $this->audit->log(
+                'auth.login_failed',
+                null,
+                null,
+                null,
+                null,
+                ['email' => $request->email, 'ip' => $request->ip()],
+                'medium',
+            );
+
             return response()->json(['message' => 'Identifiants invalides.'], 401);
         } catch (TenantInactiveException) {
             return response()->json(['message' => 'Compte suspendu ou inactif.'], 403);
         }
+
+        $this->audit->logFromRequest($request, 'auth.login', $user, [], [
+            'email'     => $user->email,
+            'tenant_id' => $user->tenant_id,
+        ], 'low');
 
         return response()->json([
             'token' => $token,
@@ -121,6 +138,8 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
+        $this->audit->logFromRequest($request, 'auth.logout', $request->user(), [], [], 'low');
+
         $this->authService->logout($request->user());
 
         return response()->json(['message' => 'Déconnexion réussie.']);

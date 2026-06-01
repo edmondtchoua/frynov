@@ -1,113 +1,124 @@
 <?php
-
 namespace App\Modules\Billing\Services;
 
-use App\Models\User;
-use App\Modules\Billing\Exceptions\QuotaExceededException;
 use App\Modules\Billing\Models\Plan;
-use App\Modules\Billing\Models\Subscription;
-use App\Modules\Catalog\Models\Product;
-use App\Modules\Orders\Models\Order;
 use App\Modules\Tenants\Models\Tenant;
+use App\Models\User;
+use App\Modules\Inventory\Models\Warehouse;
+use Illuminate\Support\Facades\DB;
 
+/**
+ * Sprint 12 — Runtime quota enforcement service.
+ * Called before creating resources that have plan-level limits.
+ * Throws \DomainException when a quota is exceeded.
+ */
 class QuotaService
 {
-    public const RESOURCE_USERS    = 'users';
-    public const RESOURCE_PRODUCTS = 'products';
-    public const RESOURCE_ORDERS   = 'orders';
+    /** Check: can this tenant add another user? */
+    public function assertCanAddUser(Tenant $tenant): void
+    {
+        $plan = $this->plan($tenant);
+        if ($plan?->max_users === null) return;
+
+        $current = User::where('tenant_id', $tenant->id)->withTrashed(false)->count();
+        if ($current >= $plan->max_users) {
+            throw new \DomainException(
+                "Limite atteinte : votre plan {$plan->name} autorise au maximum {$plan->max_users} utilisateurs. "
+                . "Mettez à niveau votre abonnement pour ajouter davantage de membres."
+            );
+        }
+    }
+
+    /** Check: can this tenant add another warehouse/branch? */
+    public function assertCanAddWarehouse(Tenant $tenant): void
+    {
+        $plan = $this->plan($tenant);
+        if ($plan?->max_warehouses === null) return;
+
+        $current = Warehouse::where('tenant_id', $tenant->id)->count();
+        if ($current >= $plan->max_warehouses) {
+            throw new \DomainException(
+                "Limite atteinte : votre plan {$plan->name} autorise au maximum {$plan->max_warehouses} entrepôt(s). "
+                . "Mettez à niveau votre abonnement pour ajouter davantage d'entrepôts."
+            );
+        }
+    }
+
+    /** Check: can this tenant add another agent-role user? */
+    public function assertCanAddAgent(Tenant $tenant): void
+    {
+        $plan = $this->plan($tenant);
+        if ($plan?->max_agents === null) return;
+
+        // Count users with agent-type roles (agent, cashier, commercial, delivery)
+        $current = User::where('tenant_id', $tenant->id)
+            ->whereHas('roles', fn ($q) => $q->whereIn('name', ['agent', 'cashier', 'commercial', 'delivery']))
+            ->count();
+
+        if ($current >= $plan->max_agents) {
+            throw new \DomainException(
+                "Limite atteinte : votre plan {$plan->name} autorise au maximum {$plan->max_agents} agent(s) terrain. "
+                . "Mettez à niveau votre abonnement pour ajouter davantage d'agents."
+            );
+        }
+    }
+
+    /** Check: monthly order count quota. */
+    public function assertCanCreateOrder(Tenant $tenant): void
+    {
+        $plan = $this->plan($tenant);
+        if ($plan?->max_monthly_orders === null) return;
+
+        $current = DB::table('orders')
+            ->where('tenant_id', $tenant->id)
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
+
+        if ($current >= $plan->max_monthly_orders) {
+            throw new \DomainException(
+                "Limite mensuelle atteinte : votre plan {$plan->name} autorise {$plan->max_monthly_orders} commandes par mois."
+            );
+        }
+    }
+
+    /** Check: product count quota. */
+    public function assertCanAddProduct(Tenant $tenant): void
+    {
+        $plan = $this->plan($tenant);
+        if ($plan?->max_products === null) return;
+
+        $current = DB::table('products')
+            ->where('tenant_id', $tenant->id)
+            ->whereNull('deleted_at')
+            ->count();
+
+        if ($current >= $plan->max_products) {
+            throw new \DomainException(
+                "Limite atteinte : votre plan {$plan->name} autorise au maximum {$plan->max_products} produits."
+            );
+        }
+    }
 
     /**
-     * Assert that the tenant is within quota for $resource.
-     *
-     * @throws QuotaExceededException when the plan limit is reached.
+     * Backwards-compatible check() method for EnforceQuota middleware.
+     * Routes to the correct assert method based on resource name.
+     * Resource names: 'users', 'products', 'orders', 'warehouses', 'agents'
      */
     public function check(Tenant $tenant, string $resource): void
     {
-        $limit = $this->limitFor($tenant, $resource);
-
-        if ($limit === null) {
-            return; // unlimited
-        }
-
-        $usage = $this->usageFor($tenant, $resource);
-
-        if ($usage >= $limit) {
-            throw new QuotaExceededException($resource, $limit, $usage);
-        }
-    }
-
-    /**
-     * Returns true when the tenant has not yet exhausted the quota.
-     */
-    public function isWithinLimit(Tenant $tenant, string $resource): bool
-    {
-        try {
-            $this->check($tenant, $resource);
-
-            return true;
-        } catch (QuotaExceededException) {
-            return false;
-        }
-    }
-
-    /**
-     * Returns the plan-imposed limit for $resource, or null when unlimited.
-     *
-     * A plan field of 0 or null is treated as unlimited.
-     */
-    public function limitFor(Tenant $tenant, string $resource): ?int
-    {
-        $plan = $this->activePlan($tenant);
-
-        if ($plan === null) {
-            return null;
-        }
-
-        $raw = match ($resource) {
-            self::RESOURCE_USERS    => $plan->max_users,
-            self::RESOURCE_PRODUCTS => $plan->max_products,
-            self::RESOURCE_ORDERS   => $plan->max_monthly_orders,
-            default                 => null,
-        };
-
-        return ($raw !== null && $raw > 0) ? $raw : null;
-    }
-
-    /**
-     * Returns the current resource count for the tenant.
-     *
-     * For orders, only the current calendar month is counted (rolling monthly quota).
-     */
-    public function usageFor(Tenant $tenant, string $resource): int
-    {
-        return match ($resource) {
-            self::RESOURCE_USERS => User::where('tenant_id', $tenant->id)->count(),
-
-            self::RESOURCE_PRODUCTS => Product::withoutTenantScope()
-                ->where('tenant_id', $tenant->id)
-                ->count(),
-
-            self::RESOURCE_ORDERS => Order::withoutTenantScope()
-                ->where('tenant_id', $tenant->id)
-                ->whereYear('created_at', now()->year)
-                ->whereMonth('created_at', now()->month)
-                ->count(),
-
-            default => 0,
+        match ($resource) {
+            'users'      => $this->assertCanAddUser($tenant),
+            'products'   => $this->assertCanAddProduct($tenant),
+            'orders'     => $this->assertCanCreateOrder($tenant),
+            'warehouses' => $this->assertCanAddWarehouse($tenant),
+            'agents'     => $this->assertCanAddAgent($tenant),
+            default      => null, // unknown resource — no-op
         };
     }
 
-    private function activePlan(Tenant $tenant): ?Plan
+    private function plan(Tenant $tenant): ?Plan
     {
-        $sub = Subscription::where('tenant_id', $tenant->id)
-            ->whereIn('status', [
-                Subscription::STATUS_ACTIVE,
-                Subscription::STATUS_TRIALING,
-            ])
-            ->with('plan')
-            ->latest()
-            ->first();
-
-        return $sub?->plan;
+        return Plan::where('code', $tenant->plan)->first();
     }
 }

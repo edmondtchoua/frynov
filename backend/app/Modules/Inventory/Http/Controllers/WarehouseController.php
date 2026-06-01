@@ -29,6 +29,7 @@ class WarehouseController extends Controller
             'sells_online' => 'boolean',
             'sort_order'   => 'integer',
         ]);
+        app(\App\Modules\Billing\Services\QuotaService::class)->assertCanAddWarehouse($request->user()->tenant);
         $warehouse = Warehouse::create([...$data, 'tenant_id' => $request->user()->tenant_id]);
         return response()->json(['data' => $warehouse], 201);
     }

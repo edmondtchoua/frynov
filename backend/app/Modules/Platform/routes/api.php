@@ -1,16 +1,19 @@
 <?php
 
 use App\Modules\Platform\Http\Controllers\AdminDashboardController;
+use App\Modules\Platform\Http\Controllers\AdminManualPaymentController;
 use App\Modules\Platform\Http\Controllers\AdminModuleController;
 use App\Modules\Platform\Http\Controllers\AdminPlanController;
+use App\Modules\Platform\Http\Controllers\AdminPromotionController;
 use App\Modules\Platform\Http\Controllers\AdminTenantController;
 use App\Modules\Platform\Http\Controllers\ModulesController;
 use App\Modules\Platform\Http\Middleware\RequireAdmin;
 use Illuminate\Support\Facades\Route;
 
-// ── Client API: active modules for the current tenant ─────────────────────────
+// ── Client API ────────────────────────────────────────────────────────────────
 Route::middleware(['auth:sanctum'])->group(function () {
-    Route::get('me/modules', [ModulesController::class, 'forCurrentTenant'])->name('me.modules');
+    Route::get('me/modules',       [ModulesController::class, 'forCurrentTenant'])->name('me.modules');
+    Route::get('me/subscription',  [ModulesController::class, 'currentSubscription'])->name('me.subscription');
 });
 
 // ── Admin back-office API ──────────────────────────────────────────────────────
@@ -41,6 +44,19 @@ Route::middleware(['auth:sanctum', RequireAdmin::class])
         Route::get('plans',                 [AdminPlanController::class, 'index'])->name('plans.index');
         Route::get('plans/{plan}',          [AdminPlanController::class, 'show'])->name('plans.show');
         Route::patch('plans/{plan}',        [AdminPlanController::class, 'update'])->name('plans.update');
+
+        // Manual payments (admin review)
+        Route::get('manual-payments',                                    [AdminManualPaymentController::class, 'index'])->name('manual-payments.index');
+        Route::get('manual-payments/{manualPayment}',                    [AdminManualPaymentController::class, 'show'])->name('manual-payments.show');
+        Route::post('manual-payments/{manualPayment}/approve',           [AdminManualPaymentController::class, 'approve'])->name('manual-payments.approve');
+        Route::post('manual-payments/{manualPayment}/reject',            [AdminManualPaymentController::class, 'reject'])->name('manual-payments.reject');
+
+        // Promotions
+        Route::get('promotions',            [AdminPromotionController::class, 'index'])->name('promotions.index');
+        Route::post('promotions',           [AdminPromotionController::class, 'store'])->name('promotions.store');
+        Route::get('promotions/{promotion}', [AdminPromotionController::class, 'show'])->name('promotions.show');
+        Route::patch('promotions/{promotion}', [AdminPromotionController::class, 'update'])->name('promotions.update');
+        Route::delete('promotions/{promotion}', [AdminPromotionController::class, 'destroy'])->name('promotions.destroy');
 
         // Audit log
         Route::get('audit-logs',            [AdminPlanController::class, 'auditLogs'])->name('audit-logs');

@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Shared\Traits\HasTenant;
 
 class Customer extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasTenant, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'tenant_id',
@@ -28,14 +29,14 @@ class Customer extends Model
         ];
     }
 
-    // ── Relations ─────────────────────────────────────────────────────────────
+    // â”€â”€ Relations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function orders(): HasMany
     {
         return $this->hasMany(\App\Modules\Orders\Models\Order::class);
     }
 
-    // ── Scopes ────────────────────────────────────────────────────────────────
+    // â”€â”€ Scopes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function scopeForTenant(Builder $query, string $tenantId): Builder
     {

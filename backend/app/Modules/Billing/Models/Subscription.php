@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Shared\Traits\HasTenant;
 
 class Subscription extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasTenant, HasUuids, SoftDeletes;
 
     public const STATUS_TRIALING           = 'trialing';
     public const STATUS_ACTIVE             = 'active';
@@ -46,7 +47,7 @@ class Subscription extends Model
         ];
     }
 
-    // ── State helpers ─────────────────────────────────────────────────────────
+    // â”€â”€ State helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function isActive(): bool
     {
@@ -71,7 +72,7 @@ class Subscription extends Model
         return (int) now()->diffInDays($this->trial_ends_at, false);
     }
 
-    // ── Relations ─────────────────────────────────────────────────────────────
+    // â”€â”€ Relations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function tenant(): BelongsTo
     {

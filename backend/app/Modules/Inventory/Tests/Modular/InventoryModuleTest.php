@@ -65,7 +65,12 @@ class InventoryModuleTest extends TestCase
 
         // ── 5. Check audit trail: 4 movements recorded ────────────────────
         $this->assertDatabaseCount('stock_movements', 4);
-        $types = StockMovement::where('product_id', $product->id)->pluck('type')->toArray();
+        // orderBy created_at ensures deterministic ordering regardless of index scan order
+        $types = StockMovement::withoutTenantScope()
+            ->where('product_id', $product->id)
+            ->orderBy('created_at')
+            ->pluck('type')
+            ->toArray();
         $this->assertEquals(['in', 'out', 'in', 'adjustment'], $types);
 
         // ── 6. Attempt to over-sell ────────────────────────────────────────

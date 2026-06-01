@@ -1,11 +1,11 @@
-import { config } from '@vue/test-utils'
+import { vi }         from 'vitest'
+import { config }     from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import PrimeVue from 'primevue/config'
 
-// Configuration globale pour tous les tests Vue
+// Global Vue test-utils configuration.
+// NOTE: PrimeVue is intentionally excluded — primeicons@7 has broken package exports.
 config.global.plugins = [
   createPinia(),
-  PrimeVue,
 ]
 
 // Mock global de l'API axios

@@ -34,7 +34,7 @@ class ImportModuleTest extends TestCase
         $this->service = $this->app->make(ImportService::class);
 
         $this->tenant = Tenant::create([
-            'name' => 'Nexora Demo', 'slug' => 'nexora-demo', 'plan' => 'pro', 'status' => 'active',
+            'name' => 'Frynov Demo', 'slug' => 'frynov-demo', 'plan' => 'pro', 'status' => 'active',
         ]);
         $this->user = User::create([
             'name'      => 'Manager',

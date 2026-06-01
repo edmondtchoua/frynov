@@ -73,6 +73,11 @@ const router = createRouter({
           name: 'catalog.categories',
           component: () => import('@/modules/catalog/views/CategoryListView.vue'),
         },
+        {
+          path: 'labels',
+          name: 'catalog.labels',
+          component: () => import('@/modules/catalog/views/LabelPrintView.vue'),
+        },
       ],
     },
 
@@ -95,6 +100,24 @@ const router = createRouter({
           path: 'movements/:productId',
           name: 'inventory.movements',
           component: () => import('@/modules/inventory/views/MovementHistoryView.vue'),
+        },
+        {
+          path: 'warehouses',
+          name: 'inventory.warehouses',
+          component: () => import('@/modules/inventory/views/WarehouseView.vue'),
+        },
+      ],
+    },
+
+    // ── Marketplace ───────────────────────────────────────────────────────
+    {
+      path: '/marketplace',
+      meta: { layout: 'app' },
+      children: [
+        {
+          path: '',
+          name: 'marketplace.listings',
+          component: () => import('@/modules/marketplace/views/MarketplaceListingsView.vue'),
         },
       ],
     },
@@ -223,6 +246,14 @@ const router = createRouter({
       meta: { layout: 'app' },
     },
 
+    // ── Profile (all authenticated users, incl. super-admin) ──────────────
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('@/modules/auth/views/ProfileView.vue'),
+      meta: { layout: 'app' },
+    },
+
     // ── Admin back-office ─────────────────────────────────────────────────
     {
       path: '/admin',
@@ -239,6 +270,11 @@ const router = createRouter({
           component: () => import('@/modules/admin/views/TenantListView.vue'),
         },
         {
+          path: 'tenants/:id',
+          name: 'admin.tenants.detail',
+          component: () => import('@/modules/admin/views/TenantDetailView.vue'),
+        },
+        {
           path: 'modules',
           name: 'admin.modules',
           component: () => import('@/modules/admin/views/ModuleListView.vue'),
@@ -247,6 +283,16 @@ const router = createRouter({
           path: 'plans',
           name: 'admin.plans',
           component: () => import('@/modules/admin/views/PlanListView.vue'),
+        },
+        {
+          path: 'promotions',
+          name: 'admin.promotions',
+          component: () => import('@/modules/admin/views/PromotionListView.vue'),
+        },
+        {
+          path: 'manual-payments',
+          name: 'admin.manual-payments',
+          component: () => import('@/modules/admin/views/ManualPaymentView.vue'),
         },
         {
           path: 'audit',

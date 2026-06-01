@@ -33,13 +33,15 @@ class AdminApiTest extends TestCase
             'status' => 'active',
         ]);
 
+        // is_super_admin is NOT fillable (security: prevent mass-assignment).
+        // Use forceFill() or promoteToSuperAdmin() for internal test setup.
         $this->superAdmin = User::create([
-            'name'           => 'Super Admin',
-            'email'          => 'superadmin@nexora.com',
-            'password'       => Hash::make('Admin123!'),
-            'is_super_admin' => true,
-            'tenant_id'      => null,
+            'name'      => 'Super Admin',
+            'email'     => 'superadmin@nexora.com',
+            'password'  => Hash::make('Admin123!'),
+            'tenant_id' => null,
         ]);
+        $this->superAdmin->promoteToSuperAdmin();
 
         $this->regularUser = User::create([
             'name'      => 'Regular User',

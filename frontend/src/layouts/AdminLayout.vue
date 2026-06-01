@@ -9,7 +9,7 @@
             <path d="M6 17V7l5.5 7.5V7H18v10l-5.5-7.5V17H6Z" fill="white"/>
           </svg>
           <div>
-            <span class="admin-brand__name">Nexora ERP</span>
+            <span class="admin-brand__name">Frynov ERP</span>
             <span class="admin-brand__badge">Admin</span>
           </div>
         </div>
@@ -97,6 +97,16 @@ const navItems = [
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 6h14" stroke="currentColor" stroke-width="1.4"/></svg>',
   },
   {
+    to: '/admin/manual-payments',
+    label: 'Paiements',
+    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 6h14" stroke="currentColor" stroke-width="1.4"/><path d="M4 9.5h3M11 9.5h1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+  },
+  {
+    to: '/admin/promotions',
+    label: 'Promotions',
+    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 2v12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="5" cy="5" r="2" stroke="currentColor" stroke-width="1.4"/><circle cx="11" cy="11" r="2" stroke="currentColor" stroke-width="1.4"/></svg>',
+  },
+  {
     to: '/admin/audit',
     label: 'Journal d\'audit',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4h8M4 8h6M4 12h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/></svg>',
@@ -104,11 +114,14 @@ const navItems = [
 ]
 
 const pageTitles: Record<string, string> = {
-  'admin.dashboard': 'Tableau de bord',
-  'admin.tenants':   'Gestion des tenants',
-  'admin.modules':   'Modules ERP',
-  'admin.plans':     'Plans & Tarifs',
-  'admin.audit':     'Journal d\'audit',
+  'admin.dashboard':       'Tableau de bord',
+  'admin.tenants':         'Gestion des tenants',
+  'admin.tenants.detail':  'Détail tenant',
+  'admin.modules':         'Modules ERP',
+  'admin.plans':           'Plans & Tarifs',
+  'admin.manual-payments': 'Paiements manuels',
+  'admin.promotions':      'Promotions',
+  'admin.audit':           'Journal d\'audit',
 }
 
 const pageTitle = computed(() => pageTitles[route.name as string] ?? 'Administration')
@@ -122,7 +135,8 @@ async function handleLogout() {
 <style scoped>
 .admin-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: var(--gray-50, #f8fafc);
 }
 
@@ -138,6 +152,8 @@ async function handleLogout() {
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
 }
 
 .admin-sidebar__header {
@@ -233,8 +249,10 @@ async function handleLogout() {
 .admin-main {
   flex: 1;
   min-width: 0;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .admin-topbar {
@@ -242,11 +260,11 @@ async function handleLogout() {
   border-bottom: 1px solid #e2e8f0;
   padding: 0 1.5rem;
   height: 56px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: sticky;
-  top: 0;
+  /* position:sticky no longer needed — topbar is pinned by flex column */
   z-index: 10;
 }
 
@@ -282,5 +300,9 @@ async function handleLogout() {
 .admin-content {
   flex: 1;
   padding: 1.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
 }
 </style>

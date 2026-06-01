@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Shared\Traits\HasTenant;
 
 class Product extends Model
 {
-    use HasFactory, HasUuids, SoftDeletes;
+    use HasFactory, HasTenant, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'tenant_id',
@@ -41,7 +42,7 @@ class Product extends Model
         ];
     }
 
-    // ── Money accessors ───────────────────────────────────────────────────
+    // â”€â”€ Money accessors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function price(): Money
     {
@@ -72,7 +73,7 @@ class Product extends Model
             && $this->compare_at_price_amount > $this->price_amount;
     }
 
-    // ── Status helpers ────────────────────────────────────────────────────
+    // â”€â”€ Status helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function isActive(): bool
     {
@@ -84,7 +85,7 @@ class Product extends Model
         return $this->status === 'draft';
     }
 
-    // ── Relationships ─────────────────────────────────────────────────────
+    // â”€â”€ Relationships â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function category(): BelongsTo
     {

@@ -2,7 +2,16 @@
   <div class="login-form">
     <div class="form-header">
       <h2>Connexion</h2>
-      <p>Bienvenue sur Nexora ERP</p>
+      <p>Bienvenue sur Frynov ERP</p>
+    </div>
+
+    <!-- Inactivity session expiry message -->
+    <div v-if="inactivityMsg" class="alert alert-info" role="alert" style="margin-bottom:1.25rem">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
+        <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M8 5v3M8 10v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      {{ inactivityMsg }}
     </div>
 
     <form @submit.prevent="handleSubmit" novalidate>
@@ -81,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import type { AxiosError } from 'axios'
@@ -96,6 +105,13 @@ const errors       = reactive<Record<string, string>>({})
 const globalError  = ref('')
 const loading      = ref(false)
 const showPassword = ref(false)
+
+// Show info banner if redirected due to session inactivity
+const inactivityMsg = computed(() =>
+  route.query.reason === 'inactivity'
+    ? 'Votre session a expiré par inactivité. Veuillez vous reconnecter.'
+    : ''
+)
 
 function clearError(field: string) {
   delete errors[field]
@@ -112,7 +128,12 @@ async function handleSubmit() {
   try {
     await auth.login({ email: form.email, password: form.password })
     const redirect = route.query.redirect as string
-    router.push(redirect || '/dashboard')
+    // Super admin goes directly to the back-office, never the tenant app
+    if (auth.user?.is_super_admin) {
+      router.push(redirect?.startsWith('/admin') ? redirect : '/admin')
+    } else {
+      router.push(redirect || '/dashboard')
+    }
   } catch (err) {
     const axiosErr = err as AxiosError<ApiError>
     const status   = axiosErr.response?.status

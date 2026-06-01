@@ -13,11 +13,14 @@ export interface AdminTenant {
   id: string
   name: string
   slug: string
+  domain?: string | null
   status: string
   plan: string
   subscription_status: string
   created_at: string
-  users?: Array<{ id: string; name: string; email: string }>
+  updated_at?: string
+  deleted_at?: string | null
+  users?: Array<{ id: string; name: string; email: string; is_super_admin?: boolean }>
 }
 
 export interface AdminModule {
@@ -47,6 +50,40 @@ export interface AdminPlan {
   features: string[]
   is_active: boolean
   is_public: boolean
+}
+
+export interface AdminManualPayment {
+  id: string
+  tenant_id: string
+  tenant_name?: string
+  plan_code?: string
+  plan_name?: string
+  amount_cents: number
+  currency: string
+  payment_method: string
+  proof_url?: string | null
+  proof_original_filename?: string | null
+  notes?: string | null
+  promo_code_used?: string | null
+  status: 'pending' | 'approved' | 'rejected'
+  rejection_reason?: string | null
+  reviewed_at?: string | null
+  created_at: string
+}
+
+export interface AdminPromotion {
+  id: string
+  code: string
+  description?: string | null
+  discount_type: 'percent' | 'fixed_cents'
+  discount_value: number
+  applicable_plans?: string[] | null
+  valid_from?: string | null
+  valid_until?: string | null
+  max_uses?: number | null
+  current_uses: number
+  is_active: boolean
+  created_at: string
 }
 
 export interface AuditLogEntry {
@@ -115,6 +152,53 @@ export const adminService = {
 
   async getAuditLogs(page = 1) {
     const { data } = await client.get('/api/admin/audit-logs', { params: { page } })
+    return data
+  },
+
+  // ── Manual payments ─────────────────────────────────────────────────────────
+
+  async getManualPayments(params?: { status?: string; page?: number }) {
+    const { data } = await client.get<{ data: AdminManualPayment[]; meta: any }>('/api/admin/manual-payments', { params })
+    return data
+  },
+
+  async approveManualPayment(id: string) {
+    const { data } = await client.post(`/api/admin/manual-payments/${id}/approve`)
+    return data
+  },
+
+  async rejectManualPayment(id: string, reason: string) {
+    const { data } = await client.post(`/api/admin/manual-payments/${id}/reject`, { reason })
+    return data
+  },
+
+  // ── Promotions ──────────────────────────────────────────────────────────────
+
+  async getPromotions(page = 1) {
+    const { data } = await client.get<{ data: AdminPromotion[]; meta: any }>('/api/admin/promotions', { params: { page } })
+    return data
+  },
+
+  async createPromotion(payload: Partial<AdminPromotion>) {
+    const { data } = await client.post<AdminPromotion>('/api/admin/promotions', payload)
+    return data
+  },
+
+  async updatePromotion(id: string, payload: Partial<AdminPromotion>) {
+    const { data } = await client.patch<AdminPromotion>(`/api/admin/promotions/${id}`, payload)
+    return data
+  },
+
+  async deletePromotion(id: string) {
+    const { data } = await client.delete(`/api/admin/promotions/${id}`)
+    return data
+  },
+
+  /** GET /api/admin/tenants/:id/modules — modules with tenant_active flag */
+  async getTenantModules(tenantId: string) {
+    const { data } = await client.get<import('@/modules/auth/types').ErpModule[]>(
+      `/api/admin/tenants/${tenantId}/modules`
+    )
     return data
   },
 

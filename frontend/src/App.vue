@@ -1,29 +1,56 @@
 <template>
+  <!-- Global progress bar — visible on every HTTP request and navigation -->
+  <AppProgressBar />
+
   <!-- Landing / public pages — self-contained layout -->
-  <RouterView v-if="!layoutComponent" />
+  <template v-if="!layoutComponent">
+    <RouterView v-slot="{ Component, route }">
+      <Transition name="page" mode="out-in">
+        <component :is="Component" :key="route.path" />
+      </Transition>
+    </RouterView>
+  </template>
 
   <!-- Auth layout (login, register) -->
   <AuthLayout v-else-if="layoutComponent === 'auth'">
-    <RouterView />
+    <RouterView v-slot="{ Component, route }">
+      <Transition name="page-auth" mode="out-in">
+        <component :is="Component" :key="route.path" />
+      </Transition>
+    </RouterView>
   </AuthLayout>
 
   <!-- Admin back-office shell -->
   <AdminLayout v-else-if="layoutComponent === 'admin'">
-    <RouterView />
+    <RouterView v-slot="{ Component, route }">
+      <Transition name="page" mode="out-in">
+        <component :is="Component" :key="route.path" />
+      </Transition>
+    </RouterView>
   </AdminLayout>
 
   <!-- App shell (authenticated tenant users) -->
   <AppLayout v-else>
-    <RouterView />
+    <RouterView v-slot="{ Component, route }">
+      <Transition name="page" mode="out-in">
+        <component :is="Component" :key="route.path" />
+      </Transition>
+    </RouterView>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import AppLayout   from '@/layouts/AppLayout.vue'
-import AuthLayout  from '@/layouts/AuthLayout.vue'
-import AdminLayout from '@/layouts/AdminLayout.vue'
+import AppLayout           from '@/layouts/AppLayout.vue'
+import AuthLayout          from '@/layouts/AuthLayout.vue'
+import AdminLayout         from '@/layouts/AdminLayout.vue'
+import AppProgressBar      from '@/shared/components/AppProgressBar.vue'
+import { useSessionTimeout } from '@/composables/useSessionTimeout'
+
+// Start the inactivity-based session timeout tracker
+// No-op when not authenticated; auto-restarts on login
+useSessionTimeout()
 
 const route = useRoute()
 

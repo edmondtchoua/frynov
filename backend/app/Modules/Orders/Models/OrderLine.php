@@ -7,10 +7,11 @@ use App\Modules\Catalog\Models\ProductVariant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Shared\Traits\HasTenant;
 
 class OrderLine extends Model
 {
-    use HasUuids;
+    use HasTenant, HasUuids;
 
     protected $fillable = [
         'order_id',

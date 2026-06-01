@@ -1,7 +1,7 @@
-# Plan d'implémentation — Nexora ERP
+# Plan d'implémentation — Frynov ERP
 
 > Document vivant — mis à jour à chaque session.  
-> Dernière révision : **2026-05-31 (Sprint 7A)**  
+> Dernière révision : **2026-06-01 (Sprint 9 — Omnicanal P0→P3 livré)**  
 > Stratégie : backend + frontend **en parallèle** dans chaque session.
 
 ---
@@ -23,8 +23,9 @@
 | **Suppliers** | ✅ Livré | 14 | CRUD, code auto, findOrCreateByName, tenant isolation |
 | **ImportExport** | ✅ Livré | 21 | Upload→analyze→mapping→approve→execute pipeline, Horizon jobs, Excel/PDF export |
 | **Reports** | ✅ Livré | 22 | Dashboard KPIs, sales by period, stock value, top products, payment breakdown |
-| **Billing** | ✅ Livré | 6 | Plan model (starter/pro/enterprise), Subscription lifecycle (trialing/active/suspended/cancelled/pending_approval), SubscriptionService |
-| **Platform** | ✅ Livré | 18 | ErpModule registry, TenantModule activation, AuditLog, ModuleRegistryService, AuditService, Admin back-office API (5 controllers) |
+| **Billing** | ✅ Livré | 6 | Plan, Subscription, Promotion, PromoUse, ManualPayment models + SubscriptionService + PromotionService + ManualPaymentService + BillingController |
+| **Platform** | ✅ Livré | 18 | ErpModule registry, TenantModule, AuditLog, Admin back-office API (7 controllers incl. Promotions + ManualPayments) |
+| **Workspace** | ✅ Livré | — | WorkspaceController — user CRUD (invite+toggle+role), company settings (name, domain, JSON) — 6 endpoints `/api/workspace/*` |
 | Sync | 💤 Différé | — | Phase 2 |
 
 **Backend MVP : 100% complet. Tests : 293 passent.**
@@ -35,17 +36,17 @@
 
 | Couche | Statut | Remarques |
 |--------|--------|-----------|
-| Stack / config | ✅ Livré | package.json `nexora-erp-frontend`, vite, tsconfig, vitest |
+| Stack / config | ✅ Livré | package.json `frynov-erp-frontend`, vite, tsconfig, vitest |
 | **Design system** | ✅ Livré | CSS custom properties, tokens couleurs, composants utilitaires |
-| **NexoraLogo** | ✅ Livré | Composant SVG réutilisable, 3 variantes (light/dark/color) |
+| **FrynovLogo** | ✅ Livré | Composant SVG réutilisable, 3 variantes (light/dark/color) |
 | Foundation (API client, router, stores) | ✅ Livré | Axios interceptors, Pinia auth, guards |
 | **AppLayout** | ✅ Livré | Sidebar responsive, hamburger mobile, sidebar overlay, SVG nav |
-| **AuthLayout** | ✅ Livré | Logo Nexora, fond gradient, footer marque |
+| **AuthLayout** | ✅ Livré | Logo Frynov, fond gradient, footer marque |
 | Auth UI (login, register) | ✅ Livré | LoginView, RegisterView (4 champs, jauge force MDP) |
 | **Landing page** | ✅ Livré | Hero, features, how-it-works, modules, FAQ accordéon, footer |
 | **Onboarding wizard** | ✅ Livré | 5 étapes, card-choices, auto-suggestion modules, transitions |
 | **Dashboard** | ✅ Livré | KPIs réels (API), revenue bar chart SVG, commandes récentes, top produits |
-| **Settings** | ✅ Livré | 5 onglets (entreprise, équipe, abonnement, intégrations, notifs) |
+| **Settings** | ✅ Livré | 5 onglets — **Entreprise** (profil société réel, pays/devise/téléphone/adresse), **Équipe** (liste membres, invite+temp_password, changement rôle, désactivation/réactivation), abonnement réel, code promo, modal mise à niveau |
 | Orders UI | ✅ Livré | OrderListView, OrderCreateView, OrderDetailView |
 | Catalog UI | ✅ Livré | ProductListView, ProductFormView, CategoryListView |
 | Customers UI | ✅ Livré | CustomerListView (avatars, modal inline), CustomerDetailView |
@@ -55,7 +56,7 @@
 | **Suppliers UI** | ✅ Livré | SupplierListView (CRUD modal, code badge, pagination) |
 | **Import/Export UI** | ✅ Livré | ImportWizardView (5 étapes, polling), ImportHistoryView (filtres, modal détail) |
 | **Reports UI** | ✅ Livré | Dashboard KPIs réels, SalesReportView (chart + top produits + méthodes), StockReportView (valeur + alertes) |
-| **Admin back-office** | ✅ Livré | AdminLayout (dark sidebar), AdminDashboardView (KPIs + recent), TenantListView (search/filter/suspend), ModuleListView (toggle visibility/status), PlanListView, AuditLogView |
+| **Admin back-office** | ✅ Livré | AdminLayout (7 nav items), AdminDashboardView, TenantListView, **TenantDetailView** (modules toggle + plan change), ModuleListView, PlanListView, AuditLogView, **PromotionListView**, **ManualPaymentView** |
 
 **Frontend MVP : 100% complet.**
 
@@ -86,7 +87,7 @@
 
 ---
 
-## Design system — Nexora ERP
+## Design system — Frynov ERP
 
 ### Identité visuelle
 
@@ -133,12 +134,12 @@ src/
 │   └── main.css                 ← Design system complet (CSS custom props)
 ├── layouts/
 │   ├── AppLayout.vue            ← Shell app (sidebar + topbar responsive)
-│   └── AuthLayout.vue           ← Centré, NexoraLogo, carte
+│   └── AuthLayout.vue           ← Centré, FrynovLogo, carte
 ├── pages/
 │   └── LandingView.vue          ← Landing page publique (autonome, sans shell)
 ├── shared/
 │   └── components/
-│       └── NexoraLogo.vue       ← Logo SVG réutilisable
+│       └── FrynovLogo.vue       ← Logo SVG réutilisable
 ├── modules/
 │   ├── auth/views/
 │   │   ├── LoginView.vue
@@ -216,7 +217,7 @@ Catalog + Orders + Payments + Inventory → Reports (agrégation cross-module)
 - Frontend foundation : Axios client, Pinia stores, router avec guards
 - Frontend auth : LoginView, RegisterView, AppLayout, AuthLayout
 - Frontend orders : OrderListView, OrderCreateView, OrderDetailView
-- Design system Nexora ERP : CSS custom properties, composants utilitaires
+- Design system Frynov ERP : CSS custom properties, composants utilitaires
 - Pages publiques : LandingView (hero + features + FAQ), OnboardingView (wizard 5 étapes)
 - Dashboard : DashboardView avec SVG icons, CSS tokens, actions rapides
 - Settings : SettingsView (5 onglets)
@@ -443,6 +444,80 @@ Catalog + Orders + Payments + Inventory → Reports (agrégation cross-module)
 | `SalesReportView.vue` | 4 KPIs, chart CA sélecteur période, top produits table, méthodes barres |
 | `StockReportView.vue` | 4 KPIs, alertes stock avec barre progression, mouvements 30j |
 | `reportService.ts` | 3 appels API + helpers formatMoney / shortDate |
+
+---
+
+---
+
+#### Sprint 8 — Frynov ERP : promotions, paiements manuels, dashboard dynamique 🎯
+**Statut : EN COURS — Priorités 1-4 + 7 livrées**
+
+> Dernière mise à jour : 2026-05-31 (session 8B)
+
+**Priorité 1 — Renommage ✅ LIVRÉ**
+- [x] Tous les textes visibles : Nexora → Frynov ERP
+- [x] `FrynovLogo.vue` créé, imports mis à jour dans 4 layouts
+- [x] `index.html` meta + title, `package.json` name, `main.css` commentaire
+- [x] Backend : TemplateService, ExcelExporter, ImportModuleTest
+
+**Priorité 2 — Corrections critiques ✅ LIVRÉ**
+- [x] `UserResource` + `AuthController::me()` : retourne `subscription` + `active_modules`
+- [x] `ModulesController::currentSubscription()` + route `GET /api/me/subscription`
+- [x] `authService.ts` : `me()` déballe `{ user: ... }` correctement, `getModules()`, `getSubscription()`
+- [x] `auth/types.ts` : interface `Subscription` complète avec tous les champs
+- [x] `DashboardView.vue` : grille modules dynamique (actif/inactif/bientôt), banner essai, CSS complet
+- [x] `SettingsView.vue` onglet Abonnement : vraies données depuis store, limites, features, dates
+
+**Priorité 3 — Promotions configurables ✅ LIVRÉ**
+- [x] Migration `promotions` + `promo_uses` (code, type, valeur, dates, max_uses, plans applicables)
+- [x] `Promotion` model + `PromoUse` model + helpers (isExpired, appliesToPlan, applyDiscount)
+- [x] `InvalidPromoCodeException` 
+- [x] `PromotionService` : validate, recordUse, list, create, update
+- [x] `AdminPromotionController` : CRUD complet avec audit + protection si déjà utilisé
+- [x] `BillingController` : `validatePromo`, `applyPromo` (avec routes dans Billing module)
+- [x] Routes admin : `GET/POST/PATCH/DELETE /api/admin/promotions/{promotion}`
+- [x] `authService.ts` : `validatePromo()` + `applyPromo()`
+- [x] `adminService.ts` : `AdminPromotion` interface + CRUD methods
+- [x] `PromotionListView.vue` : table + modal création/édition, toggle activation, suppression
+- [x] `SettingsView.vue` : champ code promo avec validation temps réel + application
+
+**Priorité 4 — Paiements manuels + preuves ✅ LIVRÉ**
+- [x] Migration `manual_payments` (tenant, plan, montant, méthode, proof_path, status, reviewer)
+- [x] `ManualPayment` model + `toApiArray()` + `proofUrl()`
+- [x] `ManualPaymentService` : submit (upload preuve), approve (active subscription), reject, list, forTenant
+- [x] `AdminManualPaymentController` : index, show, approve, reject
+- [x] `BillingController` : `submitPayment` (multipart), `listPayments`
+- [x] Routes : `GET/POST /api/me/manual-payments`, admin CRUD + approve/reject
+- [x] `adminService.ts` : `AdminManualPayment` interface + methods
+- [x] `ManualPaymentView.vue` : table paginée, filtres statut, modal rejet, indicateur pending
+- [x] `SettingsView.vue` : bouton "Demander mise à niveau" → modal avec upload preuve + méthode paiement
+- [x] Admin nav enrichi : Paiements + Promotions
+
+**Priorité 5 — Dashboard client dynamique (partiel)**
+- [x] Grille modules avec statut actif/inactif/bientôt + badges
+- [ ] Badges configurables (promo, badge custom) depuis back-office
+- [ ] CTA configurable (Activer / Essayer / Acheter / Demander démo / Mettre à niveau)
+
+**Priorité 6 — Règles d'inscription configurables**
+- [ ] Migration `country_rules` (country_code, require_approval, allowed_plans, blocked)
+- [ ] `CountryRule` model + `RegistrationRuleService`
+- [ ] Intégration dans `AuthController::register()` : statut `pending_approval` si requis
+
+**Priorité 7 — Améliorations back-office ✅ LIVRÉ**
+- [x] `AdminLayout.vue` : Paiements + Promotions dans le nav (7 entrées)
+- [x] `TenantDetailView.vue` : vue complète (infos, abonnement + change plan, users, modules toggle)
+- [x] Route `/admin/tenants/:id` enregistrée
+- [ ] `AdminDashboardView.vue` : enrichir avec demandes en attente, revenus du mois
+
+**Tests**
+- [ ] `PromotionServiceTest` : validation, recordUse, codes expirés/épuisés, per-plan
+- [ ] `ManualPaymentServiceTest` : submit, approve, reject
+- [ ] `RegistrationRuleTest` : pays/plan → auto | pending | blocked
+
+**Documentation**
+- [ ] Guide Promotions (admin)
+- [ ] Guide Paiements manuels + upload preuve
+- [ ] API reference : `/api/me/modules`, `/api/me/subscription`, `/api/me/promo/*`, `/api/me/manual-payments`
 
 ---
 

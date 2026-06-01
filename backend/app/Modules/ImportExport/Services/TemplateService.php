@@ -21,7 +21,7 @@ class TemplateService
 {
     private static array $templates = [
         'products' => [
-            'title'    => 'Import Produits — Nexora ERP',
+            'title'    => 'Import Produits — Frynov ERP',
             'filename' => 'template_produits.xlsx',
             'headers'  => [
                 'SKU'             => ['required' => true,  'note' => 'Identifiant unique du produit (obligatoire)'],
@@ -38,7 +38,7 @@ class TemplateService
             'example' => ['PROD-001', 'T-Shirt Coton Premium', '15000', 'T-shirt 100% coton, coupe moderne', '8000', '5901234123457', 'Vêtements', 'Fournisseur ABC', '0.3', 'active'],
         ],
         'customers' => [
-            'title'    => 'Import Clients — Nexora ERP',
+            'title'    => 'Import Clients — Frynov ERP',
             'filename' => 'template_clients.xlsx',
             'headers'  => [
                 'Nom'         => ['required' => true,  'note' => 'Nom complet ou raison sociale (obligatoire)'],
@@ -50,7 +50,7 @@ class TemplateService
             'example' => ['Amadou Traoré', 'amadou@exemple.com', '+225 07 00 00 00', 'Abidjan, Plateau', ''],
         ],
         'suppliers' => [
-            'title'    => 'Import Fournisseurs — Nexora ERP',
+            'title'    => 'Import Fournisseurs — Frynov ERP',
             'filename' => 'template_fournisseurs.xlsx',
             'headers'  => [
                 'Nom'                  => ['required' => true,  'note' => 'Raison sociale (obligatoire)'],
@@ -138,7 +138,7 @@ class TemplateService
         $sheet->freezePane('A2');
 
         $spreadsheet->getProperties()
-            ->setCreator('Nexora ERP')
+            ->setCreator('Frynov ERP')
             ->setTitle($tpl['title']);
 
         return $spreadsheet;

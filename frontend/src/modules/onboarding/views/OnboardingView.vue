@@ -4,7 +4,7 @@
     <!-- Header -->
     <header class="onboarding-header">
       <RouterLink to="/" class="onboarding-logo">
-        <NexoraLogo variant="light" />
+        <FrynovLogo variant="light" />
       </RouterLink>
       <RouterLink to="/login" class="btn btn-ghost btn-sm" style="color: var(--gray-500);">
         Déjà inscrit ? Connexion
@@ -37,7 +37,7 @@
         <Transition name="slide" mode="out-in">
           <div v-if="step === 1" key="step1" class="step-content">
             <h2>Quel type d'entreprise gérez-vous ?</h2>
-            <p class="step-subtitle">Nexora adaptera automatiquement l'espace à votre activité.</p>
+            <p class="step-subtitle">Frynov adaptera automatiquement l'espace à votre activité.</p>
 
             <div class="choice-grid">
               <button
@@ -245,7 +245,7 @@
 <script setup lang="ts">
 import { ref, computed, reactive, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import NexoraLogo from '@/shared/components/NexoraLogo.vue'
+import FrynovLogo from '@/shared/components/FrynovLogo.vue'
 
 const step       = ref(1)
 const totalSteps = 5

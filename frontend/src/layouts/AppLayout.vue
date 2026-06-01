@@ -18,7 +18,7 @@
     >
       <!-- Header -->
       <div class="sidebar-header">
-        <NexoraLogo
+        <FrynovLogo
           v-if="!sidebarCollapsed"
           variant="dark"
           :show-text="true"
@@ -76,6 +76,9 @@
         >
           <span class="nav-icon" v-html="item.icon"></span>
           <span v-if="!sidebarCollapsed" class="nav-label">{{ item.label }}</span>
+          <span v-if="item.name === 'marketplace.listings' && marketplaceAlertCount > 0" class="nav-alert-badge">
+            {{ marketplaceAlertCount }}
+          </span>
         </RouterLink>
 
         <div v-if="!sidebarCollapsed" class="nav-section-label" style="margin-top: 0.75rem;">Configuration</div>
@@ -96,18 +99,41 @@
         </RouterLink>
       </nav>
 
-      <!-- Footer — user + logout -->
+      <!-- Footer — user + profile + logout -->
       <div class="sidebar-footer">
+        <!-- Expanded: avatar + name + tenant + profile link -->
         <div v-if="!sidebarCollapsed" class="user-info">
-          <div class="user-avatar-sm">{{ userInitials }}</div>
+          <RouterLink to="/profile" class="user-avatar-sm user-avatar-link" :title="'Profil — ' + (auth.user?.name ?? '')">
+            {{ userInitials }}
+          </RouterLink>
           <div class="user-meta">
-            <div class="user-name">{{ auth.user?.name ?? '…' }}</div>
+            <RouterLink to="/profile" class="user-name user-name-link">{{ auth.user?.name ?? '…' }}</RouterLink>
             <div class="user-tenant">{{ tenantName }}</div>
           </div>
         </div>
-        <div v-else class="user-avatar-sm" :title="auth.user?.name" style="margin: 0 auto;">
-          {{ userInitials }}
-        </div>
+        <!-- Collapsed: just the avatar -->
+        <RouterLink
+          v-else
+          to="/profile"
+          class="user-avatar-sm"
+          :title="auth.user?.name"
+          style="margin: 0 auto;"
+        >{{ userInitials }}</RouterLink>
+
+        <RouterLink
+          v-if="!sidebarCollapsed"
+          to="/profile"
+          class="nav-item"
+          active-class="nav-item--active"
+        >
+          <span class="nav-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="5.5" r="3" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="nav-label">Mon profil</span>
+        </RouterLink>
 
         <button class="logout-btn" :title="sidebarCollapsed ? 'Déconnexion' : ''" @click="handleLogout">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -134,6 +160,8 @@
         <!-- Topbar right -->
         <div class="topbar-right">
           <span class="tenant-chip hide-mobile">{{ tenantName }}</span>
+          <!-- Notification bell with toasts -->
+          <NotificationCenter />
           <div class="user-avatar-top" :title="auth.user?.name">{{ userInitials }}</div>
         </div>
       </header>
@@ -146,14 +174,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import NexoraLogo from '@/shared/components/NexoraLogo.vue'
+import FrynovLogo from '@/shared/components/FrynovLogo.vue'
+import NotificationCenter from '@/shared/components/NotificationCenter.vue'
 
 const route  = useRoute()
 const router = useRouter()
 const auth   = useAuthStore()
+
+// Marketplace alert count is now handled by NotificationCenter component
+// which uses the useNotifications() composable (polls every 30s)
+import { useNotifications } from '@/composables/useNotifications'
+const { unreadCount: marketplaceAlertCount } = useNotifications()
 
 const sidebarCollapsed = ref(false)
 const mobileMenuOpen   = ref(false)
@@ -196,6 +230,24 @@ const mainNavItems = [
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 12V5l5-3 5 3v7" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 16v-4h4v4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M11 12h4V7l-4-2" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
   },
   {
+    name: 'catalog.labels',
+    to: '/catalog/labels',
+    label: 'Étiquettes',
+    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4a1 1 0 011-1h5.586a1 1 0 01.707.293l3.414 3.414A1 1 0 0114 7.414V12a1 1 0 01-1 1H4a1 1 0 01-1-1V4z" stroke="currentColor" stroke-width="1.4"/><circle cx="6" cy="8" r="1" fill="currentColor"/></svg>',
+  },
+  {
+    name: 'inventory.warehouses',
+    to: '/inventory/warehouses',
+    label: 'Entrepôts',
+    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 14V6l6-4 6 4v8H2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 14v-4h4v4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+  },
+  {
+    name: 'marketplace.listings',
+    to: '/marketplace',
+    label: 'Marketplace',
+    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M2 8h12M8 2c-1.5 2-2 4-2 6s.5 4 2 6M8 2c1.5 2 2 4 2 6s-.5 4-2 6" stroke="currentColor" stroke-width="1.4"/></svg>',
+  },
+  {
     name: 'import',
     to: '/import/history',
     label: 'Import / Export',
@@ -224,12 +276,15 @@ const pageTitles: Record<string, string> = {
   'inventory.stock':        'Inventaire',
   'inventory.alerts':       'Alertes stock',
   'inventory.movements':    'Mouvements',
+  'inventory.warehouses':  'Entrepôts & Boutiques',
+  'marketplace.listings':  'Marketplace',
   'orders.list':            'Commandes',
   'orders.create':          'Nouvelle commande',
   'orders.show':            'Commande',
   'customers.list':         'Clients',
   'customers.show':         'Client',
   'suppliers.list':         'Fournisseurs',
+  'catalog.labels':         'Impression d\'étiquettes',
   'import.history':         'Import / Export',
   'import.wizard':          'Nouvel import',
   'payments.list':          'Paiements',
@@ -239,7 +294,7 @@ const pageTitles: Record<string, string> = {
   settings:                 'Paramètres',
 }
 
-const pageTitle    = computed(() => pageTitles[String(route.name)] ?? 'Nexora ERP')
+const pageTitle    = computed(() => pageTitles[String(route.name)] ?? 'Frynov ERP')
 const tenantName   = computed(() => auth.user?.tenant?.name ?? '')
 const userInitials = computed(() => {
   const name = auth.user?.name ?? ''
@@ -253,24 +308,28 @@ async function handleLogout() {
 </script>
 
 <style scoped>
-/* ── Layout ──────────────────────────────────────────────── */
+/* ── Layout — full-viewport, no body scroll ──────────────── */
 .app-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;        /* exact viewport height */
+  overflow: hidden;     /* prevent body from ever scrolling */
   background: var(--gray-50);
 }
 
-/* ── Sidebar ─────────────────────────────────────────────── */
+/* ── Sidebar — sticky column ─────────────────────────────── */
 .sidebar {
   width: var(--sidebar-width);
+  height: 100vh;        /* always full height */
   background: var(--sidebar-bg);
   color: white;
   display: flex;
   flex-direction: column;
-  transition: width 0.2s ease;
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
   z-index: 40;
-  position: relative;
+  position: sticky;     /* fixes sidebar in place on desktop */
+  top: 0;
+  overflow: hidden;     /* clip content during collapse animation */
 }
 
 .sidebar--collapsed { width: var(--sidebar-collapsed-width); }
@@ -307,15 +366,7 @@ async function handleLogout() {
 }
 .collapse-btn:hover { background: rgba(255,255,255,0.08); color: white; }
 
-/* Nav */
-.sidebar-nav {
-  flex: 1;
-  padding: 1rem 0.5rem 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  overflow-y: auto;
-}
+/* .sidebar-nav — defined later in the file */
 
 .nav-section-label {
   font-size: 0.65rem;
@@ -361,6 +412,21 @@ async function handleLogout() {
 
 .nav-label { overflow: hidden; text-overflow: ellipsis; }
 
+.nav-alert-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  background: #ef4444;
+  color: white;
+  margin-left: auto;
+}
+
 /* Footer */
 .sidebar-footer {
   padding: 0.75rem 0.5rem;
@@ -393,6 +459,10 @@ async function handleLogout() {
 
 .user-meta { overflow: hidden; }
 .user-name { font-size: var(--text-xs); font-weight: 600; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-name-link { text-decoration: none; transition: color 0.15s; }
+.user-name-link:hover { color: white; }
+.user-avatar-link { text-decoration: none; transition: opacity 0.15s; }
+.user-avatar-link:hover { opacity: 0.85; }
 .user-tenant { font-size: 0.65rem; color: rgba(255,255,255,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .logout-btn {
@@ -412,15 +482,30 @@ async function handleLogout() {
 }
 .logout-btn:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.9); }
 
-/* ── Main wrapper ────────────────────────────────────────── */
-.main-wrapper {
+/* Nav scrolls within the sidebar if there are many items */
+.sidebar-nav {
   flex: 1;
+  padding: 1rem 0.5rem 0.5rem;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  gap: 2px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
 }
 
-/* ── Topbar ──────────────────────────────────────────────── */
+/* ── Main wrapper — fills remaining width, controls its own scroll ── */
+.main-wrapper {
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;     /* topbar stays fixed, content scrolls */
+}
+
+/* ── Topbar — naturally pinned at top (no position:sticky needed) ─── */
 .topbar {
   height: var(--topbar-height);
   background: white;
@@ -429,10 +514,9 @@ async function handleLogout() {
   align-items: center;
   padding: 0 1.5rem;
   gap: 1rem;
-  flex-shrink: 0;
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;       /* never shrinks */
   z-index: 20;
+  box-shadow: 0 1px 0 var(--gray-200);
 }
 
 .hamburger {
@@ -493,36 +577,60 @@ async function handleLogout() {
   cursor: default;
 }
 
-/* ── Page content ────────────────────────────────────────── */
+/* ── Page content — the only scrollable region ───────────── */
 .page-content {
   flex: 1;
   padding: 1.5rem;
   overflow-y: auto;
+  overflow-x: hidden;
+  /* Smooth scroll feel */
+  scroll-behavior: smooth;
+  /* Custom thin scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-300) transparent;
 }
+
+.page-content::-webkit-scrollbar       { width: 6px; }
+.page-content::-webkit-scrollbar-track { background: transparent; }
+.page-content::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+.page-content::-webkit-scrollbar-thumb:hover { background: var(--gray-400); }
 
 /* ── Overlay (mobile) ────────────────────────────────────── */
 .sidebar-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.45);
   z-index: 39;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 768px) {
+  .app-layout {
+    height: auto;       /* let mobile layout grow */
+    overflow: visible;
+  }
+
+  .main-wrapper {
+    height: 100dvh;     /* use dynamic viewport on mobile */
+  }
+
   .sidebar {
     position: fixed;
     top: 0;
     left: 0;
-    height: 100vh;
+    height: 100dvh;
     width: var(--sidebar-width) !important;
     transform: translateX(-100%);
-    transition: transform 0.25s ease;
-    box-shadow: var(--shadow-lg);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.28s ease;
+    box-shadow: none;
   }
 
   .sidebar--mobile-open {
     transform: translateX(0);
+    box-shadow: var(--shadow-lg);
   }
 
   .page-content {

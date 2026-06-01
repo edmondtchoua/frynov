@@ -2,10 +2,27 @@ export interface Tenant {
   id: string
   name: string
   slug: string
+  domain?: string | null
   plan: string
   status: string
   subscription_status: string
   settings?: Record<string, unknown>
+}
+
+export interface Subscription {
+  id: string
+  plan_code: string
+  plan_name: string
+  plan_price_monthly?: number | null
+  plan_price_yearly?: number | null
+  currency?: string
+  max_users?: number | null
+  max_products?: number | null
+  max_monthly_orders?: number | null
+  features?: string[]
+  status: 'trialing' | 'active' | 'suspended' | 'cancelled' | 'pending_approval'
+  trial_ends_at: string | null
+  current_period_end: string | null
 }
 
 export interface AuthUser {
@@ -15,6 +32,8 @@ export interface AuthUser {
   is_super_admin: boolean
   tenant_id: string | null
   tenant?: Tenant
+  subscription?: Subscription | null
+  active_modules?: string[]
   roles: string[]
   permissions: string[]
 }
@@ -60,4 +79,33 @@ export interface ErpModule {
 export interface ModulesResponse {
   data: ErpModule[]
   active_codes: string[]
+}
+
+// ── Workspace management types ────────────────────────────────────────────────
+
+export interface WorkspaceUser {
+  id: string
+  name: string
+  email: string
+  roles: string[]
+  is_active: boolean
+  created_at: string | null
+}
+
+export interface WorkspaceSettings {
+  id: string
+  name: string
+  slug: string
+  domain: string | null
+  settings: {
+    country?: string
+    currency?: string
+    timezone?: string
+    locale?: string
+    phone?: string | null
+    address?: string | null
+    website?: string | null
+    order_prefix?: string
+    [key: string]: unknown
+  }
 }

@@ -39,12 +39,35 @@ class DeliveryService
 
     public function create(array $data, string $tenantId, string $userId): Delivery
     {
-        return Delivery::create([
-            ...$data,
-            'tenant_id'    => $tenantId,
-            'performed_by' => $userId,
-            'status'       => Delivery::STATUS_PENDING,
-        ]);
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($data, $tenantId, $userId) {
+            // ── Atomic BL number generation (reuses sku_sequences) ────────────
+            \Illuminate\Support\Facades\DB::table('sku_sequences')->insertOrIgnore([
+                'tenant_id' => $tenantId,
+                'prefix'    => 'BL',
+                'last_seq'  => 0,
+            ]);
+
+            $row = \Illuminate\Support\Facades\DB::table('sku_sequences')
+                ->where('tenant_id', $tenantId)
+                ->where('prefix', 'BL')
+                ->lockForUpdate()
+                ->first();
+
+            $blNumber = 'BL-' . str_pad((string) ($row->last_seq + 1), 5, '0', STR_PAD_LEFT);
+
+            \Illuminate\Support\Facades\DB::table('sku_sequences')
+                ->where('tenant_id', $tenantId)
+                ->where('prefix', 'BL')
+                ->update(['last_seq' => $row->last_seq + 1]);
+
+            return Delivery::create([
+                ...(array)$data,
+                'number'       => $blNumber,
+                'tenant_id'    => $tenantId,
+                'performed_by' => $userId,
+                'status'       => Delivery::STATUS_PENDING,
+            ]);
+        });
     }
 
     public function dispatch(Delivery $delivery): Delivery

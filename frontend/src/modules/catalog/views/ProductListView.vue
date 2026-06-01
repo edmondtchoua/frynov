@@ -3,51 +3,67 @@
     <div class="page-header">
       <div>
         <h2>Catalogue produits</h2>
-        <p class="page-subtitle">{{ meta.total ?? '—' }} produits</p>
+        <p class="page-subtitle">{{ meta.total ?? '—' }} produit{{ (meta.total ?? 0) !== 1 ? 's' : '' }}</p>
       </div>
-      <RouterLink to="/catalog/products/create" class="btn btn-primary">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        Nouveau produit
-      </RouterLink>
+      <div class="header-actions">
+        <RouterLink to="/catalog/products/create" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          Nouveau produit
+        </RouterLink>
+      </div>
     </div>
 
     <!-- Filters -->
     <div class="filter-bar">
       <div class="search-wrap">
-        <svg class="search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <svg class="search-icon" width="15" height="15" viewBox="0 0 16 16" fill="none">
           <circle cx="7" cy="7" r="4.5" stroke="var(--gray-400)" stroke-width="1.4"/>
           <path d="M10.5 10.5l2.5 2.5" stroke="var(--gray-400)" stroke-width="1.4" stroke-linecap="round"/>
         </svg>
-        <input
-          v-model="filters.search"
-          type="text"
-          class="form-input search-input"
-          placeholder="Nom, SKU, code-barres…"
-          @input="debouncedLoad"
-        />
+        <input v-model="filters.search" type="text" class="form-input search-input"
+               placeholder="Nom, SKU, code-barres…" @input="debouncedLoad" />
       </div>
-
-      <select v-model="filters.status" class="form-input filter-select" @change="load">
+      <select v-model="filters.status" class="form-input filter-sel" @change="load">
         <option value="">Tous les statuts</option>
         <option value="active">Actif</option>
         <option value="draft">Brouillon</option>
         <option value="archived">Archivé</option>
       </select>
-
-      <select v-model="filters.category_id" class="form-input filter-select" @change="load">
-        <option value="">Toutes les catégories</option>
-        <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+      <select v-model="filters.category_id" class="form-input filter-sel" @change="load">
+        <option value="">Toutes catégories</option>
+        <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
       </select>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="loading-center" style="min-height: 300px;">
-      <span class="spinner-sm" style="width: 28px; height: 28px; border-width: 3px;"></span>
+    <!-- Selection action bar -->
+    <Transition name="slide-down">
+      <div v-if="selected.size > 0" class="selection-bar">
+        <span class="sel-count">{{ selected.size }} produit{{ selected.size > 1 ? 's' : '' }} sélectionné{{ selected.size > 1 ? 's' : '' }}</span>
+        <div class="sel-actions">
+          <div class="copies-wrap">
+            <label class="copies-label">Copies :</label>
+            <input v-model.number="batchCopies" type="number" min="1" max="500"
+                   class="copies-input" />
+          </div>
+          <button class="btn btn-secondary btn-sm" @click="printBatch('thermal')" :disabled="printing">
+            <span v-if="printing" class="spinner-sm"></span>
+            <template v-else>🖨</template>
+            Thermique
+          </button>
+          <button class="btn btn-secondary btn-sm" @click="printBatch('a4sheet')" :disabled="printing">
+            📄 Planche A4
+          </button>
+          <button class="btn btn-ghost btn-sm" @click="clearSelection">✕ Désélectionner</button>
+        </div>
+      </div>
+    </Transition>
+
+    <div v-if="loading" class="loading-center" style="min-height: 260px;">
+      <span class="spinner-sm" style="width:28px;height:28px;border-width:3px"></span>
     </div>
 
-    <!-- Empty -->
     <div v-else-if="products.length === 0" class="empty-state">
       <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
         <rect x="4" y="4" width="32" height="32" rx="8" fill="var(--brand-primary-bg)"/>
@@ -55,63 +71,63 @@
       </svg>
       <h3>Aucun produit</h3>
       <p>{{ filters.search ? 'Aucun résultat pour cette recherche.' : 'Commencez par ajouter votre premier produit.' }}</p>
-      <RouterLink v-if="!filters.search" to="/catalog/products/create" class="btn btn-primary">
-        Ajouter un produit
-      </RouterLink>
+      <RouterLink v-if="!filters.search" to="/catalog/products/create" class="btn btn-primary">Ajouter un produit</RouterLink>
     </div>
 
-    <!-- Table -->
-    <div v-else class="card" style="padding: 0; overflow: hidden;">
+    <div v-else class="card" style="padding:0;overflow:hidden">
       <table class="data-table">
         <thead>
           <tr>
+            <th style="width:40px">
+              <input type="checkbox" :checked="allSelected" :indeterminate="someSelected && !allSelected"
+                     @change="toggleAll" class="cb" />
+            </th>
             <th>Produit</th>
             <th class="hide-mobile">Catégorie</th>
             <th>Prix</th>
             <th class="hide-mobile">Statut</th>
-            <th style="text-align: right;">Actions</th>
+            <th style="text-align:right">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="product in products" :key="product.id">
+          <tr v-for="p in products" :key="p.id" :class="{ 'row-selected': selected.has(p.id) }">
+            <td>
+              <input type="checkbox" :checked="selected.has(p.id)"
+                     @change="toggleSelect(p.id)" class="cb" />
+            </td>
             <td>
               <div class="product-cell">
-                <div class="product-thumb">
-                  {{ product.name.charAt(0).toUpperCase() }}
-                </div>
+                <div class="product-thumb">{{ p.name.charAt(0).toUpperCase() }}</div>
                 <div>
-                  <div class="product-name">{{ product.name }}</div>
-                  <div class="product-sku">{{ product.sku }}</div>
+                  <div class="product-name">{{ p.name }}</div>
+                  <div class="product-meta">
+                    <span class="sku-tag">{{ p.sku }}</span>
+                    <span v-if="p.has_variants" class="variant-tag">variantes</span>
+                    <span v-if="p.barcode" class="barcode-tag">{{ p.barcode }}</span>
+                  </div>
                 </div>
               </div>
             </td>
             <td class="hide-mobile">
-              <span v-if="product.category" class="badge badge-gray">{{ product.category.name }}</span>
-              <span v-else class="text-muted">—</span>
+              <span v-if="p.category" class="badge badge-gray">{{ p.category.name }}</span>
+              <span v-else class="dim">—</span>
             </td>
             <td>
               <div class="price-cell">
-                <span :class="product.is_on_sale ? 'price-sale' : ''">{{ product.price.formatted }}</span>
-                <span v-if="product.compare_at_price" class="price-compare">
-                  {{ product.compare_at_price.formatted }}
-                </span>
+                <span :class="p.is_on_sale ? 'price-sale' : 'price-normal'">{{ p.price.formatted }}</span>
+                <span v-if="p.compare_at_price" class="price-compare">{{ p.compare_at_price.formatted }}</span>
               </div>
             </td>
             <td class="hide-mobile">
-              <span :class="statusBadge(product.status)">{{ statusLabel(product.status) }}</span>
+              <span :class="statusClass(p.status)">{{ statusLbl(p.status) }}</span>
             </td>
-            <td style="text-align: right;">
+            <td>
               <div class="row-actions">
-                <RouterLink :to="`/catalog/products/${product.id}`" class="btn btn-ghost btn-sm">
-                  Éditer
-                </RouterLink>
-                <button
-                  class="btn btn-ghost btn-sm"
-                  :title="product.status === 'active' ? 'Archiver' : 'Activer'"
-                  @click="toggleStatus(product)"
-                >
-                  {{ product.status === 'active' ? 'Archiver' : 'Activer' }}
-                </button>
+                <RouterLink :to="`/catalog/products/${p.id}`" class="btn btn-ghost btn-sm">Éditer</RouterLink>
+                <button class="btn btn-ghost btn-sm icon-btn" title="Imprimer étiquette"
+                        @click.stop="printOne(p)">🏷</button>
+                <button class="btn btn-ghost btn-sm"
+                        @click="toggleStatus(p)">{{ p.status === 'active' ? 'Archiver' : 'Activer' }}</button>
               </div>
             </td>
           </tr>
@@ -119,25 +135,16 @@
       </table>
     </div>
 
-    <!-- Pagination -->
     <div v-if="meta.last_page > 1" class="pagination">
-      <button
-        class="btn btn-ghost btn-sm"
-        :disabled="meta.current_page <= 1"
-        @click="goToPage(meta.current_page - 1)"
-      >← Précédent</button>
+      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page <= 1" @click="goPage(meta.current_page - 1)">← Précédent</button>
       <span class="page-info">Page {{ meta.current_page }} / {{ meta.last_page }}</span>
-      <button
-        class="btn btn-ghost btn-sm"
-        :disabled="meta.current_page >= meta.last_page"
-        @click="goToPage(meta.current_page + 1)"
-      >Suivant →</button>
+      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goPage(meta.current_page + 1)">Suivant →</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { productService } from '../services/productService'
 import type { Category, Product, ProductStatus } from '../types'
@@ -145,138 +152,159 @@ import type { Category, Product, ProductStatus } from '../types'
 const products   = ref<Product[]>([])
 const categories = ref<Category[]>([])
 const loading    = ref(false)
+const printing   = ref(false)
 const meta       = reactive({ current_page: 1, last_page: 1, per_page: 20, total: 0 })
+const filters    = reactive({ search: '', status: '', category_id: '', page: 1 })
 
-const filters = reactive({
-  search:      '',
-  status:      '',
-  category_id: '',
-  page:        1,
-})
+// ── Selection ──────────────────────────────────────────────────────────────
+const selected    = ref<Set<string>>(new Set())
+const batchCopies = ref(1)
 
-// Debounce helper
-let debounceTimer: ReturnType<typeof setTimeout>
-function debouncedLoad() {
-  clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => { filters.page = 1; load() }, 300)
+const allSelected  = computed(() => products.value.length > 0 && products.value.every(p => selected.value.has(p.id)))
+const someSelected = computed(() => products.value.some(p => selected.value.has(p.id)))
+
+function toggleSelect(id: string) {
+  const s = new Set(selected.value)
+  s.has(id) ? s.delete(id) : s.add(id)
+  selected.value = s
 }
+function toggleAll() {
+  if (allSelected.value) {
+    selected.value = new Set()
+  } else {
+    selected.value = new Set(products.value.map(p => p.id))
+  }
+}
+function clearSelection() { selected.value = new Set() }
+
+// ── Print ──────────────────────────────────────────────────────────────────
+async function printBatch(format: 'thermal' | 'a4sheet') {
+  if (!selected.value.size) return
+  printing.value = true
+  try {
+    await productService.printBatch({
+      items: [...selected.value].map(id => ({ product_id: id, copies: batchCopies.value })),
+      format,
+      show_price: true,
+      show_qr: true,
+    })
+  } catch { /* ignore */ } finally {
+    printing.value = false
+  }
+}
+
+async function printOne(p: Product) {
+  const url   = productService.getLabelUrl(p.id, { format: 'thermal', price: true, qr: true, copies: 1 })
+  const token = localStorage.getItem('auth_token') ?? ''
+  const resp  = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+  const html  = await resp.text()
+  const win   = window.open('', '_blank')
+  if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 400) }
+}
+
+// ── Load ───────────────────────────────────────────────────────────────────
+let debTimer: ReturnType<typeof setTimeout>
+function debouncedLoad() { clearTimeout(debTimer); debTimer = setTimeout(() => { filters.page = 1; load() }, 300) }
 
 async function load() {
   loading.value = true
   try {
-    const params: Record<string, string | number> = { page: filters.page, per_page: meta.per_page }
+    const params: any = { page: filters.page, per_page: meta.per_page }
     if (filters.search)      params.search      = filters.search
     if (filters.status)      params.status      = filters.status
     if (filters.category_id) params.category_id = filters.category_id
-
     const res = await productService.list(params)
     products.value = res.data
     Object.assign(meta, res.meta)
-  } catch {
-    products.value = []
-  } finally {
-    loading.value = false
-  }
+  } catch { products.value = [] } finally { loading.value = false }
 }
 
-async function loadCategories() {
+async function toggleStatus(p: Product) {
   try {
-    categories.value = await productService.categories.list()
-  } catch {
-    categories.value = []
-  }
-}
-
-async function toggleStatus(product: Product) {
-  try {
-    if (product.status === 'active') {
-      await productService.archive(product.id)
-    } else {
-      await productService.activate(product.id)
-    }
+    p.status === 'active' ? await productService.archive(p.id) : await productService.activate(p.id)
     load()
   } catch { /* ignore */ }
 }
 
-function goToPage(page: number) {
-  filters.page = page
-  load()
+function goPage(n: number) { filters.page = n; load() }
+function statusClass(s: ProductStatus) {
+  return { active: 'badge badge-success', draft: 'badge badge-gray', archived: 'badge badge-warning' }[s] ?? 'badge badge-gray'
 }
-
-function statusBadge(status: ProductStatus): string {
-  return { active: 'badge badge-success', draft: 'badge badge-gray', archived: 'badge badge-warning' }[status] ?? 'badge badge-gray'
-}
-
-function statusLabel(status: ProductStatus): string {
-  return { active: 'Actif', draft: 'Brouillon', archived: 'Archivé' }[status] ?? status
+function statusLbl(s: ProductStatus) {
+  return { active: 'Actif', draft: 'Brouillon', archived: 'Archivé' }[s] ?? s
 }
 
 onMounted(() => {
   load()
-  loadCategories()
+  productService.categories.list().then(c => { categories.value = c }).catch(() => {})
 })
 </script>
 
 <style scoped>
 .page-subtitle { color: var(--gray-500); font-size: var(--text-sm); margin-top: 0.2rem; }
+.header-actions { display: flex; gap: 0.5rem; }
+.dim { color: var(--gray-400); font-size: var(--text-sm); }
 
-.filter-bar {
+.filter-bar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.search-wrap { position: relative; flex: 1; min-width: 200px; }
+.search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.search-input { padding-left: 2.25rem; }
+.filter-sel { width: 180px; }
+
+/* Selection bar */
+.selection-bar {
   display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--brand-primary-bg);
+  border: 1px solid var(--brand-primary-light);
+  border-radius: var(--radius-md);
+  padding: 0.625rem 1rem;
+  margin-bottom: 0.75rem;
   flex-wrap: wrap;
 }
-
-.search-wrap { position: relative; flex: 1; min-width: 200px; }
-.search-icon {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-}
-.search-input { padding-left: 2.25rem; }
-.filter-select { width: 180px; }
-
-.product-cell {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-.product-thumb {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-md);
-  background: var(--brand-primary-bg);
-  color: var(--brand-primary-dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
+.sel-count { font-size: var(--text-sm); font-weight: 600; color: var(--brand-primary-dark); }
+.sel-actions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.copies-wrap { display: flex; align-items: center; gap: 0.375rem; }
+.copies-label { font-size: var(--text-xs); color: var(--gray-600); white-space: nowrap; }
+.copies-input {
+  width: 60px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.5rem;
   font-size: var(--text-sm);
-  flex-shrink: 0;
+  text-align: center;
+}
+
+/* Table */
+.cb { width: 15px; height: 15px; cursor: pointer; accent-color: var(--brand-primary); }
+.row-selected td { background: var(--brand-primary-bg) !important; }
+.product-cell { display: flex; align-items: center; gap: 0.75rem; }
+.product-thumb {
+  width: 36px; height: 36px; border-radius: var(--radius-md);
+  background: var(--brand-primary-bg); color: var(--brand-primary-dark);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: var(--text-sm); flex-shrink: 0;
 }
 .product-name { font-weight: 500; color: var(--gray-900); font-size: var(--text-sm); }
-.product-sku  { font-size: var(--text-xs); color: var(--gray-400); margin-top: 1px; font-family: monospace; }
+.product-meta { display: flex; align-items: center; gap: 0.375rem; margin-top: 2px; flex-wrap: wrap; }
+.sku-tag { font-family: monospace; font-size: 0.7rem; color: var(--gray-400); }
+.variant-tag { font-size: 0.65rem; font-weight: 600; background: var(--brand-secondary-bg); color: var(--brand-secondary-dark); padding: 1px 5px; border-radius: 3px; }
+.barcode-tag { font-family: monospace; font-size: 0.65rem; color: var(--gray-400); }
 
-.price-cell   { display: flex; flex-direction: column; gap: 2px; }
-.price-sale   { color: var(--color-error); font-weight: 600; }
-.price-compare{ font-size: var(--text-xs); color: var(--gray-400); text-decoration: line-through; }
-.text-muted   { color: var(--gray-400); font-size: var(--text-sm); }
+.price-cell { display: flex; flex-direction: column; gap: 1px; }
+.price-normal { font-weight: 500; color: var(--gray-900); font-size: var(--text-sm); }
+.price-sale { font-weight: 600; color: var(--color-error); font-size: var(--text-sm); }
+.price-compare { font-size: var(--text-xs); color: var(--gray-400); text-decoration: line-through; }
+.row-actions { display: flex; gap: 0.375rem; justify-content: flex-end; }
+.icon-btn { font-size: 1rem; }
 
-.row-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
-
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
+.pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.5rem; }
 .page-info { font-size: var(--text-sm); color: var(--gray-500); }
 
 @media (max-width: 768px) {
-  .filter-select { width: 100%; }
+  .filter-sel { width: 100%; }
   .search-wrap { min-width: 100%; }
 }
 </style>

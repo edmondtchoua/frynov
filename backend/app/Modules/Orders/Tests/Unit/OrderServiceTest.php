@@ -189,17 +189,24 @@ class OrderServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_uses_custom_unit_price_when_provided(): void
+    public function client_supplied_price_is_ignored_and_db_price_is_used(): void
     {
+        // SECURITY (OWASP API6): unit_price_cents supplied by the client
+        // must be silently ignored. Price ALWAYS comes from products.price_amount.
+        // This prevents price manipulation attacks (e.g. buying at 1 centime).
         $order = $this->service->create([
             'items' => [[
                 'product_id'       => $this->product->id,
                 'quantity'         => 2,
-                'unit_price_cents' => 20000, // discounted
+                'unit_price_cents' => 20000, // client attack: try to use discounted price
             ]],
         ], $this->tenant->id, $this->user->id);
 
-        $this->assertEquals(40000, $order->total_amount);
-        $this->assertEquals(20000, $order->lines->first()->unit_price_cents);
+        // Products are created with price_amount = 25000 in setUp
+        // Total must be 2 × 25000 = 50000, NOT 2 × 20000 = 40000
+        $this->assertEquals(50000, $order->total_amount,
+            'Price manipulation: client-supplied price must be ignored');
+        $this->assertEquals(25000, $order->lines->first()->unit_price_cents,
+            'Line item must use DB price, not client-supplied price');
     }
 }

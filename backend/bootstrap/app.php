@@ -14,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->appendToGroup('api', \App\Modules\Auth\Http\Middleware\ResolveTenant::class);
+
+        // Register named aliases for convenience in route definitions
+        $middleware->alias([
+            'webhook.signature' => \App\Modules\Billing\Http\Middleware\VerifyWebhookSignature::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

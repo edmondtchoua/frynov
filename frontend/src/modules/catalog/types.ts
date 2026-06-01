@@ -69,3 +69,51 @@ export interface CreateCategoryPayload {
   sort_order?: number
   is_active?: boolean
 }
+
+// ── Variant types ─────────────────────────────────────────────────────────────
+
+export interface ProductVariantFull {
+  id: string
+  product_id: string
+  sku: string
+  label: string
+  name?: string
+  attributes: Record<string, string>
+  price?: ProductPrice | null
+  compare_at_price?: ProductPrice | null
+  cost_amount?: number | null
+  barcode?: string | null
+  sort_order: number
+  is_active: boolean
+  stock?: number
+}
+
+export interface CreateVariantPayload {
+  sku?: string
+  name?: string
+  attributes?: Record<string, string>
+  price_amount?: number | null
+  price_currency?: string
+  cost_amount?: number | null
+  barcode?: string | null
+  sort_order?: number
+  is_active?: boolean
+}
+
+// ── Label / print types ───────────────────────────────────────────────────────
+
+export interface LabelBatchItem {
+  product_id: string
+  variant_id?: string | null
+  copies: number
+  product_name?: string
+  variant_label?: string
+  sku?: string
+}
+
+export interface LabelBatchPayload {
+  items: LabelBatchItem[]
+  format: 'thermal' | 'a4sheet'
+  show_price: boolean
+  show_qr: boolean
+}

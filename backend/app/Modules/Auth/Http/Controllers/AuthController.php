@@ -10,6 +10,7 @@ use App\Modules\Auth\Http\Resources\UserResource;
 use App\Modules\Auth\Repositories\UserRepositoryInterface;
 use App\Modules\Auth\Services\AuthService;
 use App\Modules\Billing\Services\SubscriptionService;
+use App\Modules\Platform\Services\ModuleRegistryService;
 use App\Modules\Tenants\Services\TenantProvisioningService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ class AuthController extends Controller
         private readonly UserRepositoryInterface $users,
         private readonly TenantProvisioningService $provisioner,
         private readonly SubscriptionService $subscriptions,
+        private readonly ModuleRegistryService $moduleRegistry,
     ) {}
 
     public function login(LoginRequest $request): JsonResponse
@@ -69,7 +71,8 @@ class AuthController extends Controller
                 'tenant_id' => $tenant->id,
             ]);
 
-            // 3. Assign tenant-owner role
+            // 3. Assign tenant-owner role (scoped to the new tenant via Spatie teams)
+            app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
             $user->assignRole('admin');
 
             // 4. Create trialing subscription (starter plan + module activation)
@@ -88,7 +91,32 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json(['user' => new UserResource($request->user())]);
+        $user   = $request->user()->load('tenant');
+        $tenant = $user->tenant;
+
+        $subscription  = null;
+        $activeModules = [];
+
+        if ($tenant) {
+            $sub = $this->subscriptions->current($tenant)?->load('plan');
+            if ($sub) {
+                $subscription = [
+                    'id'                 => $sub->id,
+                    'plan_code'          => $sub->plan?->code ?? $tenant->plan,
+                    'plan_name'          => $sub->plan?->name ?? ucfirst((string) $tenant->plan),
+                    'status'             => $sub->status,
+                    'trial_ends_at'      => $sub->trial_ends_at?->toISOString(),
+                    'current_period_end' => $sub->current_period_end?->toISOString(),
+                ];
+            }
+            $activeModules = $this->moduleRegistry->activeCodes($tenant);
+        }
+
+        $userData                     = (new UserResource($user))->toArray($request);
+        $userData['subscription']     = $subscription;
+        $userData['active_modules']   = $activeModules;
+
+        return response()->json(['user' => $userData]);
     }
 
     public function logout(Request $request): JsonResponse

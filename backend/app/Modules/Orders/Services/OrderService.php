@@ -70,9 +70,12 @@ class OrderService
             $total = 0;
 
             foreach ($data['items'] as $item) {
-                [$sku, $name, $unitPrice] = $this->resolveProduct($item, $tenantId);
+                [$sku, $name, $dbPrice] = $this->resolveProduct($item, $tenantId);
 
-                $priceCents = $item['unit_price_cents'] ?? $unitPrice;
+                // SECURITY: unit_price_cents from the client payload is IGNORED.
+                // Price is ALWAYS resolved from the database (products/variants table).
+                // This prevents price manipulation attacks (OWASP API6).
+                $priceCents = $dbPrice;
 
                 OrderLine::create([
                     'order_id'         => $order->id,
@@ -211,11 +214,33 @@ class OrderService
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
+    /**
+     * Generate the next order number atomically using the sku_sequences table.
+     * Replaces the old COUNT+1 approach which had a race condition window.
+     * Must be called inside a DB::transaction (which create() already ensures).
+     */
     private function nextOrderNumber(string $tenantId): string
     {
-        $count = Order::where('tenant_id', $tenantId)->withTrashed()->count();
+        DB::table('sku_sequences')->insertOrIgnore([
+            'tenant_id' => $tenantId,
+            'prefix'    => 'ORD',
+            'last_seq'  => 0,
+        ]);
 
-        return 'ORD-' . str_pad((string) ($count + 1), 5, '0', STR_PAD_LEFT);
+        $row = DB::table('sku_sequences')
+            ->where('tenant_id', $tenantId)
+            ->where('prefix', 'ORD')
+            ->lockForUpdate()
+            ->first();
+
+        $nextSeq = $row->last_seq + 1;
+
+        DB::table('sku_sequences')
+            ->where('tenant_id', $tenantId)
+            ->where('prefix', 'ORD')
+            ->update(['last_seq' => $nextSeq]);
+
+        return 'ORD-' . str_pad((string) $nextSeq, 5, '0', STR_PAD_LEFT);
     }
 
     /** @return array{string, string, int} [sku, name, unit_price_cents] */

@@ -106,6 +106,16 @@ const router = createRouter({
           name: 'inventory.warehouses',
           component: () => import('@/modules/inventory/views/WarehouseView.vue'),
         },
+        {
+          path: 'transfers',
+          name: 'inventory.transfers',
+          component: () => import('@/modules/inventory/views/StockTransferView.vue'),
+        },
+        {
+          path: 'fiscal-periods',
+          name: 'inventory.fiscal-periods',
+          component: () => import('@/modules/inventory/views/FiscalPeriodView.vue'),
+        },
       ],
     },
 
@@ -141,6 +151,11 @@ const router = createRouter({
           path: ':id',
           name: 'orders.show',
           component: () => import('@/modules/orders/views/OrderDetailView.vue'),
+        },
+        {
+          path: 'returns',
+          name: 'orders.returns',
+          component: () => import('@/modules/orders/views/ReturnsView.vue'),
         },
       ],
     },

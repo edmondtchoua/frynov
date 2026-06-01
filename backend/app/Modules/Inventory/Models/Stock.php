@@ -77,6 +77,11 @@ class Stock extends Model
         return $this->belongsTo(ProductVariant::class, 'variant_id');
     }
 
+    public function warehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class);
+    }
+
     public function movements(): HasMany
     {
         return $this->hasMany(StockMovement::class)->latest();

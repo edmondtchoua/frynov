@@ -151,12 +151,14 @@ class OrderReturnService
     {
         $this->assertState($return, [OrderReturn::STATUS_PENDING, OrderReturn::STATUS_APPROVED], 'reject');
 
-        $return->update([
-            'status'           => OrderReturn::STATUS_REJECTED,
-            'rejected_at'      => now(),
-            'rejection_reason' => $reason,
-            'approved_by'      => $rejectedBy,
-        ]);
+        DB::transaction(function () use ($return, $rejectedBy, $reason) {
+            $return->update([
+                'status'           => OrderReturn::STATUS_REJECTED,
+                'rejected_at'      => now(),
+                'rejection_reason' => $reason,
+                'approved_by'      => $rejectedBy,
+            ]);
+        });
     }
 
     // ── Private ───────────────────────────────────────────────────────────

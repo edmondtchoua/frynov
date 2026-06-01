@@ -35,11 +35,14 @@ Route::prefix('workspace')->name('workspace.')
     ->group(function () {
         // Team management
         Route::get('users',           [WorkspaceController::class, 'listUsers'])->name('users.index');
-        Route::post('users',          [WorkspaceController::class, 'inviteUser'])->name('users.invite');
+        Route::post('users',          [WorkspaceController::class, 'inviteUser'])->name('users.invite')->middleware('quota:users');
         Route::patch('users/{user}',  [WorkspaceController::class, 'updateUser'])->name('users.update');
         Route::delete('users/{user}', [WorkspaceController::class, 'toggleUser'])->name('users.toggle');
 
         // Company settings
         Route::get('settings',        [WorkspaceController::class, 'getSettings'])->name('settings.show');
         Route::patch('settings',      [WorkspaceController::class, 'updateSettings'])->name('settings.update');
+
+        // Onboarding provisioning
+        Route::post('provision',      [WorkspaceController::class, 'provision'])->name('provision');
     });

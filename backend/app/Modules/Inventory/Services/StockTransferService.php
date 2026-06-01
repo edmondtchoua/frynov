@@ -33,8 +33,7 @@ class StockTransferService
         }
 
         // Both warehouses must belong to this tenant
-        $found = Warehouse::withoutTenantScope()
-            ->where('tenant_id', $tenantId)
+        $found = Warehouse::where('tenant_id', $tenantId)
             ->whereIn('id', [$sourceWarehouseId, $destWarehouseId])
             ->count();
         if ($found !== 2) {
@@ -42,7 +41,7 @@ class StockTransferService
         }
 
         return DB::transaction(function () use ($tenantId, $sourceWarehouseId, $destWarehouseId, $lines, $requestedBy, $notes) {
-            $count    = StockTransfer::withoutTenantScope()->where('tenant_id', $tenantId)->withTrashed()->count();
+            $count    = StockTransfer::where('tenant_id', $tenantId)->withTrashed()->count();
             $transfer = StockTransfer::create([
                 'tenant_id'                => $tenantId,
                 'number'                   => 'TRF-' . str_pad($count + 1, 6, '0', STR_PAD_LEFT),
@@ -77,9 +76,10 @@ class StockTransferService
             foreach ($transfer->lines as $line) {
                 $qty = $quantities[$line->id] ?? $line->quantity_requested;
 
-                $src = Stock::withoutTenantScope()
-                    ->where(['tenant_id' => $transfer->tenant_id, 'warehouse_id' => $transfer->source_warehouse_id,
-                             'product_id' => $line->product_id, 'variant_id' => $line->variant_id])
+                $src = Stock::where('tenant_id', $transfer->tenant_id)
+                    ->where('warehouse_id', $transfer->source_warehouse_id)
+                    ->where('product_id', $line->product_id)
+                    ->when($line->variant_id, fn ($q) => $q->where('variant_id', $line->variant_id), fn ($q) => $q->whereNull('variant_id'))
                     ->lockForUpdate()->first();
 
                 if (! $src || $src->available() < $qty) {
@@ -127,7 +127,7 @@ class StockTransferService
                 $disc = $line->quantity_shipped - $rcv;
 
                 // Add stock to destination warehouse
-                $dst = Stock::withoutTenantScope()->firstOrCreate(
+                $dst = Stock::firstOrCreate(
                     ['tenant_id' => $transfer->tenant_id, 'warehouse_id' => $transfer->destination_warehouse_id,
                      'product_id' => $line->product_id, 'variant_id' => $line->variant_id],
                     ['quantity' => 0, 'reserved_quantity' => 0, 'unit_cost_cents' => 0, 'total_value_cents' => 0]
@@ -177,50 +177,39 @@ class StockTransferService
                 $missing = $line->quantity_discrepancy;
 
                 if ($resolution === 'restock_source' && $missing > 0) {
-                    $src = Stock::withoutTenantScope()->where([
-                        'tenant_id' => $transfer->tenant_id,
-                        'warehouse_id' => $transfer->source_warehouse_id,
-                        'product_id' => $line->product_id, 'variant_id' => $line->variant_id,
-                    ])->first();
+                    $src = Stock::where('tenant_id', $transfer->tenant_id)
+                        ->where('warehouse_id', $transfer->source_warehouse_id)
+                        ->where('product_id', $line->product_id)
+                        ->when($line->variant_id, fn ($q) => $q->where('variant_id', $line->variant_id), fn ($q) => $q->whereNull('variant_id'))
+                        ->first();
                     if ($src) {
                         $this->stock->moveIn($src, $missing, 'return',
                             $transfer->number, 'Litige transfert — retour source', $resolvedBy);
                     }
                 } elseif ($resolution === 'write_off' && $missing > 0) {
                     // Write-off: the goods were lost in transit.
-                    // Record against the SOURCE warehouse stock (already decremented on ship).
-                    // If source stock no longer exists, look up destination stock as fallback.
-                    $writeOffStock = Stock::withoutTenantScope()->where([
-                        'tenant_id'    => $transfer->tenant_id,
-                        'warehouse_id' => $transfer->source_warehouse_id,
-                        'product_id'   => $line->product_id,
-                    ])->when($line->variant_id, fn ($q) => $q->where('variant_id', $line->variant_id),
-                                                fn ($q) => $q->whereNull('variant_id'))
-                      ->first()
-                      ?? Stock::withoutTenantScope()->where([
-                            'tenant_id'    => $transfer->tenant_id,
-                            'warehouse_id' => $transfer->destination_warehouse_id,
-                            'product_id'   => $line->product_id,
-                         ])->when($line->variant_id, fn ($q) => $q->where('variant_id', $line->variant_id),
-                                                     fn ($q) => $q->whereNull('variant_id'))
-                           ->first();
+                    // Use adjust() to properly record the loss via StockService.
+                    // Look up source stock first; fall back to destination stock.
+                    $writeOffStock = Stock::where('tenant_id', $transfer->tenant_id)
+                        ->where('warehouse_id', $transfer->source_warehouse_id)
+                        ->where('product_id', $line->product_id)
+                        ->when($line->variant_id, fn ($q) => $q->where('variant_id', $line->variant_id), fn ($q) => $q->whereNull('variant_id'))
+                        ->first()
+                        ?? Stock::where('tenant_id', $transfer->tenant_id)
+                            ->where('warehouse_id', $transfer->destination_warehouse_id)
+                            ->where('product_id', $line->product_id)
+                            ->when($line->variant_id, fn ($q) => $q->where('variant_id', $line->variant_id), fn ($q) => $q->whereNull('variant_id'))
+                            ->first();
 
                     if ($writeOffStock) {
-                        StockMovement::create([
-                            'tenant_id'      => $transfer->tenant_id,
-                            'stock_id'       => $writeOffStock->id,
-                            'product_id'     => $line->product_id,
-                            'variant_id'     => $line->variant_id,
-                            'type'           => StockMovement::TYPE_ADJUSTMENT,
-                            'quantity'       => $missing,
-                            'quantity_before'=> 0,
-                            'quantity_after' => 0,
-                            'reason'         => 'write_off',
-                            'reference'      => $transfer->number,
-                            'note'           => "Litige TRF — perte acceptée: {$reason}",
-                            'performed_by'   => $resolvedBy,
-                            'unit_cost_cents_snapshot' => $line->unit_cost_cents_at_transfer,
-                        ]);
+                        $this->stock->adjust(
+                            $writeOffStock,
+                            -$missing,
+                            'write_off',
+                            $transfer->number,
+                            "Litige TRF — perte acceptée: {$reason}",
+                            $resolvedBy,
+                        );
                     }
                 }
                 $line->update(['line_status' => 'resolved', 'discrepancy_reason' => $reason]);

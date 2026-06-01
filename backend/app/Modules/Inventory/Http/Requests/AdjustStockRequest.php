@@ -12,7 +12,8 @@ class AdjustStockRequest extends FormRequest
     {
         return [
             'quantity' => ['required', 'integer', 'min:0'],
-            'note'     => ['nullable', 'string', 'max:500'],
+            'note'     => ['required', 'string', 'min:5', 'max:500'],
+            // Sprint 11: mandatory justification for all inventory adjustments
         ];
     }
 }

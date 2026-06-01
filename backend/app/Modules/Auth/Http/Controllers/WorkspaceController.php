@@ -8,6 +8,7 @@ use App\Modules\Tenants\Models\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -22,6 +23,11 @@ class WorkspaceController extends Controller
      */
     public function listUsers(Request $request): JsonResponse
     {
+        // Sprint 11: restrict member/role enumeration to admin and manager
+        if (!$request->user()->hasAnyRole(['admin', 'manager'])) {
+            return response()->json(['message' => 'Accès réservé aux administrateurs et managers.'], 403);
+        }
+
         $tenant = $request->user()->tenant;
 
         $users = User::withTrashed()
@@ -90,22 +96,29 @@ class WorkspaceController extends Controller
         if ($request->has('role')) {
             $newRole = $request->input('role');
 
-            // Guard: cannot demote the only admin
-            if ($user->hasRole('admin') && $newRole !== 'admin') {
-                $adminCount = User::where('tenant_id', $tenant->id)
-                    ->whereHas('roles', fn ($q) => $q->where('name', 'admin'))
-                    ->count();
+            DB::transaction(function () use ($user, $newRole, $tenant, &$response) {
+                // Guard: cannot demote the only admin
+                if ($user->hasRole('admin') && $newRole !== 'admin') {
+                    $adminCount = User::where('tenant_id', $tenant->id)
+                        ->whereHas('roles', fn ($q) => $q->where('name', 'admin'))
+                        ->count();
 
-                if ($adminCount <= 1) {
-                    return response()->json([
-                        'message' => 'Impossible de retirer le rôle admin au dernier administrateur.',
-                    ], 422);
+                    if ($adminCount <= 1) {
+                        $response = response()->json([
+                            'message' => 'Impossible de retirer le rôle admin au dernier administrateur.',
+                        ], 422);
+                        return;
+                    }
                 }
-            }
 
-            // Scope role update to the tenant (Spatie teams)
-            app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
-            $user->syncRoles([$newRole]);
+                // Scope role update to the tenant (Spatie teams)
+                app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
+                $user->syncRoles([$newRole]);
+            });
+
+            if (isset($response)) {
+                return $response;
+            }
         }
 
         return response()->json(['data' => $this->userToArray($user->refresh())]);
@@ -126,6 +139,11 @@ class WorkspaceController extends Controller
         $user   = User::withTrashed()
             ->where('tenant_id', $tenant->id)
             ->findOrFail($userId);
+
+        // Sprint 11: prevent rank escalation — managers cannot deactivate admins
+        if ($user->hasRole('admin') && !$request->user()->hasRole('admin')) {
+            return response()->json(['message' => 'Un manager ne peut pas désactiver un administrateur.'], 403);
+        }
 
         if ($user->id === $request->user()->id) {
             return response()->json(['message' => 'Vous ne pouvez pas modifier votre propre statut.'], 422);
@@ -153,6 +171,69 @@ class WorkspaceController extends Controller
         return response()->json([
             'data'    => $this->userToArray($user->refresh()),
             'message' => $message,
+        ]);
+    }
+
+    // ── Onboarding provisioning ───────────────────────────────────────────────
+
+    /**
+     * POST /api/workspace/provision
+     * Called at the end of the onboarding wizard to provision the workspace.
+     * Sprint 11 GO item — cables the cosmetic onboarding to the backend.
+     */
+    public function provision(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'company_name'    => ['required', 'string', 'max:150'],
+            'country'         => ['required', 'string', 'size:2'],
+            'currency'        => ['required', 'string', 'size:3'],
+            'timezone'        => ['nullable', 'string', 'max:50'],
+            'sector'          => ['nullable', 'string', 'max:80'],
+            'activity_type'   => ['nullable', 'string', 'max:80'],
+            'nb_users'        => ['nullable', 'integer', 'min:1'],
+            'nb_branches'     => ['nullable', 'integer', 'min:1'],
+            'needs_stock'     => ['boolean'],
+            'needs_pos'       => ['boolean'],
+            'needs_delivery'  => ['boolean'],
+            'needs_ecommerce' => ['boolean'],
+            'needs_offline'   => ['boolean'],
+            'modules'         => ['nullable', 'array'],
+            'warehouse_name'  => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $tenant = $request->user()->tenant;
+
+        // Store enriched settings from onboarding
+        $settings = array_merge($tenant->settings ?? [], [
+            'sector'          => $data['sector'] ?? null,
+            'activity_type'   => $data['activity_type'] ?? null,
+            'nb_users'        => $data['nb_users'] ?? null,
+            'nb_branches'     => $data['nb_branches'] ?? null,
+            'needs_stock'     => $data['needs_stock'] ?? false,
+            'needs_pos'       => $data['needs_pos'] ?? false,
+            'needs_delivery'  => $data['needs_delivery'] ?? false,
+            'needs_ecommerce' => $data['needs_ecommerce'] ?? false,
+            'needs_offline'   => $data['needs_offline'] ?? false,
+            'onboarding_completed_at' => now()->toIso8601String(),
+        ]);
+
+        $tenant->update([
+            'name'     => $data['company_name'],
+            'settings' => $settings,
+        ]);
+
+        // Create default warehouse if name provided
+        if (!empty($data['warehouse_name'])) {
+            \App\Modules\Inventory\Models\Warehouse::firstOrCreate(
+                ['tenant_id' => $tenant->id, 'is_default' => true],
+                ['name' => $data['warehouse_name'], 'code' => strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $data['warehouse_name']), 0, 6))]
+            );
+        }
+
+        return response()->json([
+            'message'  => 'Espace de travail configuré avec succès.',
+            'tenant'   => $tenant->fresh(),
+            'user'     => $request->user(),
         ]);
     }
 

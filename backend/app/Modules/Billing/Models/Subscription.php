@@ -29,6 +29,7 @@ class Subscription extends Model
         'current_period_end',
         'cancelled_at',
         'cancellation_reason',
+        'suspension_reason',
         'approved_by',
         'approved_at',
         'notes',

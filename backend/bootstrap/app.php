@@ -18,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register named aliases for convenience in route definitions
         $middleware->alias([
             'webhook.signature' => \App\Modules\Billing\Http\Middleware\VerifyWebhookSignature::class,
+            'quota'             => \App\Modules\Billing\Http\Middleware\EnforceQuota::class,
+            // Sprint 11: Spatie Permission role/permission middleware
+            'role'              => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission'        => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission'=> \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

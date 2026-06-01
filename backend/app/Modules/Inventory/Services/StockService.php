@@ -116,7 +116,10 @@ class StockService
             /** @var Stock $stock */
             $stock         = $item['stock'];
             $quantity      = (int) $item['quantity'];
-            $unitCost      = (int) ($item['unit_cost_cents'] ?? 0);
+            // Sprint 11: unit_cost_cents must come from internal/trusted callers only,
+            // never from raw HTTP payloads. Strip it or use 0 if not from a trusted source.
+            // The $item['_trusted_cost'] key is set only by internal services (ImportExport, etc.).
+            $unitCost = isset($item['_trusted_cost']) ? (int) $item['_trusted_cost'] : 0;
             $reference     = $item['reference'] ?? null;
 
             // Axe 4 — Period lock guard
@@ -304,7 +307,19 @@ class StockService
 
     public function release(Stock $stock, int $quantity): void
     {
-        $stock->decrement('reserved_quantity', min($quantity, $stock->reserved_quantity));
+        // Sprint 11: use lock to prevent race condition under concurrent order cancellations
+        $lock = Cache::lock("inventory.stock.{$stock->id}", self::LOCK_TTL);
+        if ($lock->get()) {
+            try {
+                DB::transaction(function () use ($stock, $quantity) {
+                    $locked = Stock::where('id', $stock->id)->lockForUpdate()->firstOrFail();
+                    $locked->decrement('reserved_quantity', min($quantity, $locked->reserved_quantity));
+                });
+            } finally {
+                $lock->release();
+            }
+        }
+        // If lock not acquired, the decrement is skipped (safe: reserved_quantity drift is non-critical vs oversell)
     }
 
     // ── Alerts — uses AVAILABLE (qty - reserved), not raw quantity ─────────

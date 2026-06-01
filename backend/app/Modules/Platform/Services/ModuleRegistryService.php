@@ -3,6 +3,7 @@
 namespace App\Modules\Platform\Services;
 
 use App\Modules\Billing\Models\Plan;
+use App\Modules\Platform\Models\AuditLog;
 use App\Modules\Platform\Models\ErpModule;
 use App\Modules\Platform\Models\TenantModule;
 use App\Modules\Tenants\Models\Tenant;
@@ -83,6 +84,25 @@ class ModuleRegistryService
     public function activate(Tenant $tenant, string $moduleCode, ?string $activatedBy = null): TenantModule
     {
         $module = ErpModule::where('code', $moduleCode)->firstOrFail();
+
+        // Sprint 11: log when a module is activated outside the tenant's plan (admin override)
+        $plan      = Plan::where('code', $tenant->plan)->first();
+        $isInPlan  = $plan && $plan->includedModules()->where('erp_modules.id', $module->id)->exists();
+
+        if (! $isInPlan) {
+            AuditLog::create([
+                'tenant_id'    => $tenant->id,
+                'user_id'      => auth()->id(),
+                'action'       => 'module.activated_outside_plan',
+                'subject_type' => 'ErpModule',
+                'subject_id'   => $module->id,
+                'old_values'   => ['plan_code' => $tenant->plan],
+                'new_values'   => ['module_code' => $moduleCode, 'override' => true],
+                'ip_address'   => request()->ip(),
+                'user_agent'   => request()->userAgent(),
+                'risk_level'   => 'medium',
+            ]);
+        }
 
         return TenantModule::updateOrCreate(
             ['tenant_id' => $tenant->id, 'module_id' => $module->id],

@@ -32,6 +32,8 @@ class InventoryController extends Controller
 
         // Filter by warehouse
         if ($warehouseId = $request->query('warehouse_id')) {
+            \App\Modules\Inventory\Models\Warehouse::where('tenant_id', $request->user()->tenant_id)
+                ->where('id', $warehouseId)->firstOrFail();
             $query->where('stocks.warehouse_id', $warehouseId);
         }
 
@@ -65,6 +67,10 @@ class InventoryController extends Controller
         $variantId = $request->query('variant_id');
         $tenantId  = $request->user()->tenant_id;
 
+        // Sprint 11: verify product belongs to tenant before accessing its stock
+        $product = \App\Modules\Catalog\Models\Product::where('tenant_id', $tenantId)
+            ->where('id', $productId)->firstOrFail();
+
         $stock = $this->stockService->findOrCreate($tenantId, $productId, $variantId);
         $stock->load(['product', 'variant']);
 
@@ -80,6 +86,9 @@ class InventoryController extends Controller
     {
         $variantId = $request->query('variant_id');
         $tenantId  = $request->user()->tenant_id;
+
+        $product = \App\Modules\Catalog\Models\Product::where('tenant_id', $tenantId)
+            ->where('id', $productId)->firstOrFail();
 
         $stock     = $this->stockService->findOrCreate($tenantId, $productId, $variantId);
         $paginator = $this->inventoryService->movementHistory($stock, (int) $request->query('per_page', 20));
@@ -240,6 +249,10 @@ class InventoryController extends Controller
     public function warehouseSummary(Request $request, string $id): JsonResponse
     {
         $tenantId = $request->user()->tenant_id;
+
+        // Sprint 11: verify warehouse belongs to tenant (prevents UUID oracle)
+        \App\Modules\Inventory\Models\Warehouse::where('tenant_id', $tenantId)
+            ->where('id', $id)->firstOrFail();
 
         $row = DB::table('stocks')
             ->where('tenant_id',   $tenantId)

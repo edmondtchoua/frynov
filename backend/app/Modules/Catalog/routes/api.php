@@ -17,7 +17,7 @@ Route::prefix('catalog')->name('catalog.')->group(function () {
 
         // Products — CRUD
         Route::get('products',              [CatalogController::class, 'index'])->name('products.index');
-        Route::post('products',             [CatalogController::class, 'store'])->name('products.store');
+        Route::post('products',             [CatalogController::class, 'store'])->name('products.store')->middleware('quota:products');
         Route::get('products/{id}',         [CatalogController::class, 'show'])->name('products.show');
         Route::put('products/{id}',         [CatalogController::class, 'update'])->name('products.update');
         Route::patch('products/{id}/archive',  [CatalogController::class, 'archive'])->name('products.archive');

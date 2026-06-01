@@ -16,7 +16,7 @@ Route::middleware(['auth:sanctum'])
 
         // ── Orders CRUD
         Route::get('/',              [OrderController::class, 'index']);
-        Route::post('/',             [OrderController::class, 'store']);
+        Route::post('/',             [OrderController::class, 'store'])->middleware('quota:orders');
         Route::get('/{id}',          [OrderController::class, 'show']);
         Route::post('/{id}/confirm', [OrderController::class, 'confirm']);
         Route::post('/{id}/fulfill', [OrderController::class, 'fulfill']);

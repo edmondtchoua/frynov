@@ -36,6 +36,7 @@ class Payment extends Model
         'note',
         'paid_at',
         'performed_by',
+        'idempotency_key',
     ];
 
     protected function casts(): array

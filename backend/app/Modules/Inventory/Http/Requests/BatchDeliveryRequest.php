@@ -3,6 +3,7 @@
 namespace App\Modules\Inventory\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class BatchDeliveryRequest extends FormRequest
 {
@@ -12,8 +13,9 @@ class BatchDeliveryRequest extends FormRequest
     {
         return [
             'items'                  => ['required', 'array', 'min:1', 'max:200'],
-            'items.*.product_id'     => ['required', 'uuid', 'exists:products,id'],
-            'items.*.variant_id'     => ['nullable', 'uuid', 'exists:product_variants,id'],
+            // Sprint 11 fix — scoped to tenant to prevent cross-tenant IDOR via product_id injection
+            'items.*.product_id'     => ['required', 'uuid', Rule::exists('products', 'id')->where('tenant_id', auth()->user()->tenant_id)],
+            'items.*.variant_id'     => ['nullable', 'uuid', Rule::exists('product_variants', 'id')->where('tenant_id', auth()->user()->tenant_id)],
             'items.*.quantity'       => ['required', 'integer', 'min:1', 'max:10000'],
             'items.*.reference'      => ['nullable', 'string', 'max:100'],
             'items.*.note'           => ['nullable', 'string', 'max:500'],

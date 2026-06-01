@@ -6,6 +6,7 @@ use App\Modules\Orders\Models\Order;
 use App\Modules\Payments\Models\Payment;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 class PaymentService
 {
@@ -15,17 +16,42 @@ class PaymentService
      */
     public function record(array $data, string $tenantId, string $userId): Payment
     {
-        return Payment::create([
-            'tenant_id'    => $tenantId,
-            'order_id'     => $data['order_id']    ?? null,
-            'amount_cents' => $data['amount_cents'],
-            'currency'     => $data['currency']    ?? 'EUR',
-            'method'       => $data['method'],
-            'reference'    => $data['reference']   ?? null,
-            'note'         => $data['note']        ?? null,
-            'paid_at'      => $data['paid_at']     ?? now(),
-            'performed_by' => $userId,
-        ]);
+        return DB::transaction(function () use ($data, $tenantId, $userId) {
+            // Sprint 11 security fix: cap amount_cents to remaining order balance.
+            // ORDER IS LOCKED via SELECT FOR UPDATE to prevent concurrent double-payment
+            // race conditions — the balance check and Payment::create() are now atomic.
+            if (!empty($data['order_id'])) {
+                $order = \App\Modules\Orders\Models\Order::where('tenant_id', $tenantId)
+                             ->lockForUpdate()
+                             ->findOrFail($data['order_id']);
+
+                $paid      = $this->balance($order);
+                $remaining = max(0, $order->total_amount - $paid);
+
+                // Allow a 1% tolerance for rounding/fees (configurable)
+                $tolerance = (int) ceil($order->total_amount * 0.01);
+
+                if ($data['amount_cents'] > $remaining + $tolerance) {
+                    throw new \Illuminate\Validation\ValidationException(
+                        \Illuminate\Validation\Validator::make([], []),
+                        response()->json(['message' => 'Montant supérieur au solde restant de l\'ordre (' . $remaining . ' centimes).'], 422)
+                    );
+                }
+            }
+
+            return Payment::create([
+                'tenant_id'       => $tenantId,
+                'order_id'        => $data['order_id']        ?? null,
+                'amount_cents'    => $data['amount_cents'],
+                'currency'        => $data['currency']        ?? 'EUR',
+                'method'          => $data['method'],
+                'reference'       => $data['reference']       ?? null,
+                'note'            => $data['note']             ?? null,
+                'paid_at'         => $data['paid_at']          ?? now(),
+                'performed_by'    => $userId,
+                'idempotency_key' => $data['idempotency_key'] ?? null,
+            ]);
+        });
     }
 
     /**

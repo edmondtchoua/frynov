@@ -54,6 +54,23 @@ class EnsureUserBelongsToTenant
                 'url'            => $request->fullUrl(),
                 'user_agent'     => $request->userAgent(),
             ]);
+            // Sprint 11: log IDOR attempts to the immutable audit chain, not just the app log
+            try {
+                \App\Modules\Platform\Models\AuditLog::create([
+                    'tenant_id'    => $user->tenant_id,
+                    'user_id'      => $user->id,
+                    'action'       => 'security.idor_attempt',
+                    'subject_type' => 'tenant',
+                    'subject_id'   => $tenantId ?? 'unknown',
+                    'old_values'   => ['expected_tenant' => $user->tenant_id],
+                    'new_values'   => ['requested_tenant' => $tenantId],
+                    'ip_address'   => $request->ip(),
+                    'user_agent'   => $request->userAgent(),
+                    'risk_level'   => 'high',
+                ]);
+            } catch (\Throwable) {
+                // Never let audit logging block the rejection response
+            }
             return response()->json(['message' => 'Accès non autorisé.'], 403);
         }
 

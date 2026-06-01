@@ -74,6 +74,11 @@ const router = createRouter({
           component: () => import('@/modules/catalog/views/CategoryListView.vue'),
         },
         {
+          path: 'variants',
+          name: 'catalog.variants',
+          component: () => import('@/modules/catalog/views/VariantsView.vue'),
+        },
+        {
           path: 'labels',
           name: 'catalog.labels',
           component: () => import('@/modules/catalog/views/LabelPrintView.vue'),

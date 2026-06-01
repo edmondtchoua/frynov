@@ -1,5 +1,6 @@
 <template>
   <div>
+    <CatalogTabNav />
     <div class="page-header">
       <div>
         <h2>Impression d'étiquettes</h2>
@@ -140,6 +141,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import CatalogTabNav from '../components/CatalogTabNav.vue'
 import { productService } from '../services/productService'
 import type { LabelBatchItem, Product } from '../types'
 

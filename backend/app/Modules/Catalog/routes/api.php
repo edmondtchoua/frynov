@@ -1,8 +1,10 @@
 <?php
 
 use App\Modules\Catalog\Http\Controllers\CatalogController;
+use App\Modules\Catalog\Http\Controllers\CatalogVariantController;
 use App\Modules\Catalog\Http\Controllers\CategoryController;
 use App\Modules\Catalog\Http\Controllers\LabelController;
+use App\Modules\Catalog\Http\Controllers\ProductAttributeController;
 use App\Modules\Catalog\Http\Controllers\ProductCodeController;
 use App\Modules\Catalog\Http\Controllers\ProductVariantController;
 use Illuminate\Support\Facades\Route;
@@ -48,5 +50,17 @@ Route::prefix('catalog')->name('catalog.')->group(function () {
         Route::post('categories',           [CategoryController::class, 'store'])->name('categories.store');
         Route::put('categories/{id}',       [CategoryController::class, 'update'])->name('categories.update');
         Route::delete('categories/{id}',    [CategoryController::class, 'destroy'])->name('categories.destroy');
+
+        // ── Cross-product variant browser (frontend "Variantes" tab)
+        Route::get('variants',              [CatalogVariantController::class, 'index'])->name('variants.index');
+        Route::get('variants/stats',        [CatalogVariantController::class, 'stats'])->name('variants.stats');
+
+        // ── Product attributes & values (per product)
+        Route::get('products/{productId}/attributes',                                    [ProductAttributeController::class, 'index'])->name('attributes.index');
+        Route::post('products/{productId}/attributes',                                   [ProductAttributeController::class, 'store'])->name('attributes.store');
+        Route::put('products/{productId}/attributes/{attributeId}',                     [ProductAttributeController::class, 'update'])->name('attributes.update');
+        Route::delete('products/{productId}/attributes/{attributeId}',                  [ProductAttributeController::class, 'destroy'])->name('attributes.destroy');
+        Route::post('products/{productId}/attributes/{attributeId}/values',             [ProductAttributeController::class, 'addValue'])->name('attributes.values.store');
+        Route::delete('products/{productId}/attributes/{attributeId}/values/{valueId}', [ProductAttributeController::class, 'removeValue'])->name('attributes.values.destroy');
     });
 });

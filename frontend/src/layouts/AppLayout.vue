@@ -65,21 +65,74 @@
       <!-- Nav items -->
       <nav class="sidebar-nav">
         <div class="nav-section-label" v-if="!sidebarCollapsed">Principal</div>
-        <RouterLink
-          v-for="item in mainNavItems"
-          :key="item.name"
-          :to="item.to"
-          class="nav-item"
-          active-class="nav-item--active"
-          :title="sidebarCollapsed ? item.label : ''"
-          @click="mobileMenuOpen = false"
-        >
-          <span class="nav-icon" v-html="item.icon"></span>
-          <span v-if="!sidebarCollapsed" class="nav-label">{{ item.label }}</span>
-          <span v-if="item.name === 'marketplace.listings' && marketplaceAlertCount > 0" class="nav-alert-badge">
-            {{ marketplaceAlertCount }}
-          </span>
-        </RouterLink>
+
+        <template v-for="item in mainNavItems" :key="item.name">
+          <!-- Item WITH children → collapsible group -->
+          <template v-if="item.children">
+            <!-- Parent toggle -->
+            <button
+              class="nav-item nav-group-toggle"
+              :class="{ 'nav-item--active': isGroupActive(item) }"
+              :title="sidebarCollapsed ? item.label : ''"
+              @click="toggleGroup(item.name)"
+            >
+              <span class="nav-icon" v-html="item.icon"></span>
+              <span v-if="!sidebarCollapsed" class="nav-label">{{ item.label }}</span>
+              <svg
+                v-if="!sidebarCollapsed"
+                class="nav-chevron"
+                :class="{ open: openGroups.has(item.name) }"
+                width="12" height="12" viewBox="0 0 12 12" fill="none"
+              >
+                <path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <!-- Sub-items (shown when group is open or route is active) -->
+            <div
+              v-if="!sidebarCollapsed && (openGroups.has(item.name) || isGroupActive(item))"
+              class="nav-sub"
+            >
+              <RouterLink
+                v-for="child in item.children"
+                :key="child.name"
+                :to="child.to"
+                class="nav-sub-item"
+                active-class="nav-sub-item--active"
+                :exact-active-class="child.to === '/catalog' ? 'nav-sub-item--active' : ''"
+                @click="mobileMenuOpen = false"
+              >
+                {{ child.label }}
+              </RouterLink>
+            </div>
+            <!-- Collapsed: show parent link only -->
+            <RouterLink
+              v-if="sidebarCollapsed"
+              :to="item.to"
+              class="nav-item"
+              active-class="nav-item--active"
+              :title="item.label"
+              @click="mobileMenuOpen = false"
+            >
+              <span class="nav-icon" v-html="item.icon"></span>
+            </RouterLink>
+          </template>
+
+          <!-- Item WITHOUT children → simple link -->
+          <RouterLink
+            v-else
+            :to="item.to"
+            class="nav-item"
+            active-class="nav-item--active"
+            :title="sidebarCollapsed ? item.label : ''"
+            @click="mobileMenuOpen = false"
+          >
+            <span class="nav-icon" v-html="item.icon"></span>
+            <span v-if="!sidebarCollapsed" class="nav-label">{{ item.label }}</span>
+            <span v-if="item.name === 'marketplace.listings' && marketplaceAlertCount > 0" class="nav-alert-badge">
+              {{ marketplaceAlertCount }}
+            </span>
+          </RouterLink>
+        </template>
 
         <div v-if="!sidebarCollapsed" class="nav-section-label" style="margin-top: 0.75rem;">Configuration</div>
         <RouterLink
@@ -174,7 +227,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import FrynovLogo from '@/shared/components/FrynovLogo.vue'
@@ -192,6 +245,32 @@ const { unreadCount: marketplaceAlertCount } = useNotifications()
 const sidebarCollapsed = ref(false)
 const mobileMenuOpen   = ref(false)
 
+// Collapsible nav groups — auto-open when current route is inside the group
+const openGroups = reactive(new Set<string>())
+
+function isGroupActive(item: { to: string; children?: { to: string }[] }): boolean {
+  return route.path === item.to || route.path.startsWith(item.to + '/')
+}
+
+function toggleGroup(name: string): void {
+  if (openGroups.has(name)) {
+    openGroups.delete(name)
+  } else {
+    openGroups.add(name)
+  }
+}
+
+// Auto-open the group of the current route on mount and route change
+function syncOpenGroups(): void {
+  mainNavItems.forEach(item => {
+    if (item.children && isGroupActive(item)) {
+      openGroups.add(item.name)
+    }
+  })
+}
+
+// We call syncOpenGroups after mainNavItems is defined (below)
+
 const mainNavItems = [
   {
     name: 'dashboard',
@@ -204,6 +283,12 @@ const mainNavItems = [
     to: '/catalog',
     label: 'Catalogue',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+    children: [
+      { name: 'catalog.products',   to: '/catalog',            label: 'Produits' },
+      { name: 'catalog.categories', to: '/catalog/categories', label: 'Catégories' },
+      { name: 'catalog.variants',   to: '/catalog/variants',   label: 'Variantes' },
+      { name: 'catalog.labels',     to: '/catalog/labels',     label: 'Étiquettes' },
+    ],
   },
   {
     name: 'inventory',
@@ -305,6 +390,9 @@ async function handleLogout() {
   await auth.logout()
   router.push({ name: 'login' })
 }
+
+// Auto-open active group on mount
+syncOpenGroups()
 </script>
 
 <style scoped>
@@ -400,6 +488,49 @@ async function handleLogout() {
   color: #6ee7b7;
 }
 .nav-item--active:hover { background: rgba(16,185,129,0.2); }
+
+/* ── Collapsible nav groups ──────────────────────────────────────── */
+.nav-group-toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.nav-chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: rgba(255,255,255,0.4);
+  transition: transform 0.2s;
+}
+.nav-chevron.open { transform: rotate(180deg); }
+
+.nav-sub {
+  padding-left: 8px;
+  margin-bottom: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.nav-sub-item {
+  display: block;
+  padding: 5px 10px 5px 28px;
+  border-radius: var(--radius-md);
+  color: rgba(255,255,255,0.5);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+  border-left: 2px solid rgba(255,255,255,0.08);
+  white-space: nowrap;
+}
+.nav-sub-item:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.05); }
+.nav-sub-item--active {
+  color: #6ee7b7;
+  border-left-color: #6ee7b7;
+  background: rgba(16,185,129,0.08);
+  font-weight: 600;
+}
 
 .nav-icon {
   width: 16px;

@@ -15,7 +15,7 @@ class CategoryController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $tenantId   = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId   = $request->user()->tenant_id;
         $categories = $this->catalog->listCategories($tenantId);
 
         return response()->json(['data' => CategoryResource::collection($categories)]);
@@ -32,7 +32,7 @@ class CategoryController extends Controller
             'is_active'   => ['nullable', 'boolean'],
         ]);
 
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
         $category = $this->catalog->createCategory($tenantId, $data);
 
         return response()->json(['data' => new CategoryResource($category)], 201);
@@ -40,7 +40,7 @@ class CategoryController extends Controller
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
         $category = Category::where('tenant_id', $tenantId)->find($id);
 
         if (! $category) {
@@ -62,7 +62,7 @@ class CategoryController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
         $category = Category::where('tenant_id', $tenantId)->find($id);
 
         if (! $category) {

@@ -153,14 +153,14 @@ const router = createRouter({
           component: () => import('@/modules/orders/views/OrderCreateView.vue'),
         },
         {
-          path: ':id',
-          name: 'orders.show',
-          component: () => import('@/modules/orders/views/OrderDetailView.vue'),
-        },
-        {
           path: 'returns',
           name: 'orders.returns',
           component: () => import('@/modules/orders/views/ReturnsView.vue'),
+        },
+        {
+          path: ':id',
+          name: 'orders.show',
+          component: () => import('@/modules/orders/views/OrderDetailView.vue'),
         },
       ],
     },
@@ -219,6 +219,12 @@ const router = createRouter({
           name: 'suppliers.list',
           component: () => import('@/modules/suppliers/views/SupplierListView.vue'),
         },
+        {
+          path: ':id',
+          name: 'suppliers.show',
+          component: () => import('@/modules/suppliers/views/SupplierListView.vue'),
+          meta: { layout: 'app', title: 'Fournisseur' },
+        },
       ],
     },
 
@@ -227,6 +233,7 @@ const router = createRouter({
       path: '/import',
       meta: { layout: 'app' },
       children: [
+        { path: '', redirect: { name: 'import.history' } },
         {
           path: 'history',
           name: 'import.history',
@@ -245,6 +252,7 @@ const router = createRouter({
       path: '/reports',
       meta: { layout: 'app' },
       children: [
+        { path: '', redirect: { name: 'reports.sales' } },
         {
           path: 'sales',
           name: 'reports.sales',

@@ -215,7 +215,7 @@
           <span class="tenant-chip hide-mobile">{{ tenantName }}</span>
           <!-- Notification bell with toasts -->
           <NotificationCenter />
-          <div class="user-avatar-top" :title="auth.user?.name">{{ userInitials }}</div>
+          <div class="user-avatar-top" :title="auth.user?.name" style="cursor:pointer" @click="router.push('/profile')">{{ userInitials }}</div>
         </div>
       </header>
 
@@ -248,7 +248,14 @@ const mobileMenuOpen   = ref(false)
 // Collapsible nav groups — auto-open when current route is inside the group
 const openGroups = reactive(new Set<string>())
 
-function isGroupActive(item: { to: string; children?: { to: string }[] }): boolean {
+function isGroupActive(item: { name: string; to: string; children?: { to: string }[] }): boolean {
+  if (item.name === 'ventes') {
+    return (
+      route.path.startsWith('/orders') ||
+      route.path.startsWith('/payments') ||
+      route.path.startsWith('/deliveries')
+    )
+  }
   return route.path === item.to || route.path.startsWith(item.to + '/')
 }
 
@@ -286,21 +293,33 @@ const mainNavItems = [
     children: [
       { name: 'catalog.products',   to: '/catalog',            label: 'Produits' },
       { name: 'catalog.categories', to: '/catalog/categories', label: 'Catégories' },
-      { name: 'catalog.variants',   to: '/catalog/variants',   label: 'Variantes' },
+      { name: 'catalog.variants',   to: '/catalog/variants',   label: 'Déclinaisons' },
       { name: 'catalog.labels',     to: '/catalog/labels',     label: 'Étiquettes' },
     ],
   },
   {
     name: 'inventory',
     to: '/inventory',
-    label: 'Inventaire',
+    label: 'Stock & Inventaire',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 5l6-3 6 3v6l-6 3-6-3V5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 2v12M2 5l6 3 6-3" stroke="currentColor" stroke-width="1.4"/></svg>',
+    children: [
+      { name: 'inventory.stock',         to: '/inventory',                label: 'Stock' },
+      { name: 'inventory.warehouses',    to: '/inventory/warehouses',     label: 'Entrepôts' },
+      { name: 'inventory.transfers',     to: '/inventory/transfers',      label: 'Transferts' },
+      { name: 'inventory.fiscal-periods',to: '/inventory/fiscal-periods', label: 'Clôture de période' },
+    ],
   },
   {
-    name: 'orders',
+    name: 'ventes',
     to: '/orders',
-    label: 'Commandes',
-    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2h12v10a1 1 0 01-1 1H3a1 1 0 01-1-1V2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+    label: 'Ventes',
+    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="13" r="1.5" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="13" r="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 1h2l2 7h7l1.5-5H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    children: [
+      { name: 'ventes.orders',    to: '/orders',     label: 'Commandes' },
+      { name: 'ventes.returns',   to: '/orders/returns', label: 'Retours & SAV' },
+      { name: 'ventes.payments',  to: '/payments',   label: 'Paiements' },
+      { name: 'ventes.deliveries',to: '/deliveries', label: 'Livraisons' },
+    ],
   },
   {
     name: 'customers',
@@ -315,40 +334,30 @@ const mainNavItems = [
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 12V5l5-3 5 3v7" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 16v-4h4v4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M11 12h4V7l-4-2" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
   },
   {
-    name: 'catalog.labels',
-    to: '/catalog/labels',
-    label: 'Étiquettes',
-    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 4a1 1 0 011-1h5.586a1 1 0 01.707.293l3.414 3.414A1 1 0 0114 7.414V12a1 1 0 01-1 1H4a1 1 0 01-1-1V4z" stroke="currentColor" stroke-width="1.4"/><circle cx="6" cy="8" r="1" fill="currentColor"/></svg>',
-  },
-  {
-    name: 'inventory.warehouses',
-    to: '/inventory/warehouses',
-    label: 'Entrepôts',
-    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 14V6l6-4 6 4v8H2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 14v-4h4v4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
-  },
-  {
-    name: 'marketplace.listings',
-    to: '/marketplace',
-    label: 'Marketplace',
-    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M2 8h12M8 2c-1.5 2-2 4-2 6s.5 4 2 6M8 2c1.5 2 2 4 2 6s-.5 4-2 6" stroke="currentColor" stroke-width="1.4"/></svg>',
+    name: 'reports',
+    to: '/reports/sales',
+    label: 'Rapports',
+    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12V9l3-3 3 3 4-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 15h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+    children: [
+      { name: 'reports.sales', to: '/reports/sales', label: 'Rapport des ventes' },
+      { name: 'reports.stock', to: '/reports/stock', label: 'Rapport de stock' },
+    ],
   },
   {
     name: 'import',
     to: '/import/history',
     label: 'Import / Export',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+    children: [
+      { name: 'import.history', to: '/import/history', label: 'Historique' },
+      { name: 'import.new',     to: '/import/new',     label: 'Nouvel import' },
+    ],
   },
   {
-    name: 'reports.sales',
-    to: '/reports/sales',
-    label: 'Rapport ventes',
-    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="10" width="3" height="4" rx="1" fill="currentColor" opacity=".5"/><rect x="6" y="7" width="3" height="7" rx="1" fill="currentColor" opacity=".7"/><rect x="10" y="3" width="3" height="11" rx="1" fill="currentColor"/></svg>',
-  },
-  {
-    name: 'reports.stock',
-    to: '/reports/stock',
-    label: 'Rapport stock',
-    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4l6-2 6 2v8l-6 2-6-2V4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M2 4l6 2 6-2M8 6v8" stroke="currentColor" stroke-width="1.4"/></svg>',
+    name: 'marketplace.listings',
+    to: '/marketplace',
+    label: 'Marketplace',
+    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M2 8h12M8 2c-1.5 2-2 4-2 6s.5 4 2 6M8 2c1.5 2 2 4 2 6s-.5 4-2 6" stroke="currentColor" stroke-width="1.4"/></svg>',
   },
 ]
 
@@ -705,8 +714,10 @@ syncOpenGroups()
   font-weight: 700;
   color: white;
   flex-shrink: 0;
-  cursor: default;
+  cursor: pointer;
+  transition: opacity 0.15s;
 }
+.user-avatar-top:hover { opacity: 0.85; }
 
 /* ── Page content — the only scrollable region ───────────── */
 .page-content {

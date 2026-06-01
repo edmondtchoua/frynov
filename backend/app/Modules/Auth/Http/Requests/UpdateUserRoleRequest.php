@@ -20,11 +20,11 @@ use Illuminate\Validation\Rule;
 class UpdateUserRoleRequest extends FormRequest
 {
     private const ROLE_HIERARCHY = [
-        'admin'       => ['admin', 'manager', 'member', 'viewer'],
-        'manager'     => ['manager', 'member', 'viewer'],
+        'admin'       => ['admin', 'manager', 'member', 'viewer', 'agent', 'cashier', 'commercial', 'delivery'],
+        'manager'     => ['manager', 'member', 'viewer', 'agent', 'cashier', 'commercial', 'delivery'],
         'member'      => [],
         'viewer'      => [],
-        'super-admin' => ['admin', 'manager', 'member', 'viewer'],
+        'super-admin' => ['admin', 'manager', 'member', 'viewer', 'agent', 'cashier', 'commercial', 'delivery'],
     ];
 
     public function authorize(): bool

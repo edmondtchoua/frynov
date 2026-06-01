@@ -20,14 +20,14 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
         Route::post('stock/{productId}/move-in',         [InventoryController::class, 'moveIn']);
         Route::post('stock/{productId}/move-out',        [InventoryController::class, 'moveOut']);
         Route::post('stock/{productId}/adjust',          [InventoryController::class, 'adjust']);
+
+        // ── Scan-to-action (POS / Bluetooth scanner) ───────────────────
+        Route::post('scan',                              [InventoryController::class, 'scan']);
+
+        // ── Batch operations ────────────────────────────────────────────
+        Route::post('deliveries',                        [InventoryController::class, 'receiveDelivery']);
+        Route::post('count',                             [InventoryController::class, 'inventoryCount']);
     });
-
-    // ── Scan-to-action (POS / Bluetooth scanner) ───────────────────────
-    Route::post('scan',                              [InventoryController::class, 'scan']);
-
-    // ── Batch operations ───────────────────────────────────────────────
-    Route::post('deliveries',                        [InventoryController::class, 'receiveDelivery']);
-    Route::post('count',                             [InventoryController::class, 'inventoryCount']);
 
     // ── Stock adjustment requests (dual-approval workflow) ─────────────
     Route::get('adjustments',                        [StockAdjustmentController::class, 'pending']);
@@ -39,7 +39,9 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
     });
 
     // ── Threshold configuration per product ───────────────────────────
-    Route::patch('stock/{stockId}/threshold',        [InventoryController::class, 'updateThreshold']);
+    Route::middleware('role:manager|admin')->group(function () {
+        Route::patch('stock/{stockId}/threshold',    [InventoryController::class, 'updateThreshold']);
+    });
 
     // Warehouses
     Route::get('warehouses',                         [WarehouseController::class, 'index']);
@@ -52,9 +54,11 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
 
     // ── Fiscal periods
     Route::get('fiscal-periods',              [FiscalPeriodController::class, 'index']);
-    Route::post('fiscal-periods',             [FiscalPeriodController::class, 'store']);
-    Route::post('fiscal-periods/{id}/lock',   [FiscalPeriodController::class, 'lock']);
     Route::get('fiscal-periods/{id}/verify',  [FiscalPeriodController::class, 'verify']);
+    Route::middleware('role:manager|admin')->group(function () {
+        Route::post('fiscal-periods',             [FiscalPeriodController::class, 'store']);
+        Route::post('fiscal-periods/{id}/lock',   [FiscalPeriodController::class, 'lock']);
+    });
 
     // ── Stock transfers (inter-warehouse)
     Route::get('transfers',                   [StockTransferController::class, 'index']);

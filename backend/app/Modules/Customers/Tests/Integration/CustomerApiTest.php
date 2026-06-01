@@ -3,11 +3,13 @@
 namespace App\Modules\Customers\Tests\Integration;
 
 use App\Models\User;
+use App\Modules\Billing\Models\Plan;
 use App\Modules\Customers\Models\Customer;
 use App\Modules\Tenants\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class CustomerApiTest extends TestCase
@@ -22,11 +24,17 @@ class CustomerApiTest extends TestCase
     {
         parent::setUp();
 
+        Role::firstOrCreate(['name' => 'admin',   'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'viewer',  'guard_name' => 'web']);
+        Plan::firstOrCreate(['code' => 'starter'], ['name' => 'Starter', 'price_monthly_cents' => 0, 'price_yearly_cents' => 0, 'currency' => 'XOF', 'trial_days' => 14, 'is_active' => true, 'is_public' => true, 'sort_order' => 1]);
+
         $this->tenant = Tenant::create([
-            'name'   => 'Boutique Test',
-            'slug'   => 'boutique-test',
-            'plan'   => 'starter',
-            'status' => 'active',
+            'name'     => 'Boutique Test',
+            'slug'     => 'boutique-test',
+            'plan'     => 'starter',
+            'status'   => 'active',
+            'settings' => [],
         ]);
 
         $this->user = User::create([
@@ -35,6 +43,7 @@ class CustomerApiTest extends TestCase
             'password'  => Hash::make('Secret123!'),
             'tenant_id' => $this->tenant->id,
         ]);
+        $this->user->assignTenantRole('admin');
 
         $this->token = $this->user->createToken('api')->plainTextToken;
     }

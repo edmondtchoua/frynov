@@ -90,14 +90,14 @@ class ProductCodeController extends Controller
 
     private function resolveProduct(Request $request, string $id): ?Product
     {
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
 
         return $this->catalog->findProduct($tenantId, $id);
     }
 
     private function resolveVariant(Request $request, string $productId, string $variantId): ?ProductVariant
     {
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
         $product  = $this->catalog->findProduct($tenantId, $productId);
 
         if (! $product) {

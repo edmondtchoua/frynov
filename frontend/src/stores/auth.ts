@@ -51,5 +51,10 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('tenant_slug')
   }
 
-  return { user, token, isAuthenticated, login, logout, fetchCurrentUser, setToken, setUser, $reset }
+  const isSuperAdmin      = computed(() => user.value?.is_super_admin === true)
+  const userRoles         = computed(() => user.value?.roles ?? [])
+  const isAdmin           = computed(() => userRoles.value.includes('admin') || isSuperAdmin.value)
+  const isManagerOrAbove  = computed(() => userRoles.value.includes('admin') || userRoles.value.includes('manager') || isSuperAdmin.value)
+
+  return { user, token, isAuthenticated, login, logout, fetchCurrentUser, setToken, setUser, $reset, isSuperAdmin, userRoles, isAdmin, isManagerOrAbove }
 })

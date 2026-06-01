@@ -30,6 +30,11 @@ export function setupGuards(router: Router) {
       return { name: 'admin.dashboard' }
     }
 
+    // ── Onboarding redirect: tenant not yet onboarded ───────────────────────
+    if (!isPublic && to.name !== 'onboarding' && auth.user?.tenant?.onboarded === false) {
+      return { name: 'onboarding' }
+    }
+
     // ── Admin area: must be super admin ──────────────────────────────────────
     if (needsSuperAdmin && auth.user && !isSuperAdmin) {
       return { name: 'dashboard' }

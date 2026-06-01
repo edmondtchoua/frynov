@@ -53,7 +53,7 @@ class WorkspaceController extends Controller
         $request->validate([
             'name'  => 'required|string|max:255',
             'email' => 'required|email|max:255|unique:users,email',
-            'role'  => 'required|string|in:manager,member,viewer',
+            'role'  => 'required|string|in:manager,member,viewer,agent,cashier,commercial,delivery',
         ]);
 
         $tenant      = $request->user()->tenant;
@@ -208,6 +208,10 @@ class WorkspaceController extends Controller
      */
     public function provision(Request $request): JsonResponse
     {
+        if (!$request->user()->hasAnyRole(['admin', 'manager'])) {
+            return response()->json(['message' => 'Action reservee aux administrateurs et managers.'], 403);
+        }
+
         $data = $request->validate([
             'company_name'    => ['required', 'string', 'max:150'],
             'country'         => ['required', 'string', 'size:2'],
@@ -255,6 +259,8 @@ class WorkspaceController extends Controller
             );
         }
 
+        $tenant->update(['onboarded' => true]);
+
         return response()->json([
             'message'  => 'Espace de travail configuré avec succès.',
             'tenant'   => $tenant->fresh(),
@@ -270,6 +276,10 @@ class WorkspaceController extends Controller
      */
     public function getSettings(Request $request): JsonResponse
     {
+        if (!$request->user()->hasAnyRole(['admin', 'manager'])) {
+            return response()->json(['message' => 'Action reservee aux administrateurs et managers.'], 403);
+        }
+
         return response()->json([
             'data' => $this->tenantToArray($request->user()->tenant),
         ]);

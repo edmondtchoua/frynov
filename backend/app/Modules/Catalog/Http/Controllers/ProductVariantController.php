@@ -15,7 +15,7 @@ class ProductVariantController extends Controller
 
     public function store(Request $request, string $productId): JsonResponse
     {
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
         $product  = $this->catalog->findProduct($tenantId, $productId);
 
         if (! $product) {
@@ -41,7 +41,7 @@ class ProductVariantController extends Controller
 
     public function update(Request $request, string $productId, string $variantId): JsonResponse
     {
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
         $product  = $this->catalog->findProduct($tenantId, $productId);
 
         if (! $product) {
@@ -73,7 +73,7 @@ class ProductVariantController extends Controller
 
     public function destroy(Request $request, string $productId, string $variantId): JsonResponse
     {
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
         $product  = $this->catalog->findProduct($tenantId, $productId);
 
         if (! $product) {

@@ -3,6 +3,7 @@
 namespace App\Modules\Reports\Tests\Integration;
 
 use App\Models\User;
+use App\Modules\Billing\Models\Plan;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Services\StockService;
 use App\Modules\Orders\Services\OrderService;
@@ -11,6 +12,7 @@ use App\Modules\Tenants\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ReportApiTest extends TestCase
@@ -24,13 +26,18 @@ class ReportApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->tenant = Tenant::create(['name' => 'Boutique', 'slug' => 'boutique', 'plan' => 'starter', 'status' => 'active']);
+        Role::firstOrCreate(['name' => 'admin',   'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'viewer',  'guard_name' => 'web']);
+        Plan::firstOrCreate(['code' => 'starter'], ['name' => 'Starter', 'price_monthly_cents' => 0, 'price_yearly_cents' => 0, 'currency' => 'XOF', 'trial_days' => 14, 'is_active' => true, 'is_public' => true, 'sort_order' => 1]);
+        $this->tenant = Tenant::create(['name' => 'Boutique', 'slug' => 'boutique', 'plan' => 'starter', 'status' => 'active', 'settings' => []]);
         $this->user   = User::create([
             'name'      => 'Admin',
             'email'     => 'admin@test.com',
             'password'  => Hash::make('Secret123!'),
             'tenant_id' => $this->tenant->id,
         ]);
+        $this->user->assignTenantRole('manager');
         $this->token  = $this->user->createToken('api')->plainTextToken;
     }
 

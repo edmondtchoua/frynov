@@ -23,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'              => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission'        => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission'=> \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            // S1: alias for EnsureUserBelongsToTenant (shorter form used in route files)
+            'tenant'            => \App\Modules\Auth\Http\Middleware\EnsureUserBelongsToTenant::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

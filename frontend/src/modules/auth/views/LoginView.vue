@@ -34,8 +34,9 @@
       <div class="form-group" style="margin-bottom: 0.5rem;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <label class="form-label" for="password">Mot de passe</label>
-          <a href="#" class="forgot-link">Mot de passe oublié ?</a>
+          <a href="#" class="forgot-link" @click.prevent="showForgotMsg = !showForgotMsg">Mot de passe oublié ?</a>
         </div>
+        <p v-if="showForgotMsg" style="color:#64748b;font-size:0.85rem;margin-top:4px;">Contactez votre administrateur pour reinitialiser votre mot de passe.</p>
         <div class="password-wrap">
           <input
             id="password"
@@ -100,11 +101,12 @@ const router = useRouter()
 const route  = useRoute()
 const auth   = useAuthStore()
 
-const form         = reactive({ email: '', password: '' })
-const errors       = reactive<Record<string, string>>({})
-const globalError  = ref('')
-const loading      = ref(false)
-const showPassword = ref(false)
+const form          = reactive({ email: '', password: '' })
+const errors        = reactive<Record<string, string>>({})
+const globalError   = ref('')
+const loading       = ref(false)
+const showPassword  = ref(false)
+const showForgotMsg = ref(false)
 
 // Show info banner if redirected due to session inactivity
 const inactivityMsg = computed(() =>

@@ -3,6 +3,7 @@
 namespace App\Modules\Inventory\Tests\Modular;
 
 use App\Models\User;
+use App\Modules\Billing\Models\Plan;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Inventory\Models\StockMovement;
@@ -11,6 +12,7 @@ use App\Modules\Tenants\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 /**
@@ -25,8 +27,12 @@ class InventoryModuleTest extends TestCase
     public function full_stock_lifecycle_from_delivery_to_sale_to_count(): void
     {
         // ── Setup ──────────────────────────────────────────────────────────
-        $tenant = Tenant::create(['name' => 'Boutique', 'slug' => 'boutique', 'plan' => 'starter', 'status' => 'active']);
+        Role::firstOrCreate(['name' => 'admin',   'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
+        Plan::firstOrCreate(['code' => 'starter'], ['name' => 'Starter', 'price_monthly_cents' => 0, 'price_yearly_cents' => 0, 'currency' => 'XOF', 'trial_days' => 14, 'is_active' => true, 'is_public' => true, 'sort_order' => 1]);
+        $tenant = Tenant::create(['name' => 'Boutique', 'slug' => 'boutique', 'plan' => 'starter', 'status' => 'active', 'settings' => []]);
         $user   = User::create(['name' => 'Manager', 'email' => 'mgr@boutique.sn', 'password' => Hash::make('pass'), 'tenant_id' => $tenant->id]);
+        $user->assignTenantRole('manager'); // S1: delivery/count/stock ops need manager|admin
         $token  = $user->createToken('api')->plainTextToken;
 
         $product = Product::create([
@@ -85,8 +91,11 @@ class InventoryModuleTest extends TestCase
     #[Test]
     public function variant_stock_is_tracked_independently(): void
     {
-        $tenant  = Tenant::create(['name' => 'B', 'slug' => 'b', 'plan' => 'starter', 'status' => 'active']);
+        Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
+        Plan::firstOrCreate(['code' => 'starter'], ['name' => 'Starter', 'price_monthly_cents' => 0, 'price_yearly_cents' => 0, 'currency' => 'XOF', 'trial_days' => 14, 'is_active' => true, 'is_public' => true, 'sort_order' => 1]);
+        $tenant  = Tenant::create(['name' => 'B', 'slug' => 'b', 'plan' => 'starter', 'status' => 'active', 'settings' => []]);
         $user    = User::create(['name' => 'U', 'email' => 'u@b.sn', 'password' => Hash::make('p'), 'tenant_id' => $tenant->id]);
+        $user->assignTenantRole('manager'); // S1: stock ops need manager|admin
         $token   = $user->createToken('api')->plainTextToken;
 
         $product = Product::create([

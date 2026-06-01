@@ -13,10 +13,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('import/upload',              [ImportExportController::class, 'upload']);
     Route::get('import/{id}',                 [ImportExportController::class, 'show']);
     Route::patch('import/{id}/mapping',       [ImportExportController::class, 'updateMapping']);
-    Route::post('import/{id}/approve',        [ImportExportController::class, 'approve']);
-    Route::post('import/{id}/execute',        [ImportExportController::class, 'execute']);
     Route::delete('import/{id}',              [ImportExportController::class, 'cancel']);
     Route::get('import/{id}/report',          [ImportExportController::class, 'downloadReport']);
+
+    Route::middleware(['role:manager|admin'])->group(function () {
+        Route::post('import/{id}/approve',    [ImportExportController::class, 'approve']);
+        Route::post('import/{id}/execute',    [ImportExportController::class, 'execute']);
+    });
 
     // ── Export ────────────────────────────────────────────────────────────────
     Route::get('export/{type}',               [ImportExportController::class, 'export']);

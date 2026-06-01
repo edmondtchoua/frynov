@@ -64,8 +64,8 @@ class StockAdjustmentController extends Controller
     /** POST /api/inventory/adjustments/{id}/approve — admin approves */
     public function approve(Request $request, string $id): JsonResponse
     {
-        if (! $request->user()->hasRole(['admin'])) {
-            return response()->json(['message' => 'Action réservée aux administrateurs.'], 403);
+        if (! $request->user()->hasAnyRole(['admin', 'manager'])) {
+            return response()->json(['message' => 'Action réservée aux managers et administrateurs.'], 403);
         }
 
         $req = StockAdjustmentRequest::where('tenant_id', $request->user()->tenant_id)
@@ -79,8 +79,8 @@ class StockAdjustmentController extends Controller
     /** POST /api/inventory/adjustments/{id}/reject */
     public function reject(Request $request, string $id): JsonResponse
     {
-        if (! $request->user()->hasRole(['admin'])) {
-            return response()->json(['message' => 'Action réservée aux administrateurs.'], 403);
+        if (! $request->user()->hasAnyRole(['admin', 'manager'])) {
+            return response()->json(['message' => 'Action réservée aux managers et administrateurs.'], 403);
         }
 
         $request->validate(['reason' => 'required|string|max:500']);

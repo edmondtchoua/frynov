@@ -6,6 +6,7 @@ export interface Tenant {
   plan: string
   status: string
   subscription_status: string
+  onboarded?: boolean
   settings?: Record<string, unknown>
 }
 

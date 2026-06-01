@@ -34,6 +34,11 @@ client.interceptors.response.use(
       localStorage.removeItem('tenant_slug')
       // Let the router guard redirect — avoid circular import with router here
       window.dispatchEvent(new CustomEvent('auth:expired'))
+    } else if (error.response?.status === 403) {
+      progressFail()
+      window.dispatchEvent(new CustomEvent('api:forbidden', {
+        detail: { message: (error.response.data as any)?.message ?? 'Action non autorisee.' }
+      }))
     } else if (error.code === 'ERR_CANCELED') {
       // Aborted requests don't count as errors for the progress bar
       progressDone()

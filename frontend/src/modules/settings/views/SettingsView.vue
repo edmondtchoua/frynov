@@ -358,12 +358,8 @@
             <h3>Intégrations</h3>
             <p>Connectez Frynov ERP à vos outils existants.</p>
           </div>
-          <div class="coming-soon">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <rect x="4" y="4" width="32" height="32" rx="8" fill="#fdf4ff"/>
-              <path d="M14 20h12M26 20l-4-4m4 4l-4 4" stroke="#9333ea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <p>Connecteurs Shopify, WooCommerce, Mobile Money — Phase 3.</p>
+          <div style="text-align:center;padding:40px;color:#94a3b8;">
+            <p style="font-size:0.95rem;">Fonctionnalite bientot disponible.</p>
           </div>
         </section>
 
@@ -373,13 +369,8 @@
             <h3>Notifications</h3>
             <p>Configurez vos alertes et rappels.</p>
           </div>
-          <div class="coming-soon">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-              <rect x="4" y="4" width="32" height="32" rx="8" fill="#fff7ed"/>
-              <path d="M20 10a7 7 0 017 7v4l2 3H11l2-3v-4a7 7 0 017-7z" stroke="#ea580c" stroke-width="2" stroke-linejoin="round"/>
-              <path d="M17.5 27a2.5 2.5 0 005 0" stroke="#ea580c" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            <p>Notifications email et push — disponible dans la prochaine version.</p>
+          <div style="text-align:center;padding:40px;color:#94a3b8;">
+            <p style="font-size:0.95rem;">Fonctionnalite bientot disponible.</p>
           </div>
         </section>
 
@@ -884,8 +875,8 @@ const tabs = [
   { id: 'company',       label: 'Entreprise',    icon: IconCompany },
   { id: 'team',          label: 'Équipe',         icon: IconTeam },
   { id: 'billing',       label: 'Abonnement',     icon: IconBilling },
-  { id: 'integrations',  label: 'Intégrations',   icon: IconIntegrations },
-  { id: 'notifications', label: 'Notifications',  icon: IconNotifications },
+  { id: 'integrations',  label: 'Intégrations (bientot)',   icon: IconIntegrations },
+  { id: 'notifications', label: 'Notifications (bientot)',  icon: IconNotifications },
 ]
 </script>
 

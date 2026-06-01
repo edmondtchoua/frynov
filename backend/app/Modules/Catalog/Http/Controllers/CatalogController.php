@@ -16,7 +16,7 @@ class CatalogController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
 
         $products = $this->catalog->listProducts($tenantId, $request->only([
             'status', 'category_id', 'search', 'per_page',
@@ -27,7 +27,7 @@ class CatalogController extends Controller
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
         $product  = $this->catalog->findProduct($tenantId, $id);
 
         if (! $product) {
@@ -39,7 +39,7 @@ class CatalogController extends Controller
 
     public function findBySku(Request $request, string $sku): JsonResponse
     {
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
         $product  = $this->catalog->findProductBySku($tenantId, $sku);
 
         if (! $product) {
@@ -67,7 +67,7 @@ class CatalogController extends Controller
             'metadata'                => ['nullable', 'array'],
         ]);
 
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
         $product  = $this->catalog->createProduct($tenantId, $data);
 
         return response()->json(['data' => new CatalogResource($product)], 201);
@@ -75,7 +75,7 @@ class CatalogController extends Controller
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
         $product  = $this->catalog->findProduct($tenantId, $id);
 
         if (! $product) {
@@ -103,7 +103,7 @@ class CatalogController extends Controller
 
     public function archive(Request $request, string $id): JsonResponse
     {
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
         $product  = $this->catalog->findProduct($tenantId, $id);
 
         if (! $product) {
@@ -117,7 +117,7 @@ class CatalogController extends Controller
 
     public function activate(Request $request, string $id): JsonResponse
     {
-        $tenantId = $request->user()?->tenant_id ?? $request->header('X-Tenant-ID');
+        $tenantId = $request->user()->tenant_id;
         $product  = $this->catalog->findProduct($tenantId, $id);
 
         if (! $product) {

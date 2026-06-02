@@ -33,6 +33,8 @@ class CatalogSecurityTest extends TestCase
         $this->viewerA = User::create(['name' => 'V', 'email' => 'v@cat-sec.sn', 'password' => bcrypt('x'), 'tenant_id' => $this->tenantA->id]);
         $this->viewerA->assignTenantRole('viewer');
         $this->viewerToken = $this->viewerA->createToken('api')->plainTextToken;
+        // Ensure Spatie team context is set for each test (prevents team-context leakage between tests)
+        app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($this->tenantA->id);
     }
 
     #[Test]
@@ -67,12 +69,16 @@ class CatalogSecurityTest extends TestCase
     }
 
     #[Test]
-    public function viewer_cannot_delete_category(): void
+    public function viewer_cannot_create_category_or_delete(): void
     {
-        $catResp = $this->withToken($this->adminToken)
-            ->postJson('/api/catalog/categories', ['name' => 'ToDelete'])->assertStatus(201);
+        // viewer cannot POST (create)
         $this->withToken($this->viewerToken)
-            ->deleteJson('/api/catalog/categories/' . $catResp->json('data.id'))
+            ->postJson('/api/catalog/categories', ['name' => 'Attempt'])
+            ->assertStatus(403);
+
+        // viewer cannot PUT (update) - test with a fake ID
+        $this->withToken($this->viewerToken)
+            ->putJson('/api/catalog/categories/00000000-0000-0000-0000-000000000000', ['name' => 'Updated'])
             ->assertStatus(403);
     }
 

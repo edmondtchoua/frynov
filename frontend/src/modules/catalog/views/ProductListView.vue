@@ -24,7 +24,7 @@
           <path d="M10.5 10.5l2.5 2.5" stroke="var(--gray-400)" stroke-width="1.4" stroke-linecap="round"/>
         </svg>
         <input v-model="filters.search" type="text" class="form-input search-input"
-               placeholder="Nom, SKU, code-barres…" @input="debouncedLoad" />
+               placeholder="     Nom, SKU, code-barres…" @input="debouncedLoad" />
       </div>
       <select v-model="filters.status" class="form-input filter-sel" @change="load">
         <option value="">Tous les statuts</option>

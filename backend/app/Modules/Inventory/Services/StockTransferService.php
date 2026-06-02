@@ -202,13 +202,14 @@ class StockTransferService
                             ->first();
 
                     if ($writeOffStock) {
+                        $currentQty = $writeOffStock->fresh()->quantity;
                         $this->stock->adjust(
                             $writeOffStock,
-                            -$missing,
+                            max(0, $currentQty - $missing),
                             'write_off',
-                            $transfer->number,
-                            "Litige TRF — perte acceptée: {$reason}",
+                            'Litige TRF perte',
                             $resolvedBy,
+                            $transfer->number
                         );
                     }
                 }

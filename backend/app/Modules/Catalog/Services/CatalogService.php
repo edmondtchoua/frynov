@@ -8,8 +8,10 @@ use App\Modules\Catalog\Events\ProductUpdated;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Services\ProductIdentifierService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Validation\ValidationException;
 
 class CatalogService
 {
@@ -59,8 +61,37 @@ class CatalogService
 
     public function createProduct(string $tenantId, array $data): Product
     {
+        /** @var ProductIdentifierService $identifierService */
+        $identifierService = app(ProductIdentifierService::class);
+
+        // ── SKU ──────────────────────────────────────────────────────────────
         if (empty($data['sku'])) {
-            $data['sku'] = $this->skuGenerator->generate($tenantId, $data['sku_prefix'] ?? 'PRD');
+            $categoryPrefix = null;
+            if (! empty($data['category_id'])) {
+                $categoryPrefix = Category::find($data['category_id'])?->name;
+            }
+            $data['sku'] = $identifierService->generateSku($tenantId, $categoryPrefix);
+        }
+
+        // ── Internal barcode ─────────────────────────────────────────────────
+        if (empty($data['internal_barcode'])) {
+            $data['internal_barcode']       = $identifierService->generateInternalBarcode($tenantId);
+            $data['barcode_auto_generated'] = true;
+            $data['barcode_source']         = 'AUTO';
+        } else {
+            $data['barcode_auto_generated'] = false;
+            $data['barcode_source']         = 'MANUAL';
+        }
+
+        // ── GTIN validation ──────────────────────────────────────────────────
+        if (! empty($data['gtin'])) {
+            try {
+                $identifierService->validateGtin($data['gtin']);
+            } catch (\Throwable $e) {
+                throw ValidationException::withMessages([
+                    'gtin' => $e->getMessage(),
+                ]);
+            }
         }
 
         $product = Product::create(array_merge($data, [

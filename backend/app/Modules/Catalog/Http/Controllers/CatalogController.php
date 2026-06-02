@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Routing\Controller;
+use Illuminate\Validation\Rule;
 
 class CatalogController extends Controller
 {
@@ -51,9 +52,12 @@ class CatalogController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $tenantId = $request->user()->tenant_id;
+
         $data = $request->validate([
             'name'                    => ['required', 'string', 'max:255'],
-            'sku'                     => ['nullable', 'string', 'max:100'],
+            'sku'                     => ['nullable', 'string', 'max:100',
+                Rule::unique('products')->where('tenant_id', $tenantId)],
             'sku_prefix'              => ['nullable', 'string', 'max:5'],
             'description'             => ['nullable', 'string'],
             'price_amount'            => ['required', 'integer', 'min:0'],
@@ -63,11 +67,14 @@ class CatalogController extends Controller
             'status'                  => ['nullable', 'in:draft,active,archived'],
             'category_id'             => ['nullable', 'uuid'],
             'barcode'                 => ['nullable', 'string', 'max:50'],
+            'internal_barcode'        => ['nullable', 'string', 'max:50'],
+            'gtin'                    => ['nullable', 'string', 'max:20'],
+            'barcode_type'            => ['nullable', 'in:INTERNAL,EAN13,UPC_A,GTIN_13,GTIN_14,CODE128,QR'],
             'weight_kg'               => ['nullable', 'numeric', 'min:0'],
             'metadata'                => ['nullable', 'array'],
+            'has_variants'            => ['nullable', 'boolean'],
         ]);
 
-        $tenantId = $request->user()->tenant_id;
         $product  = $this->catalog->createProduct($tenantId, $data);
 
         return response()->json(['data' => new CatalogResource($product)], 201);

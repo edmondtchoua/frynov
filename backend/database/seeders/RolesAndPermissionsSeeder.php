@@ -74,6 +74,10 @@ class RolesAndPermissionsSeeder extends Seeder
         'catalog.read',
         'deliveries.read',
         'deliveries.update',
+        // Product identifier management
+        'products.override_sku',
+        'products.override_barcode',
+        'products.manage_identifiers',
     ];
 
     public function run(): void

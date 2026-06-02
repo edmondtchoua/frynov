@@ -30,10 +30,39 @@
                      placeholder="Ex : Boubou bazin brodé" @input="clearError('name')" />
               <span v-if="errors.name" class="form-error">{{ errors.name }}</span>
             </div>
-            <div class="form-row2">
+            <!-- Toggle identifiers mode (managers only) -->
+            <div v-if="isManagerOrAbove" class="form-group" style="margin-bottom:0.5rem">
+              <button type="button" class="btn btn-ghost btn-sm"
+                      @click="showManualIdentifiers = !showManualIdentifiers">
+                {{ showManualIdentifiers ? 'Identifiants automatiques' : 'Definir manuellement' }}
+              </button>
+            </div>
+
+            <!-- SKU and internal barcode -->
+            <div v-if="!showManualIdentifiers && !isEdit" class="form-row2">
               <div class="form-group">
-                <label class="form-label">SKU <span class="hint">(auto si vide)</span></label>
-                <input v-model="form.sku" type="text" class="form-input mono" placeholder="VET-0001" />
+                <label class="form-label">SKU</label>
+                <input type="text" class="form-input mono" readonly
+                       placeholder="(genere automatiquement)" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Code-barres interne</label>
+                <input type="text" class="form-input mono" readonly
+                       placeholder="(genere automatiquement)" />
+              </div>
+            </div>
+            <p v-if="!showManualIdentifiers && !isEdit" class="form-hint-auto">
+              SKU et code-barres generes automatiquement a l'enregistrement
+            </p>
+
+            <!-- Editable SKU / internal barcode when manual mode or edit mode -->
+            <div v-if="showManualIdentifiers || isEdit" class="form-row2">
+              <div class="form-group">
+                <label class="form-label">SKU</label>
+                <input v-model="form.sku" type="text" class="form-input mono"
+                       :readonly="isEdit"
+                       :placeholder="isEdit ? '' : 'VET-0001'" />
+                <span v-if="isEdit" class="form-hint-readonly">Non modifiable apres creation</span>
               </div>
               <div class="form-group">
                 <label class="form-label">Préfixe SKU <span class="hint">(auto-gen)</span></label>
@@ -41,9 +70,26 @@
                        placeholder="VET" maxlength="5" style="text-transform:uppercase" />
               </div>
             </div>
+            <div v-if="showManualIdentifiers && !isEdit" class="form-group">
+              <label class="form-label">Code-barres interne</label>
+              <input v-model="form.internal_barcode" type="text" class="form-input mono"
+                     placeholder="BC-0001" />
+            </div>
+            <div v-if="isEdit" class="form-group">
+              <label class="form-label">Code-barres interne</label>
+              <input :value="form.internal_barcode || form.barcode" type="text"
+                     class="form-input mono" readonly />
+              <span class="form-hint-readonly">Non modifiable apres creation</span>
+            </div>
+
+            <!-- GTIN (always visible, always editable) -->
             <div class="form-group">
-              <label class="form-label">Code-barres <span class="hint">(EAN-13, CODE128…)</span></label>
-              <input v-model="form.barcode" type="text" class="form-input mono" placeholder="3700123456789" />
+              <label class="form-label">GTIN / EAN / UPC officiel</label>
+              <input v-model="form.gtin" type="text" class="form-input mono"
+                     placeholder="3700123456789" />
+              <p class="form-hint-gtin">
+                Uniquement si le produit possede un code officiel GS1 (EAN-13, UPC-A...). Ne jamais saisir un code fictif.
+              </p>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Description</label>
@@ -286,9 +332,12 @@ import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { productService } from '../services/productService'
 import client from '@/api/client'
 import type { Category, Product } from '../types'
+import { usePermission } from '@/composables/usePermission'
 
 const route  = useRoute()
 const router = useRouter()
+const { isManagerOrAbove } = usePermission()
+const showManualIdentifiers = ref(false)
 
 const isEdit      = computed(() => !!route.params.id)
 const product     = ref<Product | null>(null)
@@ -311,6 +360,9 @@ const form = reactive({
   status:         'draft' as 'draft' | 'active' | 'archived',
   category_id:    '',
   barcode:        '',
+  internal_barcode: '',
+  gtin:           '',
+  barcode_type:   'INTERNAL' as 'INTERNAL' | 'GTIN',
   weight_kg:      '' as number | '',
   has_variants:   false,
 })
@@ -419,7 +471,7 @@ async function handleSubmit() {
   try {
     const payload: any = {
       name:                    form.name,
-      sku:                     form.sku || undefined,
+      sku:                     showManualIdentifiers.value ? (form.sku || undefined) : undefined,
       sku_prefix:              form.sku_prefix.toUpperCase() || undefined,
       description:             form.description || undefined,
       price_amount:            toCents(form.price_display)!,
@@ -432,6 +484,12 @@ async function handleSubmit() {
       weight_kg:               form.weight_kg === '' ? undefined : Number(form.weight_kg),
       has_variants:            form.has_variants,
     }
+
+    if (showManualIdentifiers.value) {
+      if (form.internal_barcode) payload.internal_barcode = form.internal_barcode
+      if (form.barcode_type) payload.barcode_type = form.barcode_type
+    }
+    if (form.gtin) payload.gtin = form.gtin
 
     let savedProduct: Product
     if (isEdit.value) {
@@ -510,17 +568,20 @@ async function loadProduct() {
     const p = await productService.get(route.params.id as string)
     product.value = p
 
-    form.name             = p.name
-    form.sku              = p.sku
-    form.description      = p.description ?? ''
-    form.price_display    = p.price.amount / 100
-    form.price_currency   = p.price.currency
-    form.compare_display  = p.compare_at_price ? p.compare_at_price.amount / 100 : ''
-    form.status           = p.status
-    form.category_id      = p.category?.id ?? ''
-    form.barcode          = p.barcode ?? ''
-    form.weight_kg        = p.weight_kg ?? ''
-    form.has_variants     = p.has_variants
+    form.name              = p.name
+    form.sku               = p.sku
+    form.description       = p.description ?? ''
+    form.price_display     = p.price.amount / 100
+    form.price_currency    = p.price.currency
+    form.compare_display   = p.compare_at_price ? p.compare_at_price.amount / 100 : ''
+    form.status            = p.status
+    form.category_id       = p.category?.id ?? ''
+    form.barcode           = p.barcode ?? ''
+    form.internal_barcode  = (p as any).internal_barcode ?? ''
+    form.gtin              = (p as any).gtin ?? ''
+    form.barcode_type      = (p as any).barcode_type ?? 'INTERNAL'
+    form.weight_kg         = p.weight_kg ?? ''
+    form.has_variants      = p.has_variants
 
     if (p.has_variants && p.variants?.length) {
       const firstAttr = p.variants[0]?.attributes ? Object.keys(p.variants[0].attributes)[0] : 'Taille'
@@ -757,5 +818,25 @@ onMounted(async () => {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--gray-200);
+}
+
+/* ── Identifier helper texts ─────────────────────────────────────────────── */
+.form-hint-auto {
+  font-size: var(--text-xs);
+  color: var(--gray-400);
+  margin: -0.5rem 0 0.75rem;
+  font-style: italic;
+}
+.form-hint-readonly {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--gray-400);
+  margin-top: 0.25rem;
+}
+.form-hint-gtin {
+  font-size: var(--text-xs);
+  color: var(--gray-400);
+  margin: 0.25rem 0 0;
+  line-height: 1.4;
 }
 </style>

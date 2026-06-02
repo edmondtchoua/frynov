@@ -66,7 +66,8 @@ class CatalogApiTest extends TestCase
             ->assertJsonPath('data.price.currency', 'XOF')
             ->assertJsonPath('data.status', 'draft');
 
-        $this->assertMatchesRegularExpression('/^PRD-\d{4}$/', $response->json('data.sku'));
+        // New format from ProductIdentifierService: PROD-000001 (prefix + 6-digit padding)
+        $this->assertMatchesRegularExpression('/^[A-Z]+-\d+$/', $response->json('data.sku'));
     }
 
     #[Test]

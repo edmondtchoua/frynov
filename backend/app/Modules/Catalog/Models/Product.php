@@ -29,6 +29,11 @@ class Product extends Model
         'status',
         'has_variants',
         'barcode',
+        'internal_barcode',
+        'gtin',
+        'barcode_type',
+        'barcode_source',
+        'barcode_auto_generated',
         'weight_kg',
         'metadata',
     ];
@@ -36,9 +41,10 @@ class Product extends Model
     protected function casts(): array
     {
         return [
-            'has_variants' => 'boolean',
-            'metadata'     => 'array',
-            'weight_kg'    => 'decimal:3',
+            'has_variants'          => 'boolean',
+            'barcode_auto_generated' => 'boolean',
+            'metadata'              => 'array',
+            'weight_kg'             => 'decimal:3',
         ];
     }
 

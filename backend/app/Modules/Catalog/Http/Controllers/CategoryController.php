@@ -62,6 +62,11 @@ class CategoryController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
+        // Belt-and-suspenders role check (in addition to route middleware role:manager|admin)
+        if (! $request->user()->hasAnyRole(['admin', 'manager'])) {
+            return response()->json(['message' => 'Action réservée aux managers et administrateurs.'], 403);
+        }
+
         $tenantId = $request->user()->tenant_id;
         $category = Category::where('tenant_id', $tenantId)->find($id);
 

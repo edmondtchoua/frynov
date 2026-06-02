@@ -232,6 +232,7 @@ class StockService
         string  $reason = StockMovement::REASON_COUNT,
         ?string $note = null,
         ?string $performedBy = null,
+        ?string $reference = null,
     ): StockMovement {
         // Axe 4 — Period lock guard
         PeriodLockService::assertOperationAllowed($stock->tenant_id);
@@ -243,7 +244,7 @@ class StockService
         }
 
         try {
-            return DB::transaction(function () use ($stock, $newQuantity, $reason, $note, $performedBy) {
+            return DB::transaction(function () use ($stock, $newQuantity, $reason, $note, $performedBy, $reference) {
                 $locked = Stock::where('id', $stock->id)->lockForUpdate()->firstOrFail();
                 $before = $locked->quantity;
                 $diff   = $newQuantity - $before;
@@ -259,7 +260,7 @@ class StockService
                     abs($diff),
                     $before,
                     $reason,
-                    null,
+                    $reference,
                     $note,
                     $performedBy,
                 );

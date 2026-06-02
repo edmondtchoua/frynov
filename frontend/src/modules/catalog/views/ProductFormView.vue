@@ -165,34 +165,113 @@
             <Transition name="slide-up">
               <div v-if="form.has_variants" class="variants-body">
 
-                <!-- Attribute axis selector -->
-                <div class="attr-row">
-                  <label class="form-label" style="margin-bottom:0.375rem">Axe de variation</label>
-                  <div class="attr-chips">
-                    <button
-                      v-for="axis in ATTR_AXES"
-                      :key="axis"
-                      type="button"
-                      class="attr-chip"
-                      :class="{ active: attrAxis === axis }"
-                      @click="attrAxis = axis"
-                    >{{ axis }}</button>
+                <!-- ══ N-AXIS BUILDER (création et édition) ══════════════════ -->
+                <div class="axes-builder">
+                  <div class="axes-builder-header">
+                    <span class="axes-builder-title">Axes de variation</span>
+                    <span class="axes-hint">Ajoutez autant d'axes que nécessaire (Couleur, RAM, ROM, Taille…)</span>
                   </div>
+
+                  <!-- Axis rows -->
+                  <div v-for="(axis, i) in variantAxes" :key="i" class="axis-row">
+                    <!-- Axis name with suggestions -->
+                    <div class="axis-name-wrap">
+                      <input
+                        v-model="axis.name"
+                        class="form-input axis-name-input"
+                        placeholder="Nom de l'axe (ex: Couleur)"
+                        list="axis-suggestions"
+                      />
+                      <datalist id="axis-suggestions">
+                        <option v-for="s in AXIS_SUGGESTIONS" :key="s" :value="s" />
+                      </datalist>
+                    </div>
+
+                    <!-- Values chips -->
+                    <div class="axis-values-wrap">
+                      <div class="axis-values">
+                        <span v-for="(val, j) in axis.values" :key="j" class="axis-value-chip">
+                          {{ val }}
+                          <button type="button" class="chip-remove" @click="removeAxisValue(i, j)">×</button>
+                        </span>
+                        <input
+                          v-model="axis.newValue"
+                          class="form-input axis-value-input"
+                          :placeholder="axis.name ? axis.name + '…' : 'Valeur'"
+                          @keyup.enter="addAxisValue(i)"
+                          @blur="addAxisValue(i)"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- Remove axis -->
+                    <button
+                      type="button"
+                      class="btn btn-ghost btn-sm axis-remove-btn"
+                      @click="removeAxis(i)"
+                      :disabled="variantAxes.length <= 1"
+                      title="Supprimer cet axe"
+                    >✕</button>
+                  </div>
+
+                  <!-- Add axis -->
+                  <button type="button" class="btn btn-ghost btn-sm add-axis-btn" @click="addAxis">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    Ajouter un axe
+                  </button>
+
+                  <!-- Preview / combinaison count -->
+                  <div v-if="combinationCount > 0" class="combo-preview">
+                    <div class="combo-info">
+                      <span class="combo-count">{{ combinationCount }} déclinaison(s)</span>
+                      <span class="combo-formula">
+                        = {{ variantAxes.filter(a => a.values.length).map(a => a.values.length).join(' × ') }}
+                      </span>
+                      <span class="combo-example">
+                        Ex : {{ comboExample }}
+                      </span>
+                    </div>
+                    <p v-if="isEdit" class="combo-note">
+                      💡 Les combinaisons seront générées via le bouton ci-dessous
+                      (les déclinaisons existantes sont conservées).
+                    </p>
+                    <p v-else class="combo-note">
+                      💡 Les déclinaisons seront générées automatiquement à l'enregistrement du produit.
+                    </p>
+                    <button
+                      v-if="isEdit"
+                      type="button"
+                      class="btn btn-primary btn-sm"
+                      :disabled="generatingVariants"
+                      @click="generateVariantsNow"
+                    >
+                      <span v-if="generatingVariants" class="spinner-sm spinner-white"></span>
+                      {{ generatingVariants ? 'Génération…' : 'Générer les déclinaisons' }}
+                    </button>
+                    <div v-if="generateResult" class="generate-result" :class="generateResult.ok ? 'ok' : 'warn'">
+                      {{ generateResult.message }}
+                    </div>
+                  </div>
+
+                  <p v-else-if="!axesHaveValues" class="variant-hint">
+                    Ajoutez des valeurs à chaque axe pour calculer les combinaisons.
+                    <br><small>Ex : Axe "Couleur" → valeurs "Rouge", "Bleu", "Noir"</small>
+                  </p>
                 </div>
 
-                <!-- Existing variants table -->
-                <div v-if="variants.length" class="variant-table-wrap">
+                <!-- ══ TABLE DES DÉCLINAISONS EXISTANTES (mode édition) ═══ -->
+                <div v-if="isEdit && variants.length" class="variant-table-wrap" style="margin-top:16px">
+                  <div class="variant-table-title">
+                    Déclinaisons existantes ({{ variants.filter(v => !v._deleted).length }})
+                  </div>
                   <table class="variant-table">
                     <thead>
                       <tr>
-                        <th>{{ attrAxis }}</th>
+                        <th>Déclinaison</th>
                         <th>SKU</th>
                         <th>Prix ({{ form.price_currency }})</th>
-                        <th>Code-barres</th>
-                        <th v-if="!isEdit" title="Quantité initiale en stock à la création">
-                          Qté init
-                          <span class="hint" style="display:block;font-weight:400">stock départ</span>
-                        </th>
                         <th>Actif</th>
                         <th></th>
                       </tr>
@@ -200,59 +279,28 @@
                     <tbody>
                       <tr v-for="(v, i) in variants" :key="v._key" :class="{ 'row-deleted': v._deleted }">
                         <td>
-                          <input v-model="v.label" type="text" class="var-input"
-                                 :placeholder="attrAxis + '…'" :disabled="v._deleted" />
+                          <input v-model="v.label" type="text" class="var-input" :disabled="v._deleted" />
                         </td>
                         <td>
-                          <input v-model="v.sku" type="text" class="var-input mono"
-                                 placeholder="auto" :disabled="v._deleted" />
+                          <input v-model="v.sku" type="text" class="var-input mono" placeholder="auto" :disabled="v._deleted" />
                         </td>
                         <td>
                           <input v-model.number="v.price_display" type="number" step="1" min="0"
-                                 class="var-input" :placeholder="String(form.price_display || 0)"
-                                 :disabled="v._deleted" />
-                        </td>
-                        <td>
-                          <input v-model="v.barcode" type="text" class="var-input mono"
-                                 placeholder="—" :disabled="v._deleted" />
-                        </td>
-                        <td v-if="!isEdit">
-                          <input v-model.number="v.initial_qty" type="number" min="0"
-                                 class="var-input" placeholder="0"
-                                 :disabled="v._deleted" style="width:60px" />
+                                 class="var-input" :placeholder="String(form.price_display || 0)" :disabled="v._deleted" />
                         </td>
                         <td>
                           <input v-model="v.is_active" type="checkbox" :disabled="v._deleted" />
                         </td>
                         <td>
-                          <button
-                            v-if="!v._deleted"
-                            type="button"
-                            class="var-delete-btn"
-                            @click="markDeleteVariant(i)"
-                            title="Supprimer cette variante"
-                          >✕</button>
-                          <button v-else type="button" class="var-restore-btn" @click="variants[i]._deleted = false">
-                            ↩
-                          </button>
+                          <button v-if="!v._deleted" type="button" class="var-delete-btn"
+                                  @click="markDeleteVariant(i)" title="Supprimer">✕</button>
+                          <button v-else type="button" class="var-restore-btn" @click="variants[i]._deleted = false">↩</button>
                         </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
-                <!-- Add variant form -->
-                <div class="add-variant-row">
-                  <input v-model="newVariant.label" type="text" class="form-input var-add-input"
-                         :placeholder="attrAxis + ' (ex: M, Rouge, 500ml)'"
-                         @keyup.enter="addVariantRow" />
-                  <button type="button" class="btn btn-secondary btn-sm" @click="addVariantRow">
-                    + Ajouter
-                  </button>
-                </div>
-                <p v-if="variants.filter(v => !v._deleted).length === 0 && form.has_variants" class="variant-hint">
-                  Ajoutez au moins une variante (ex: S, M, L ou Rouge, Bleu…).
-                </p>
               </div>
             </Transition>
           </div>
@@ -383,30 +431,85 @@ interface VariantRow {
   initial_qty:   number   // stock initial à créer (0 = aucun move-in)
 }
 
-const attrAxis   = ref('Taille')
-const ATTR_AXES  = ['Taille', 'Couleur', 'Matière', 'Volume', 'Autre']
-const variants   = ref<VariantRow[]>([])
-const newVariant = reactive({ label: '' })
-
+const variants = ref<VariantRow[]>([])
 let _vKey = 0
 function makeKey() { return `vk-${++_vKey}` }
 
-function addVariantRow() {
-  if (!newVariant.label.trim()) return
-  variants.value.push({
-    _key: makeKey(), _id: '', _deleted: false,
-    label: newVariant.label.trim(), sku: '', price_display: '',
-    barcode: '', is_active: true, initial_qty: 0,
-  })
-  newVariant.label = ''
-}
-
 function markDeleteVariant(i: number) {
   const v = variants.value[i]
-  if (!v._id) {
-    variants.value.splice(i, 1) // new → just remove
-  } else {
-    v._deleted = true // existing → mark for deletion
+  if (!v._id) { variants.value.splice(i, 1) }
+  else { v._deleted = true }
+}
+
+// ── N-AXIS BUILDER (Sprint 17) ──────────────────────────────────────────────
+interface VariantAxis { name: string; values: string[]; newValue: string }
+
+const AXIS_SUGGESTIONS = ['Taille', 'Couleur', 'Matière', 'Volume', 'RAM', 'ROM', 'Stockage', 'Puissance', 'Format', 'Modèle']
+
+const variantAxes = ref<VariantAxis[]>([
+  { name: 'Taille', values: [], newValue: '' },
+])
+
+const generatingVariants = ref(false)
+const generateResult = ref<{ ok: boolean; message: string } | null>(null)
+
+const axesHaveValues = computed(() =>
+  variantAxes.value.some(a => a.name && a.values.length > 0)
+)
+
+const combinationCount = computed(() => {
+  const counts = variantAxes.value
+    .filter(a => a.name.trim() && a.values.length > 0)
+    .map(a => a.values.length)
+  return counts.length ? counts.reduce((a, b) => a * b, 1) : 0
+})
+
+const comboExample = computed(() => {
+  const first = variantAxes.value
+    .filter(a => a.name.trim() && a.values.length > 0)
+    .map(a => a.values[0])
+  return first.join(' / ')
+})
+
+function addAxis() {
+  variantAxes.value.push({ name: '', values: [], newValue: '' })
+}
+
+function removeAxis(i: number) {
+  if (variantAxes.value.length > 1) variantAxes.value.splice(i, 1)
+}
+
+function addAxisValue(i: number) {
+  const axis = variantAxes.value[i]
+  const v = axis.newValue.trim()
+  if (v && !axis.values.includes(v)) axis.values.push(v)
+  axis.newValue = ''
+}
+
+function removeAxisValue(i: number, j: number) {
+  variantAxes.value[i].values.splice(j, 1)
+}
+
+async function generateVariantsNow() {
+  if (!product.value?.id) return
+  generatingVariants.value = true
+  generateResult.value = null
+  try {
+    const axes = variantAxes.value
+      .filter(a => a.name.trim() && a.values.length > 0)
+      .map(a => ({ name: a.name.trim(), values: a.values }))
+    const basePrice = typeof form.price_display === 'number' ? form.price_display * 100 : 0
+    const r = await productService.generateVariants(product.value.id, {
+      axes,
+      base_price:    basePrice || undefined,
+      base_currency: form.price_currency,
+    })
+    generateResult.value = { ok: true, message: r.message ?? `${r.created} créée(s), ${r.skipped} ignorée(s).` }
+    await loadVariants()
+  } catch {
+    generateResult.value = { ok: false, message: 'Erreur lors de la génération.' }
+  } finally {
+    generatingVariants.value = false
   }
 }
 
@@ -501,39 +604,31 @@ async function handleSubmit() {
     // ── Sync variants ────────────────────────────────────────────────────
     if (form.has_variants) {
       const currency = form.price_currency
+
+      // Sprint 17 N-AXIS: generate via cartesian product if axes are defined
+      const axes = variantAxes.value.filter(a => a.name.trim() && a.values.length > 0)
+      if (axes.length > 0) {
+        const basePrice = typeof form.price_display === 'number' ? toCents(form.price_display) : 0
+        await productService.generateVariants(savedProduct.id, {
+          axes: axes.map(a => ({ name: a.name.trim(), values: a.values })),
+          base_price:    basePrice || undefined,
+          base_currency: currency,
+        })
+      }
+
+      // Also process any manually edited rows (existing variants in edit mode)
       for (const v of variants.value) {
         if (v._deleted && v._id) {
           await productService.deleteVariant(savedProduct.id, v._id)
         } else if (!v._deleted && v._id) {
-          // Update existing
           await productService.updateVariant(savedProduct.id, v._id, {
             name:           v.label,
-            attributes:     { [attrAxis.value]: v.label },
-            price_amount:   v.price_display !== '' ? toCents(v.price_display) : undefined,
+            label:          v.label,
+            price_amount:   v.price_display !== '' ? toCents(v.price_display as number) : undefined,
             price_currency: currency,
             barcode:        v.barcode || null,
             is_active:      v.is_active,
           })
-        } else if (!v._deleted && !v._id && v.label) {
-          // Create new variant
-          const created = await productService.createVariant(savedProduct.id, {
-            name:           v.label,
-            sku:            v.sku || undefined,
-            attributes:     { [attrAxis.value]: v.label },
-            price_amount:   v.price_display !== '' ? toCents(v.price_display) : undefined,
-            price_currency: currency,
-            barcode:        v.barcode || null,
-            is_active:      v.is_active,
-          })
-          // Initialize stock for this new variant if an initial quantity was provided
-          if (v.initial_qty > 0) {
-            await client.post(`/api/inventory/stock/${savedProduct.id}/move-in`, {
-              variant_id: created.id,
-              quantity:   v.initial_qty,
-              reason:     'delivery',
-              note:       'Stock initial à la création du produit',
-            })
-          }
         }
       }
     } else if (!isEdit.value) {

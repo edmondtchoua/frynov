@@ -22,10 +22,12 @@ class ProductVariantController extends Controller
     public function generate(Request $request, string $productId): JsonResponse
     {
         $data = $request->validate([
-            'axes'              => ['required', 'array', 'min:1', 'max:4'],
-            'axes.*.name'       => ['required', 'string', 'max:50'],
-            'axes.*.values'     => ['required', 'array', 'min:1', 'max:20'],
-            'axes.*.values.*'   => ['required', 'string', 'max:50'],
+            // N-dimensional axes — no artificial limit on axis count
+            // (practical limit: combinatorial explosion managed by client)
+            'axes'              => ['required', 'array', 'min:1'],
+            'axes.*.name'       => ['required', 'string', 'max:100'],
+            'axes.*.values'     => ['required', 'array', 'min:1'],
+            'axes.*.values.*'   => ['required', 'string', 'max:100'],
             'base_price'        => ['nullable', 'integer', 'min:0'],
             'base_currency'     => ['nullable', 'string', 'size:3'],
         ]);

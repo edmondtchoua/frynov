@@ -64,6 +64,20 @@ export const productService = {
     return client.delete(`/api/catalog/products/${productId}/variants/${variantId}`).then(() => undefined)
   },
 
+  /**
+   * Sprint 17 — Generate N-dimensional variants via cartesian product.
+   * Accepts any number of axes, no artificial limit.
+   * Example: axes=[{name:"Couleur",values:["Rouge","Bleu"]},{name:"RAM",values:["8Go","16Go"]}]
+   * → creates 4 combinations: Rouge/8Go, Rouge/16Go, Bleu/8Go, Bleu/16Go
+   */
+  generateVariants(productId: string, data: {
+    axes: { name: string; values: string[] }[]
+    base_price?: number
+    base_currency?: string
+  }): Promise<{ created: number; skipped: number; total_combinations: number; message: string }> {
+    return client.post(`/api/catalog/products/${productId}/variants/generate`, data).then(r => r.data)
+  },
+
   // ── Labels / Printing ──────────────────────────────────────────────────────
 
   /**

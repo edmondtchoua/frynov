@@ -329,7 +329,8 @@ syncOpenGroups()
 /* ── Layout — full-viewport, no body scroll ──────────────── */
 .app-layout {
   display: flex;
-  height: 100vh;        /* exact viewport height */
+  height: 100vh;
+  height: 100dvh;       /* dynamic viewport — handles mobile browser chrome */
   overflow: hidden;     /* prevent body from ever scrolling */
   background: var(--gray-50);
 }
@@ -337,7 +338,11 @@ syncOpenGroups()
 /* ── Sidebar — sticky column ─────────────────────────────── */
 .sidebar {
   width: var(--sidebar-width);
-  height: 100vh;        /* always full height */
+  /* height: 100% fills the constrained app-layout parent (100dvh)
+     — more robust than 100vh which can mismatch on some browsers.
+     position: sticky was removed: it has no effect inside overflow:hidden
+     and caused the sidebar to "detach" from the bottom when content scrolled. */
+  height: 100%;
   background: var(--sidebar-bg);
   color: white;
   display: flex;
@@ -345,8 +350,6 @@ syncOpenGroups()
   transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
   z-index: 40;
-  position: sticky;     /* fixes sidebar in place on desktop */
-  top: 0;
   overflow: hidden;     /* clip content during collapse animation */
 }
 
@@ -488,13 +491,15 @@ syncOpenGroups()
   margin-left: auto;
 }
 
-/* Footer */
+/* Footer — anchored to bottom of sidebar (flex-shrink:0 prevents squeeze) */
 .sidebar-footer {
   padding: 0.75rem 0.5rem;
   border-top: 1px solid rgba(255,255,255,0.06);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  flex-shrink: 0;  /* never squished — always visible at the bottom */
+  margin-top: auto; /* push to bottom if nav doesn't fill space */
 }
 
 .user-info {
@@ -560,10 +565,10 @@ syncOpenGroups()
 .main-wrapper {
   flex: 1;
   min-width: 0;
-  height: 100vh;
+  height: 100%;         /* fill app-layout, not independent 100vh */
   display: flex;
   flex-direction: column;
-  overflow: hidden;     /* topbar stays fixed, content scrolls */
+  overflow: hidden;     /* topbar stays fixed, content scrolls inside .page-content */
 }
 
 /* ── Topbar — naturally pinned at top (no position:sticky needed) ─── */

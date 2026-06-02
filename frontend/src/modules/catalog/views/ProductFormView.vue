@@ -178,9 +178,11 @@
                     <div class="axis-name-wrap">
                       <input
                         v-model="axis.name"
+                        type="text"
                         class="form-input axis-name-input"
                         placeholder="Nom de l'axe (ex: Couleur)"
                         list="axis-suggestions"
+                        @keydown.enter.prevent
                       />
                       <datalist id="axis-suggestions">
                         <option v-for="s in AXIS_SUGGESTIONS" :key="s" :value="s" />
@@ -196,9 +198,10 @@
                         </span>
                         <input
                           v-model="axis.newValue"
+                          type="text"
                           class="form-input axis-value-input"
                           :placeholder="axis.name ? axis.name + '…' : 'Valeur'"
-                          @keyup.enter="addAxisValue(i)"
+                          @keydown.enter.prevent="addAxisValue(i)"
                           @blur="addAxisValue(i)"
                         />
                       </div>

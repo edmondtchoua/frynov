@@ -51,25 +51,48 @@ class ProductVariantController extends Controller
             $combinations = $next;
         }
 
-        $existing = ProductVariant::where('product_id', $productId)->count();
-        $created  = 0;
-        $skipped  = 0;
+        // Count ALL variants ever created (incl. soft-deleted) to avoid SKU collision.
+        // Using count() without withTrashed() would reuse SKUs of deleted variants
+        // → UniqueConstraintViolationException on (tenant_id, sku).
+        $existingTotal = ProductVariant::withTrashed()
+            ->where('product_id', $productId)
+            ->count();
+
+        $created = 0;
+        $skipped = 0;
 
         foreach ($combinations as $attrs) {
-            $label  = implode(' / ', array_values($attrs));
-            $exists = ProductVariant::where('product_id', $productId)
-                ->where('label', $label)->exists();
+            $label = implode(' / ', array_values($attrs));
 
-            if ($exists) {
+            // Skip if label already exists (including soft-deleted — same label is semantically duplicate)
+            $labelExists = ProductVariant::withTrashed()
+                ->where('product_id', $productId)
+                ->where('label', $label)
+                ->exists();
+
+            if ($labelExists) {
                 $skipped++;
                 continue;
+            }
+
+            // Generate a unique SKU — always higher than any ever used for this product
+            $candidateSku = $product->sku . '-V' . ($existingTotal + $created + 1);
+
+            // Extra safety: if by any chance this SKU exists, keep incrementing
+            $offset = 0;
+            while (ProductVariant::withTrashed()
+                ->where('tenant_id', $tenantId)
+                ->where('sku', $candidateSku)
+                ->exists()) {
+                $offset++;
+                $candidateSku = $product->sku . '-V' . ($existingTotal + $created + 1 + $offset);
             }
 
             ProductVariant::create([
                 'tenant_id'      => $tenantId,
                 'product_id'     => $productId,
                 'label'          => $label,
-                'sku'            => $product->sku . '-V' . ($existing + $created + 1),
+                'sku'            => $candidateSku,
                 'price_amount'   => $data['base_price']    ?? $product->price_amount,
                 'price_currency' => $data['base_currency'] ?? $product->price_currency,
                 'attributes'     => $attrs,

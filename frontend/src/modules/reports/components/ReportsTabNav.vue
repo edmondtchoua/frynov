@@ -1,7 +1,7 @@
 <template>
   <nav class="reports-tabs">
     <RouterLink
-      v-for="tab in tabs"
+      v-for="tab in visibleTabs"
       :key="tab.to"
       :to="tab.to"
       :class="['reports-tab', { active: isActive(tab) }]"
@@ -14,6 +14,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 interface Tab {
@@ -23,9 +24,15 @@ interface Tab {
   exact?: boolean
 }
 
+const props = withDefaults(defineProps<{
+  allowedTabs?: string[] // if provided, only these tabs are shown
+}>(), {
+  allowedTabs: undefined,
+})
+
 const route = useRoute()
 
-const tabs: Tab[] = [
+const tabs = computed<Tab[]>(() => [
   {
     to: '/reports/sales',
     label: 'Rapport des ventes',
@@ -36,7 +43,12 @@ const tabs: Tab[] = [
     label: 'Rapport de stock',
     icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="9" width="3" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="6" y="6" width="3" height="8" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="11" y="3" width="3" height="11" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>',
   },
-]
+])
+
+const visibleTabs = computed(() => {
+  if (!props.allowedTabs) return tabs.value
+  return tabs.value.filter(tab => props.allowedTabs!.includes(tab.to))
+})
 
 function isActive(tab: Tab): boolean {
   if (tab.exact) return route.path === tab.to

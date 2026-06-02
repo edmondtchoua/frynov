@@ -102,10 +102,16 @@ class StockService
 
         try {
             app(\App\Modules\Platform\Services\AuditService::class)->log(
-                auth()->id() ?? null, "stock.moved_in", "Stock", $stock->id,
-                ["quantity" => $stock->quantity - $quantity],
-                ["quantity" => $stock->fresh()->quantity, "reason" => $reason, "qty_added" => $quantity],
-                request()?->ip(), request()?->userAgent(), "low"
+                'stock.moved_in',
+                $stock->tenant_id,
+                auth()->id() ?? null,
+                $stock,
+                ['quantity_before' => $movement->quantity_before],
+                ['quantity_after' => $movement->quantity_after, 'qty_added' => $quantity, 'reason' => $reason],
+                null,
+                null,
+                request()?->ip(),
+                request()?->userAgent(),
             );
         } catch (\Throwable) {}
 
@@ -225,6 +231,21 @@ class StockService
                 event(new LowStockDetected($stock));
             }
 
+            try {
+                app(\App\Modules\Platform\Services\AuditService::class)->log(
+                    "stock.moved_out",
+                    $stock->tenant_id,
+                    auth()->id() ?? null,
+                    $stock,
+                    ["quantity" => $stock->quantity + $quantity],
+                    ["quantity" => $stock->fresh()->quantity, "reason" => $reason],
+                    null,
+                    null,
+                    request()?->ip(),
+                    request()?->userAgent(),
+                );
+            } catch (\Throwable) {}
+
             return $movement;
         } finally {
             event(new StockUpdated($stock->refresh(), -$quantity, 'api'));
@@ -279,10 +300,16 @@ class StockService
 
             try {
                 app(\App\Modules\Platform\Services\AuditService::class)->log(
-                    auth()->id() ?? null, "stock.adjusted", "Stock", $stock->id,
-                    ["quantity" => $stock->quantity],
-                    ["quantity" => $newQuantity, "reason" => $reason],
-                    request()?->ip(), request()?->userAgent(), "low"
+                    'stock.adjusted',
+                    $stock->tenant_id,
+                    auth()->id() ?? null,
+                    $stock,
+                    ['quantity_before' => $movement->quantity_before],
+                    ['quantity_after' => $movement->quantity_after, 'reason' => $reason],
+                    null,
+                    null,
+                    request()?->ip(),
+                    request()?->userAgent(),
                 );
             } catch (\Throwable) {}
 

@@ -118,6 +118,20 @@ class CatalogService
         $product->update($data);
         event(new ProductUpdated($product));
 
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->log(
+                "product.updated",
+                $product->tenant_id,
+                auth()->id() ?? null,
+                $product,
+                array_keys($data),
+                ["name" => $product->name, "sku" => $product->sku, "status" => $product->status],
+                null, null,
+                request()?->ip(),
+                request()?->userAgent(),
+            );
+        } catch (\Throwable) {}
+
         return $product->fresh(['category', 'variants']);
     }
 

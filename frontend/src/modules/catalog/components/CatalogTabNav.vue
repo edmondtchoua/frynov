@@ -1,7 +1,7 @@
 <template>
   <nav class="catalog-tabs">
     <RouterLink
-      v-for="tab in tabs"
+      v-for="tab in visibleTabs"
       :key="tab.to"
       :to="tab.to"
       :class="['catalog-tab', { active: isActive(tab) }]"
@@ -28,8 +28,10 @@ interface Tab {
 
 const props = withDefaults(defineProps<{
   counts?: { products?: number; categories?: number; variants?: number; attributes?: number }
+  allowedTabs?: string[] // if provided, only these tabs are shown
 }>(), {
   counts: () => ({}),
+  allowedTabs: undefined,
 })
 
 const route = useRoute()
@@ -58,6 +60,11 @@ const tabs = computed<Tab[]>(() => [
     icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4a1 1 0 011-1h5.586a1 1 0 01.707.293l3.414 3.414A1 1 0 0114 7.414V12a1 1 0 01-1 1H4a1 1 0 01-1-1V4z" stroke="currentColor" stroke-width="1.4"/><circle cx="6" cy="8" r="1" fill="currentColor"/></svg>',
   },
 ])
+
+const visibleTabs = computed(() => {
+  if (!props.allowedTabs) return tabs.value
+  return tabs.value.filter(tab => props.allowedTabs!.includes(tab.to))
+})
 
 function isActive(tab: Tab): boolean {
   if (tab.exact) return route.path === tab.to

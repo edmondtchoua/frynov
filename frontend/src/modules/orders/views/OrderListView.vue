@@ -8,6 +8,24 @@
       </RouterLink>
     </div>
 
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M9 3a6 6 0 100 12A6 6 0 009 3zM1 9a8 8 0 1114.32 4.906l3.387 3.387a1 1 0 01-1.414 1.414l-3.387-3.387A8 8 0 011 9z" clip-rule="evenodd" />
+        </svg>
+        <input
+          v-model="search"
+          type="text"
+          class="form-input search-input"
+          placeholder="N° commande, client..."
+          @input="debouncedLoad"
+        />
+      </div>
+      <input v-model="dateFrom" type="date" class="form-input date-input" @change="load" title="Depuis" />
+      <input v-model="dateTo"   type="date" class="form-input date-input" @change="load" title="Jusqu'au" />
+    </div>
+
     <!-- Status tabs -->
     <div class="status-tabs">
       <button
@@ -105,6 +123,9 @@ const tabs = [
 ]
 
 const activeTab = ref('')
+const search    = ref('')
+const dateFrom  = ref('')
+const dateTo    = ref('')
 const orders    = ref<Order[]>([])
 const meta      = ref<any>(null)
 const page      = ref(1)
@@ -116,9 +137,12 @@ async function load() {
   error.value   = null
   try {
     const res = await orderService.list({
-      status:   activeTab.value || undefined,
-      page:     page.value,
-      per_page: 20,
+      status:    activeTab.value || undefined,
+      search:    search.value    || undefined,
+      from_date: dateFrom.value  || undefined,
+      to_date:   dateTo.value    || undefined,
+      page:      page.value,
+      per_page:  20,
     })
     orders.value = res.data
     meta.value   = res.meta
@@ -127,6 +151,12 @@ async function load() {
   } finally {
     loading.value = false
   }
+}
+
+let _searchTimer: ReturnType<typeof setTimeout> | null = null
+function debouncedLoad() {
+  if (_searchTimer) clearTimeout(_searchTimer)
+  _searchTimer = setTimeout(() => load(), 280)
 }
 
 watch([activeTab, page], () => load())
@@ -175,6 +205,40 @@ function formatDate(iso: string) {
   background: #059669;
   color: white;
   font-weight: 600;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding-left: 2rem;
+}
+
+.date-input {
+  width: 10rem;
 }
 
 .pagination {

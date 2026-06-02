@@ -1,7 +1,7 @@
 <template>
   <nav class="sales-tabs">
     <RouterLink
-      v-for="tab in tabs"
+      v-for="tab in visibleTabs"
       :key="tab.to"
       :to="tab.to"
       :class="['sales-tab', { active: isActive(tab) }]"
@@ -15,6 +15,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 interface Tab {
@@ -27,13 +28,15 @@ interface Tab {
 
 const props = withDefaults(defineProps<{
   counts?: { returns?: number; payments_pending?: number }
+  allowedTabs?: string[] // if provided, only these tabs are shown
 }>(), {
   counts: () => ({}),
+  allowedTabs: undefined,
 })
 
 const route = useRoute()
 
-const tabs: Tab[] = [
+const tabs = computed<Tab[]>(() => [
   {
     to: '/orders',
     label: 'Commandes',
@@ -60,7 +63,12 @@ const tabs: Tab[] = [
     matchMode: 'exact-prefix',
     icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 10V5l4-3h6l4 3v5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><rect x="1" y="10" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.4"/><circle cx="4.5" cy="13.5" r="1.5" fill="currentColor"/><circle cx="11.5" cy="13.5" r="1.5" fill="currentColor"/></svg>',
   },
-]
+])
+
+const visibleTabs = computed(() => {
+  if (!props.allowedTabs) return tabs.value
+  return tabs.value.filter(tab => props.allowedTabs!.includes(tab.to))
+})
 
 function isActive(tab: Tab): boolean {
   const path = route.path

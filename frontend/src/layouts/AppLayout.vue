@@ -329,9 +329,8 @@ syncOpenGroups()
 /* ── Layout — full-viewport, no body scroll ──────────────── */
 .app-layout {
   display: flex;
-  height: 100vh;
-  height: 100dvh;       /* dynamic viewport — handles mobile browser chrome */
-  overflow: hidden;     /* prevent body from ever scrolling */
+  height: 100%;         /* fill #app which is 100% of body (overflow:hidden) */
+  overflow: hidden;
   background: var(--gray-50);
 }
 
@@ -571,7 +570,7 @@ syncOpenGroups()
   overflow: hidden;     /* topbar stays fixed, content scrolls inside .page-content */
 }
 
-/* ── Topbar — naturally pinned at top (no position:sticky needed) ─── */
+/* ── Topbar — always visible at top, never scrolls ─────────── */
 .topbar {
   height: var(--topbar-height);
   background: white;
@@ -580,7 +579,9 @@ syncOpenGroups()
   align-items: center;
   padding: 0 1.5rem;
   gap: 1rem;
-  flex-shrink: 0;       /* never shrinks */
+  flex-shrink: 0;       /* never shrinks in flex column */
+  position: sticky;     /* belt-and-suspenders: stays at top even if layout leaks */
+  top: 0;
   z-index: 20;
   box-shadow: 0 1px 0 var(--gray-200);
 }
@@ -676,12 +677,14 @@ syncOpenGroups()
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 768px) {
   .app-layout {
-    height: auto;       /* let mobile layout grow */
-    overflow: visible;
+    /* On mobile, html/body/app are still overflow:hidden.
+       The layout stays full-height but sidebar becomes a fixed overlay. */
+    height: 100%;
+    overflow: hidden;
   }
 
   .main-wrapper {
-    height: 100dvh;     /* use dynamic viewport on mobile */
+    height: 100%;
   }
 
   .sidebar {

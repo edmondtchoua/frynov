@@ -72,10 +72,26 @@
 /* ── Reset ───────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
-html, body, #app {
+/* ── Layout lock — prevent body scroll, only .page-content scrolls ── */
+html {
   margin: 0;
   padding: 0;
   height: 100%;
+  overflow: hidden;    /* hard lock — body cannot scroll */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;    /* body never scrolls */
+}
+
+#app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;    /* #app fills viewport, no overflow */
 }
 
 body {

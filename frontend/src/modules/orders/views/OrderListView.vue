@@ -234,7 +234,7 @@ function formatDate(iso: string) {
 
 .search-input {
   width: 100%;
-  padding-left: 2rem;
+  padding-left: 2rem !important;
 }
 
 .date-input {

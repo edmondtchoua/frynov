@@ -235,7 +235,7 @@ onMounted(load)
 .filter-bar { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
 .search-wrap { position: relative; flex: 1; max-width: 400px; }
 .search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none; }
-.search-input { padding-left: 2.25rem; }
+.search-input { padding-left: 2.25rem !important; }
 .text-muted { color: var(--gray-400); font-size: var(--text-sm); }
 .row-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
 

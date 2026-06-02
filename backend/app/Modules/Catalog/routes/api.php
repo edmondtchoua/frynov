@@ -20,8 +20,9 @@ Route::prefix('catalog')->name('catalog.')->group(function () {
         Route::get('products/sku/{sku}', [CatalogController::class, 'findBySku'])->name('products.by-sku');
 
         // Products — read
-        Route::get('products',      [CatalogController::class, 'index'])->name('products.index');
-        Route::get('products/{id}', [CatalogController::class, 'show'])->name('products.show');
+        Route::get('products',                           [CatalogController::class, 'index'])->name('products.index');
+        Route::get('products/{id}',                      [CatalogController::class, 'show'])->name('products.show');
+        Route::get('products/{id}/stock-summary',        [CatalogController::class, 'stockSummary'])->name('products.stock-summary');
 
         // QR codes and barcodes (raw SVG or JSON sheet)
         Route::get('products/{productId}/qrcode',  [ProductCodeController::class, 'qrCode'])->name('products.qrcode');
@@ -50,10 +51,12 @@ Route::prefix('catalog')->name('catalog.')->group(function () {
         Route::middleware('role:manager|admin')->group(function () {
 
             // Products — write
-            Route::post('products',                [CatalogController::class, 'store'])->name('products.store')->middleware('quota:products');
-            Route::put('products/{id}',            [CatalogController::class, 'update'])->name('products.update');
-            Route::patch('products/{id}/archive',  [CatalogController::class, 'archive'])->name('products.archive');
-            Route::patch('products/{id}/activate', [CatalogController::class, 'activate'])->name('products.activate');
+            Route::post('products',                    [CatalogController::class, 'store'])->name('products.store')->middleware('quota:products');
+            Route::put('products/{id}',                [CatalogController::class, 'update'])->name('products.update');
+            Route::patch('products/{id}/archive',      [CatalogController::class, 'archive'])->name('products.archive');
+            Route::patch('products/{id}/activate',     [CatalogController::class, 'activate'])->name('products.activate');
+            // Sprint 17: initial stock entry for newly created products
+            Route::post('products/{id}/initial-stock', [CatalogController::class, 'initialStock'])->name('products.initial-stock');
 
             // Product variants — write
             // Sprint 16: generate variants from multiple axes (cartesian product)

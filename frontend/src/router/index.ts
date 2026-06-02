@@ -66,8 +66,15 @@ const router = createRouter({
           component: () => import('@/modules/catalog/views/ProductFormView.vue'),
         },
         {
+          // ── Detail / consultation page (Sprint 17) ──
           path: 'products/:id',
           name: 'catalog.products.show',
+          component: () => import('@/modules/catalog/views/ProductShowPage.vue'),
+        },
+        {
+          // ── Edit form — separate from show page ──
+          path: 'products/:id/edit',
+          name: 'catalog.products.edit',
           component: () => import('@/modules/catalog/views/ProductFormView.vue'),
         },
         {

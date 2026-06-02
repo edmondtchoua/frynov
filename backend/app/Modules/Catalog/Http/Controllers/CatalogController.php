@@ -5,6 +5,9 @@ namespace App\Modules\Catalog\Http\Controllers;
 use App\Modules\Catalog\Http\Resources\CatalogResource;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Services\CatalogService;
+use App\Modules\Inventory\Models\Stock;
+use App\Modules\Inventory\Models\StockMovement;
+use App\Modules\Inventory\Services\StockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -13,7 +16,10 @@ use Illuminate\Validation\Rule;
 
 class CatalogController extends Controller
 {
-    public function __construct(private readonly CatalogService $catalog) {}
+    public function __construct(
+        private readonly CatalogService $catalog,
+        private readonly ?StockService $stockService = null,
+    ) {}
 
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -29,13 +35,136 @@ class CatalogController extends Controller
     public function show(Request $request, string $id): JsonResponse
     {
         $tenantId = $request->user()->tenant_id;
-        $product  = $this->catalog->findProduct($tenantId, $id);
+
+        // ?detail=1 loads supplier + attributes for the show page
+        if ($request->boolean('detail')) {
+            $product = $this->catalog->findProductDetail($tenantId, $id);
+        } else {
+            $product = $this->catalog->findProduct($tenantId, $id);
+        }
 
         if (! $product) {
             return response()->json(['message' => 'Produit introuvable.'], 404);
         }
 
         return response()->json(['data' => new CatalogResource($product)]);
+    }
+
+    /**
+     * GET /api/catalog/products/{id}/stock-summary
+     * Returns aggregated stock across all warehouses + per-warehouse breakdown.
+     * Used by the product show page Overview tab.
+     */
+    public function stockSummary(Request $request, string $id): JsonResponse
+    {
+        $tenantId = $request->user()->tenant_id;
+        $product  = $this->catalog->findProduct($tenantId, $id);
+
+        if (! $product) {
+            return response()->json(['message' => 'Produit introuvable.'], 404);
+        }
+
+        // Aggregate stock across all warehouses (incl. per-variant)
+        $stocks = Stock::where('tenant_id', $tenantId)
+            ->where('product_id', $id)
+            ->with('warehouse:id,name,code,type')
+            ->get();
+
+        $total     = $stocks->sum('quantity');
+        $reserved  = $stocks->sum('reserved_quantity');
+        $available = $stocks->sum(fn ($s) => $s->available());
+        $lowStock  = $stocks->filter(fn ($s) => $s->isLowStock())->count();
+
+        // Per-warehouse summary
+        $byWarehouse = $stocks->filter(fn ($s) => $s->variant_id === null)
+            ->map(fn ($s) => [
+                'warehouse_id'   => $s->warehouse_id,
+                'warehouse_name' => $s->warehouse?->name ?? 'Sans entrepôt',
+                'quantity'       => $s->quantity,
+                'reserved'       => $s->reserved_quantity,
+                'available'      => $s->available(),
+                'low_stock'      => $s->isLowStock(),
+                'unit_cost_cents'=> $s->unit_cost_cents,
+                'total_value_cents' => $s->total_value_cents,
+            ])->values();
+
+        return response()->json([
+            'total_quantity'     => $total,
+            'reserved_quantity'  => $reserved,
+            'available_quantity' => $available,
+            'low_stock_count'    => $lowStock,
+            'by_warehouse'       => $byWarehouse,
+        ]);
+    }
+
+    /**
+     * POST /api/catalog/products/{id}/initial-stock
+     * Creates an initial stock entry (move-in) for a newly created product.
+     * This creates a real StockMovement for traceability.
+     * Only available for stockable products (not services).
+     */
+    public function initialStock(Request $request, string $id): JsonResponse
+    {
+        $tenantId = $request->user()->tenant_id;
+        $product  = $this->catalog->findProduct($tenantId, $id);
+
+        if (! $product) {
+            return response()->json(['message' => 'Produit introuvable.'], 404);
+        }
+
+        if ($product->isService()) {
+            return response()->json(['message' => 'Les services ne gèrent pas de stock.'], 422);
+        }
+
+        $data = $request->validate([
+            'quantity'        => ['required', 'integer', 'min:1'],
+            'warehouse_id'    => ['nullable', 'uuid'],
+            'unit_cost_cents' => ['nullable', 'integer', 'min:0'],
+            'note'            => ['nullable', 'string', 'max:500'],
+            'variant_id'      => ['nullable', 'uuid'],
+        ]);
+
+        /** @var StockService $stockService */
+        $stockService = app(StockService::class);
+
+        $stock = $stockService->findOrCreate(
+            $tenantId,
+            $id,
+            $data['variant_id'] ?? null,
+        );
+
+        // Assign warehouse if provided
+        if (! empty($data['warehouse_id'])) {
+            $stock->update(['warehouse_id' => $data['warehouse_id']]);
+            $stock->refresh();
+        }
+
+        $movement = $stockService->moveIn(
+            $stock,
+            $data['quantity'],
+            StockMovement::REASON_MANUAL,
+            'initial-stock',
+            $data['note'] ?? 'Stock initial à la création du produit',
+            $request->user()->id,
+            $data['unit_cost_cents'] ?? 0,
+        );
+
+        return response()->json([
+            'message'  => "Stock initial de {$data['quantity']} unité(s) créé avec succès.",
+            'movement' => [
+                'id'              => $movement->id,
+                'type'            => $movement->type,
+                'quantity'        => $movement->quantity,
+                'quantity_before' => $movement->quantity_before,
+                'quantity_after'  => $movement->quantity_after,
+                'reason'          => $movement->reason,
+            ],
+            'stock' => [
+                'id'        => $stock->fresh()->id,
+                'quantity'  => $stock->fresh()->quantity,
+                'available' => $stock->fresh()->available(),
+            ],
+        ], 201);
     }
 
     public function findBySku(Request $request, string $sku): JsonResponse

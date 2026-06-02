@@ -51,6 +51,22 @@ class CatalogService
             ->find($id);
     }
 
+    /**
+     * Load full product detail for the show page:
+     * category + supplier + variants + attributes (axes + values).
+     */
+    public function findProductDetail(string $tenantId, string $id): ?Product
+    {
+        return Product::where('tenant_id', $tenantId)
+            ->with([
+                'category',
+                'supplier:id,name,code,email,phone',
+                'variants' => fn ($q) => $q->withTrashed(false)->orderBy('sort_order'),
+                'attributes.values',
+            ])
+            ->find($id);
+    }
+
     public function findProductBySku(string $tenantId, string $sku): ?Product
     {
         return Product::where('tenant_id', $tenantId)

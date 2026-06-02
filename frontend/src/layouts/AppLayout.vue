@@ -297,11 +297,12 @@ const mainNavItems = computed(() =>
 )
 
 const pageTitles: Record<string, string> = {
-  dashboard:                'Tableau de bord',
-  'catalog.products':       'Catalogue',
-  'catalog.products.create':'Nouveau produit',
-  'catalog.products.show':  'Produit',
-  'catalog.categories':     'Catégories',
+  dashboard:                 'Tableau de bord',
+  'catalog.products':        'Catalogue',
+  'catalog.products.create': 'Nouveau produit',
+  'catalog.products.show':   'Fiche produit',   // Sprint 17: show page
+  'catalog.products.edit':   'Modifier le produit', // Sprint 17: edit form
+  'catalog.categories':      'Catégories',
   'inventory.stock':        'Inventaire',
   'inventory.alerts':       'Alertes stock',
   'inventory.movements':    'Mouvements',

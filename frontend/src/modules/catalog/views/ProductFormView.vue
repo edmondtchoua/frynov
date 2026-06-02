@@ -8,7 +8,11 @@
           <span v-if="product.has_variants" class="variant-count-badge">{{ product.variants?.length ?? 0 }} variante(s)</span>
         </p>
       </div>
-      <RouterLink to="/catalog" class="btn btn-ghost">← Catalogue</RouterLink>
+      <!-- In edit mode, go back to show page; in create mode, back to list -->
+      <RouterLink
+        :to="isEdit && product ? `/catalog/products/${product.id}` : '/catalog'"
+        class="btn btn-ghost"
+      >← {{ isEdit ? 'Fiche produit' : 'Catalogue' }}</RouterLink>
     </div>
 
     <div v-if="pageLoading" class="loading-center" style="min-height: 300px;">
@@ -367,7 +371,10 @@
       </div>
 
       <div class="form-actions">
-        <RouterLink to="/catalog" class="btn btn-ghost">Annuler</RouterLink>
+        <RouterLink
+          :to="isEdit && product ? `/catalog/products/${product.id}` : '/catalog'"
+          class="btn btn-ghost"
+        >Annuler</RouterLink>
         <button type="submit" class="btn btn-primary" :disabled="saving">
           <span v-if="saving" class="spinner-sm spinner-white"></span>
           {{ saving ? 'Enregistrement…' : (isEdit ? 'Mettre à jour' : 'Créer le produit') }}
@@ -732,7 +739,8 @@ async function handleSubmit() {
       }
     }
 
-    router.push('/catalog')
+    // After save: go to show page for new products, or stay on show page for edits
+    router.push(`/catalog/products/${savedProduct.id}`)
   } catch (err: any) {
     if (err?.response?.status === 422) {
       const apiErrors = err.response?.data?.errors ?? {}

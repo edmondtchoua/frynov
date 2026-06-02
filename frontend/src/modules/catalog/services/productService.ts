@@ -4,6 +4,9 @@ import type {
   CreateCategoryPayload,
   CreateProductPayload,
   Product,
+  ProductAttribute,
+  ProductStockSummary,
+  StockMovementItem,
 } from '../types'
 import type { CreateVariantPayload, LabelBatchPayload, ProductVariantFull } from '../types'
 
@@ -28,6 +31,27 @@ export const productService = {
 
   get(id: string): Promise<Product> {
     return client.get(`/api/catalog/products/${id}`).then(r => r.data.data)
+  },
+
+  /** Full detail with supplier + attributes — for ProductShowPage */
+  getDetail(id: string): Promise<Product> {
+    return client.get(`/api/catalog/products/${id}`, { params: { detail: 1 } }).then(r => r.data.data)
+  },
+
+  /** Aggregated stock across warehouses */
+  getStockSummary(id: string): Promise<ProductStockSummary> {
+    return client.get(`/api/catalog/products/${id}/stock-summary`).then(r => r.data)
+  },
+
+  /** Create initial stock movement after product creation */
+  createInitialStock(id: string, data: {
+    quantity: number
+    warehouse_id?: string
+    unit_cost_cents?: number
+    note?: string
+    variant_id?: string
+  }): Promise<{ message: string; movement: any; stock: any }> {
+    return client.post(`/api/catalog/products/${id}/initial-stock`, data).then(r => r.data)
   },
 
   getBySku(sku: string): Promise<Product> {
@@ -118,6 +142,26 @@ export const productService = {
       win.document.close()
       win.onload = () => win.print()
     }
+  },
+
+  // ── Product Attributes ────────────────────────────────────────────────────
+
+  attributes: {
+    list(productId: string): Promise<ProductAttribute[]> {
+      return client.get(`/api/catalog/products/${productId}/attributes`).then(r => r.data.data)
+    },
+    create(productId: string, data: { name: string; code?: string; type?: string; position?: number; values?: Array<{ label: string; value?: string; color_hex?: string }> }): Promise<ProductAttribute> {
+      return client.post(`/api/catalog/products/${productId}/attributes`, data).then(r => r.data.data)
+    },
+    update(productId: string, attrId: string, data: { name?: string; position?: number }): Promise<ProductAttribute> {
+      return client.put(`/api/catalog/products/${productId}/attributes/${attrId}`, data).then(r => r.data.data)
+    },
+    delete(productId: string, attrId: string): Promise<void> {
+      return client.delete(`/api/catalog/products/${productId}/attributes/${attrId}`)
+    },
+    addValue(productId: string, attrId: string, data: { label: string; value?: string; color_hex?: string }): Promise<any> {
+      return client.post(`/api/catalog/products/${productId}/attributes/${attrId}/values`, data).then(r => r.data.data)
+    },
   },
 
   // ── Categories ─────────────────────────────────────────────────────────────

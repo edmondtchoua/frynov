@@ -140,6 +140,15 @@ class CatalogService
         $product->update(['status' => 'archived']);
         event(new ProductArchived($product));
 
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->log(
+                auth()->id() ?? null, 'product.archived', 'Product', $product->id,
+                ['status' => 'active'],
+                ['status' => 'archived', 'sku' => $product->sku, 'name' => $product->name],
+                request()?->ip(), request()?->userAgent(), 'medium',
+            );
+        } catch (\Throwable) {}
+
         return $product;
     }
 

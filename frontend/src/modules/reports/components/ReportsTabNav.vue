@@ -16,6 +16,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { usePermission } from '@/composables/usePermission'
 
 interface Tab {
   to: string
@@ -31,6 +32,7 @@ const props = withDefaults(defineProps<{
 })
 
 const route = useRoute()
+const { reportsTabs: rbacTabs } = usePermission()
 
 const tabs = computed<Tab[]>(() => [
   {
@@ -46,8 +48,9 @@ const tabs = computed<Tab[]>(() => [
 ])
 
 const visibleTabs = computed(() => {
-  if (!props.allowedTabs) return tabs.value
-  return tabs.value.filter(tab => props.allowedTabs!.includes(tab.to))
+  const allowed = props.allowedTabs ?? rbacTabs.value
+  if (!allowed) return tabs.value
+  return tabs.value.filter(tab => allowed.includes(tab.to))
 })
 
 function isActive(tab: Tab): boolean {

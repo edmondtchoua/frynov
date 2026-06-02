@@ -72,11 +72,11 @@ describe('useAuthStore', () => {
     expect(store.isSuperAdmin).toBe(true)
   })
 
-  it('logout clears user and token', () => {
+  it('logout clears user and token', async () => {
     const store = useAuthStore()
     store.setToken('tok123')
     store.setUser(mockUser as any)
-    store.logout()
+    await store.logout()
     expect(store.user).toBeNull()
     expect(localStorage.getItem('auth_token')).toBeNull()
   })

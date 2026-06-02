@@ -1,8 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 import { useSessionTimeout } from '@/composables/useSessionTimeout'
 
 describe('useSessionTimeout', () => {
-  beforeEach(() => { vi.useFakeTimers() })
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.useFakeTimers()
+  })
   afterEach(() => { vi.useRealTimers() })
 
   it('exports start and reset functions', () => {

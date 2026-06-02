@@ -179,12 +179,14 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { usePermission } from '@/composables/usePermission'
 import FrynovLogo from '@/shared/components/FrynovLogo.vue'
 import NotificationCenter from '@/shared/components/NotificationCenter.vue'
 
 const route  = useRoute()
 const router = useRouter()
 const auth   = useAuthStore()
+const { isManagerOrAbove, isSuperAdmin } = usePermission()
 
 // Marketplace alert count is now handled by NotificationCenter component
 // which uses the useNotifications() composable (polls every 30s)
@@ -212,7 +214,7 @@ function toggleGroup(name: string): void {
 // Auto-open the group of the current route on mount and route change
 // (kept for future use when groups-with-children may be reintroduced)
 function syncOpenGroups(): void {
-  mainNavItems.forEach(item => {
+  mainNavItems.value.forEach(item => {
     if (isGroupActive(item)) {
       openGroups.add(item.name)
     }
@@ -221,62 +223,78 @@ function syncOpenGroups(): void {
 
 // We call syncOpenGroups after mainNavItems is defined (below)
 
-const mainNavItems = [
+// All nav items with RBAC metadata
+// `managerOnly: true` → hidden for agent/cashier/commercial/delivery roles
+const _allNavItems = [
   {
     name: 'dashboard',
     to: '/dashboard',
     label: 'Tableau de bord',
+    managerOnly: false,
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>',
   },
   {
     name: 'catalog',
     to: '/catalog',
     label: 'Catalogue',
+    managerOnly: false,
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
   },
   {
     name: 'inventory',
     to: '/inventory',
     label: 'Stock & Inventaire',
+    managerOnly: false,
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 5l6-3 6 3v6l-6 3-6-3V5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 2v12M2 5l6 3 6-3" stroke="currentColor" stroke-width="1.4"/></svg>',
   },
   {
     name: 'orders',
     to: '/orders',
     label: 'Ventes',
+    managerOnly: false,
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="13" r="1.5" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="13" r="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 1h2l2 7h7l1.5-5H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   },
   {
     name: 'customers',
     to: '/customers',
     label: 'Clients',
+    managerOnly: false,
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M1 14c0-3.3 2.2-5 5-5s5 1.7 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M12 7a2 2 0 010-4M15 14c0-2.2-1.3-3.5-3-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
   },
   {
     name: 'suppliers',
     to: '/suppliers',
     label: 'Fournisseurs',
+    managerOnly: true, // agents don't manage suppliers
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 12V5l5-3 5 3v7" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 16v-4h4v4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M11 12h4V7l-4-2" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
   },
   {
     name: 'reports',
     to: '/reports/sales',
     label: 'Rapports',
+    managerOnly: true,
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12V9l3-3 3 3 4-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 15h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
   },
   {
     name: 'import',
     to: '/import/history',
     label: 'Import / Export',
+    managerOnly: true,
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
   },
   {
     name: 'marketplace.listings',
     to: '/marketplace',
     label: 'Marketplace',
+    managerOnly: true,
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M2 8h12M8 2c-1.5 2-2 4-2 6s.5 4 2 6M8 2c1.5 2 2 4 2 6s-.5 4-2 6" stroke="currentColor" stroke-width="1.4"/></svg>',
   },
 ]
+
+// Computed: filter sidebar items based on user role (RBAC guard)
+const mainNavItems = computed(() =>
+  _allNavItems.filter(item => !item.managerOnly || isManagerOrAbove.value || isSuperAdmin.value)
+)
 
 const pageTitles: Record<string, string> = {
   dashboard:                'Tableau de bord',

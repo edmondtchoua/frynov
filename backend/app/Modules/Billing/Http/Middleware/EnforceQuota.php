@@ -33,6 +33,12 @@ class EnforceQuota
                     'limit'    => $e->limit,
                     'usage'    => $e->usage,
                 ], Response::HTTP_PAYMENT_REQUIRED);
+            } catch (\DomainException $e) {
+                // assertCan*() methods throw \DomainException with a user-friendly message
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'error'   => 'quota_exceeded',
+                ], Response::HTTP_PAYMENT_REQUIRED);
             }
         }
 

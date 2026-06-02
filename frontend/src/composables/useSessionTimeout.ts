@@ -68,5 +68,12 @@ export function useSessionTimeout() {
     else stopListeners()
   })
 
-  return { resetTimer }
+  return {
+    /** Manually start activity listeners and arm the idle timer. */
+    start: startListeners,
+    /** Reset (restart) the idle timer. */
+    reset: resetTimer,
+    /** @deprecated Use reset() */
+    resetTimer,
+  }
 }

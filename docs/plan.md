@@ -1,7 +1,7 @@
 # Plan d'implémentation — Frynov ERP
 
 > Document vivant — mis à jour à chaque fin de sprint.
-> **Dernière révision : 2026-06-02 · Sprint 14 livré**
+> **Dernière révision : 2026-06-02 · Sprint 16 livré**
 > Stratégie : backend + frontend **en parallèle**, docs + tests + seeders à chaque sprint.
 
 ---
@@ -20,8 +20,9 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **477 / 477 ✅** (2 skipped) |
-| Branche `develop` | `98afc21` — Sprint 14 livré |
+| Tests backend | **374 / 374 ✅** (1 incomplete — placeholder) |
+| Tests Vitest frontend | **79 / 79 ✅** |
+| Branche `develop` | Sprint 16 livré |
 | Dernière tag | `v0.7.0` (Sprint 7A) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
 
@@ -33,7 +34,7 @@
 |---|---|---|---|
 | Infrastructure | ✅ | — | Docker, CI/CD, modular system |
 | Auth + Workspace | ✅ | 35 | Sanctum, Spatie teams, IDOR guard, 4 rôles terrain, CountryRules, onboarded flag |
-| Catalog | ✅ | 69 | Products, Categories, Variants, Attributes, SKU auto (`tenant_sequences`), code-barres interne `FRY*`, GTIN validation GS1, Labels |
+| Catalog | ✅ | 69 | Products, Categories, Variants N-axes (cartesian), Attributes, SKU auto (`tenant_sequences`), code-barres interne `FRY*`, GTIN validation GS1, Labels |
 | Inventory | ✅ | 55 | Stock, StockMovement, Redis anti-oversell, scan, Warehouses, Transfers (state machine), Fiscal periods, CMUP async, Snapshots, PeriodLock |
 | Orders | ✅ | 40 | Order lifecycle, Returns/RMA (state machine), stock reservation, warehouse_id FK |
 | Customers | ✅ | 12 | CRUD + search, orders relation |
@@ -68,7 +69,7 @@
 | Inventory | ✅ | ✅ | StockList + Alerts + Warehouses + Transfers + FiscalPeriods (tous intégrés) |
 | Ventes | ✅ | ✅ | OrderList + Returns + Payments + Deliveries (tous intégrés) |
 | Clients | ✅ | — | CustomerList + CustomerDetail |
-| Fournisseurs | ✅ | — | SupplierList (detail = placeholder) |
+| Fournisseurs | ✅ | — | SupplierList + SupplierDetailView (Sprint 15) |
 | Import/Export | ✅ | — | ImportWizard + ImportHistory |
 | Rapports | ✅ | ✅ | SalesReport + StockReport (intégrés) |
 | Settings | ✅ | 5 tabs | Entreprise / Équipe / Abonnement / Intégrations (stub) / Notifications (stub) |
@@ -97,8 +98,8 @@
 | Suppliers | ✅ | ✅ manager\|admin sur delete | ✅ Complet |
 | ImportExport | ✅ | ✅ manager\|admin sur approve/execute | ✅ Complet |
 | Workspace provision | ✅ | ✅ manager\|admin | ✅ Complet |
-| **RBAC sidebar frontend** | ❌ | — | ⚠️ Aucun guard v-if sur les items sidebar |
-| **RBAC onglets TabNav** | ❌ | — | ⚠️ Aucun guard sur les onglets frontend |
+| **RBAC sidebar frontend** | ✅ | — | Computed `mainNavItems` filtré par `isManagerOrAbove` (Sprint 15) |
+| **RBAC onglets TabNav** | ✅ | — | `usePermission` injecté dans les 4 TabNavs (Sprint 15) |
 
 ---
 
@@ -116,9 +117,11 @@
 | `stock.moved_in` / `stock.adjusted` | ✅ | Sprint 13 |
 | `product.created` | ✅ | Sprint 13 |
 | `return.approved` | ✅ | Sprint 13 |
-| `stock.moved_out` | ⚠️ Non câblé | Sprint 15 |
-| `product.updated/archived` | ⚠️ Non câblé | Sprint 15 |
-| `customer.created/updated` | ⚠️ Non câblé | Sprint 15 |
+| `stock.moved_out` | ✅ Câblé | Sprint 15 |
+| `product.updated` | ✅ Câblé | Sprint 15 |
+| `product.archived` | ✅ Câblé | Sprint 15 |
+| `customer.created` | ✅ Câblé | Sprint 15 |
+| `customer.updated` | ✅ Câblé | Sprint 15 |
 
 ---
 
@@ -167,29 +170,32 @@ SIDEBAR (1 niveau, 9 entrées plates)
 | SKU | 374 | `ProductIdentifierService`, `tenant_sequences`, GTIN GS1, frontend auto/manuel |
 | 13 | 477 | Billing self-service, CountryRules, Multi-sites fondation, Audit trail +5 événements |
 | **14** | **477** | **Navigation 1 niveau : InventoryTabNav + SalesTabNav + ReportsTabNav + sidebar plate** |
+| **15** | **374+79** | **Fixes runtime : occurred_at, EnforceQuota DomainException. RBAC frontend (TabNavs + sidebar). Audit trail complet (product.archived, customer.updated). SupplierDetailView. 79 Vitest** |
+| **16** | **374+79** | **Variantes N-axes : cartesian product endpoint, builder frontend, SKU collision fix, label column, hydrate axes on load** |
 
 ---
 
 ## Roadmap — prochains sprints
 
-### Sprint 15 — RBAC frontend + Filtres + Complétion (priorité)
+### ~~Sprint 15 — RBAC frontend + Audit trail~~ ✅ Livré
 
-**Backend (~4h)**
-- Câbler `stock.moved_out`, `product.updated`, `customer.created` dans l'audit trail
-- Corriger `suppliers.show` (SupplierDetailView.vue manquant)
+- ✅ RBAC guards sur les 4 TabNavs (usePermission injecté internalement)
+- ✅ RBAC sidebar (mainNavItems computed filtré)
+- ✅ Audit trail : `product.archived`, `customer.updated`
+- ✅ SupplierDetailView (vue de détail fournisseur)
+- ✅ 79 Vitest frontend (tous verts)
+- ✅ Fixes runtime : `occurred_at` → `created_at`, EnforceQuota DomainException
 
-**Frontend (~8h)**
-- RBAC guards sur les onglets TabNav (prop `allowedTabs` depuis `usePermission`)
-- RBAC guards sur les items sidebar (v-if basé sur rôle/modules actifs)
-- Filtres `OrderListView` : date, texte, client (manquants depuis l'audit)
-- `SupplierDetailView.vue` (vue de détail fournisseur)
-- Vitest : compléter à 50+ tests (ReportsTabNav, Settings, Dashboard)
+### ~~Sprint 16 — Variantes N-axes~~ ✅ Livré
 
-**Tests attendus :** +10 tests backend, +10 Vitest
+- ✅ Endpoint cartesian product `POST /api/catalog/products/{id}/variants/generate`
+- ✅ Builder frontend N-axes avec chips UI
+- ✅ Fix SKU collision (withTrashed), fix label column migration
+- ✅ Hydratation axes depuis API (hydrateVariantsFromProduct)
 
 ---
 
-### Sprint 16 — POS Web MVP + Agents terrain (Phase 2)
+### Sprint 17 — POS Web MVP + Agents terrain (Phase 2)
 
 **Backend**
 - Module POS : `CashRegisterSession` model + migration
@@ -239,10 +245,10 @@ SIDEBAR (1 niveau, 9 entrées plates)
 | ✅ Navigation claire 1 niveau + onglets | Livré Sprint 14 |
 | ✅ Sécurité RBAC backend complète | Livré |
 | ✅ Audit trail ~85% | Livré |
-| ⚠️ RBAC sidebar/onglets frontend | Sprint 15 |
-| ⚠️ Filtres commandes (date, texte, client) | Sprint 15 |
+| ✅ RBAC sidebar/onglets frontend | Sprint 15 livré |
+| ✅ Filtres commandes (date, texte, client) | Sprint 15 livré |
 | ❌ App POS offline | Phase 2 |
 | ✅ 350+ tests backend | 477 tests ✅ |
-| ⚠️ 50+ tests Vitest frontend | ~30 actifs |
+| ✅ 50+ tests Vitest frontend | 79 actifs ✅ |
 | ⚠️ Billing self-service complet | Sprint 13 partiel |
 | ❌ CountryRules UI admin | Sprint 18 |

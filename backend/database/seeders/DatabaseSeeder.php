@@ -10,10 +10,11 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             // ── 1. Référentiel (idempotents — toujours exécutés) ────────────────
-            RolesAndPermissionsSeeder::class, // rôles Spatie + permissions
-            PlansSeeder::class,               // starter / pro / enterprise
+            RolesAndPermissionsSeeder::class, // rôles Spatie + permissions (admin/manager/member/viewer/agent/cashier/commercial/delivery)
+            PlansSeeder::class,               // starter / pro / enterprise (avec quotas terrain: agents, branches, warehouses)
             ErpModulesSeeder::class,          // 10 modules ERP
             PlanModulesSeeder::class,         // associations plan ↔ modules
+            CountryRulesSeeder::class,        // règles inscription par pays (30+ marchés africains + globaux)
 
             // ── 2. Super admin ─────────────────────────────────────────────────
             // superadmin@frynov.com / Secret123!

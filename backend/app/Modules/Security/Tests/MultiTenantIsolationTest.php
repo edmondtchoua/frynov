@@ -37,6 +37,7 @@ class MultiTenantIsolationTest extends TestCase
         Role::firstOrCreate(['name' => 'admin',   'guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
         Role::firstOrCreate(['name' => 'member',  'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'viewer',  'guard_name' => 'web']);
 
         $settings = ['currency' => 'XOF', 'timezone' => 'Africa/Dakar', 'locale' => 'fr'];
 
@@ -83,8 +84,9 @@ class MultiTenantIsolationTest extends TestCase
             'price_currency' => 'XOF', 'status' => 'active', 'has_variants' => false,
         ]);
 
+        // Route is PUT not PATCH
         $this->withToken($this->tokenA)
-            ->patchJson("/api/catalog/products/{$productB->id}", ['price_amount' => 1])
+            ->putJson("/api/catalog/products/{$productB->id}", ['name' => 'Hacked', 'price_amount' => 1, 'price_currency' => 'XOF'])
             ->assertNotFound();
 
         // Price must be unchanged
@@ -169,7 +171,12 @@ class MultiTenantIsolationTest extends TestCase
             ->patchJson("/api/workspace/users/{$this->userB->id}", ['role' => 'viewer'])
             ->assertNotFound();
 
-        $this->assertTrue($this->userB->fresh()->hasRole('admin'), 'User B role must be unchanged');
+        // Set team context to tenantB before checking B's roles
+        app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($this->tenantB->id);
+        $this->assertTrue(
+            $this->userB->fresh()->hasRole('admin'),
+            'User B role must be unchanged (still admin)'
+        );
     }
 
     // ── Mass Assignment: is_super_admin cannot be injected via API ────────────

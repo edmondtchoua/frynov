@@ -934,4 +934,182 @@ onMounted(async () => {
   margin: 0.25rem 0 0;
   line-height: 1.4;
 }
+
+/* ── N-Axis variant builder ──────────────────────────────────────────────── */
+.axes-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 12px 0 0;
+}
+
+.axes-builder-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.axes-builder-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.axes-hint {
+  font-size: var(--text-xs);
+  color: var(--gray-400);
+}
+
+/* Each axis row (name input + values + remove button) */
+.axis-row {
+  display: grid;
+  grid-template-columns: 180px 1fr 32px;
+  gap: 8px;
+  align-items: start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.axis-row:last-of-type {
+  border-bottom: none;
+}
+
+.axis-name-wrap {
+  padding-top: 2px;
+}
+
+.axis-name-input {
+  font-size: var(--text-sm) !important;
+  font-weight: 600;
+}
+
+/* Values area */
+.axis-values-wrap {
+  min-height: 36px;
+}
+
+.axis-values {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+}
+
+.axis-value-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--gray-100);
+  color: var(--gray-700);
+  padding: 3px 8px 3px 10px;
+  border-radius: 14px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.chip-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gray-400);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0 0 2px;
+  display: flex;
+  align-items: center;
+}
+.chip-remove:hover { color: var(--color-error); }
+
+.axis-value-input {
+  flex: 1;
+  min-width: 100px;
+  font-size: var(--text-sm) !important;
+  padding: 4px 8px !important;
+  height: 28px !important;
+}
+
+.axis-remove-btn {
+  color: var(--gray-300);
+  padding: 6px 4px;
+  margin-top: 2px;
+}
+.axis-remove-btn:hover:not(:disabled) { color: var(--color-error); }
+.axis-remove-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* + Add axis button */
+.add-axis-btn {
+  align-self: flex-start;
+  margin-top: 10px;
+  color: var(--brand-secondary, #3b82f6);
+  font-size: var(--text-sm);
+  gap: 4px;
+}
+
+/* Combination preview */
+.combo-preview {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--brand-primary-bg, #ecfdf5);
+  border: 1px solid #a7f3d0;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.combo-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.combo-count {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--brand-primary);
+}
+
+.combo-formula {
+  font-size: var(--text-sm);
+  color: var(--gray-500);
+}
+
+.combo-example {
+  font-size: var(--text-sm);
+  color: var(--gray-600);
+  background: white;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-style: italic;
+}
+
+.combo-note {
+  font-size: var(--text-xs);
+  color: var(--gray-500);
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.generate-result {
+  font-size: var(--text-sm);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+.generate-result.ok   { background: #ecfdf5; color: #065f46; }
+.generate-result.warn { background: #fff7ed; color: #9a3412; }
+
+/* Existing variants table in edit mode */
+.variant-table-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 8px;
+}
 </style>

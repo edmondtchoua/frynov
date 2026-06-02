@@ -1,8 +1,16 @@
 # Plan d'implémentation — Frynov ERP
 
 > Document vivant — mis à jour à chaque session.  
-> Dernière révision : **2026-06-01 (Sprint 9 — Omnicanal P0→P3 livré)**  
+> Dernière révision : **2026-06-02 (Sprint SKU/Barcode livré — 374 tests)**  
 > Stratégie : backend + frontend **en parallèle** dans chaque session.
+
+---
+
+## État actuel — Vue globale
+
+**Tests backend :** 374 / 374 ✅  
+**Branche active :** `feature/sprint-s1s2-security-nav` → mergée dans `develop`  
+**Dernière version taguée :** `v0.7.0` (Sprint 7A)
 
 ---
 
@@ -13,588 +21,171 @@
 | Module | Statut | Tests | Remarques |
 |--------|--------|-------|-----------|
 | Infrastructure | ✅ Livré | — | Docker, CI/CD, modular system |
-| Auth | ✅ Livré | 30 | Sanctum, Spatie teams, multitenant |
-| Catalog | ✅ Livré | 36 | Products, Categories, Variants, SKU, QR/Barcode, Labels |
-| Inventory | ✅ Livré | 25 | Stock, StockMovement, Redis anti-oversell, scan-to-action |
-| Orders | ✅ Livré | 26 | Order lifecycle, stock reservation, anti-oversell, 6 endpoints |
-| Customers | ✅ Livré | 25 | CRUD + search + typeahead, orders relation, tenant isolation |
-| Payments | ✅ Livré | 23 | record/void/balance/isFullyPaid, split payments, tenant isolation |
-| Delivery | ✅ Livré | 26 | pending→dispatched→delivered→failed, order relation, tenant isolation |
-| **Suppliers** | ✅ Livré | 14 | CRUD, code auto, findOrCreateByName, tenant isolation |
-| **ImportExport** | ✅ Livré | 21 | Upload→analyze→mapping→approve→execute pipeline, Horizon jobs, Excel/PDF export |
-| **Reports** | ✅ Livré | 22 | Dashboard KPIs, sales by period, stock value, top products, payment breakdown |
-| **Billing** | ✅ Livré | 6 | Plan, Subscription, Promotion, PromoUse, ManualPayment models + SubscriptionService + PromotionService + ManualPaymentService + BillingController |
-| **Platform** | ✅ Livré | 18 | ErpModule registry, TenantModule, AuditLog, Admin back-office API (7 controllers incl. Promotions + ManualPayments) |
-| **Workspace** | ✅ Livré | — | WorkspaceController — user CRUD (invite+toggle+role), company settings (name, domain, JSON) — 6 endpoints `/api/workspace/*` |
-| Sync | 💤 Différé | — | Phase 2 |
+| Auth + Workspace | ✅ Livré | 35 | Sanctum, Spatie teams, multitenant, IDOR guard, role hierarchy, 4 rôles terrain ajoutés |
+| Catalog | ✅ Livré | 55 | Products, Categories, Variants, Attributes, SKU auto, code-barres interne, GTIN validation, Labels |
+| Inventory | ✅ Livré | 55 | Stock, StockMovement, Redis anti-oversell, scan, Warehouses, Transfers (state machine), Fiscal periods, CMUP async, Snapshots |
+| Orders | ✅ Livré | 40 | Order lifecycle (state machine), Returns/RMA (pending→restocked), stock reservation |
+| Customers | ✅ Livré | 12 | CRUD + search, orders relation, tenant isolation |
+| Payments | ✅ Livré | 16 | record/void/balance, idempotency key, amount cap server-side, role guard on void |
+| Delivery | ✅ Livré | 12 | pending→dispatched→delivered→failed, role guard on transitions |
+| Suppliers | ✅ Livré | 8 | CRUD, code auto, findOrCreateByName |
+| ImportExport | ✅ Livré | 30 | Upload→analyze→mapping→approve→execute pipeline, Excel/PDF export |
+| Reports | ✅ Livré | 13 | Dashboard KPIs, sales, stock value, role:manager+ required |
+| Billing | ✅ Livré | 10 | Plan, Subscription, Promotion, ManualPayment, QuotaService (5 dimensions), PromotionServiceTest |
+| Platform | ✅ Livré | 28 | ErpModule registry, AuditLog HMAC (actor_role), Admin back-office, GET /admin/audit-logs, verify-chain |
+| Security | ✅ Livré | 9 | RBAC sur 11 modules, EnsureUserBelongsToTenant alias, CatalogSecurityTest, PaymentSecurityTest |
+| Marketplace | ✅ Livré | — | Facebook/WhatsApp/WooCommerce adapters, sync alerts |
+| Sync | 💤 Stub | — | Phase 3 — domaine non défini |
 
-**Backend MVP : 100% complet. Tests : 293 passent.**
+**Backend total : 374 tests passent.**
 
 ---
 
-### Frontend (Vue 3 + Vite + TypeScript + PrimeVue 4)
+### Frontend (Vue 3 + Vite + TypeScript)
 
 | Couche | Statut | Remarques |
 |--------|--------|-----------|
-| Stack / config | ✅ Livré | package.json `frynov-erp-frontend`, vite, tsconfig, vitest |
-| **Design system** | ✅ Livré | CSS custom properties, tokens couleurs, composants utilitaires |
-| **FrynovLogo** | ✅ Livré | Composant SVG réutilisable, 3 variantes (light/dark/color) |
-| Foundation (API client, router, stores) | ✅ Livré | Axios interceptors, Pinia auth, guards |
-| **AppLayout** | ✅ Livré | Sidebar responsive, hamburger mobile, sidebar overlay, SVG nav |
-| **AuthLayout** | ✅ Livré | Logo Frynov, fond gradient, footer marque |
-| Auth UI (login, register) | ✅ Livré | LoginView, RegisterView (4 champs, jauge force MDP) |
-| **Landing page** | ✅ Livré | Hero, features, how-it-works, modules, FAQ accordéon, footer |
-| **Onboarding wizard** | ✅ Livré | 5 étapes, card-choices, auto-suggestion modules, transitions |
-| **Dashboard** | ✅ Livré | KPIs réels (API), revenue bar chart SVG, commandes récentes, top produits |
-| **Settings** | ✅ Livré | 5 onglets — **Entreprise** (profil société réel, pays/devise/téléphone/adresse), **Équipe** (liste membres, invite+temp_password, changement rôle, désactivation/réactivation), abonnement réel, code promo, modal mise à niveau |
-| Orders UI | ✅ Livré | OrderListView, OrderCreateView, OrderDetailView |
-| Catalog UI | ✅ Livré | ProductListView, ProductFormView, CategoryListView |
-| Customers UI | ✅ Livré | CustomerListView (avatars, modal inline), CustomerDetailView |
-| **Inventory UI** | ✅ Livré | StockListView (move modal), StockAlertsView (cards + progress bar), MovementHistoryView (timeline) |
-| **Payments UI** | ✅ Livré | PaymentListView (global ledger, void), OrderDetailView enrichi (balance panel + modal) |
-| **Delivery UI** | ✅ Livré | DeliveryListView (dispatch/deliver/fail actions), OrderDetailView panel livraison |
-| **Suppliers UI** | ✅ Livré | SupplierListView (CRUD modal, code badge, pagination) |
-| **Import/Export UI** | ✅ Livré | ImportWizardView (5 étapes, polling), ImportHistoryView (filtres, modal détail) |
-| **Reports UI** | ✅ Livré | Dashboard KPIs réels, SalesReportView (chart + top produits + méthodes), StockReportView (valeur + alertes) |
-| **Admin back-office** | ✅ Livré | AdminLayout (7 nav items), AdminDashboardView, TenantListView, **TenantDetailView** (modules toggle + plan change), ModuleListView, PlanListView, AuditLogView, **PromotionListView**, **ManualPaymentView** |
-
-**Frontend MVP : 100% complet.**
+| Design system | ✅ | CSS tokens, composants, responsive |
+| Auth UI | ✅ | Login, Register, Profile |
+| AppLayout | ✅ | Sidebar collapsible + groupes nav (Ventes, Stock, Rapports, Import) |
+| Catalogue | ✅ | ProductList + Form + Categories + Variants + Labels + CatalogTabNav |
+| Inventory | ✅ | StockList + Alerts + Warehouses + Transfers + FiscalPeriods |
+| Ventes | ✅ | OrderList + OrderCreate + OrderDetail + Returns + Payments + Deliveries |
+| Customers | ✅ | CustomerList + CustomerDetail |
+| Suppliers | ✅ | SupplierList |
+| Import/Export | ✅ | ImportWizard + ImportHistory |
+| Reports | ✅ | SalesReport + StockReport |
+| Dashboard | ✅ | KPIs réels, chart, top produits |
+| Settings | ✅ | 5 onglets (Entreprise, Équipe, Facturation, + stubs) |
+| Onboarding | ⚠️ Partiel | Wizard câblé POST /api/workspace/provision, étapes needs_ manquantes |
+| Admin back-office | ✅ | 7 vues admin (AdminLayout) |
+| Notifications | ✅ | NotificationCenter, useNotifications, polling 30s |
+| Navigation | ✅ | 42 routes, sidebar groupée, 5 groupes collapsibles |
+| Vitest tests | ⚠️ Partiel | ~23 tests (auth, composables) — objectif 50+ |
+| **Billing self-service** | ❌ Absent | /billing, /billing/upgrade — backend complet, frontend manquant |
+| **usePermission** | ✅ | canManageStock, canManageCatalog, canManageOrders, etc. |
 
 ---
 
-### Mobile Flutter (POS)
+### Identifiants produit
 
-| Couche | Statut |
-|--------|--------|
-| Projet Flutter | ⏳ Phase 3 (mois 5-7) |
-| Foundation + offline | ⏳ |
-| POS caisse | ⏳ |
-| Inventory scan | ⏳ |
-
----
-
-### Documentation
-
-| Section | Statut |
-|---------|--------|
-| Architecture, guides dev | ✅ |
-| Auth, Catalog, Inventory (tech + user) | ✅ |
-| Orders (tech + API + user) | ✅ |
-| Suppliers (tech + API + user) | ✅ |
-| Import/Export (tech + API + user) | ✅ |
-| Reports (tech + API + user) | ✅ |
-| Customers, Payments, Delivery | ⏳ À compléter |
+| Fonctionnalité | Statut |
+|---|---|
+| SKU auto-généré (tenant_sequences) | ✅ `PROD-000001`, `VET-000001` |
+| Code-barres interne (FRY + 10 chiffres) | ✅ `FRY0000000001` |
+| Validation GTIN/EAN/UPC (GS1 check digit) | ✅ |
+| Surcharge manuelle (manager/admin) | ✅ Toggle frontend |
+| GTIN jamais généré automatiquement | ✅ Règle respectée |
+| Audit trail identifiants | ⚠️ Partiel |
 
 ---
 
-## Design system — Frynov ERP
+### Sécurité & RBAC
 
-### Identité visuelle
+| Module | EnsureUserBelongsToTenant | Role Guard | Statut |
+|---|---|---|---|
+| Catalog | ✅ | ✅ manager\|admin sur writes | Complet |
+| Inventory | ✅ | ✅ manager\|admin sur mutations | Complet |
+| Orders | ✅ | ✅ manager\|admin sur confirm/cancel/returns | Complet |
+| Payments | ✅ | ✅ manager\|admin sur void | Complet |
+| Customers | ✅ | ✅ manager\|admin sur delete | Complet |
+| Delivery | ✅ | ✅ manager\|admin sur dispatch/deliver | Complet |
+| Suppliers | ✅ | ✅ manager\|admin sur delete | Complet |
+| Reports | ✅ | ✅ manager\|admin | Complet |
+| Marketplace | ✅ | ✅ manager\|admin sur writes | Complet |
+| ImportExport | ✅ | ✅ manager\|admin sur approve/execute | Complet |
+| Workspace provision | ✅ | ✅ manager\|admin | Complet |
 
-| Token | Valeur | Usage |
-|-------|--------|-------|
-| `--brand-primary` | `#10b981` | Vert émeraude — CTA primaire |
-| `--brand-primary-dark` | `#059669` | Hover boutons primaires |
-| `--brand-secondary` | `#3b82f6` | Bleu — liens, boutons secondaires |
-| `--sidebar-bg` | `#1e293b` | Slate foncé — sidebar app |
-| `--color-error` | `#ef4444` | Erreurs, alertes stock |
-| `--color-warning` | `#f59e0b` | Avertissements |
-| `--radius-lg` | `10px` | Cards, panels |
-| `--sidebar-width` | `248px` | Largeur sidebar desktop |
-| `--topbar-height` | `60px` | Hauteur barre haute |
+### Audit Trail
 
-### Composants globaux (`src/assets/main.css`)
-
-- `.btn`, `.btn-primary`, `.btn-secondary`, `.btn-blue`, `.btn-danger`, `.btn-ghost`
-- `.btn-sm`, `.btn-lg`, `.btn-xl`
-- `.badge-*` (success/warning/error/gray/blue)
-- `.alert`, `.alert-error`, `.alert-success`
-- `.data-table` avec hover rows
-- `.form-group`, `.form-input`, `.form-label`, `.form-error`
-- `.card`, `.page-header`
-- `.spinner-sm`, `.spinner-white`
-- `.empty-state`, `.loading-center`
-- `.hide-mobile`, `.show-mobile-only`
-
-### Responsive breakpoints
-
-| Breakpoint | Valeur | Impact |
-|-----------|--------|--------|
-| Mobile | `≤ 768px` | Sidebar fixe + hamburger, grids 1 col, textes réduits |
-| Tablet | `≤ 1024px` | Grids 2 cols |
-| Desktop | `> 1024px` | Layout standard 3 cols |
-
----
-
-## Architecture frontend
-
-```
-src/
-├── assets/
-│   └── main.css                 ← Design system complet (CSS custom props)
-├── layouts/
-│   ├── AppLayout.vue            ← Shell app (sidebar + topbar responsive)
-│   └── AuthLayout.vue           ← Centré, FrynovLogo, carte
-├── pages/
-│   └── LandingView.vue          ← Landing page publique (autonome, sans shell)
-├── shared/
-│   └── components/
-│       └── FrynovLogo.vue       ← Logo SVG réutilisable
-├── modules/
-│   ├── auth/views/
-│   │   ├── LoginView.vue
-│   │   └── RegisterView.vue     ← 4 champs + jauge force mot de passe
-│   ├── onboarding/views/
-│   │   └── OnboardingView.vue   ← Wizard 5 étapes, card-choices
-│   ├── dashboard/views/
-│   │   └── DashboardView.vue    ← KPIs réels + bar chart SVG + top produits
-│   ├── settings/views/
-│   │   └── SettingsView.vue     ← 5 onglets (entreprise, équipe, facturation...)
-│   ├── catalog/views/           ← ProductListView, ProductFormView, CategoryListView
-│   ├── inventory/views/         ← StockListView, StockAlertsView, MovementHistoryView
-│   ├── orders/views/            ← OrderListView, OrderCreateView, OrderDetailView
-│   ├── customers/views/         ← CustomerListView, CustomerDetailView
-│   ├── suppliers/views/         ← SupplierListView (CRUD modal)
-│   ├── import-export/views/     ← ImportWizardView (5 étapes), ImportHistoryView
-│   └── reports/views/           ← SalesReportView, StockReportView
-└── router/
-    ├── index.ts                 ← Routes modulaires, lazy loading
-    └── guards.ts                ← Auth guard, tenant guard
-```
-
-### Système de layouts (App.vue)
-
-```
-meta.layout = undefined  →  <RouterView />  (page gère son propre shell)
-meta.layout = 'auth'     →  <AuthLayout>    (login, register)
-meta.layout = 'app'      →  <AppLayout>     (toutes les vues authentifiées)
-meta.layout = 'admin'    →  <AdminLayout>   (back-office super-admin uniquement)
-```
-
-Pages sans layout (`meta.public: true` sans `meta.layout`) : landing, onboarding.
-
-Routes `/admin/*` nécessitent `meta.requiresSuperAdmin: true` — guard redirige vers `/dashboard` si non super-admin.
-
----
-
-## Stratégie d'implémentation
-
-### Règle principale
-
-**Chaque session = 1 module backend + vues frontend du même domaine + tests cross-couche + docs.**
-
-Ne jamais finir tout le backend avant de commencer le frontend.
-
-### Dépendances
-
-```
-Auth → tout le reste (obligatoire en premier)
-Catalog → Inventory (stock lié aux produits)
-Catalog → Orders (lignes de commande)
-Inventory → Orders (réservation stock)
-Orders → Payments (une commande est payée)
-Orders → Delivery (une commande est livrée)
-Customers → Orders (optionnel en Phase 1)
-Catalog + Orders + Payments + Inventory → Reports (agrégation cross-module)
-```
+| Événement | Câblé |
+|---|---|
+| auth.login / auth.login_failed / auth.logout | ✅ |
+| order.created / confirmed / fulfilled / cancelled | ✅ |
+| payment.recorded | ✅ |
+| workspace.role_changed / user_activated | ✅ |
+| module.activated / plan.changed | ✅ |
+| security.idor_attempt | ✅ |
+| stock.adjusted / stock.moved | ⚠️ Partiel |
+| return.approved | ⚠️ |
+| promo.applied | ⚠️ |
+| product.created (SKU auto) | ⚠️ |
 
 ---
 
 ## Roadmap détaillée
 
----
+### ✅ Sprint 1-7A — MVP Foundation (livré)
 
-### Phase 1 — MVP Backend + Frontend admin
-**Objectif : application web complète et fonctionnelle**  
-**Durée estimée totale : mois 3 → mois 7**
+Tous les modules opérationnels de base : Auth, Catalog, Inventory, Orders, Customers, Payments, Delivery, Suppliers, ImportExport, Reports, Billing, Platform/Admin. **293 tests.**
 
----
+### ✅ Sprint 8-9 — Sécurité & Marketplace (livré)
 
-#### Sprint 1 — Foundation Frontend + Orders backend ✅
-**Statut : LIVRÉ**
+TenantScope global, HMAC AuditLog, Marketplace adapters (Facebook/WhatsApp/WooCommerce), Inventory Axes 1-4 (Fiscal periods, Transfers, Snapshots, CMUP async). **340 tests.**
 
-- Backend Orders : migrations, Order/OrderLine models, OrderService (create/confirm/fulfill/cancel), OrderController (6 endpoints), tests (8 unit + 12 intégration + 4 modular cross-module)
-- Frontend foundation : Axios client, Pinia stores, router avec guards
-- Frontend auth : LoginView, RegisterView, AppLayout, AuthLayout
-- Frontend orders : OrderListView, OrderCreateView, OrderDetailView
-- Design system Frynov ERP : CSS custom properties, composants utilitaires
-- Pages publiques : LandingView (hero + features + FAQ), OnboardingView (wizard 5 étapes)
-- Dashboard : DashboardView avec SVG icons, CSS tokens, actions rapides
-- Settings : SettingsView (5 onglets)
+### ✅ Sprint 10 — Retours + UI Axes + Vitest (livré)
 
----
+Module Returns/RMA, StockTransferView, FiscalPeriodView, ReturnsView, returnService, tests Vitest auth/composables. **351 tests.**
 
-#### Sprint 2 — Customers backend + Catalog UI ✅
-**Statut : LIVRÉ**
+### ✅ Sprint 11 (S1) — Sécurité P0 (livré)
 
-**Backend — Customers**
+RBAC sur 11 modules (Catalog CRITICAL, Orders, Payments, Customers, Delivery, Reports, Marketplace, Suppliers, ImportExport), EnsureUserBelongsToTenant, idempotency key payments, onboarding provision, 4 rôles opérationnels (agent/cashier/commercial/delivery). **376 tests.**
 
-| Livrable | Description |
-|----------|-------------|
-| Migration `customers` | name, phone, email, address JSON, notes, tenant_id |
-| `Customer` model | |
-| `CustomerService` | CRUD + search par nom/téléphone |
-| `CustomerController` | CRUD + search + liste commandes |
-| Lier Orders à Customers | `customer_id` FK sur `orders` |
-| Tests | Unit + Integration |
+### ✅ Sprint 12 (S2) — Audit + Quotas (livré)
 
-**Frontend — Catalog UI**
+AuditService câblé sur 8 événements, actor_role, GET /admin/audit-logs, QuotaService, tenant_sequences, Plan quota columns (max_agents/branches/warehouses). **358 tests.**
 
-| Livrable | Description |
-|----------|-------------|
-| `ProductListView.vue` | Table paginée + filtre statut/catégorie + recherche |
-| `ProductFormView.vue` | Création/édition produit, prix, statut |
-| `VariantPanel.vue` | Gestion variantes (ajout, suppression) |
-| `CategoryListView.vue` | Arbre hiérarchique des catégories |
-| `LabelPrint.vue` | Sélecteur format + copies → ouvre HTML dans onglet |
-| `productService.ts` | Appels API Catalog |
+### ✅ Sprint S1+S2 — Navigation unifiée (livré)
+
+Sidebar refactorisée (groupes Ventes/Stock/Rapports/Import), auth store getters, usePermission composable, onboarding guard, avatar topbar, Settings stubs. **374 tests.**
+
+### ✅ Sprint SKU/Barcode — Identifiants produit (livré)
+
+ProductIdentifierService, tenant_sequences unifiée, GTIN validation GS1, internal_barcode, frontend auto/manuel toggle. **374 tests.**
 
 ---
 
-#### Sprint 3 — Payments backend + Inventory UI ✅
-**Statut : LIVRÉ**
-
-**Backend — Payments**
-
-| Livrable | Description |
-|----------|-------------|
-| Migration `payments` | order_id, amount, currency, method, reference, paid_at |
-| `Payment` model | méthodes : cash, mobile_money (Orange/Wave/MTN), card, transfer |
-| `PaymentService` | record() · balance() · isFullyPaid() |
-| Intégration Orders | markPaid() quand fully paid |
-| Tests | Unit + Integration |
-
-**Frontend — Inventory UI**
-
-| Livrable | Description |
-|----------|-------------|
-| `StockListView.vue` | Table produits + badges vert/orange/rouge |
-| `StockAlertsView.vue` | Bandeau + page alertes stock bas |
-| `MoveStockForm.vue` | Formulaires entrée/sortie/ajustement |
-| `BarcodeScanner.vue` | Input texte (douchette USB → keydown) → résolution SKU |
-| `MovementHistoryView.vue` | Timeline mouvements par produit |
-| `inventoryService.ts` | Appels API Inventory |
-
----
-
-#### Sprint 4 — Delivery backend + Payments UI + Delivery UI ✅
-**Statut : LIVRÉ**
-
-**Backend — Delivery**
-
-| Livrable | Description |
-|----------|-------------|
-| Migration `deliveries` | order_id, status, address, carrier, notes, dispatched_at, delivered_at |
-| `Delivery` model | statuts : pending → dispatched → delivered → failed |
-| `DeliveryService` | dispatch(), confirmDelivery(), fail() |
-| Tests | Unit + Integration |
-
-**Frontend — Customers + Payments + Delivery UI**
-
-| Livrable | Description |
-|----------|-------------|
-| `CustomerListView.vue` | CRUD + historique commandes |
-| `CustomerDetailView.vue` | Fiche client, commandes liées |
-| `PaymentListView.vue` | Paiements globaux, void |
-| `DeliveryListView.vue` | dispatch/deliver/fail actions |
-
----
-
-#### Sprint 5 — Suppliers + Import/Export module ✅
-**Statut : LIVRÉ**
-
-**Backend — Suppliers**
-
-| Livrable | Description |
-|----------|-------------|
-| Migration `suppliers` | name, code, email, phone, contact, payment_terms, notes, status |
-| `Supplier` model | code auto-généré, findOrCreateByName |
-| `SupplierService` | CRUD + search + findOrCreateByName |
-| `SupplierController` | 6 endpoints |
-| Tests | 7 unit + 7 integration |
-
-**Backend — Import/Export**
-
-| Livrable | Description |
-|----------|-------------|
-| Migration `import_sessions` | status machine, column_mapping, stats |
-| Migration `import_rows` | raw_data, mapped_data, errors, status, action |
-| `ImportSession` / `ImportRow` models | Status constants + helpers |
-| `ColumnMapper` | Auto-mapping FR/EN aliases par entité |
-| `ProductImportParser`, `CustomerImportParser`, `SupplierImportParser` | Validation, doublons, mode (create/update/simulate) |
-| `ImportService` | upload→analyze→mapping→approve→execute (sync ≤200 rows / async > 200) |
-| `TemplateService` | Téléchargement Excel template stylisé par entité |
-| `ExcelExporter` | Export Excel stylisé par entité |
-| `PdfExporter` | Export PDF + rapport d'import (dompdf) |
-| `AnalyzeImportJob`, `ExecuteImportJob` | Horizon jobs sur queue `imports` |
-| `ImportExportController` | 10 endpoints |
-| Tests | 5 mapper + 9 parser + 8 API + 8 module |
-
-**Frontend — Suppliers + Import/Export**
-
-| Livrable | Description |
-|----------|-------------|
-| `SupplierListView.vue` | Table paginée, modal CRUD inline |
-| `ImportWizardView.vue` | Wizard 5 étapes, polling async (2s) |
-| `ImportHistoryView.vue` | Historique filtrable, modal détail, actions rapides |
-| `importExportService.ts` | 10 appels API |
-| `supplierService.ts` | 6 appels API |
-
----
-
-#### Sprint 7A — SaaS billing, module registry, admin back-office ✅
-**Statut : LIVRÉ**
-
-**Backend — Billing module**
-
-| Livrable | Description |
-|----------|-------------|
-| `Plan` model + migration | starter (gratuit 14j), pro (15 000 XOF/mois), enterprise (custom) |
-| `Subscription` model + migration | Lifecycle : trialing → active → suspended → cancelled → pending_approval |
-| `SubscriptionService` | createStarter, current, changePlan, suspend, reactivate |
-| `BillingServiceProvider` | Auto-charge migrations et routes du module Billing |
-
-**Backend — Platform module**
-
-| Livrable | Description |
-|----------|-------------|
-| `ErpModule` + migration | 10 modules ERP configurables en DB (code, status, is_core, route_prefix, color) |
-| `TenantModule` + migration | Activation par tenant (active/inactive/suspended/trial) |
-| `AuditLog` + migration | Log immuable (pas d'updated_at), toutes actions sensibles |
-| `plan_modules` pivot | Quels modules sont inclus dans quel plan |
-| `ModuleRegistryService` | listForTenant, activeCodes, tenantHasModule, activate, deactivate, activatePlanModules |
-| `AuditService` | logFromRequest, logCreated/Updated/Deleted, logLogin/Logout, logModuleActivated, logPlanChanged |
-| `RequireAdmin` middleware | Vérifie `is_super_admin`, retourne 403 sinon |
-| `AdminDashboardController` | Stats globales (tenants, users, plans, abonnements par statut, logs récents) |
-| `AdminTenantController` | Liste/détail/suspend/réactiver/changePlan tenants |
-| `AdminModuleController` | Liste modules + stats activations, activer/désactiver pour un tenant |
-| `AdminPlanController` | Liste plans, audit log paginé |
-| `ModulesController` | `GET /api/me/modules` — retourne modules actifs du tenant courant |
-| `PlatformServiceProvider` | Auto-charge migrations + routes Platform |
-
-**Backend — Registration fix (P0)**
-
-| Livrable | Description |
-|----------|-------------|
-| `RegisterRequest` | Accepte `company_name` au lieu de `tenant_id` |
-| `AuthController::register()` | Transaction atomique : provision tenant → créer user → assignRole('admin') → createStarter subscription |
-| `Tenant` model | Ajoute `subscription_status` dans `$fillable`, relation `users()` HasMany |
-
-**Backend — Seeders**
-
-| Livrable | Description |
-|----------|-------------|
-| `RolesAndPermissionsSeeder` | 5 rôles (super-admin/admin/manager/member/viewer), 65 permissions par module et action |
-| `PlansSeeder` | starter, pro, enterprise avec prix et features |
-| `ErpModulesSeeder` | 10 modules avec icônes SVG, couleurs, catégories |
-| `PlanModulesSeeder` | Matrice plan ↔ modules inclus |
-
-**Frontend — Admin back-office**
-
-| Livrable | Description |
-|----------|-------------|
-| `AdminLayout.vue` | Dark sidebar (#0f172a), topbar sticky, nav 5 entrées, badge "Super Admin" |
-| `AdminDashboardView.vue` | KPI grid, abonnements par statut, répartition plans, derniers tenants, activité récente |
-| `TenantListView.vue` | Table paginée avec filtres search/status/plan, actions suspend/réactiver |
-| `ModuleListView.vue` | Grid de cards modules, toggle visibility, sélecteur statut, compteur activations |
-| `PlanListView.vue` | Cards plans avec prix, limites, features |
-| `AuditLogView.vue` | Table paginée des actions sensibles |
-| `adminService.ts` | API complète admin (dashboard, tenants CRUD, modules, plans, audit logs) |
-
-**Frontend — Registration fix (P0)**
-
-| Livrable | Description |
-|----------|-------------|
-| `authService.ts` | Ajout `register(payload: RegisterPayload)` |
-| `auth/types.ts` | Ajout `RegisterPayload`, `ErpModule`, `ModulesResponse`, `subscription_status` dans `Tenant` |
-| `RegisterView.vue` | Appelle vraiment l'API (était `TODO + fake delay`) |
-| `auth store` | Ajout `setToken()` + `setUser()` pour flow registration |
-| `router/guards.ts` | Vérifie `requiresSuperAdmin`, redirige non-admins |
-| `/admin/*` routes | 5 routes admin avec `meta.requiresSuperAdmin: true` + layout `admin` |
-
-**Tests (293/293)**
-
-| Suite | Tests | Description |
-|-------|-------|-------------|
-| `SubscriptionServiceTest` | 6 | createStarter, trialing status, module activation, current, suspend, changePlan |
-| `ModuleRegistryServiceTest` | 9 | listForTenant, activeCodes, tenantHasModule (core/active/trial), activate, deactivate (core protection), activatePlanModules |
-| `RegistrationTest` | 5 | Full flow, company_name requis, email unique, password fort, login post-register |
-| `AdminApiTest` | 9 | Access control (403/401), dashboard, list/show tenants, search, suspend, modules, plans, audit |
-
----
-
-#### Sprint 6 — Reports + Dashboard réel ✅
-**Statut : LIVRÉ**
-
-**Backend — Reports**
-
-| Livrable | Description |
-|----------|-------------|
-| `ReportService` | dashboard(), sales(period), stock() |
-| `GET /api/reports/dashboard` | KPIs jour, chart 7j, commandes récentes, top 5 produits |
-| `GET /api/reports/sales?period=7d\|30d\|90d\|1y` | CA par jour, top 10 produits, répartition par méthode |
-| `GET /api/reports/stock` | Valeur stock, SKUs, ruptures, alertes, mouvements 30j |
-| Tests | 9 unit + 13 integration |
-
-**Frontend — Dashboard + Reports**
-
-| Livrable | Description |
-|----------|-------------|
-| `DashboardView.vue` (refait) | KPIs réels, bar chart SVG 7j, commandes récentes, top produits |
-| `SalesReportView.vue` | 4 KPIs, chart CA sélecteur période, top produits table, méthodes barres |
-| `StockReportView.vue` | 4 KPIs, alertes stock avec barre progression, mouvements 30j |
-| `reportService.ts` | 3 appels API + helpers formatMoney / shortDate |
-
----
-
----
-
-#### Sprint 8 — Frynov ERP : promotions, paiements manuels, dashboard dynamique 🎯
-**Statut : EN COURS — Priorités 1-4 + 7 livrées**
-
-> Dernière mise à jour : 2026-05-31 (session 8B)
-
-**Priorité 1 — Renommage ✅ LIVRÉ**
-- [x] Tous les textes visibles : Nexora → Frynov ERP
-- [x] `FrynovLogo.vue` créé, imports mis à jour dans 4 layouts
-- [x] `index.html` meta + title, `package.json` name, `main.css` commentaire
-- [x] Backend : TemplateService, ExcelExporter, ImportModuleTest
-
-**Priorité 2 — Corrections critiques ✅ LIVRÉ**
-- [x] `UserResource` + `AuthController::me()` : retourne `subscription` + `active_modules`
-- [x] `ModulesController::currentSubscription()` + route `GET /api/me/subscription`
-- [x] `authService.ts` : `me()` déballe `{ user: ... }` correctement, `getModules()`, `getSubscription()`
-- [x] `auth/types.ts` : interface `Subscription` complète avec tous les champs
-- [x] `DashboardView.vue` : grille modules dynamique (actif/inactif/bientôt), banner essai, CSS complet
-- [x] `SettingsView.vue` onglet Abonnement : vraies données depuis store, limites, features, dates
-
-**Priorité 3 — Promotions configurables ✅ LIVRÉ**
-- [x] Migration `promotions` + `promo_uses` (code, type, valeur, dates, max_uses, plans applicables)
-- [x] `Promotion` model + `PromoUse` model + helpers (isExpired, appliesToPlan, applyDiscount)
-- [x] `InvalidPromoCodeException` 
-- [x] `PromotionService` : validate, recordUse, list, create, update
-- [x] `AdminPromotionController` : CRUD complet avec audit + protection si déjà utilisé
-- [x] `BillingController` : `validatePromo`, `applyPromo` (avec routes dans Billing module)
-- [x] Routes admin : `GET/POST/PATCH/DELETE /api/admin/promotions/{promotion}`
-- [x] `authService.ts` : `validatePromo()` + `applyPromo()`
-- [x] `adminService.ts` : `AdminPromotion` interface + CRUD methods
-- [x] `PromotionListView.vue` : table + modal création/édition, toggle activation, suppression
-- [x] `SettingsView.vue` : champ code promo avec validation temps réel + application
-
-**Priorité 4 — Paiements manuels + preuves ✅ LIVRÉ**
-- [x] Migration `manual_payments` (tenant, plan, montant, méthode, proof_path, status, reviewer)
-- [x] `ManualPayment` model + `toApiArray()` + `proofUrl()`
-- [x] `ManualPaymentService` : submit (upload preuve), approve (active subscription), reject, list, forTenant
-- [x] `AdminManualPaymentController` : index, show, approve, reject
-- [x] `BillingController` : `submitPayment` (multipart), `listPayments`
-- [x] Routes : `GET/POST /api/me/manual-payments`, admin CRUD + approve/reject
-- [x] `adminService.ts` : `AdminManualPayment` interface + methods
-- [x] `ManualPaymentView.vue` : table paginée, filtres statut, modal rejet, indicateur pending
-- [x] `SettingsView.vue` : bouton "Demander mise à niveau" → modal avec upload preuve + méthode paiement
-- [x] Admin nav enrichi : Paiements + Promotions
-
-**Priorité 5 — Dashboard client dynamique (partiel)**
-- [x] Grille modules avec statut actif/inactif/bientôt + badges
-- [ ] Badges configurables (promo, badge custom) depuis back-office
-- [ ] CTA configurable (Activer / Essayer / Acheter / Demander démo / Mettre à niveau)
-
-**Priorité 6 — Règles d'inscription configurables**
-- [ ] Migration `country_rules` (country_code, require_approval, allowed_plans, blocked)
-- [ ] `CountryRule` model + `RegistrationRuleService`
-- [ ] Intégration dans `AuthController::register()` : statut `pending_approval` si requis
-
-**Priorité 7 — Améliorations back-office ✅ LIVRÉ**
-- [x] `AdminLayout.vue` : Paiements + Promotions dans le nav (7 entrées)
-- [x] `TenantDetailView.vue` : vue complète (infos, abonnement + change plan, users, modules toggle)
-- [x] Route `/admin/tenants/:id` enregistrée
-- [ ] `AdminDashboardView.vue` : enrichir avec demandes en attente, revenus du mois
-
-**Tests**
-- [ ] `PromotionServiceTest` : validation, recordUse, codes expirés/épuisés, per-plan
-- [ ] `ManualPaymentServiceTest` : submit, approve, reject
-- [ ] `RegistrationRuleTest` : pays/plan → auto | pending | blocked
-
-**Documentation**
-- [ ] Guide Promotions (admin)
-- [ ] Guide Paiements manuels + upload preuve
-- [ ] API reference : `/api/me/modules`, `/api/me/subscription`, `/api/me/promo/*`, `/api/me/manual-payments`
-
----
-
-### Phase 2 — Mobile POS (Flutter)
-**Objectif : caisse offline-first sur tablette/téléphone**  
-**Démarre : mois 5, parallèle au Sprint 4-5 frontend**
-
-| Sprint | Livrable |
-|--------|----------|
-| F-1 | Projet Flutter, auth, Drift SQLite, SyncEngine base |
-| F-2 | Écran caisse, panier, scan caméra, scan Bluetooth |
-| F-3 | Paiement (cash, Mobile Money), ticket thermique |
-| F-4 | Scan réception livraison, impression étiquettes WebView |
-| F-5 | Mode hors ligne complet, tests Flutter |
-
----
-
-### Phase 3 — Connecteurs + API publique
-**Mois 7-12**
-
-| Livrable | Description |
-|----------|-------------|
-| Shopify connector | Sync commandes, produits, stock |
-| WooCommerce connector | Sync bidirectionnel |
-| Mobile Money API | webhooks sortants |
-| API publique v1 | Docs OpenAPI, rate limiting, webhooks |
-| Multi-dépôt | Warehouses, transferts inter-dépôts |
-
----
-
-## Tests — stratégie par niveau
-
-| Niveau | Outil | Portée | Objectif couverture |
-|--------|-------|--------|---------------------|
-| Unit | PHPUnit 12 | Services isolés (mocks) | 80%+ services |
-| Integration | PHPUnit 12 + SQLite | Routes HTTP + DB | Tous les endpoints |
-| Modular | PHPUnit 12 | Flux cross-modules | Scénarios métier complets |
-| E2E backend | — | Différé Phase 2 | — |
-| Unit frontend | Vitest | Stores, composables | 70%+ |
-| E2E frontend | Playwright | Flux critiques | Login, commande, paiement |
-| Mobile | Flutter test | Widgets, unitaires | 70%+ |
-
-**Tests cross-modules requis (backend) :**
-- `Order::create()` → Stock réservé
-- `Order::fulfill()` → StockMovement créé
-- `Order::cancel()` → Réservation libérée
-- `Payment::record()` plein → Order status = paid
-- Delivery confirmée → Order status = fulfilled
-
----
-
-## Résumé calendrier
-
-```
-Mois 1-3  ✅ Auth + Catalog + Inventory (backend complet)
-Mois 4    ✅ Sprint 1: Orders backend + Frontend foundation + Auth UI + Design system
-Mois 4    ✅ Sprint 2: Customers backend + Catalog UI + Customers UI
-Mois 5    ✅ Sprint 3: Payments backend + Inventory UI (StockList, Alerts, Timeline)
-Mois 5    ✅ Sprint 4: Delivery backend + Payments UI + Delivery UI
-Mois 6    ✅ Sprint 5: Suppliers + Import/Export module complet
-Mois 6    ✅ Sprint 6: Reports + Dashboard réel — 264 tests passent
-Mois 6    ✅ Sprint 7A: SaaS billing + module registry + admin back-office — 293 tests passent
-Mois 7    🎯 MVP livré — Beta terrain (3-5 boutiques pilotes)
-Mois 7-12 🔮 Phase 2: Connecteurs + API publique + Mobile Money
-```
+## Sprint 13 — Prochaine étape
+
+**Objectif :** Compléter les 3 gaps bloquants avant beta + Billing self-service
+
+### Backend P0
+- [ ] Audit trail : câbler stock.adjusted, product.created, return.approved, promo.applied
+- [ ] CountryRule model + RegistrationRuleService (inscription par pays)
+- [ ] Billing frontend : /billing, /billing/upgrade, lien Settings
+
+### Backend P1
+- [ ] Onboarding : étapes needs_stock/pos/delivery/ecommerce/offline + nb_branches
+- [ ] Orders : colonne warehouse_id FK (multi-site fondation)
+- [ ] user_warehouses pivot table (scoping accès par branche)
+
+### Frontend
+- [ ] BillingView.vue (plan actuel, usages, dates, upgrade CTA)
+- [ ] Vitest tests : compléter à 50+ (stores, composants, services)
+- [ ] OrderListView : colonne "Statut paiement" + "Client"
+- [ ] Settings : lien vers /billing (bouton Mettre à niveau fonctionnel)
+
+### Documentation
+- [ ] Guide Billing self-service
+- [ ] Guide identifiants produit (SKU / code-barres / GTIN)
+- [ ] Mise à jour guides utilisateur avec nouveaux rôles terrain
 
 ---
 
 ## Critères MVP (Go/No-Go beta)
 
 - [x] Authentification multitenant fonctionnelle
-- [x] Catalogue produits complet avec étiquettes
-- [x] Stock suivi en temps réel (entrée/sortie/inventaire)
+- [x] Catalogue produits complet avec étiquettes + identifiants
+- [x] Stock suivi en temps réel (entrée/sortie/inventaire/transferts)
 - [x] Commandes créées et tracées jusqu'à la livraison
-- [x] Paiements enregistrés (cash + 1 Mobile Money)
+- [x] Paiements enregistrés (cash + Mobile Money)
+- [x] Retours/SAV gérés
 - [x] Dashboard avec CA et stock du jour
-- [x] Frontend web utilisable sur desktop + tablette
-- [ ] App POS offline basique (vente + scan) — Phase 2
-- [x] 200+ tests backend passants (293 actifs)
-- [ ] 50+ tests frontend passants — Vitest à compléter
+- [x] Sécurité RBAC sur tous les modules critiques
+- [x] Audit trail sur événements principaux
+- [x] Navigation claire et cohérente
+- [ ] App POS offline basique — Phase 2
+- [x] Tests backend 350+ (374 actifs)
+- [ ] 50+ tests frontend Vitest — en cours (~23)
+- [ ] Billing self-service (upgrade plan) — Sprint 13
+- [ ] CountryRules (inscription par pays) — Sprint 13

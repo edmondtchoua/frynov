@@ -2,7 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { setupGuards } from './guards'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  // createWebHistory() without base URL prevents the //path double-slash bug
+  // in Vue Router 4 when BASE_URL = '/'
+  history: createWebHistory(),
   scrollBehavior: (to, _from, savedPosition) => {
     if (savedPosition) return savedPosition
     if (to.hash) return { el: to.hash, behavior: 'smooth' }

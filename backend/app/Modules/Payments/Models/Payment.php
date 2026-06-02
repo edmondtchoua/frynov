@@ -28,6 +28,7 @@ class Payment extends Model
 
     protected $fillable = [
         'tenant_id',
+        'warehouse_id',
         'order_id',
         'amount_cents',
         'currency',

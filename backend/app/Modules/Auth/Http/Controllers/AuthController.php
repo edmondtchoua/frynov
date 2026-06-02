@@ -9,6 +9,7 @@ use App\Modules\Auth\Http\Requests\RegisterRequest;
 use App\Modules\Auth\Http\Resources\UserResource;
 use App\Modules\Auth\Repositories\UserRepositoryInterface;
 use App\Modules\Auth\Services\AuthService;
+use App\Modules\Auth\Services\RegistrationRuleService;
 use App\Modules\Billing\Services\SubscriptionService;
 use App\Modules\Platform\Services\AuditService;
 use App\Modules\Platform\Services\ModuleRegistryService;
@@ -53,10 +54,21 @@ class AuthController extends Controller
             return response()->json(['message' => 'Compte suspendu ou inactif.'], 403);
         }
 
-        $this->audit->logFromRequest($request, 'auth.login', $user, [], [
-            'email'     => $user->email,
-            'tenant_id' => $user->tenant_id,
-        ], 'low');
+        // Use log() directly — logFromRequest uses $request->user() which is null pre-token on login
+        try {
+            $this->audit->log(
+                'auth.login',
+                $user->tenant_id,
+                $user->id,
+                $user,
+                [],
+                ['email' => $user->email],
+                null,
+                $user->getRoleNames()->first() ?? 'user',
+                $request->ip(),
+                $request->userAgent(),
+            );
+        } catch (\Throwable) {}
 
         return response()->json([
             'token' => $token,
@@ -74,10 +86,34 @@ class AuthController extends Controller
      */
     public function register(RegisterRequest $request): JsonResponse
     {
-        $result = DB::transaction(function () use ($request) {
+        $country = $request->input('country');
+
+        if ($country) {
+            /** @var RegistrationRuleService $ruleService */
+            $ruleService = app(RegistrationRuleService::class);
+
+            if ($ruleService->isBlocked($country)) {
+                return response()->json([
+                    'message' => "L'inscription n'est pas disponible dans votre pays ({$country}).",
+                ], 403);
+            }
+        }
+
+        $result = DB::transaction(function () use ($request, $country) {
+            $tenantStatus = 'active';
+
+            if ($country) {
+                /** @var RegistrationRuleService $ruleService */
+                $ruleService = app(RegistrationRuleService::class);
+                if ($ruleService->requiresPendingApproval($country)) {
+                    $tenantStatus = 'pending_approval';
+                }
+            }
+
             // 1. Provision tenant
             $tenant = $this->provisioner->provision([
-                'name' => $request->input('company_name'),
+                'name'   => $request->input('company_name'),
+                'status' => $tenantStatus,
             ]);
 
             // 2. Create admin user
@@ -99,6 +135,22 @@ class AuthController extends Controller
         });
 
         $token = $result->createToken('api', ['*'], now()->addDays(30))->plainTextToken;
+
+        // Audit: registration is followed by an implicit first login
+        try {
+            $this->audit->log(
+                'auth.login',
+                $result->tenant_id,
+                $result->id,
+                $result,
+                [],
+                ['email' => $result->email, 'via' => 'registration'],
+                null,
+                $result->getRoleNames()->first() ?? 'admin',
+                $request->ip(),
+                $request->userAgent(),
+            );
+        } catch (\Throwable) {}
 
         return response()->json([
             'token' => $token,

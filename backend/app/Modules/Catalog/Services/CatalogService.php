@@ -101,6 +101,15 @@ class CatalogService
 
         event(new ProductCreated($product));
 
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->log(
+                auth()->id() ?? null, "product.created", "Product", $product->id,
+                [],
+                ["sku" => $product->sku, "name" => $product->name],
+                request()?->ip(), request()?->userAgent(), "low"
+            );
+        } catch (\Throwable) {}
+
         return $product->load('category');
     }
 

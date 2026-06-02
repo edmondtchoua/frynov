@@ -96,6 +96,15 @@ class OrderReturnService
                 'internal_note'       => $internalNote,
             ]);
         });
+
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->log(
+                auth()->id() ?? null, "return.approved", "OrderReturn", $return->id,
+                ["status" => OrderReturn::STATUS_PENDING],
+                ["status" => OrderReturn::STATUS_APPROVED, "approved_by" => $approvedBy, "refund_amount_cents" => $return->fresh()->refund_amount_cents],
+                request()?->ip(), request()?->userAgent(), "low"
+            );
+        } catch (\Throwable) {}
     }
 
     // ── 3. RESTOCK (approved → restocked) ────────────────────────────────

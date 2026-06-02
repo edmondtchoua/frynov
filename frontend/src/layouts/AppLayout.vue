@@ -136,6 +136,22 @@
 
         <div v-if="!sidebarCollapsed" class="nav-section-label" style="margin-top: 0.75rem;">Configuration</div>
         <RouterLink
+          to="/billing"
+          class="nav-item"
+          active-class="nav-item--active"
+          :title="sidebarCollapsed ? 'Abonnement' : ''"
+          @click="mobileMenuOpen = false"
+        >
+          <span class="nav-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M1 6h14" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M4 10h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span v-if="!sidebarCollapsed" class="nav-label">Abonnement</span>
+        </RouterLink>
+        <RouterLink
           to="/settings"
           class="nav-item"
           active-class="nav-item--active"

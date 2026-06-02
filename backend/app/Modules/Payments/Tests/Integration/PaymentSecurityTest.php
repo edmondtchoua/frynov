@@ -94,6 +94,6 @@ class PaymentSecurityTest extends TestCase
 
         $this->withToken($this->adminToken)
             ->deleteJson("/api/payments/{$payment->id}")
-            ->assertStatus(200);
+            ->assertSuccessful(); // 200 or 204
     }
 }

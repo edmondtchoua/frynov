@@ -165,6 +165,24 @@ const router = createRouter({
       ],
     },
 
+    // ── Billing ───────────────────────────────────────────────────────────
+    {
+      path: '/billing',
+      meta: { layout: 'app' },
+      children: [
+        {
+          path: '',
+          name: 'billing',
+          component: () => import('@/modules/billing/views/BillingView.vue'),
+        },
+        {
+          path: 'upgrade',
+          name: 'billing.upgrade',
+          component: () => import('@/modules/billing/views/UpgradeView.vue'),
+        },
+      ],
+    },
+
     // ── Customers ─────────────────────────────────────────────────────────
     {
       path: '/customers',

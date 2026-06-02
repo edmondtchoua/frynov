@@ -76,7 +76,7 @@ class StockService
         // Axe 4 — Period lock guard (double protection: applicative + MySQL trigger)
         PeriodLockService::assertOperationAllowed($stock->tenant_id);
 
-        return DB::transaction(function () use ($stock, $quantity, $reason, $reference, $note, $performedBy, $unitCostCents) {
+        $movement = DB::transaction(function () use ($stock, $quantity, $reason, $reference, $note, $performedBy, $unitCostCents) {
             // Lock the row to prevent concurrent CMUP drift
             $locked = Stock::where('id', $stock->id)->lockForUpdate()->firstOrFail();
             $before = $locked->quantity;
@@ -99,6 +99,17 @@ class StockService
 
             return $this->record($locked, StockMovement::TYPE_IN, $quantity, $before, $reason, $reference, $note, $performedBy);
         });
+
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->log(
+                auth()->id() ?? null, "stock.moved_in", "Stock", $stock->id,
+                ["quantity" => $stock->quantity - $quantity],
+                ["quantity" => $stock->fresh()->quantity, "reason" => $reason, "qty_added" => $quantity],
+                request()?->ip(), request()?->userAgent(), "low"
+            );
+        } catch (\Throwable) {}
+
+        return $movement;
     }
 
     /**
@@ -244,7 +255,7 @@ class StockService
         }
 
         try {
-            return DB::transaction(function () use ($stock, $newQuantity, $reason, $note, $performedBy, $reference) {
+            $movement = DB::transaction(function () use ($stock, $newQuantity, $reason, $note, $performedBy, $reference) {
                 $locked = Stock::where('id', $stock->id)->lockForUpdate()->firstOrFail();
                 $before = $locked->quantity;
                 $diff   = $newQuantity - $before;
@@ -265,6 +276,17 @@ class StockService
                     $performedBy,
                 );
             });
+
+            try {
+                app(\App\Modules\Platform\Services\AuditService::class)->log(
+                    auth()->id() ?? null, "stock.adjusted", "Stock", $stock->id,
+                    ["quantity" => $stock->quantity],
+                    ["quantity" => $newQuantity, "reason" => $reason],
+                    request()?->ip(), request()?->userAgent(), "low"
+                );
+            } catch (\Throwable) {}
+
+            return $movement;
         } finally {
             $lock->release();
         }

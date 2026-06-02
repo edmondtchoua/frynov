@@ -53,6 +53,8 @@ class AuditService
         ?array $newValues = null,
         ?string $notes = null,
         ?string $actorRole = null,
+        ?string $ipAddress = null,
+        ?string $userAgent = null,
     ): AuditLog {
         return AuditLog::create([
             'user_id'      => $userId,
@@ -63,8 +65,8 @@ class AuditService
             'subject_id'   => $subject?->getKey(),
             'old_values'   => $oldValues,
             'new_values'   => $newValues,
-            'ip_address'   => null,
-            'user_agent'   => null,
+            'ip_address'   => $ipAddress ?? request()->ip(),
+            'user_agent'   => $userAgent ?? request()->userAgent(),
             'notes'        => $notes,
         ]);
     }

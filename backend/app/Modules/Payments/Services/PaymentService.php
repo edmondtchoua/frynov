@@ -32,10 +32,9 @@ class PaymentService
                 $tolerance = (int) ceil($order->total_amount * 0.01);
 
                 if ($data['amount_cents'] > $remaining + $tolerance) {
-                    throw new \Illuminate\Validation\ValidationException(
-                        \Illuminate\Validation\Validator::make([], []),
-                        response()->json(['message' => 'Montant supérieur au solde restant de l\'ordre (' . $remaining . ' centimes).'], 422)
-                    );
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'amount_cents' => ['Montant superieur au solde restant de la commande (' . $remaining . ' centimes).'],
+                    ]);
                 }
             }
 

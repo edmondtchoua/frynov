@@ -14,6 +14,7 @@
         Alertes{{ alertCount > 0 ? ` (${alertCount})` : '' }}
       </RouterLink>
     </div>
+    </div>
 
     <!-- Filters -->
     <div class="filter-bar">

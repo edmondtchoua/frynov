@@ -20,6 +20,7 @@ class ProductVariant extends Model
         'tenant_id',
         'sku',
         'name',
+        'label',        // human-readable combined label e.g. "S / Rouge" (Sprint 16 multi-axis)
         'attributes',
         'price_amount',
         'price_currency',

@@ -85,6 +85,11 @@ const router = createRouter({
           name: 'catalog.labels',
           component: () => import('@/modules/catalog/views/LabelPrintView.vue'),
         },
+        {
+          path: 'attributes',
+          name: 'catalog.attributes',
+          component: () => import('@/modules/catalog/views/AttributesView.vue'),
+        },
       ],
     },
 
@@ -122,6 +127,11 @@ const router = createRouter({
           path: 'fiscal-periods',
           name: 'inventory.fiscal-periods',
           component: () => import('@/modules/inventory/views/FiscalPeriodView.vue'),
+        },
+        {
+          path: 'batch-delivery',
+          name: 'inventory.batch-delivery',
+          component: () => import('@/modules/inventory/views/BatchDeliveryView.vue'),
         },
       ],
     },

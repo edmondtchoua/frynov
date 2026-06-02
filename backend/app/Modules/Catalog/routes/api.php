@@ -56,6 +56,8 @@ Route::prefix('catalog')->name('catalog.')->group(function () {
             Route::patch('products/{id}/activate', [CatalogController::class, 'activate'])->name('products.activate');
 
             // Product variants — write
+            // Sprint 16: generate variants from multiple axes (cartesian product)
+            Route::post('products/{productId}/variants/generate',     [ProductVariantController::class, 'generate'])->name('variants.generate');
             Route::post('products/{productId}/variants',              [ProductVariantController::class, 'store'])->name('variants.store');
             Route::put('products/{productId}/variants/{variantId}',   [ProductVariantController::class, 'update'])->name('variants.update');
             Route::delete('products/{productId}/variants/{variantId}',[ProductVariantController::class, 'destroy'])->name('variants.destroy');

@@ -493,6 +493,58 @@ function removeAxisValue(i: number, j: number) {
   variantAxes.value[i].values.splice(j, 1)
 }
 
+/**
+ * Reconstruct variantAxes from existing variant attributes (edit mode).
+ * Scans all variants, aggregates unique values per axis key.
+ * Also populates the edit-mode variants table.
+ */
+function hydrateVariantsFromProduct(variantList: any[]) {
+  // Build edit-mode variant rows
+  variants.value = variantList.map(v => ({
+    _key:          makeKey(),
+    _id:           v.id,
+    _deleted:      false,
+    label:         (v as any).label ?? (v.attributes ? Object.values(v.attributes as Record<string,string>).join(' / ') : v.name ?? v.sku),
+    sku:           v.sku,
+    price_display: v.price ? v.price.amount / 100 : '',
+    barcode:       (v as any).barcode ?? '',
+    is_active:     (v as any).is_active ?? true,
+    initial_qty:   0,
+  }))
+
+  // Reconstruct variantAxes from attributes (e.g. {Taille:"S", Couleur:"Rouge"})
+  const axesMap: Record<string, string[]> = {}
+  for (const v of variantList) {
+    const attrs = (v as any).attributes as Record<string, string> | null
+    if (!attrs) continue
+    for (const [key, val] of Object.entries(attrs)) {
+      if (!axesMap[key]) axesMap[key] = []
+      if (!axesMap[key].includes(String(val))) axesMap[key].push(String(val))
+    }
+  }
+  const reconstructed = Object.entries(axesMap).map(([name, values]) => ({
+    name, values, newValue: '',
+  }))
+  if (reconstructed.length > 0) {
+    variantAxes.value = reconstructed
+  }
+}
+
+/**
+ * Reload variants from the API after generation (edit mode).
+ */
+async function loadVariants() {
+  if (!product.value?.id) return
+  try {
+    const p = await productService.get(product.value.id)
+    if (p.variants) {
+      hydrateVariantsFromProduct(p.variants)
+    }
+  } catch {
+    // silent — variants table stays as-is
+  }
+}
+
 async function generateVariantsNow() {
   if (!product.value?.id) return
   generatingVariants.value = true
@@ -507,10 +559,16 @@ async function generateVariantsNow() {
       base_price:    basePrice || undefined,
       base_currency: form.price_currency,
     })
-    generateResult.value = { ok: true, message: r.message ?? `${r.created} créée(s), ${r.skipped} ignorée(s).` }
+    // created=0 + skipped>0 = all variants already exist → still a success
+    const ok = r.created > 0 || r.skipped > 0
+    generateResult.value = {
+      ok,
+      message: r.message ?? `${r.created} créée(s), ${r.skipped} ignorée(s).`,
+    }
     await loadVariants()
-  } catch {
-    generateResult.value = { ok: false, message: 'Erreur lors de la génération.' }
+  } catch (e) {
+    console.error('generateVariants error:', e)
+    generateResult.value = { ok: false, message: 'Erreur lors de la génération. Vérifiez la console.' }
   } finally {
     generatingVariants.value = false
   }
@@ -682,19 +740,7 @@ async function loadProduct() {
     form.has_variants      = p.has_variants
 
     if (p.has_variants && p.variants?.length) {
-      const firstAttr = p.variants[0]?.attributes ? Object.keys(p.variants[0].attributes)[0] : 'Taille'
-      attrAxis.value = firstAttr || 'Taille'
-      variants.value = p.variants.map(v => ({
-        _key:          makeKey(),
-        _id:           v.id,
-        _deleted:      false,
-        label:         v.attributes?.[firstAttr] ?? v.name ?? v.sku,
-        sku:           v.sku,
-        price_display: v.price ? v.price.amount / 100 : '',
-        barcode:       (v as any).barcode ?? '',
-        is_active:     (v as any).is_active ?? true,
-        initial_qty:   0,  // not editable on existing variants
-      }))
+      hydrateVariantsFromProduct(p.variants)
     }
   } catch {
     globalError.value = 'Produit introuvable.'

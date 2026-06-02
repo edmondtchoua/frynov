@@ -1,5 +1,6 @@
 <template>
   <div>
+    <InventoryTabNav />
     <div class="page-header">
       <div>
         <h2>Stock</h2>
@@ -266,6 +267,7 @@
 <script setup lang="ts">
 import { ref, reactive, watch, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import InventoryTabNav from "../components/InventoryTabNav.vue"
 import { inventoryService } from '../services/inventoryService'
 import { productService } from '@/modules/catalog/services/productService'
 import client from '@/api/client'

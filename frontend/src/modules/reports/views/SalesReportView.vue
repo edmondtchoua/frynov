@@ -1,6 +1,8 @@
 <template>
   <div>
 
+    <ReportsTabNav />
+
     <div class="page-header">
       <div>
         <h2>Rapport des ventes</h2>
@@ -154,6 +156,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, defineComponent, h, watch } from 'vue'
+import ReportsTabNav from '../components/ReportsTabNav.vue'
 import { reportService, formatMoneyCompact, shortDate, type SalesData, type SalesPeriod } from '../services/reportService'
 
 // ── Period selector ───────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 <template>
   <div>
+    <SalesTabNav />
     <div class="page-header">
       <h2>Commandes</h2>
       <RouterLink to="/orders/new" class="btn btn-primary">
@@ -91,6 +92,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import SalesTabNav from '../components/SalesTabNav.vue'
 import { orderService } from '../services/orderService'
 import type { Order } from '../types'
 

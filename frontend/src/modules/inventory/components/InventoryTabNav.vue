@@ -27,35 +27,40 @@ interface Tab {
 }
 
 const props = withDefaults(defineProps<{
-  counts?: { products?: number; categories?: number; variants?: number; attributes?: number }
+  counts?: { alerts?: number }
 }>(), {
   counts: () => ({}),
 })
 
 const route = useRoute()
 
-const tabs = computed<Tab[]>(() => [
+const tabs = computed((): Tab[] => [
   {
-    to: '/catalog',
-    label: 'Produits',
+    to: '/inventory',
+    label: 'Stock',
     exact: true,
-    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/></svg>',
+    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="9" width="14" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><rect x="3" y="5" width="10" height="4" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="5" y="1" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>',
   },
   {
-    to: '/catalog/categories',
-    label: 'Catégories',
-    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 3h12M2 8h8M2 13h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    to: '/inventory/alerts',
+    label: 'Alertes',
+    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1.5a5 5 0 00-5 5v3.5l-1 1.5h12l-1-1.5V6.5a5 5 0 00-5-5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6.5 13a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+    badge: (props.counts?.alerts ?? 0) > 0 ? props.counts!.alerts : undefined,
   },
   {
-    to: '/catalog/variants',
-    label: 'Déclinaisons',
-    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="4" cy="4" r="2.5" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="4" r="2.5" stroke="currentColor" stroke-width="1.4"/><circle cx="4" cy="12" r="2.5" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M6.5 4h3M4 6.5v3M12 6.5v3M6.5 12h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',
-    badge: (props.counts.variants ?? 0) > 0 ? props.counts.variants : undefined,
+    to: '/inventory/warehouses',
+    label: 'Entrepots',
+    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 14V7L8 2l7 5v7H1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><rect x="5" y="9" width="6" height="5" rx="0.5" stroke="currentColor" stroke-width="1.3"/></svg>',
   },
   {
-    to: '/catalog/labels',
-    label: 'Étiquettes',
-    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4a1 1 0 011-1h5.586a1 1 0 01.707.293l3.414 3.414A1 1 0 0114 7.414V12a1 1 0 01-1 1H4a1 1 0 01-1-1V4z" stroke="currentColor" stroke-width="1.4"/><circle cx="6" cy="8" r="1" fill="currentColor"/></svg>',
+    to: '/inventory/transfers',
+    label: 'Transferts',
+    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 5h12M11 2l3 3-3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 11H2M5 8l-3 3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  },
+  {
+    to: '/inventory/fiscal-periods',
+    label: 'Cloture de periode',
+    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 1v4M11 1v4M1 7h14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M5 10l2 2 4-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   },
 ])
 

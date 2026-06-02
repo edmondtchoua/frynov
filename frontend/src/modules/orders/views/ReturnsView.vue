@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <SalesTabNav />
     <div class="page-header">
       <div>
         <h1 class="page-title">Retours & SAV</h1>
@@ -86,6 +87,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import api from '@/services/api'
+import SalesTabNav from '../components/SalesTabNav.vue'
 
 interface OrderReturn {
   id: string

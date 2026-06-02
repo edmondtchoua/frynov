@@ -1,14 +1,14 @@
 # Plan d'implémentation — Frynov ERP
 
 > Document vivant — mis à jour à chaque session.  
-> Dernière révision : **2026-06-02 (Sprint SKU/Barcode livré — 374 tests)**  
+> Dernière révision : **2026-06-02 (Sprint 14 livré — Navigation 1 niveau + TabNavs)**  
 > Stratégie : backend + frontend **en parallèle** dans chaque session.
 
 ---
 
 ## État actuel — Vue globale
 
-**Tests backend :** 374 / 374 ✅  
+**Tests backend :** 477 / 477 ✅  
 **Branche active :** `feature/sprint-s1s2-security-nav` → mergée dans `develop`  
 **Dernière version taguée :** `v0.7.0` (Sprint 7A)
 
@@ -37,7 +37,7 @@
 | Marketplace | ✅ Livré | — | Facebook/WhatsApp/WooCommerce adapters, sync alerts |
 | Sync | 💤 Stub | — | Phase 3 — domaine non défini |
 
-**Backend total : 374 tests passent.**
+**Backend total : 477 tests passent.**
 
 ---
 
@@ -143,32 +143,29 @@ Sidebar refactorisée (groupes Ventes/Stock/Rapports/Import), auth store getters
 
 ProductIdentifierService, tenant_sequences unifiée, GTIN validation GS1, internal_barcode, frontend auto/manuel toggle. **374 tests.**
 
+### ✅ Sprint 13 — Billing + CountryRules + Multi-sites (LIVRÉ)
+
+Billing self-service (BillingView, /billing, /billing/upgrade), CountryRule model, RegistrationRuleService, warehouse_id FK sur Orders/Payments, user_warehouses pivot, AuditService câblé sur stock.adjusted/product.created/return.approved/promo.applied. **477 tests.**
+
 ---
 
-## Sprint 13 — Prochaine étape
+## Sprint 14 — Prochaine étape
 
-**Objectif :** Compléter les 3 gaps bloquants avant beta + Billing self-service
+**Objectif :** Navigation unifiée sidebar 1 niveau + TabNavs
 
 ### Backend P0
-- [ ] Audit trail : câbler stock.adjusted, product.created, return.approved, promo.applied
-- [ ] CountryRule model + RegistrationRuleService (inscription par pays)
-- [ ] Billing frontend : /billing, /billing/upgrade, lien Settings
 
-### Backend P1
-- [ ] Onboarding : étapes needs_stock/pos/delivery/ecommerce/offline + nb_branches
-- [ ] Orders : colonne warehouse_id FK (multi-site fondation)
-- [ ] user_warehouses pivot table (scoping accès par branche)
+Aucun (sprint 100% frontend)
 
 ### Frontend
-- [ ] BillingView.vue (plan actuel, usages, dates, upgrade CTA)
-- [ ] Vitest tests : compléter à 50+ (stores, composants, services)
-- [ ] OrderListView : colonne "Statut paiement" + "Client"
-- [ ] Settings : lien vers /billing (bouton Mettre à niveau fonctionnel)
+- [ ] InventoryTabNav (Stock / Alertes / Entrepôts / Transferts / Périodes fiscales)
+- [ ] SalesTabNav (Commandes / Retours / Paiements / Livraisons)
+- [ ] ReportsTabNav (Ventes / Stock / Exports)
+- [ ] CatalogTabNav Attributs (onglet Attributs dans CatalogTabNav existant)
+- [ ] AppLayout sidebar 1 niveau (aplatir groupes collapsibles → liens directs)
 
-### Documentation
-- [ ] Guide Billing self-service
-- [ ] Guide identifiants produit (SKU / code-barres / GTIN)
-- [ ] Mise à jour guides utilisateur avec nouveaux rôles terrain
+### Tests
+- [ ] Vitest pour chaque TabNav (InventoryTabNav, SalesTabNav, ReportsTabNav, CatalogTabNav)
 
 ---
 
@@ -185,7 +182,7 @@ ProductIdentifierService, tenant_sequences unifiée, GTIN validation GS1, intern
 - [x] Audit trail sur événements principaux
 - [x] Navigation claire et cohérente
 - [ ] App POS offline basique — Phase 2
-- [x] Tests backend 350+ (374 actifs)
+- [x] Tests backend 350+ (477 actifs)
 - [ ] 50+ tests frontend Vitest — en cours (~23)
-- [ ] Billing self-service (upgrade plan) — Sprint 13
-- [ ] CountryRules (inscription par pays) — Sprint 13
+- [x] Billing self-service (upgrade plan) — Sprint 13
+- [x] CountryRules (inscription par pays) — Sprint 13

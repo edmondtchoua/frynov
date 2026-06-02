@@ -1,5 +1,6 @@
 <template>
   <div>
+    <InventoryTabNav />
     <div class="page-header">
       <div>
         <h2>Entrepôts & Boutiques</h2>
@@ -149,6 +150,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import InventoryTabNav from "../components/InventoryTabNav.vue"
 import client from '@/api/client'
 
 interface Warehouse {

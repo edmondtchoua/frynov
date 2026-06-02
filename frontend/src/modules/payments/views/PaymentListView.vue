@@ -1,5 +1,6 @@
 <template>
   <div>
+    <SalesTabNav />
     <div class="page-header">
       <div>
         <h2>Paiements</h2>
@@ -196,6 +197,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import SalesTabNav from '../../orders/components/SalesTabNav.vue'
 import { paymentService } from '../services/paymentService'
 import type { Payment, PaymentMethod } from '../types'
 

@@ -240,6 +240,7 @@ const router = createRouter({
         {
           path: ':id',
           name: 'suppliers.show',
+          // TODO: replace with SupplierDetailView.vue
           component: () => import('@/modules/suppliers/views/SupplierListView.vue'),
           meta: { layout: 'app', title: 'Fournisseur' },
         },

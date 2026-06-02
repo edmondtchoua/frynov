@@ -4,8 +4,12 @@
 
     <div class="page-header">
       <div>
-        <h2>Variantes produit</h2>
-        <p class="page-subtitle">{{ meta.total ?? '—' }} variante{{ (meta.total ?? 0) !== 1 ? 's' : '' }} sur {{ statsData.productsCount }} produit{{ statsData.productsCount !== 1 ? 's' : '' }}</p>
+        <h2>Déclinaisons produit</h2>
+        <p class="page-subtitle">{{ meta.total ?? '—' }} déclinaison{{ (meta.total ?? 0) !== 1 ? 's' : '' }} sur {{ statsData.productsCount }} produit{{ statsData.productsCount !== 1 ? 's' : '' }}</p>
+      </div>
+      <div class="page-header-cta">
+        <span class="cta-note">Les déclinaisons se créent depuis la fiche produit.</span>
+        <RouterLink to="/catalog" class="btn btn-primary">← Voir les produits</RouterLink>
       </div>
     </div>
 
@@ -188,8 +192,15 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-header    { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
-.page-subtitle  { color: var(--gray-500); font-size: var(--text-sm); margin-top: 0.2rem; }
+.page-header     { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.page-subtitle   { color: var(--gray-500); font-size: var(--text-sm); margin-top: 0.2rem; }
+.page-header-cta { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.cta-note        { font-size: var(--text-sm); color: var(--gray-400); font-style: italic; }
+
+@media (max-width: 600px) {
+  .page-header     { flex-direction: column; gap: 12px; }
+  .cta-note        { display: none; }
+}
 .filter-bar     { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
 .search-wrap    { position: relative; flex: 1; min-width: 200px; max-width: 360px; }
 .search-icon    { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; }

@@ -1,5 +1,6 @@
 <template>
   <div class="page-container">
+    <InventoryTabNav />
     <div class="page-header">
       <div>
         <h1 class="page-title">Périodes fiscales</h1>
@@ -132,6 +133,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import InventoryTabNav from "../components/InventoryTabNav.vue"
 import api from '@/services/api'
 
 interface FiscalPeriod {

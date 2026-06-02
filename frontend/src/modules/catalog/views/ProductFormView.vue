@@ -666,7 +666,7 @@ async function handleSubmit() {
     if (form.has_variants) {
       const currency = form.price_currency
 
-      // Sprint 17 N-AXIS: generate via cartesian product if axes are defined
+      // N-AXIS MODE: generate via cartesian product if axes are defined
       const axes = variantAxes.value.filter(a => a.name.trim() && a.values.length > 0)
       if (axes.length > 0) {
         const basePrice = typeof form.price_display === 'number' ? toCents(form.price_display) : 0
@@ -675,21 +675,50 @@ async function handleSubmit() {
           base_price:    basePrice || undefined,
           base_currency: currency,
         })
-      }
 
-      // Also process any manually edited rows (existing variants in edit mode)
-      for (const v of variants.value) {
-        if (v._deleted && v._id) {
-          await productService.deleteVariant(savedProduct.id, v._id)
-        } else if (!v._deleted && v._id) {
-          await productService.updateVariant(savedProduct.id, v._id, {
-            name:           v.label,
-            label:          v.label,
-            price_amount:   v.price_display !== '' ? toCents(v.price_display as number) : undefined,
-            price_currency: currency,
-            barcode:        v.barcode || null,
-            is_active:      v.is_active,
-          })
+        // When axes are active, only process explicit deletions (skip bulk updates)
+        // — updating 30+ variants individually would time out
+        for (const v of variants.value) {
+          if (v._deleted && v._id) {
+            await productService.deleteVariant(savedProduct.id, v._id)
+          }
+          // Unchanged variants: skip — generate already handled create/skip
+        }
+      } else {
+        // MANUAL MODE (no axes): process all rows individually
+        for (const v of variants.value) {
+          if (v._deleted && v._id) {
+            await productService.deleteVariant(savedProduct.id, v._id)
+          } else if (!v._deleted && v._id) {
+            // Only update if user may have changed price/active
+            await productService.updateVariant(savedProduct.id, v._id, {
+              name:           v.label,
+              label:          v.label,
+              price_amount:   v.price_display !== '' ? toCents(v.price_display as number) : undefined,
+              price_currency: currency,
+              barcode:        v.barcode || null,
+              is_active:      v.is_active,
+            })
+          } else if (!v._deleted && !v._id && v.label) {
+            // New variant added manually
+            const created = await productService.createVariant(savedProduct.id, {
+              name:           v.label,
+              label:          v.label,
+              sku:            v.sku || undefined,
+              attributes:     {},
+              price_amount:   v.price_display !== '' ? toCents(v.price_display as number) : undefined,
+              price_currency: currency,
+              barcode:        v.barcode || null,
+              is_active:      v.is_active,
+            })
+            if (v.initial_qty > 0) {
+              await fetch(`/api/inventory/stock/${savedProduct.id}/move-in`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
+                body: JSON.stringify({ variant_id: created.id, quantity: v.initial_qty, reason: 'delivery' }),
+              })
+            }
+          }
         }
       }
     } else if (!isEdit.value) {

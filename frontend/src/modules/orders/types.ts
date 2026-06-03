@@ -32,7 +32,8 @@ export interface CreateOrderItem {
   product_id: string
   variant_id?: string | null
   quantity: number
-  unit_price_cents?: number
+  // NOTE: unit_price_cents is NOT sent — the backend always resolves price
+  // server-side from the catalog (security: CreateOrderRequest excludes it).
 }
 
 export interface CreateOrderPayload {

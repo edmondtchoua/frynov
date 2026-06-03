@@ -5,6 +5,7 @@ namespace App\Modules\Orders\Tests\Integration;
 use App\Models\User;
 use App\Modules\Billing\Models\Plan;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Inventory\Services\StockService;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Tenants\Models\Tenant;
@@ -92,6 +93,56 @@ class OrderApiTest extends TestCase
             ->assertJsonPath('status', 'draft')
             ->assertJsonPath('total_amount', 75000)
             ->assertJsonCount(1, 'lines');
+    }
+
+    #[Test]
+    public function it_orders_a_variant_through_the_full_stock_chain(): void
+    {
+        // Full chain: variable product → variant → stock-in (variant) → order (variant)
+        // → confirm (reserves variant stock) → fulfill (consumes variant stock).
+        $variableProduct = Product::create([
+            'tenant_id' => $this->tenant->id, 'sku' => 'VAR-PROD-1',
+            'name' => 'Bassine', 'price_amount' => 4200_00, 'price_currency' => 'XOF',
+            'status' => 'active', 'has_variants' => true, 'product_type' => 'variable',
+        ]);
+        $variant = ProductVariant::create([
+            'tenant_id' => $this->tenant->id, 'product_id' => $variableProduct->id,
+            'sku' => 'VAR-PROD-1-V1', 'label' => '30L / Rouge',
+            'price_amount' => 5000_00, 'price_currency' => 'XOF', 'is_active' => true,
+        ]);
+
+        // Stock-in on the VARIANT (not the product)
+        $variantStock = $this->app->make(StockService::class)
+            ->findOrCreate($this->tenant->id, $variableProduct->id, $variant->id);
+        $this->app->make(StockService::class)->moveIn($variantStock, 8);
+
+        // Order the variant
+        $order = $this->postJson('/api/orders', [
+            'items' => [[
+                'product_id' => $variableProduct->id,
+                'variant_id' => $variant->id,
+                'quantity'   => 3,
+            ]],
+        ], $this->auth())->json();
+
+        // Price resolved from the VARIANT (5000), not the product (4200)
+        $this->assertSame(15000_00, $order['total_amount']);
+
+        $this->postJson("/api/orders/{$order['id']}/confirm", [], $this->auth())->assertOk();
+        // Reservation lands on the variant stock
+        $variantStock->refresh();
+        $this->assertSame(3, $variantStock->reserved_quantity);
+
+        $this->postJson("/api/orders/{$order['id']}/fulfill", [], $this->auth())->assertOk();
+        // Variant stock consumed: 8 - 3 = 5, reservation cleared
+        $variantStock->refresh();
+        $this->assertSame(5, $variantStock->quantity);
+        $this->assertSame(0, $variantStock->reserved_quantity);
+
+        // Product-level stock was never touched
+        $productStock = $this->app->make(StockService::class)
+            ->findOrCreate($this->tenant->id, $variableProduct->id, null);
+        $this->assertSame(0, $productStock->quantity);
     }
 
     #[Test]

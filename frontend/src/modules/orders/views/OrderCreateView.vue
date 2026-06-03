@@ -62,10 +62,27 @@
                 v-for="p in productResults" :key="p.id" type="button"
                 class="picker-option" @click="selectProduct(i, p)"
               >
-                <span class="po-name">{{ p.name }}</span>
+                <span class="po-name">{{ p.name }}<span v-if="p.has_variants" class="var-tag">variantes</span></span>
                 <span class="po-meta">{{ p.sku }} · {{ p.price.formatted }}</span>
               </button>
               <div v-if="productSearching" class="picker-loading">Recherche…</div>
+            </div>
+
+            <!-- Variant selector — required for variable products -->
+            <div v-if="item.product_id && (item._needsVariant || item._variants.length)" class="variant-pick">
+              <span v-if="item._loadingVariants" class="dim" style="font-size:0.78rem">Chargement des variantes…</span>
+              <select
+                v-else
+                :value="item.variant_id ?? ''"
+                class="form-input variant-select"
+                :class="{ error: item._needsVariant && item._error }"
+                @change="selectVariant(i, item._variants.find(v => v.id === ($event.target as HTMLSelectElement).value)!)"
+              >
+                <option value="" disabled>Choisir une déclinaison…</option>
+                <option v-for="v in item._variants" :key="v.id" :value="v.id">
+                  {{ v.label }} · {{ v.sku }} · {{ fmtCents(v.price_cents) }}
+                </option>
+              </select>
             </div>
           </div>
 
@@ -138,21 +155,30 @@ import type { Product } from '@/modules/catalog/types'
 
 const router = useRouter()
 
+interface VariantOption { id: string; label: string; sku: string; price_cents: number }
+
 interface LineItem {
   _key: number
   _search: string
   _open: boolean
   _error: boolean
-  label: string            // selected product display
+  _variants: VariantOption[]   // populated when product is variable
+  _needsVariant: boolean       // true while a variant must still be chosen
+  _loadingVariants: boolean
+  label: string                // selected product/variant display
   product_id: string
   variant_id: string | null
   quantity: number
-  unit_price_cents: number  // resolved from catalog (display only)
+  unit_price_cents: number     // resolved from catalog (display only)
 }
 
 let _k = 0
 function blankItem(): LineItem {
-  return { _key: ++_k, _search: '', _open: false, _error: false, label: '', product_id: '', variant_id: null, quantity: 1, unit_price_cents: 0 }
+  return {
+    _key: ++_k, _search: '', _open: false, _error: false,
+    _variants: [], _needsVariant: false, _loadingVariants: false,
+    label: '', product_id: '', variant_id: null, quantity: 1, unit_price_cents: 0,
+  }
 }
 
 const items   = ref<LineItem[]>([blankItem()])
@@ -192,15 +218,49 @@ async function loadProducts(search: string) {
   }
 }
 
-function selectProduct(i: number, p: Product) {
+async function selectProduct(i: number, p: Product) {
   const it = items.value[i]
-  it.product_id       = p.id
-  it.label            = p.name
-  it._search          = ''
-  it._open            = false
+  it.product_id   = p.id
+  it.label        = p.name
+  it._search      = ''
+  it._open        = false
+  it._error       = false
+  it.variant_id   = null
+  it._variants    = []
+  it._needsVariant = false
+
+  if (p.has_variants) {
+    // Variable product: the user MUST pick a variant (stock & price live on variants)
+    it._needsVariant     = true
+    it._loadingVariants  = true
+    it.unit_price_cents  = p.price.amount  // provisional, overwritten on variant pick
+    try {
+      const detail = await productService.getDetail(p.id)
+      it._variants = (detail.variants ?? [])
+        .filter((v: any) => v.is_active !== false)
+        .map((v: any) => ({
+          id:         v.id,
+          label:      v.label ?? v.name ?? v.sku,
+          sku:        v.sku,
+          price_cents: v.price?.amount ?? p.price.amount,
+        }))
+    } catch {
+      it._variants = []
+    } finally {
+      it._loadingVariants = false
+    }
+  } else {
+    it.unit_price_cents = p.price.amount  // simple product
+  }
+}
+
+function selectVariant(i: number, v: VariantOption) {
+  const it = items.value[i]
+  it.variant_id       = v.id
+  it.unit_price_cents = v.price_cents
+  it._needsVariant    = false
   it._error           = false
-  it.unit_price_cents = p.price.amount   // already in centimes
-  it.variant_id       = null
+  it.label            = `${it.label.split(' — ')[0]} — ${v.label}`
 }
 
 // ── Customer search ─────────────────────────────────────────────────────────
@@ -245,19 +305,28 @@ const orderTotalCents = computed(() =>
   items.value.reduce((sum, it) => sum + (it.product_id ? it.unit_price_cents * (it.quantity || 0) : 0), 0)
 )
 
-const canSubmit = computed(() =>
-  items.value.some(it => it.product_id && it.quantity > 0)
-)
+// A line is complete when it has a product, a valid qty, and (if variable) a variant.
+function lineComplete(it: LineItem): boolean {
+  return !!it.product_id && it.quantity > 0 && !it._needsVariant
+}
+
+const canSubmit = computed(() => items.value.some(lineComplete))
 
 // ── Submit ──────────────────────────────────────────────────────────────────
 async function submit() {
   error.value = null
-  // Validate: every non-empty line must have a selected product
+  // Validate: every line must have a product, and variable products need a variant
   let valid = true
   for (const it of items.value) {
     if (!it.product_id) { it._error = true; valid = false }
+    else if (it._needsVariant) { it._error = true; valid = false }
   }
-  if (!valid) { error.value = 'Sélectionnez un produit pour chaque ligne.'; return }
+  if (!valid) {
+    error.value = items.value.some(it => it.product_id && it._needsVariant)
+      ? 'Choisissez une déclinaison pour les produits à variantes.'
+      : 'Sélectionnez un produit pour chaque ligne.'
+    return
+  }
 
   loading.value = true
   try {
@@ -319,9 +388,15 @@ textarea.form-input { resize:vertical; }
 
 /* Line items */
 .lines-head { display:flex; gap:0.5rem; padding:0 0 0.5rem; font-size:0.72rem; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--gray-400); border-bottom:1px solid var(--gray-100); }
-.line-row { display:flex; gap:0.5rem; align-items:center; padding:0.625rem 0; border-bottom:1px solid var(--gray-50); }
-.unit-price { font-size:0.875rem; color:var(--gray-600); }
-.line-total { font-size:0.875rem; color:var(--gray-900); }
+.line-row { display:flex; gap:0.5rem; align-items:flex-start; padding:0.625rem 0; border-bottom:1px solid var(--gray-50); }
+.unit-price { font-size:0.875rem; color:var(--gray-600); padding-top:0.5rem; }
+.line-total { font-size:0.875rem; color:var(--gray-900); padding-top:0.5rem; }
+
+/* Variant selector (variable products) */
+.variant-pick { margin-top:0.4rem; }
+.variant-select { font-size:0.8125rem; padding:0.4rem 0.5rem; }
+.variant-select.error { border-color:#ef4444; }
+.var-tag { margin-left:0.4rem; font-size:0.62rem; font-weight:600; text-transform:uppercase; letter-spacing:0.03em; background:#f3e8ff; color:#7e22ce; padding:1px 5px; border-radius:6px; }
 .line-remove { width:32px; height:32px; flex-shrink:0; background:none; border:1px solid var(--gray-200); border-radius:var(--radius-sm); color:var(--gray-400); cursor:pointer; }
 .line-remove:hover:not(:disabled) { color:#ef4444; border-color:#fca5a5; }
 .line-remove:disabled { opacity:0.3; cursor:not-allowed; }

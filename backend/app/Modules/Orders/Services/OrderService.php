@@ -58,7 +58,12 @@ class OrderService
      */
     public function create(array $data, string $tenantId, string $userId): Order
     {
-        $order = DB::transaction(function () use ($data, $tenantId, $userId) {
+        // Use the tenant's configured currency (settings['currency']), not a hardcoded
+        // 'XOF'. A tenant in Cameroon (XAF) or elsewhere otherwise got mislabeled orders.
+        $tenant   = \App\Modules\Tenants\Models\Tenant::withoutGlobalScopes()->find($tenantId);
+        $currency = $tenant?->settings['currency'] ?? 'XOF';
+
+        $order = DB::transaction(function () use ($data, $tenantId, $userId, $currency) {
             $number = $this->nextOrderNumber($tenantId);
 
             $order = Order::create([
@@ -66,7 +71,7 @@ class OrderService
                 'customer_id'  => $data['customer_id'] ?? null,
                 'number'       => $number,
                 'status'       => Order::STATUS_DRAFT,
-                'currency'     => 'XOF',
+                'currency'     => $currency,
                 'note'         => $data['note'] ?? null,
                 'performed_by' => $userId,
             ]);

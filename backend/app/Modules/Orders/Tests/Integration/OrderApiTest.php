@@ -95,6 +95,21 @@ class OrderApiTest extends TestCase
     }
 
     #[Test]
+    public function it_uses_the_tenant_configured_currency(): void
+    {
+        // Tenant configured in XAF (Central Africa) must get XAF orders,
+        // not a hardcoded XOF. Regression for the hardcoded-currency bug.
+        $this->tenant->update(['settings' => ['currency' => 'XAF']]);
+
+        $response = $this->postJson('/api/orders', [
+            'items' => [['product_id' => $this->product->id, 'quantity' => 1]],
+        ], $this->auth());
+
+        $response->assertStatus(201)
+            ->assertJsonPath('currency', 'XAF');
+    }
+
+    #[Test]
     public function it_rejects_order_with_no_items(): void
     {
         $response = $this->postJson('/api/orders', ['items' => []], $this->auth());

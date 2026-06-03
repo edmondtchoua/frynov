@@ -232,8 +232,14 @@ class WorkspaceController extends Controller
 
         $tenant = $request->user()->tenant;
 
-        // Store enriched settings from onboarding
+        // Store enriched settings from onboarding.
+        // currency/country/timezone are collected & validated above — they MUST be
+        // persisted (the order/invoice currency reads tenant->settings['currency']).
+        // They were previously dropped, so onboarding's currency choice had no effect.
         $settings = array_merge($tenant->settings ?? [], [
+            'currency'        => $data['currency'],
+            'country'         => $data['country'],
+            'timezone'        => $data['timezone'] ?? ($tenant->settings['timezone'] ?? 'Africa/Abidjan'),
             'sector'          => $data['sector'] ?? null,
             'activity_type'   => $data['activity_type'] ?? null,
             'nb_users'        => $data['nb_users'] ?? null,

@@ -55,6 +55,31 @@ class WorkspaceApiTest extends TestCase
         $this->token = $this->admin->createToken('api')->plainTextToken;
     }
 
+    // ── POST /api/workspace/provision (onboarding) ────────────────────────────
+
+    #[Test]
+    public function onboarding_persists_the_selected_currency(): void
+    {
+        // The onboarding wizard collects & validates a currency. It must be saved to
+        // tenant settings — orders/invoices read settings['currency']. It was dropped.
+        $response = $this->withToken($this->token)->postJson('/api/workspace/provision', [
+            'company_name' => 'Ma Boutique Douala',
+            'country'      => 'CM',
+            'currency'     => 'XAF',
+            'needs_stock'     => true,
+            'needs_pos'       => false,
+            'needs_delivery'  => false,
+            'needs_ecommerce' => false,
+            'needs_offline'   => false,
+        ]);
+
+        $response->assertOk();
+        $this->tenant->refresh();
+        $this->assertSame('XAF', $this->tenant->settings['currency']);
+        $this->assertSame('CM',  $this->tenant->settings['country']);
+        $this->assertTrue((bool) $this->tenant->onboarded);
+    }
+
     // ── GET /api/workspace/users ──────────────────────────────────────────────
 
     #[Test]

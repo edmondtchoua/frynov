@@ -33,9 +33,9 @@
             </div>
           </div>
           <div class="card-actions">
-            <span class="variants-count">{{ product.variants_count ?? 0 }} déclinaison(s)</span>
+            <span class="variants-count">{{ product.variants?.length ?? 0 }} déclinaison(s)</span>
             <router-link :to="`/catalog/products/${product.id}`" class="btn btn-ghost btn-sm">
-              Modifier
+              Voir la fiche
             </router-link>
           </div>
         </div>
@@ -55,7 +55,7 @@
 
         <p v-else class="no-attrs-hint">
           Aucun attribut configuré — les axes se définissent depuis
-          <router-link :to="`/catalog/products/${product.id}`">la fiche produit</router-link>.
+          <router-link :to="`/catalog/products/${product.id}/edit`">la fiche produit</router-link>.
         </p>
       </div>
     </div>
@@ -65,13 +65,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
-import api from '@/services/api'
+import client from '@/api/client'
 
 interface AttributeValue { id: string; label: string; color_hex?: string }
 interface Attribute      { id: string; name: string; values: AttributeValue[] }
 interface ProductWithAttrs {
-  id: string; name: string; sku: string; has_variants: boolean
-  variants_count?: number
+  id: string; name: string; sku: string; has_variants: boolean; product_type: string
+  variants?: any[]
   attributes?: Attribute[]
 }
 
@@ -88,19 +88,23 @@ function isLight(hex: string): boolean {
 async function load() {
   loading.value = true
   try {
-    const r = await api.get('/catalog/products', { params: { per_page: 50 } })
-    const withVariants = (r.data.data ?? []).filter((p: ProductWithAttrs) => p.has_variants)
+    // Fetch products with variants (by flag OR actual variants via product_type)
+    const r = await client.get('/api/catalog/products', { params: { per_page: 100 } })
+    const withVariants = (r.data.data ?? []).filter(
+      (p: ProductWithAttrs) => p.has_variants || p.product_type === 'variable' || (p.variants?.length ?? 0) > 0
+    )
 
     const withAttrs = await Promise.all(
       withVariants.map(async (p: ProductWithAttrs) => {
         try {
-          const attrResp = await api.get(`/catalog/products/${p.id}/attributes`)
+          const attrResp = await client.get(`/api/catalog/products/${p.id}/attributes`)
           return { ...p, attributes: attrResp.data.data ?? [] }
         } catch {
           return { ...p, attributes: [] }
         }
       })
     )
+    // Only show products that have at least one attribute configured
     products.value = withAttrs
   } finally {
     loading.value = false

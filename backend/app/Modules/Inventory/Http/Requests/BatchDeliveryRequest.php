@@ -17,6 +17,9 @@ class BatchDeliveryRequest extends FormRequest
             'items.*.product_id'     => ['required', 'uuid', Rule::exists('products', 'id')->where('tenant_id', auth()->user()->tenant_id)],
             'items.*.variant_id'     => ['nullable', 'uuid', Rule::exists('product_variants', 'id')->where('tenant_id', auth()->user()->tenant_id)],
             'items.*.quantity'       => ['required', 'integer', 'min:1', 'max:10000'],
+            // unit_cost_cents feeds the CMUP (weighted avg cost). A negative value
+            // would corrupt it — validate min:0. Read by InventoryService::receiveDelivery().
+            'items.*.unit_cost_cents'=> ['nullable', 'integer', 'min:0', 'max:1000000000'],
             'items.*.reference'      => ['nullable', 'string', 'max:100'],
             'items.*.note'           => ['nullable', 'string', 'max:500'],
             'reference'              => ['nullable', 'string', 'max:100'],

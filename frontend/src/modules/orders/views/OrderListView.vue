@@ -171,7 +171,8 @@ function statusBadge(s: string) {
 }
 
 function formatMoney(cents: number) {
-  return new Intl.NumberFormat('fr-SN', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(cents)
+  // total_amount is stored in centimes — divide by 100 to get currency units
+  return new Intl.NumberFormat('fr-SN', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(cents / 100)
 }
 
 function formatDate(iso: string) {

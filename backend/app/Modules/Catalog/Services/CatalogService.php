@@ -200,10 +200,14 @@ class CatalogService
 
     public function listCategories(string $tenantId): Collection
     {
+        // Return ALL categories flat (roots + children).
+        // Previously used whereNull('parent_id') which caused child categories
+        // to be invisible in the list and in product form dropdowns.
+        // The frontend handles tree rendering by grouping on parent_id.
         return Category::where('tenant_id', $tenantId)
-            ->with('children')
-            ->whereNull('parent_id')
+            ->orderBy('parent_id')        // roots first (NULL < UUID alphabetically on MySQL)
             ->orderBy('sort_order')
+            ->orderBy('name')
             ->get();
     }
 

@@ -122,6 +122,9 @@
                 </button>
               </div>
             </div>
+
+            <!-- Surfaced void/record errors (was silently swallowed before) -->
+            <p v-if="payActionError" class="form-error" style="margin-top:8px;font-size:0.8rem;">{{ payActionError }}</p>
           </div>
 
           <!-- ── Delivery panel ─────────────────────────────────────────────── -->
@@ -228,9 +231,13 @@
                   class="form-input" style="flex:1;"
                   placeholder="0"
                 />
-                <select v-model="payForm.currency" class="form-input" style="width: 90px;">
-                  <option>XOF</option><option>XAF</option><option>EUR</option><option>USD</option>
-                </select>
+                <!-- Currency locked to the order's: the balance sums centimes across
+                     payments without converting, so mixing currencies would corrupt it. -->
+                <input
+                  :value="payForm.currency"
+                  class="form-input" style="width: 90px; background:var(--gray-50); text-align:center;"
+                  readonly tabindex="-1" title="Devise de la commande"
+                />
               </div>
             </div>
 
@@ -295,6 +302,7 @@ const payments     = ref<Payment[]>([])
 const payLoading   = ref(false)
 const payBalance   = ref(0)
 const payIsFullyPaid = ref(false)
+const payActionError = ref<string | null>(null)   // surfaced void/record errors
 const payModal     = reactive({ open: false, saving: false, error: '' })
 const payForm      = reactive({ amount: undefined as number | undefined, currency: 'XOF', method: 'cash' as PaymentMethod, reference: '' })
 
@@ -389,10 +397,13 @@ async function submitPayment() {
 
 async function voidPayment(paymentId: string) {
   if (!confirm('Annuler ce paiement ?')) return
+  payActionError.value = null
   try {
     await paymentService.void(paymentId)
     loadPayments()
-  } catch { /* ignore */ }
+  } catch (e: any) {
+    payActionError.value = e?.response?.data?.message ?? "Impossible d'annuler ce paiement."
+  }
 }
 
 // ── Formatters ────────────────────────────────────────────────────────────────

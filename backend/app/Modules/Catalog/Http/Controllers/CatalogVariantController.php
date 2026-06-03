@@ -29,9 +29,12 @@ class CatalogVariantController extends Controller
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('sku',   'like', "%{$search}%")
-                  ->orWhere('label', 'like', "%{$search}%")
-                  ->orWhereHas('product', fn ($pq) => $pq->where('name', 'like', "%{$search}%"));
+                $q->where('product_variants.sku',    'like', "%{$search}%")  // BAS-0015-V1
+                  ->orWhere('product_variants.label', 'like', "%{$search}%") // "30L / Rouge"
+                  ->orWhereHas('product', fn ($pq) => $pq
+                      ->where('name', 'like', "%{$search}%")     // "Bassine de cuisine"
+                      ->orWhere('sku',  'like', "%{$search}%")   // "BAS-0015" ← parent SKU
+                  );
             });
         }
 

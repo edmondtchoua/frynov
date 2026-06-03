@@ -147,8 +147,10 @@ interface ProductVariantRow {
   product?: { id: string; name: string; sku: string; category?: { id: string; name: string } | null }
 }
 
+interface PaginatorMeta { current_page: number; last_page: number; total: number; per_page: number }
+
 const variants = ref<ProductVariantRow[]>([])
-const meta     = ref({ current_page: 1, last_page: 1, total: 0, per_page: 50 })
+const meta     = ref<PaginatorMeta>({ current_page: 1, last_page: 1, total: 0, per_page: 50 })
 const loading  = ref(false)
 const search   = ref('')
 const filterStatus = ref('')
@@ -171,12 +173,21 @@ async function load(page = 1) {
         page,
       },
     })
-    const data = r.data
-    variants.value = data.data ?? []
-    meta.value     = data.meta ?? data
-    statsData.productsCount = new Set(variants.value.map(v => v.product_id)).size
-  } catch {
+    // Paginator direct response: { data: [...], total, current_page, last_page, ... }
+    const paginator = r.data
+    variants.value  = paginator.data ?? []
+    // Build meta from paginator root fields (no wrapper `meta` key in Laravel paginate())
+    meta.value = {
+      current_page: paginator.current_page ?? page,
+      last_page:    paginator.last_page    ?? 1,
+      total:        paginator.total        ?? variants.value.length,
+      per_page:     paginator.per_page     ?? 50,
+    }
+    statsData.productsCount = new Set(variants.value.map((v: ProductVariantRow) => v.product_id)).size
+  } catch (e: any) {
+    console.error('[VariantsView] load error:', e?.response?.status, e?.message)
     variants.value = []
+    meta.value = { current_page: 1, last_page: 1, total: 0, per_page: 50 }
   } finally {
     loading.value = false
   }

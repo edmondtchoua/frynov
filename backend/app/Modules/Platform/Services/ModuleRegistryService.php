@@ -63,19 +63,33 @@ class ModuleRegistryService
     }
 
     /**
-     * Activate all included modules for a plan on a tenant.
-     * Called when a subscription is created or upgraded.
+     * Sync a tenant's modules to exactly match a plan: activate every module the
+     * plan includes AND deactivate any currently-active module the plan does NOT
+     * include. Called when a subscription is created or its plan changes.
+     *
+     * Previously this only ACTIVATED (additive) — so a downgrade (e.g. Pro→Starter)
+     * left the higher plan's exclusive modules active, granting access to features
+     * the tenant no longer pays for.
      */
     public function activatePlanModules(Tenant $tenant, Plan $plan): void
     {
-        $modules = $plan->includedModules()->get();
+        // Get the plan's module IDs via loaded models (avoids table-name ambiguity)
+        $planModuleIds = $plan->includedModules()->get()->pluck('id')->all();
 
-        foreach ($modules as $module) {
+        // 1. Activate (or create) every module included in the plan
+        foreach ($planModuleIds as $moduleId) {
             TenantModule::updateOrCreate(
-                ['tenant_id' => $tenant->id, 'module_id' => $module->id],
+                ['tenant_id' => $tenant->id, 'module_id' => $moduleId],
                 ['status' => TenantModule::STATUS_ACTIVE, 'activated_at' => now()]
             );
         }
+
+        // 2. Deactivate any active/trial module NOT in the new plan (downgrade).
+        //    tenant_modules has no deactivated_at column — status flip is enough.
+        TenantModule::where('tenant_id', $tenant->id)
+            ->whereNotIn('module_id', $planModuleIds)
+            ->whereIn('status', [TenantModule::STATUS_ACTIVE, TenantModule::STATUS_TRIAL])
+            ->update(['status' => TenantModule::STATUS_INACTIVE]);
     }
 
     /**

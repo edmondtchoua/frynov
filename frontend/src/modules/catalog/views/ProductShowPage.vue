@@ -694,6 +694,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { formatMoney } from '@/shared/utils/money'
 import { productService } from '../services/productService'
 import { usePermission } from '@/composables/usePermission'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
@@ -1002,9 +1003,7 @@ function mvtTypeLabel(t: string) {
 function formatDate(iso: string) {
   return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
 }
-function fmtCents(c: number) {
-  return new Intl.NumberFormat('fr-FR', { style: 'decimal', maximumFractionDigits: 0 }).format(c / 100) + ' XOF'
-}
+const fmtCents = (c: number) => formatMoney(c)
 
 // ── Init ───────────────────────────────────────────────────────────────────
 onMounted(async () => {

@@ -268,6 +268,7 @@
 <script setup lang="ts">
 import { ref, reactive, watch, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { formatMoney } from '@/shared/utils/money'
 import InventoryTabNav from "../components/InventoryTabNav.vue"
 import { inventoryService } from '../services/inventoryService'
 import { productService } from '@/modules/catalog/services/productService'
@@ -304,9 +305,7 @@ function onWarehouseChange() {
   loadWhSummary(filters.warehouse_id)
 }
 
-function fmtValue(cents: number): string {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(cents / 100)
-}
+const fmtValue = (cents: number) => formatMoney(cents)
 
 // ── Modal state ────────────────────────────────────────────────────────────────
 const modal = reactive({

@@ -280,6 +280,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
+import { formatMoney } from '@/shared/utils/money'
 import { orderService } from '../services/orderService'
 import { paymentService } from '@/modules/payments/services/paymentService'
 import { deliveryService } from '@/modules/deliveries/services/deliveryService'
@@ -426,7 +427,7 @@ function deliveryStatusBadge(s: DeliveryStatus): string {
   return ({ pending: 'badge-gray', dispatched: 'badge-blue', in_transit: 'badge-blue', delivered: 'badge-success', failed: 'badge-error' } as Record<DeliveryStatus, string>)[s] ?? 'badge-gray'
 }
 function fmt(cents: number) {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: order.value?.currency ?? 'XOF', maximumFractionDigits: 0 }).format(cents / 100)
+  return formatMoney(cents, order.value?.currency ?? 'XOF')
 }
 function fmtDate(iso: string) {
   return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))

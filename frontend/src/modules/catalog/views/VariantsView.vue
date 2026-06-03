@@ -136,6 +136,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { formatMoney } from '@/shared/utils/money'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
 import client from '@/api/client'
 
@@ -205,15 +206,7 @@ function goPage(page: number) { load(page) }
 
 function formatPrice(amount?: number, currency?: string): string {
   if (amount === undefined || amount === null || amount === 0) return '—'
-  const cur = currency ?? 'XAF'
-  // price_amount is stored in centimes (× 100) — divide to get actual currency units
-  // e.g. 420000 centimes → 4200 XAF, 1250 centimes → 12.50 EUR
-  const value = amount / 100
-  try {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: cur }).format(value)
-  } catch {
-    return `${value.toLocaleString('fr-FR')} ${cur}`
-  }
+  return formatMoney(amount, currency ?? 'XAF')
 }
 
 onMounted(load)

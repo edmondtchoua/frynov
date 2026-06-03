@@ -148,6 +148,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
+import { formatMoney } from '@/shared/utils/money'
 import { orderService } from '../services/orderService'
 import { productService } from '@/modules/catalog/services/productService'
 import { customerService } from '@/modules/customers/services/customerService'
@@ -349,9 +350,7 @@ async function submit() {
   }
 }
 
-function fmtCents(cents: number): string {
-  return new Intl.NumberFormat('fr-SN', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format((cents || 0) / 100)
-}
+const fmtCents = (cents: number) => formatMoney(cents)
 </script>
 
 <style scoped>

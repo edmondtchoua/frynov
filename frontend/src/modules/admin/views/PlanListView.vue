@@ -46,6 +46,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { formatMoney } from '@/shared/utils/money'
 import { adminService, type AdminPlan } from '../services/adminService'
 
 const plans   = ref<AdminPlan[]>([])
@@ -60,9 +61,7 @@ async function load() {
   }
 }
 
-function formatPrice(cents: number) {
-  return new Intl.NumberFormat('fr-FR').format(cents / 100) + ' XOF'
-}
+const formatPrice = (cents: number) => formatMoney(cents)
 
 onMounted(load)
 </script>

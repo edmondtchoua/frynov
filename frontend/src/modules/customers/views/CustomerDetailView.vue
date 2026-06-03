@@ -202,6 +202,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { formatMoney } from '@/shared/utils/money'
 import { customerService } from '../services/customerService'
 import type { Customer } from '../types'
 
@@ -236,9 +237,7 @@ function formatAddress(addr: any): string {
   return [addr.street, addr.zip, addr.city, addr.country].filter(Boolean).join(', ')
 }
 
-function formatAmount(cents: number, currency: string): string {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(cents / 100)
-}
+const formatAmount = (cents: number, currency: string) => formatMoney(cents, currency)
 
 function orderStatusBadge(status: string): string {
   return {

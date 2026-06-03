@@ -65,6 +65,7 @@
             <th>Produit parent</th>
             <th class="hide-mobile">Attributs</th>
             <th>Prix</th>
+            <th>Stock</th>
             <th class="hide-mobile">Catégorie</th>
             <th style="text-align:right">Actions</th>
           </tr>
@@ -102,6 +103,12 @@
             </td>
             <td>
               <span class="price-tag">{{ formatPrice(v.price_amount, v.price_currency) }}</span>
+            </td>
+            <td>
+              <div class="stock-cell" :class="{ 'stock-zero': !v.stock_available }">
+                <span class="stock-qty">{{ v.stock_available ?? 0 }}</span>
+                <span v-if="v.stock_qty !== v.stock_available" class="stock-total">/ {{ v.stock_qty ?? 0 }}</span>
+              </div>
             </td>
             <td class="hide-mobile">
               <span v-if="v.product?.category" class="badge badge-gray">{{ v.product.category.name }}</span>
@@ -141,7 +148,9 @@ interface ProductVariantRow {
   label?: string
   price_amount?: number
   price_currency?: string
-  attribute_chips?: AttributeChip[]   // from JSON blob (always populated)
+  stock_qty?: number
+  stock_available?: number
+  attribute_chips?: AttributeChip[]
   attribute_values?: { id: string; label: string; color_hex?: string; attribute?: { id: string; name: string } }[]
   product?: { id: string; name: string; sku: string; category?: { id: string; name: string } | null }
 }
@@ -232,6 +241,12 @@ onMounted(load)
 .color-dot      { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
 
 .price-tag      { font-weight: 600; font-size: 0.875rem; color: var(--gray-900); }
+
+/* Stock column */
+.stock-cell     { display: flex; align-items: baseline; gap: 3px; }
+.stock-qty      { font-weight: 700; font-size: 0.9375rem; color: var(--gray-900); }
+.stock-total    { font-size: 0.75rem; color: var(--gray-400); }
+.stock-zero .stock-qty { color: var(--gray-300); }
 .dim            { color: var(--gray-300); font-size: 0.875rem; }
 
 .pagination-bar {

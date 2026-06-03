@@ -52,16 +52,28 @@ class CatalogVariantController extends Controller
         $paginator = $query->orderBy('product_variants.created_at', 'desc')
             ->paginate((int) $request->query('per_page', 50));
 
-        // Transform each item to include normalized attribute chips from JSON blob
-        $paginator->getCollection()->transform(function ($variant) {
+        // Pre-load stock quantities for all variants on this page in ONE query
+        $variantIds = $paginator->getCollection()->pluck('id')->toArray();
+        $stocks = \App\Modules\Inventory\Models\Stock::whereIn('variant_id', $variantIds)
+            ->select('variant_id', \Illuminate\Support\Facades\DB::raw('SUM(quantity) as total_qty'), \Illuminate\Support\Facades\DB::raw('SUM(quantity - reserved_quantity) as available_qty'))
+            ->groupBy('variant_id')
+            ->get()
+            ->keyBy('variant_id');
+
+        // Transform each item: attribute_chips (JSON blob) + stock quantities
+        $paginator->getCollection()->transform(function ($variant) use ($stocks) {
+            // Attribute chips from JSON blob
             $attrs = $variant->attributes ?? [];
             if (is_string($attrs)) $attrs = json_decode($attrs, true) ?? [];
-
-            // Build attribute_chips from JSON blob: [{name, label}]
             $variant->attribute_chips = collect($attrs)->map(fn ($val, $key) => [
-                'name'  => $key,    // e.g. "Taille"
-                'label' => $val,    // e.g. "30L"
+                'name'  => $key,
+                'label' => $val,
             ])->values()->toArray();
+
+            // Stock quantities (0 if no stock record yet)
+            $stock = $stocks->get($variant->id);
+            $variant->stock_qty       = (int) ($stock?->total_qty     ?? 0);
+            $variant->stock_available = (int) ($stock?->available_qty ?? 0);
 
             return $variant;
         });

@@ -143,6 +143,37 @@ class OrderApiTest extends TestCase
     }
 
     #[Test]
+    public function it_fulfills_an_order_consuming_all_available_stock(): void
+    {
+        // Regression: when stock is EXACTLY the order quantity, confirm reserves
+        // everything (available → 0), and fulfill must still succeed by consuming
+        // the reserved stock. Previously moveOut() ran before release() and threw
+        // InsufficientStockException because available() was 0.
+        $tightProduct = Product::create([
+            'tenant_id' => $this->tenant->id, 'sku' => 'TIGHT-001',
+            'name' => 'Stock serré', 'price_amount' => 1000, 'price_currency' => 'XOF',
+            'status' => 'active',
+        ]);
+        $stock = $this->app->make(StockService::class)
+            ->findOrCreate($this->tenant->id, $tightProduct->id, null);
+        $this->app->make(StockService::class)->moveIn($stock, 5); // exactly 5
+
+        $order = $this->postJson('/api/orders', [
+            'items' => [['product_id' => $tightProduct->id, 'quantity' => 5]],
+        ], $this->auth())->json();
+
+        $this->postJson("/api/orders/{$order['id']}/confirm", [], $this->auth())->assertOk();
+        $this->postJson("/api/orders/{$order['id']}/fulfill", [], $this->auth())
+            ->assertOk()
+            ->assertJsonPath('status', 'fulfilled');
+
+        // Stock fully consumed: quantity 0, reserved 0
+        $stock->refresh();
+        $this->assertSame(0, $stock->quantity);
+        $this->assertSame(0, $stock->reserved_quantity);
+    }
+
+    #[Test]
     public function it_cancels_a_draft_order(): void
     {
         $order = $this->postJson('/api/orders', [

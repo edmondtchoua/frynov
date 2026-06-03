@@ -46,7 +46,9 @@ class ProductVariant extends Model
 
     /**
      * Normalised attribute values for this variant (P1 — replaces JSON blob).
-     * Ordered by attribute position so the label is always Couleur → Taille → RAM.
+     * NOTE: orderBy('product_attributes.position') is intentionally removed —
+     * it fails in eager-loading context because product_attributes is not joined.
+     * Sorting by attribute position is done in PHP via getAttributeMapAttribute().
      */
     public function attributeValues(): BelongsToMany
     {
@@ -55,17 +57,18 @@ class ProductVariant extends Model
             'product_variant_attr_values',
             'variant_id',
             'attribute_value_id',
-        )->with('attribute:id,code,name,position')
-         ->orderBy('product_attributes.position');
+        )->with('attribute:id,code,name,position');
+        // Ordering is handled in getAttributeMapAttribute() by sorting on attribute.position
     }
 
     /**
-     * Returns a flat map of attribute code → label.
+     * Returns a flat map of attribute code → label, sorted by attribute position.
      * Example: ['color' => 'Rouge', 'size' => 'L', 'ram' => '8 Go']
      */
     public function getAttributeMapAttribute(): array
     {
         return $this->attributeValues
+            ->sortBy(fn ($v) => $v->attribute?->position ?? 999)  // sort in PHP (no DB join needed)
             ->keyBy(fn ($v) => $v->attribute?->code ?? $v->id)
             ->map(fn ($v) => $v->label)
             ->toArray();

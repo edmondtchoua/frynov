@@ -24,7 +24,10 @@ class CatalogVariantController extends Controller
             ->with([
                 'product:id,name,sku,status,category_id',
                 'product.category:id,name',
-                'attributeValues.attribute:id,name,code',
+                // NOTE: we use the attributes JSON blob (not the normalized pivot)
+                // because product_variant_attr_values pivot may be empty for
+                // variants created via the N-axis builder (JSON-only path).
+                // attributeValues.attribute:id,name,code  ← removed (causes 500 when pivot empty + orderBy issue)
             ]);
 
         if ($search = $request->query('search')) {
@@ -46,10 +49,24 @@ class CatalogVariantController extends Controller
             $query->whereHas('product', fn ($q) => $q->where('status', $status));
         }
 
-        $variants = $query->orderBy('created_at', 'desc')
+        $paginator = $query->orderBy('product_variants.created_at', 'desc')
             ->paginate((int) $request->query('per_page', 50));
 
-        return response()->json($variants);
+        // Transform each item to include normalized attribute chips from JSON blob
+        $paginator->getCollection()->transform(function ($variant) {
+            $attrs = $variant->attributes ?? [];
+            if (is_string($attrs)) $attrs = json_decode($attrs, true) ?? [];
+
+            // Build attribute_chips from JSON blob: [{name, label}]
+            $variant->attribute_chips = collect($attrs)->map(fn ($val, $key) => [
+                'name'  => $key,    // e.g. "Taille"
+                'label' => $val,    // e.g. "30L"
+            ])->values()->toArray();
+
+            return $variant;
+        });
+
+        return response()->json($paginator);
     }
 
     /** GET /api/catalog/variants/stats — count by product */

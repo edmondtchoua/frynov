@@ -88,20 +88,16 @@
             </td>
             <td class="hide-mobile">
               <div class="attr-chips">
+                <!-- Use attribute_chips (from JSON blob) — always populated -->
                 <span
-                  v-for="av in v.attribute_values ?? []"
-                  :key="av.id"
+                  v-for="chip in (v.attribute_chips ?? [])"
+                  :key="chip.name"
                   class="attr-chip"
-                  :title="av.attribute?.name"
-                >
-                  <span
-                    v-if="av.color_hex"
-                    class="color-dot"
-                    :style="{ background: av.color_hex }"
-                  ></span>
-                  {{ av.label }}
-                </span>
-                <span v-if="!v.attribute_values?.length" class="dim">—</span>
+                  :title="chip.name"
+                >{{ chip.label }}</span>
+                <!-- Fallback: show label if no chips -->
+                <span v-if="!v.attribute_chips?.length && v.label" class="attr-chip">{{ v.label }}</span>
+                <span v-if="!v.attribute_chips?.length && !v.label" class="dim">—</span>
               </div>
             </td>
             <td>
@@ -136,6 +132,8 @@ import { RouterLink } from 'vue-router'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
 import client from '@/api/client'
 
+interface AttributeChip { name: string; label: string }
+
 interface ProductVariantRow {
   id: string
   product_id: string
@@ -143,6 +141,7 @@ interface ProductVariantRow {
   label?: string
   price_amount?: number
   price_currency?: string
+  attribute_chips?: AttributeChip[]   // from JSON blob (always populated)
   attribute_values?: { id: string; label: string; color_hex?: string; attribute?: { id: string; name: string } }[]
   product?: { id: string; name: string; sku: string; category?: { id: string; name: string } | null }
 }

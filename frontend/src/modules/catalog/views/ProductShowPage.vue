@@ -278,6 +278,7 @@
                   <th>SKU</th>
                   <th>Code-barres</th>
                   <th>Prix</th>
+                  <th>Stock dispo</th>
                   <th>Statut</th>
                   <th style="text-align:right">Actions</th>
                 </tr>
@@ -299,6 +300,25 @@
                   <td>
                     <span v-if="v.price">{{ v.price.formatted }}</span>
                     <span v-else class="text-muted inherit">↑ {{ product.price.formatted }}</span>
+                  </td>
+                  <td>
+                    <!-- Stock disponible pour cette variante -->
+                    <div
+                      v-if="variantStockMap[v.id] !== undefined"
+                      class="variant-stock-cell"
+                      :class="{
+                        'vs-zero': variantStockMap[v.id].available === 0,
+                        'vs-low':  variantStockMap[v.id].low_stock && variantStockMap[v.id].available > 0,
+                        'vs-ok':   !variantStockMap[v.id].low_stock && variantStockMap[v.id].available > 0,
+                      }"
+                    >
+                      <strong>{{ variantStockMap[v.id].available }}</strong>
+                      <span
+                        v-if="variantStockMap[v.id].quantity !== variantStockMap[v.id].available"
+                        class="vs-total"
+                      >/ {{ variantStockMap[v.id].quantity }}</span>
+                    </div>
+                    <span v-else class="text-muted" style="font-size:0.8rem">—</span>
                   </td>
                   <td>
                     <span class="status-dot-sm" :class="v.is_active !== false ? 'dot-active' : 'dot-inactive'"></span>
@@ -723,6 +743,15 @@ const productHasVariants = computed(() =>
   (product.value?.has_variants === true) || (product.value?.variants?.length ?? 0) > 0
 )
 
+// Quick lookup: variantId → { available, quantity, low_stock }
+const variantStockMap = computed(() => {
+  const map: Record<string, { available: number; quantity: number; low_stock: boolean }> = {}
+  for (const row of (stockSummary.value?.by_variant ?? [])) {
+    map[row.variant_id] = { available: row.available, quantity: row.quantity, low_stock: row.low_stock }
+  }
+  return map
+})
+
 const filteredVariants = computed(() => {
   if (!product.value?.variants) return []
   const q = variantSearch.value.toLowerCase()
@@ -904,6 +933,7 @@ async function submitReceive() {
     })
 
     showReceiveDrawer.value = false
+    // Reload stock summary to update the variant stock column instantly
     await loadStockSummary()
   } catch (e: any) {
     receiveError.value = e?.response?.data?.message ?? 'Erreur lors de l\'entrée de stock.'
@@ -1281,6 +1311,13 @@ onMounted(async () => {
 .spinner-sm { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
 .spinner-white { border-color: rgba(255,255,255,0.3); border-top-color: white; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Variant stock cell ───────────────────────────────────────────────────── */
+.variant-stock-cell { display: inline-flex; align-items: baseline; gap: 3px; font-size: 0.9rem; }
+.vs-ok   strong { color: var(--brand-primary); }
+.vs-low  strong { color: #f59e0b; }
+.vs-zero strong { color: var(--gray-300); }
+.vs-total { font-size: 0.72rem; color: var(--gray-400); }
 
 /* ── Variant row actions ──────────────────────────────────────────────────── */
 .variant-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }

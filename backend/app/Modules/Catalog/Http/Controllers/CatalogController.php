@@ -75,17 +75,28 @@ class CatalogController extends Controller
         $available = $stocks->sum(fn ($s) => $s->available());
         $lowStock  = $stocks->filter(fn ($s) => $s->isLowStock())->count();
 
-        // Per-warehouse summary
+        // Per-warehouse summary (product-level stock only)
         $byWarehouse = $stocks->filter(fn ($s) => $s->variant_id === null)
             ->map(fn ($s) => [
-                'warehouse_id'   => $s->warehouse_id,
-                'warehouse_name' => $s->warehouse?->name ?? 'Sans entrepôt',
-                'quantity'       => $s->quantity,
-                'reserved'       => $s->reserved_quantity,
-                'available'      => $s->available(),
-                'low_stock'      => $s->isLowStock(),
-                'unit_cost_cents'=> $s->unit_cost_cents,
+                'warehouse_id'      => $s->warehouse_id,
+                'warehouse_name'    => $s->warehouse?->name ?? 'Sans entrepôt',
+                'quantity'          => $s->quantity,
+                'reserved'          => $s->reserved_quantity,
+                'available'         => $s->available(),
+                'low_stock'         => $s->isLowStock(),
+                'unit_cost_cents'   => $s->unit_cost_cents,
                 'total_value_cents' => $s->total_value_cents,
+            ])->values();
+
+        // Per-variant stock: aggregate across all warehouses per variant
+        $byVariant = $stocks->filter(fn ($s) => $s->variant_id !== null)
+            ->groupBy('variant_id')
+            ->map(fn ($variantStocks, $variantId) => [
+                'variant_id' => $variantId,
+                'quantity'   => $variantStocks->sum('quantity'),
+                'reserved'   => $variantStocks->sum('reserved_quantity'),
+                'available'  => $variantStocks->sum(fn ($s) => $s->available()),
+                'low_stock'  => $variantStocks->contains(fn ($s) => $s->isLowStock()),
             ])->values();
 
         return response()->json([
@@ -94,6 +105,7 @@ class CatalogController extends Controller
             'available_quantity' => $available,
             'low_stock_count'    => $lowStock,
             'by_warehouse'       => $byWarehouse,
+            'by_variant'         => $byVariant,  // per-variant stock map
         ]);
     }
 

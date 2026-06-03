@@ -137,12 +137,21 @@ export interface StockWarehouseRow {
   total_value_cents: number
 }
 
+export interface StockVariantRow {
+  variant_id: string
+  quantity: number
+  reserved: number
+  available: number
+  low_stock: boolean
+}
+
 export interface ProductStockSummary {
   total_quantity: number
   reserved_quantity: number
   available_quantity: number
   low_stock_count: number
   by_warehouse: StockWarehouseRow[]
+  by_variant: StockVariantRow[]
 }
 
 export interface StockMovementItem {

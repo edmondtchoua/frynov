@@ -16,22 +16,25 @@
          PHPUnit ne supporte pas les wildcards dans <directory>.
          On scanne app/Modules entier et on filtre par suffix.
     ─────────────────────────────────────────────────────────────────── -->
+    <!--
+        Catch-all by root directory (suffix Test.php) so NO test file is silently
+        skipped. The previous granular suffix list (ServiceTest/ApiTest/ModuleTest…)
+        left ~23 files out of the run — including security & multi-tenant tests.
+        Roots are disjoint → each *Test.php runs exactly once (no double-count).
+    -->
     <testsuites>
-        <testsuite name="Unit">
-            <directory suffix="ServiceTest.php">app/Modules</directory>
-            <directory suffix="ParserTest.php">app/Modules</directory>
-            <directory suffix="MapperTest.php">app/Modules</directory>
-            <directory suffix="ValueObjectTest.php">app/Shared</directory>
+        <testsuite name="Modules">
+            <directory suffix="Test.php">app/Modules</directory>
         </testsuite>
 
-        <testsuite name="Integration">
-            <directory suffix="ApiTest.php">app/Modules</directory>
+        <testsuite name="Shared">
+            <directory suffix="Test.php">app/Shared</directory>
+        </testsuite>
+
+        <testsuite name="Tests">
+            <directory suffix="Test.php">tests/Unit</directory>
+            <directory suffix="Test.php">tests/Feature</directory>
             <directory suffix="Test.php">tests/Integration</directory>
-        </testsuite>
-
-        <testsuite name="Modular">
-            <directory suffix="ModuleTest.php">app/Modules</directory>
-            <directory suffix="FlowTest.php">app/Modules</directory>
         </testsuite>
 
         <testsuite name="E2E">
@@ -54,7 +57,7 @@
     <php>
         <env name="APP_ENV"            value="testing"/>
         <env name="APP_DEBUG"          value="true"/>
-        <env name="APP_KEY"            value="base64:test_key_32_chars_minimum_here="/>
+        <env name="APP_KEY"            value="base64:MHAaHIwuKPa7ykJC5L1V22DoGwajyaDvt9Euq4nU0hs="/>
 
         <!-- SQLite en mémoire pour Unit (rapide, sans serveur) -->
         <!-- Les tests Integration/Modular surchargent via .env.testing -->

@@ -25,6 +25,7 @@ class CatalogService
     {
         return Product::where('tenant_id', $tenantId)
             ->with('category')
+            ->withCount('variants')
             ->when(
                 isset($filters['status']),
                 fn ($q) => $q->where('status', $filters['status']),

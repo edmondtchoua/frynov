@@ -104,7 +104,9 @@
                   <RouterLink :to="`/catalog/products/${p.id}`" class="product-name product-name-link">{{ p.name }}</RouterLink>
                   <div class="product-meta">
                     <span class="sku-tag">{{ p.sku }}</span>
-                    <span v-if="p.has_variants" class="variant-tag">variantes</span>
+                    <span v-if="p.has_variants || (p.variants_count ?? 0) > 0" class="variant-tag">
+                      {{ p.variants_count ?? '' }} variante{{ (p.variants_count ?? 0) > 1 ? 's' : '' }}
+                    </span>
                     <span v-if="p.barcode" class="barcode-tag">{{ p.barcode }}</span>
                   </div>
                 </div>

@@ -45,8 +45,9 @@ class CatalogResource extends JsonResource
                 'formatted' => $costMoney->format(),
             ] : null,
             'is_on_sale'   => $this->isOnSale(),
-            'has_variants' => $this->has_variants,
-            'variants'     => ProductVariantResource::collection($this->whenLoaded('variants')),
+            'has_variants'   => $this->has_variants,
+            'variants_count' => $this->variants_count ?? null,  // populated by withCount('variants')
+            'variants'       => ProductVariantResource::collection($this->whenLoaded('variants')),
             // Barcode / identifier fields
             'barcode'                => $this->barcode,
             'internal_barcode'       => $this->internal_barcode,

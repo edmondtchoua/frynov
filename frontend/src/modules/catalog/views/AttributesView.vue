@@ -33,7 +33,10 @@
             </div>
           </div>
           <div class="card-actions">
-            <span class="variants-count">{{ product.variants?.length ?? 0 }} déclinaison(s)</span>
+            <!-- variants_count from withCount(), fallback to variants array length -->
+            <span class="variants-count">
+              {{ product.variants_count ?? product.variants?.length ?? 0 }} déclinaison(s)
+            </span>
             <router-link :to="`/catalog/products/${product.id}`" class="btn btn-ghost btn-sm">
               Voir la fiche
             </router-link>
@@ -71,6 +74,7 @@ interface AttributeValue { id: string; label: string; color_hex?: string }
 interface Attribute      { id: string; name: string; values: AttributeValue[] }
 interface ProductWithAttrs {
   id: string; name: string; sku: string; has_variants: boolean; product_type: string
+  variants_count?: number   // from withCount('variants') — always set
   variants?: any[]
   attributes?: Attribute[]
 }

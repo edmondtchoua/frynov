@@ -52,6 +52,7 @@ export interface Product {
   cost?: ProductPrice | null
   is_on_sale: boolean
   has_variants: boolean
+  variants_count?: number | null   // from withCount('variants')
   variants?: ProductVariant[]
   barcode?: string
   internal_barcode?: string

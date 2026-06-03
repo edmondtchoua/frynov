@@ -381,6 +381,86 @@
         </button>
       </div>
     </form>
+
+    <!-- ── Deactivation modal ────────────────────────────────────────────── -->
+    <Teleport to="body">
+      <div v-if="showDeactivationModal" class="modal-overlay deact-overlay" @click.self="cancelDeactivation">
+        <div class="modal-box deact-box">
+          <div class="modal-header">
+            <h3>Gestion du stock — Désactivation de variante</h3>
+          </div>
+          <div class="modal-body">
+            <p class="deact-intro">
+              Les variantes suivantes ont du stock. Que souhaitez-vous faire avec ce stock ?
+            </p>
+
+            <!-- Variant list with quantities -->
+            <div class="deact-variants">
+              <div v-for="item in deactivationQueue" :key="item.variantId" class="deact-variant-row">
+                <span class="deact-label">{{ item.variantLabel }}</span>
+                <span class="deact-qty">{{ item.stockQty }} unité(s) en stock</span>
+              </div>
+            </div>
+
+            <!-- Action choice -->
+            <div class="deact-options">
+              <label class="deact-opt" :class="{ active: deactivationAction === 'transfer' }">
+                <input v-model="deactivationAction" type="radio" value="transfer" />
+                <div class="deact-opt-content">
+                  <div class="deact-opt-title">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Transférer au produit principal
+                  </div>
+                  <div class="deact-opt-desc">
+                    Le stock de la variante est réintégré au stock général du produit.
+                  </div>
+                </div>
+              </label>
+
+              <label class="deact-opt" :class="{ active: deactivationAction === 'writeoff' }">
+                <input v-model="deactivationAction" type="radio" value="writeoff" />
+                <div class="deact-opt-content">
+                  <div class="deact-opt-title">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9a1 1 0 001 1h6a1 1 0 001-1l1-9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Sortir du stock (perte / dépréciation)
+                  </div>
+                  <div class="deact-opt-desc">
+                    Le stock est soustrait définitivement. Un mouvement de sortie est créé.
+                  </div>
+                </div>
+              </label>
+
+              <label class="deact-opt" :class="{ active: deactivationAction === 'keep' }">
+                <input v-model="deactivationAction" type="radio" value="keep" />
+                <div class="deact-opt-content">
+                  <div class="deact-opt-title">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M8 3a5 5 0 100 10A5 5 0 008 3z" stroke="currentColor" stroke-width="1.4"/>
+                      <path d="M8 6v2l1.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                    </svg>
+                    Conserver le stock sans modification
+                  </div>
+                  <div class="deact-opt-desc">
+                    Le stock reste attaché à la variante (peut être géré plus tard).
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" @click="cancelDeactivation">Annuler la désactivation</button>
+            <button class="btn btn-primary" @click="confirmDeactivation">
+              Confirmer et continuer
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
   </div>
 </template>
 
@@ -433,12 +513,46 @@ interface VariantRow {
   _key:          string   // temp key for v-for
   _id:           string   // '' = new
   _deleted:      boolean
+  _wasActive:    boolean  // original is_active value (detect deactivation)
+  _origPrice:    number | '' // original price (detect change)
   label:         string   // e.g. "M", "Rouge"
   sku:           string
   price_display: number | ''
   barcode:       string
   is_active:     boolean
   initial_qty:   number   // stock initial à créer (0 = aucun move-in)
+}
+
+// ── Deactivation modal state ────────────────────────────────────────────────
+interface DeactivationItem {
+  variantId:    string
+  variantLabel: string
+  stockQty:     number    // current available stock
+}
+const showDeactivationModal = ref(false)
+const deactivationQueue     = ref<DeactivationItem[]>([])
+const deactivationAction    = ref<'transfer' | 'writeoff' | 'keep'>('keep')
+const deactivationResolve   = ref<((action: 'transfer' | 'writeoff' | 'keep') => void) | null>(null)
+
+function askDeactivation(items: DeactivationItem[]): Promise<'transfer' | 'writeoff' | 'keep'> {
+  return new Promise(resolve => {
+    deactivationQueue.value   = items
+    deactivationAction.value  = 'keep'
+    deactivationResolve.value = resolve
+    showDeactivationModal.value = true
+  })
+}
+
+function confirmDeactivation() {
+  showDeactivationModal.value = false
+  deactivationResolve.value?.(deactivationAction.value)
+  deactivationResolve.value = null
+}
+
+function cancelDeactivation() {
+  showDeactivationModal.value = false
+  deactivationResolve.value?.('keep')
+  deactivationResolve.value = null
 }
 
 const variants = ref<VariantRow[]>([])
@@ -508,9 +622,11 @@ function removeAxisValue(i: number, j: number) {
 function hydrateVariantsFromProduct(variantList: any[]) {
   // Build edit-mode variant rows
   variants.value = variantList.map(v => ({
-    _key:          makeKey(),
-    _id:           v.id,
-    _deleted:      false,
+    _key:       makeKey(),
+    _id:        v.id,
+    _deleted:   false,
+    _wasActive: (v as any).is_active ?? true,          // track original value
+    _origPrice: v.price ? v.price.amount / 100 : '',   // track original price
     label:         (v as any).label ?? (v.attributes ? Object.values(v.attributes as Record<string,string>).join(' / ') : v.name ?? v.sku),
     sku:           v.sku,
     price_display: v.price ? v.price.amount / 100 : '',
@@ -673,7 +789,49 @@ async function handleSubmit() {
     if (form.has_variants) {
       const currency = form.price_currency
 
-      // N-AXIS MODE: generate via cartesian product if axes are defined
+      // Step 1 — Detect deactivations with stock and ask user what to do
+      const deactivating = variants.value.filter(v =>
+        !v._deleted && v._id && v._wasActive && !v.is_active
+      )
+      if (deactivating.length > 0) {
+        // Fetch current stocks for deactivating variants (best-effort)
+        const stockItems: DeactivationItem[] = []
+        for (const v of deactivating) {
+          try {
+            const res = await client.get(`/api/inventory/stock/${savedProduct.id}`, {
+              params: { variant_id: v._id }
+            })
+            const qty = res.data?.stock?.quantity ?? res.data?.available ?? 0
+            if (qty > 0) stockItems.push({ variantId: v._id, variantLabel: v.label, stockQty: qty })
+          } catch { /* ignore — treat as 0 stock */ }
+        }
+        if (stockItems.length > 0) {
+          const action = await askDeactivation(stockItems)
+          for (const item of stockItems) {
+            if (action === 'transfer') {
+              // Move variant stock OUT then back IN at product level
+              await client.post(`/api/inventory/stock/${savedProduct.id}/move-out`, {
+                quantity: item.stockQty, reason: 'manual',
+                note: `Transfert stock au produit principal — désactivation variante ${item.variantLabel}`,
+                variant_id: item.variantId,
+              }).catch(() => {})
+              await client.post(`/api/inventory/stock/${savedProduct.id}/move-in`, {
+                quantity: item.stockQty, reason: 'manual',
+                note: `Transfert depuis variante ${item.variantLabel} désactivée`,
+              }).catch(() => {})
+            } else if (action === 'writeoff') {
+              // Adjust variant stock to 0
+              await client.post(`/api/inventory/stock/${savedProduct.id}/adjust`, {
+                quantity: 0, variant_id: item.variantId,
+                note: `Sortie de stock — variante ${item.variantLabel} désactivée`,
+              }).catch(() => {})
+            }
+            // 'keep' → do nothing with stock
+          }
+        }
+      }
+
+      // Step 2 — N-AXIS: generate new combinations if axes changed
       const axes = variantAxes.value.filter(a => a.name.trim() && a.values.length > 0)
       if (axes.length > 0) {
         const basePrice = typeof form.price_display === 'number' ? toCents(form.price_display) : 0
@@ -682,52 +840,49 @@ async function handleSubmit() {
           base_price:    basePrice || undefined,
           base_currency: currency,
         })
+      }
 
-        // When axes are active, only process explicit deletions (skip bulk updates)
-        // — updating 30+ variants individually would time out
-        for (const v of variants.value) {
-          if (v._deleted && v._id) {
-            await productService.deleteVariant(savedProduct.id, v._id)
-          }
-          // Unchanged variants: skip — generate already handled create/skip
-        }
-      } else {
-        // MANUAL MODE (no axes): process all rows individually
-        for (const v of variants.value) {
-          if (v._deleted && v._id) {
-            await productService.deleteVariant(savedProduct.id, v._id)
-          } else if (!v._deleted && v._id) {
-            // Only update if user may have changed price/active
+      // Step 3 — Process all existing variant rows (deletions + updates)
+      for (const v of variants.value) {
+        if (v._deleted && v._id) {
+          // Delete
+          await productService.deleteVariant(savedProduct.id, v._id)
+
+        } else if (!v._deleted && v._id) {
+          // Update — always persist is_active and price changes
+          const priceChanged  = v.price_display !== v._origPrice
+          const activeChanged = v.is_active !== v._wasActive
+          if (activeChanged || priceChanged) {
             await productService.updateVariant(savedProduct.id, v._id, {
               name:           v.label,
               label:          v.label,
-              price_amount:   v.price_display !== '' ? toCents(v.price_display as number) : undefined,
+              price_amount:   v.price_display !== '' ? toCents(v.price_display as number) : null,
               price_currency: currency,
               barcode:        v.barcode || null,
               is_active:      v.is_active,
             })
-          } else if (!v._deleted && !v._id && v.label) {
-            // New variant added manually
-            const created = await productService.createVariant(savedProduct.id, {
-              name:           v.label,
-              label:          v.label,
-              sku:            v.sku || undefined,
-              attributes:     {},
-              price_amount:   v.price_display !== '' ? toCents(v.price_display as number) : undefined,
-              price_currency: currency,
-              barcode:        v.barcode || null,
-              is_active:      v.is_active,
-            })
-            if (v.initial_qty > 0) {
-              await fetch(`/api/inventory/stock/${savedProduct.id}/move-in`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
-                body: JSON.stringify({ variant_id: created.id, quantity: v.initial_qty, reason: 'delivery' }),
-              })
-            }
+          }
+
+        } else if (!v._deleted && !v._id && v.label) {
+          // New variant (manual mode only)
+          const created = await productService.createVariant(savedProduct.id, {
+            name:           v.label,
+            label:          v.label,
+            sku:            v.sku || undefined,
+            attributes:     {},
+            price_amount:   v.price_display !== '' ? toCents(v.price_display as number) : null,
+            price_currency: currency,
+            barcode:        v.barcode || null,
+            is_active:      v.is_active,
+          })
+          if (v.initial_qty > 0) {
+            await client.post(`/api/inventory/stock/${savedProduct.id}/move-in`, {
+              quantity: v.initial_qty, reason: 'delivery', variant_id: created.id,
+            }).catch(() => {})
           }
         }
       }
+
     } else if (!isEdit.value) {
       // No variants: initialize product stock if initial quantity provided
       if (initialQty.value > 0) {
@@ -1198,4 +1353,49 @@ onMounted(async () => {
   color: var(--gray-700);
   margin-bottom: 8px;
 }
+
+/* ── Deactivation modal ───────────────────────────────────────────────────── */
+.deact-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 500; padding: 1rem;
+}
+.deact-box {
+  background: white; border-radius: var(--radius-lg);
+  width: 100%; max-width: 520px;
+  box-shadow: var(--shadow-xl);
+  display: flex; flex-direction: column; max-height: 90vh; overflow: hidden;
+}
+.deact-intro {
+  font-size: 0.875rem; color: var(--gray-600); margin: 0 0 1rem;
+}
+.deact-variants {
+  display: flex; flex-direction: column; gap: 0.375rem; margin-bottom: 1.25rem;
+}
+.deact-variant-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.5rem 0.75rem; background: var(--gray-50);
+  border-radius: var(--radius-sm); border: 1px solid var(--gray-200);
+}
+.deact-label { font-weight: 600; font-size: 0.875rem; color: var(--gray-900); }
+.deact-qty   { font-size: 0.8125rem; color: var(--brand-primary); font-weight: 600; }
+
+.deact-options { display: flex; flex-direction: column; gap: 0.5rem; }
+.deact-opt {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  padding: 0.75rem 1rem; border-radius: var(--radius-md);
+  border: 1.5px solid var(--gray-200); cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.deact-opt input[type=radio] { margin-top: 3px; flex-shrink: 0; }
+.deact-opt.active { border-color: var(--brand-primary); background: var(--brand-primary-bg); }
+.deact-opt-content { flex: 1; }
+.deact-opt-title {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.875rem; font-weight: 600; color: var(--gray-900); margin-bottom: 0.25rem;
+}
+.deact-opt.active .deact-opt-title { color: var(--brand-primary); }
+.deact-opt-desc  { font-size: 0.78rem; color: var(--gray-500); line-height: 1.4; }
 </style>

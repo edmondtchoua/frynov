@@ -112,8 +112,8 @@
               <span v-else class="dim">—</span>
             </td>
             <td style="text-align:right">
-              <RouterLink :to="`/catalog/products/${v.product_id}`" class="btn btn-ghost btn-sm">
-                Modifier
+              <RouterLink :to="`/catalog/products/${v.product_id}`" class="btn btn-ghost btn-sm" title="Voir la fiche produit">
+                Voir
               </RouterLink>
             </td>
           </tr>
@@ -132,8 +132,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
-import api from '@/services/api'
+import client from '@/api/client'
 
 interface ProductVariantRow {
   id: string
@@ -162,7 +163,7 @@ function debouncedLoad() {
 async function load(page = 1) {
   loading.value = true
   try {
-    const r = await api.get('/catalog/variants', {
+    const r = await client.get('/api/catalog/variants', {
       params: {
         search:   search.value || undefined,
         status:   filterStatus.value || undefined,

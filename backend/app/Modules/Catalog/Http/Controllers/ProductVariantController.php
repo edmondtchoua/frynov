@@ -100,6 +100,14 @@ class ProductVariantController extends Controller
             $created++;
         }
 
+        // Ensure product is flagged as variable after generation
+        if ($created > 0 && ! $product->has_variants) {
+            $product->update([
+                'has_variants' => true,
+                'product_type' => 'variable',
+            ]);
+        }
+
         return response()->json([
             'message'            => "{$created} variante(s) générée(s), {$skipped} ignorée(s) (déjà existantes).",
             'created'            => $created,

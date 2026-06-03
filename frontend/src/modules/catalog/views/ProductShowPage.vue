@@ -25,8 +25,12 @@
           <div>
             <div class="product-header-name">
               {{ product.name }}
-              <span class="product-type-badge" :class="`type-${product.product_type}`">
-                {{ typeLabel(product.product_type) }}
+              <!-- If has variants but type not updated yet, show Variable badge -->
+              <span
+                class="product-type-badge"
+                :class="`type-${productHasVariants && product.product_type === 'simple' ? 'variable' : product.product_type}`"
+              >
+                {{ typeLabel(productHasVariants && product.product_type === 'simple' ? 'variable' : product.product_type) }}
               </span>
             </div>
             <div class="product-header-sub">
@@ -34,7 +38,7 @@
               <span class="status-pill" :class="`status-${product.status}`">
                 {{ statusLabel(product.status) }}
               </span>
-              <span v-if="product.has_variants" class="variant-count">
+              <span v-if="productHasVariants" class="variant-count">
                 {{ product.variants?.length ?? 0 }} variante(s)
               </span>
             </div>
@@ -244,7 +248,7 @@
       <!-- TAB: Variantes                                             -->
       <!-- ═══════════════════════════════════════════════════════════ -->
       <div v-if="activeTab === 'variants'" class="tab-content">
-        <div v-if="!product.has_variants" class="empty-state">
+        <div v-if="!productHasVariants" class="empty-state">
           <p>Ce produit n'a pas de variantes.</p>
           <RouterLink :to="`/catalog/products/${product.id}/edit`" class="btn btn-primary">
             Activer les variantes
@@ -462,7 +466,7 @@
         </div>
 
         <!-- Variant prices -->
-        <div v-if="product.has_variants && product.variants?.some(v => v.price)" class="card" style="margin-top:1rem">
+        <div v-if="productHasVariants && product.variants?.some(v => v.price)" class="card" style="margin-top:1rem">
           <h3 class="card-section-title">Prix par variante</h3>
           <table class="data-table">
             <thead><tr><th>Variante</th><th>Prix</th><th>vs Base</th></tr></thead>
@@ -674,6 +678,11 @@ const stockSubTabs = [
 ]
 
 // ── Derived ────────────────────────────────────────────────────────────────
+// True if the product has variants (either by flag OR by actual variant records)
+const productHasVariants = computed(() =>
+  (product.value?.has_variants === true) || (product.value?.variants?.length ?? 0) > 0
+)
+
 const filteredVariants = computed(() => {
   if (!product.value?.variants) return []
   const q = variantSearch.value.toLowerCase()

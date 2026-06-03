@@ -256,14 +256,14 @@
         </div>
 
         <template v-else>
-          <!-- Variant filter/search -->
+          <!-- Variant filter/search + actions -->
           <div class="variant-toolbar">
             <input
               v-model="variantSearch"
               type="text"
               class="form-input search-input"
               placeholder="Rechercher une variante…"
-              style="max-width:300px"
+              style="max-width:280px"
             />
             <span class="variant-count-text">
               {{ filteredVariants.length }} variante(s)
@@ -279,7 +279,7 @@
                   <th>Code-barres</th>
                   <th>Prix</th>
                   <th>Statut</th>
-                  <th>Actions</th>
+                  <th style="text-align:right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -303,12 +303,33 @@
                   <td>
                     <span class="status-dot-sm" :class="v.is_active !== false ? 'dot-active' : 'dot-inactive'"></span>
                   </td>
-                  <td>
-                    <button
-                      class="btn-action"
-                      title="Imprimer étiquette"
-                      @click="printVariantLabel(v.id)"
-                    >🖨</button>
+                  <td style="text-align:right">
+                    <div class="variant-row-actions">
+                      <!-- Stock entry for this specific variant -->
+                      <button
+                        v-if="isManagerOrAbove"
+                        class="btn-action btn-stock-in"
+                        title="Entrée stock pour cette variante"
+                        @click="openVariantReceiveDrawer(v)"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                          <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                          <path d="M2 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                        </svg>
+                      </button>
+                      <!-- Print thermal label — fetches via axios (authenticated) -->
+                      <button
+                        class="btn-action"
+                        title="Imprimer étiquette thermique"
+                        @click="printVariantLabel(v.id)"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                          <rect x="2" y="5" width="12" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+                          <path d="M5 5V3a1 1 0 011-1h4a1 1 0 011 1v2M5 10h6M5 12h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                          <circle cx="12" cy="8" r="1" fill="currentColor"/>
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -500,10 +521,29 @@
             <button class="drawer-close" @click="showReceiveDrawer = false">×</button>
           </div>
           <div class="drawer-body">
-            <p class="drawer-subtitle">
-              <strong>{{ product?.name }}</strong>
-              <span v-if="product?.sku" class="mono ml-1">{{ product.sku }}</span>
-            </p>
+            <!-- Product/variant context -->
+            <div class="receive-context">
+              <div class="receive-product">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 5l6-3 6 3v6l-6 3-6-3V5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                </svg>
+                <strong>{{ product?.name }}</strong>
+                <code class="mono" style="font-size:0.75rem;color:var(--gray-400)">{{ product?.sku }}</code>
+              </div>
+              <!-- Show variant target if set -->
+              <div v-if="receiveTarget.variantLabel" class="receive-variant-badge">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                  <circle cx="4" cy="4" r="2.5" stroke="currentColor" stroke-width="1.4"/>
+                  <circle cx="12" cy="4" r="2.5" stroke="currentColor" stroke-width="1.4"/>
+                  <circle cx="4" cy="12" r="2.5" stroke="currentColor" stroke-width="1.4"/>
+                  <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.4"/>
+                </svg>
+                Variante : <strong>{{ receiveTarget.variantLabel }}</strong>
+              </div>
+              <div v-else-if="product?.has_variants" class="receive-variant-hint">
+                Entrée sur le produit global (toutes variantes)
+              </div>
+            </div>
 
             <div class="form-group">
               <label class="form-label">Quantité à réceptionner <span class="req">*</span></label>
@@ -752,39 +792,87 @@ async function loadWarehouses() {
   }
 }
 
-// ── Labels ─────────────────────────────────────────────────────────────────
-function printLabel(format: 'thermal' | 'a4sheet') {
+// ── Labels — IMPORTANT: must fetch via axios (with auth token) ─────────────
+// Using window.open(url) would strip the Bearer token → Laravel redirects
+// to route('login') which doesn't exist in API-only mode → 500 error.
+async function printLabel(format: 'thermal' | 'a4sheet') {
   if (!product.value) return
-  const url = productService.getLabelUrl(product.value.id, { format, price: true, qr: true })
-  window.open(url, '_blank')
+  await fetchAndPrintLabel(product.value.id, format, undefined)
 }
 
-function printVariantLabel(variantId: string) {
+async function printVariantLabel(variantId: string) {
   if (!product.value) return
-  const url = productService.getLabelUrl(product.value.id, { format: 'thermal', variantId, price: true })
-  window.open(url, '_blank')
+  await fetchAndPrintLabel(product.value.id, 'thermal', variantId)
 }
 
-// ── Receive drawer ─────────────────────────────────────────────────────────
-const showReceiveDrawer = ref(false)
-const receiveSaving = ref(false)
-const receiveError  = ref('')
-const receiveErrors = reactive<Record<string, string>>({})
-const receiveForm   = reactive({
-  quantity:            0,
-  warehouse_id:        '',
-  unit_cost_display:   0,
-  note:                '',
+async function fetchAndPrintLabel(
+  productId: string,
+  format: 'thermal' | 'a4sheet',
+  variantId?: string,
+) {
+  try {
+    const params: Record<string, string | number> = { format, price: 1, copies: 1 }
+    const url = variantId
+      ? `/api/catalog/products/${productId}/variants/${variantId}/label`
+      : `/api/catalog/products/${productId}/label`
+
+    // Axios sends the Bearer token → backend returns HTML
+    const resp = await client.get(url, { params, responseType: 'text' })
+    const html = resp.data as string
+
+    const win = window.open('', '_blank')
+    if (win) {
+      win.document.open()
+      win.document.write(html)
+      win.document.close()
+      // Give the browser a moment to render before triggering print
+      win.addEventListener('load', () => win.print(), { once: true })
+    }
+  } catch (e: any) {
+    alert('Erreur lors de l\'impression : ' + (e?.response?.data?.message ?? e?.message))
+  }
+}
+
+// ── Receive drawer (product-level + variant-level) ─────────────────────────
+const showReceiveDrawer  = ref(false)
+const receiveSaving      = ref(false)
+const receiveError       = ref('')
+const receiveErrors      = reactive<Record<string, string>>({})
+
+interface ReceiveTarget { variantId?: string; variantLabel?: string }
+const receiveTarget = ref<ReceiveTarget>({})
+
+const receiveForm = reactive({
+  quantity:          0,
+  warehouse_id:      '',
+  unit_cost_display: 0,
+  note:              '',
 })
 
+/** Open for the product itself (no variant) */
 function openReceiveDrawer() {
-  receiveForm.quantity = 0
-  receiveForm.warehouse_id = ''
-  receiveForm.unit_cost_display = 0
-  receiveForm.note = ''
-  receiveError.value = ''
-  Object.keys(receiveErrors).forEach(k => delete receiveErrors[k])
+  receiveTarget.value = {}
+  resetReceiveForm()
   showReceiveDrawer.value = true
+}
+
+/** Open for a specific variant row */
+function openVariantReceiveDrawer(v: { id: string; label?: string; name?: string; sku: string }) {
+  receiveTarget.value = {
+    variantId:    v.id,
+    variantLabel: v.label ?? v.name ?? v.sku,
+  }
+  resetReceiveForm()
+  showReceiveDrawer.value = true
+}
+
+function resetReceiveForm() {
+  receiveForm.quantity          = 0
+  receiveForm.warehouse_id      = ''
+  receiveForm.unit_cost_display = 0
+  receiveForm.note              = ''
+  receiveError.value            = ''
+  Object.keys(receiveErrors).forEach(k => delete receiveErrors[k])
 }
 
 async function submitReceive() {
@@ -798,14 +886,23 @@ async function submitReceive() {
 
   receiveSaving.value = true
   try {
-    // Uses the standard inventory move-in endpoint (reason: delivery)
+    // POST /api/inventory/stock/{productId}/move-in
     // MoveStockRequest: quantity (min:1), reason (required), note (nullable)
+    // Optional query param: ?variant_id=... for variant-level stock
+    const params: Record<string, string> = {}
+    if (receiveTarget.value.variantId) {
+      params.variant_id = receiveTarget.value.variantId
+    }
+
     await client.post(`/api/inventory/stock/${productId}/move-in`, {
       quantity:  receiveForm.quantity,
       reason:    'delivery',
       reference: receiveForm.note || undefined,
       note:      receiveForm.note || undefined,
+      // variant_id in body (InventoryController reads data['variant_id'])
+      ...(receiveTarget.value.variantId ? { variant_id: receiveTarget.value.variantId } : {}),
     })
+
     showReceiveDrawer.value = false
     await loadStockSummary()
   } catch (e: any) {
@@ -1184,4 +1281,44 @@ onMounted(async () => {
 .spinner-sm { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
 .spinner-white { border-color: rgba(255,255,255,0.3); border-top-color: white; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Variant row actions ──────────────────────────────────────────────────── */
+.variant-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+.btn-stock-in { color: var(--brand-primary); }
+.btn-stock-in:hover { background: var(--brand-primary-bg); }
+
+/* ── Receive drawer context banner ───────────────────────────────────────── */
+.receive-context {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-200);
+  margin-bottom: 0.5rem;
+}
+.receive-product {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: var(--gray-700);
+}
+.receive-variant-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8125rem;
+  color: var(--brand-primary);
+  background: var(--brand-primary-bg);
+  padding: 3px 10px;
+  border-radius: 20px;
+  align-self: flex-start;
+}
+.receive-variant-hint {
+  font-size: 0.78rem;
+  color: var(--gray-400);
+  font-style: italic;
+}
 </style>

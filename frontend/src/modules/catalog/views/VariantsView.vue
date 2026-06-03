@@ -204,8 +204,16 @@ async function load(page = 1) {
 function goPage(page: number) { load(page) }
 
 function formatPrice(amount?: number, currency?: string): string {
-  if (!amount) return '—'
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency ?? 'XOF', minimumFractionDigits: 0 }).format(amount)
+  if (amount === undefined || amount === null || amount === 0) return '—'
+  const cur = currency ?? 'XAF'
+  // price_amount is stored in centimes (× 100) — divide to get actual currency units
+  // e.g. 420000 centimes → 4200 XAF, 1250 centimes → 12.50 EUR
+  const value = amount / 100
+  try {
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: cur }).format(value)
+  } catch {
+    return `${value.toLocaleString('fr-FR')} ${cur}`
+  }
 }
 
 onMounted(load)

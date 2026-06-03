@@ -84,6 +84,19 @@ class StockTransferTest extends TestCase
     }
 
     #[Test]
+    public function cannot_receive_more_than_shipped(): void
+    {
+        // Receiving more than was shipped would materialize phantom stock.
+        $transfer = $this->svc->create($this->tenant->id, $this->whA->id, $this->whB->id,
+            [['product_id' => $this->product->id, 'quantity' => 10]], $this->admin->id);
+        $this->svc->ship($transfer, $this->admin->id);
+
+        $this->expectException(\DomainException::class);
+        // Shipped 10, operator types 15 → must be rejected
+        $this->svc->receive($transfer->fresh(), $this->admin->id, [$transfer->lines->first()->id => 15]);
+    }
+
+    #[Test]
     public function cross_tenant_transfer_is_blocked(): void
     {
         $otherTenant = Tenant::create(['name' => 'Other', 'slug' => 'other-t', 'plan' => 'starter', 'status' => 'active', 'settings' => []]);

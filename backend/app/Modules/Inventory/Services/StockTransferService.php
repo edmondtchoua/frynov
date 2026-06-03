@@ -124,6 +124,16 @@ class StockTransferService
 
             foreach ($transfer->lines as $line) {
                 $rcv  = (int) ($quantities[$line->id] ?? 0);
+
+                // Guard: received quantity must be within [0, shipped]. Receiving more
+                // than was shipped would materialize phantom stock at the destination.
+                if ($rcv < 0 || $rcv > $line->quantity_shipped) {
+                    throw new \DomainException(
+                        "Quantité reçue invalide ({$rcv}) pour la ligne {$line->id} : "
+                        . "doit être comprise entre 0 et {$line->quantity_shipped} (quantité expédiée)."
+                    );
+                }
+
                 $disc = $line->quantity_shipped - $rcv;
 
                 // Add stock to destination warehouse
@@ -143,7 +153,8 @@ class StockTransferService
                     );
                 }
 
-                $lineStatus = $disc === 0 ? 'received' : ($disc > 0 ? 'partial' : 'received');
+                // disc is now guaranteed >= 0 (over-reception rejected above)
+                $lineStatus = $disc === 0 ? 'received' : 'partial';
 
                 $line->update([
                     'quantity_received'    => $rcv,

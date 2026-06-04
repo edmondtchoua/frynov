@@ -12,7 +12,13 @@
         </router-link>
       </div>
       <h2>Choisir un plan</h2>
-      <p class="page-subtitle">Sélectionnez le plan adapté à votre activité. Changez de plan à tout moment.</p>
+      <p class="page-subtitle">Tous les modules métier sont inclus. Les plans limitent surtout utilisateurs, volumes, boutiques et support.</p>
+      <label class="market-selector" for="upgrade-market-select">
+        <span>Devise</span>
+        <select id="upgrade-market-select" v-model="selectedMarket">
+          <option v-for="m in selectableMarkets" :key="m.code" :value="m.code">{{ m.label }}</option>
+        </select>
+      </label>
     </div>
 
     <!-- Loading -->
@@ -61,7 +67,7 @@
             <span class="price-custom">Sur devis</span>
           </template>
           <p v-if="plan.price === 0" class="price-note">Gratuit pour toujours</p>
-          <p v-else-if="plan.price !== null" class="price-note">Facturation mensuelle en XOF</p>
+          <p v-else-if="plan.price !== null" class="price-note">Facturation mensuelle en {{ market.currency }}</p>
         </div>
 
         <!-- Quotas -->
@@ -138,20 +144,22 @@
 
     <!-- Footer note -->
     <p class="upgrade-note">
-      Toutes les transactions sont effectuees en XOF (Franc CFA BCEAO).
-      Les paiements manuels sont valides sous 24h par notre equipe.
+      Les prix affichés utilisent {{ market.currency }} pour {{ market.label }}.
+      Vous pouvez changer de zone si votre IP ou votre VPN ne reflète pas votre pays de facturation.
     </p>
 
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, h } from 'vue'
+import { ref, computed, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { authService } from '@/modules/auth/services/authService'
+import { useGeoContent } from '@/composables/useGeoContent'
 import type { Subscription } from '@/modules/auth/types'
 
 const router = useRouter()
+const { market, selectableMarkets, selectedMarket } = useGeoContent()
 
 // ── State ──────────────────────────────────────────────────────────────────────
 const loading = ref(true)
@@ -173,79 +181,77 @@ const IconEnterprise = () => h('svg', { width: 28, height: 28, viewBox: '0 0 24 
 ])
 
 // ── Plans data ─────────────────────────────────────────────────────────────────
-const plans = [
+interface UpgradePlan {
+  code: string
+  name: string
+  description: string
+  price: number | null
+  recommended: boolean
+  icon: () => ReturnType<typeof h>
+  quotas: { max_users: number | null; max_agents: number | null; max_warehouses: number | null }
+  features: string[]
+}
+
+const localizedPrices: Record<string, { starter: number; essential: number; pro: number; enterprise: number; currency: string }> = {
+  waemu_xof:        { starter: 0, essential: 9900,  pro: 24900, enterprise: 59900,  currency: 'XOF' },
+  cemac_xaf:        { starter: 0, essential: 9900,  pro: 24900, enterprise: 59900,  currency: 'XAF' },
+  nigeria_ngn:      { starter: 0, essential: 15000, pro: 39000, enterprise: 99000,  currency: 'NGN' },
+  ghana_ghs:        { starter: 0, essential: 150,   pro: 390,   enterprise: 990,    currency: 'GHS' },
+  kenya_kes:        { starter: 0, essential: 2500,  pro: 6500,  enterprise: 16900,  currency: 'KES' },
+  south_africa_zar: { starter: 0, essential: 349,   pro: 899,   enterprise: 2399,   currency: 'ZAR' },
+  europe_eur:       { starter: 0, essential: 19,    pro: 49,    enterprise: 129,    currency: 'EUR' },
+  canada_cad:       { starter: 0, essential: 25,    pro: 65,    enterprise: 169,    currency: 'CAD' },
+  usa_usd:          { starter: 0, essential: 19,    pro: 49,    enterprise: 129,    currency: 'USD' },
+  global_usd:       { starter: 0, essential: 19,    pro: 49,    enterprise: 129,    currency: 'USD' },
+}
+const priceBook = computed(() => localizedPrices[market.value.priceBook] ?? localizedPrices.global_usd)
+
+const plans = computed<UpgradePlan[]>(() => [
   {
     code: 'starter',
-    name: 'Starter',
-    description: 'Ideal pour demarrer et tester la plateforme.',
-    price: 0,
+    name: 'Découverte',
+    description: 'Pour tester Frynov sans engagement.',
+    price: priceBook.value.starter,
     recommended: false,
     icon: IconStarter,
-    quotas: {
-      max_users: 2,
-      max_agents: 1,
-      max_warehouses: 1,
-    },
-    features: [
-      'Catalogue produits (500 refs)',
-      'Gestion des commandes',
-      'Tableau de bord basique',
-      'Import CSV (500 lignes/mois)',
-      'Support communaute',
-    ],
+    quotas: { max_users: 1, max_agents: 1, max_warehouses: 1 },
+    features: ['Tous les modules métier', '100 produits', '50 commandes/mois', '1 boutique / entrepôt', 'Support communauté'],
+  },
+  {
+    code: 'essential',
+    name: 'Essentiel',
+    description: 'Pour une boutique active qui veut tout gérer au quotidien.',
+    price: priceBook.value.essential,
+    recommended: false,
+    icon: IconStarter,
+    quotas: { max_users: 2, max_agents: 2, max_warehouses: 1 },
+    features: ['Tous les modules métier', '500 produits', '300 commandes/mois', 'Paiements & livraisons', 'Support email'],
   },
   {
     code: 'pro',
-    name: 'Pro',
-    description: 'Pour les PME en croissance avec des besoins avances.',
-    price: 15000,
+    name: 'Croissance',
+    description: 'Pour les PME en croissance avec automatisation et rapports avancés.',
+    price: priceBook.value.pro,
     recommended: true,
     icon: IconPro,
-    quotas: {
-      max_users: 10,
-      max_agents: 5,
-      max_warehouses: 3,
-    },
-    features: [
-      'Catalogue illimite',
-      'Commandes + livraisons',
-      'Rapports avances',
-      'Import/Export illimite',
-      'Multi-entrepots (3)',
-      'Agents IA (5)',
-      'Paiements & facturation',
-      'Support prioritaire sous 48h',
-    ],
+    quotas: { max_users: 5, max_agents: 5, max_warehouses: 3 },
+    features: ['Tous les modules métier', '5 000 produits · 2 000 commandes/mois', 'Rapports avancés', 'Marketplace', 'Support prioritaire'],
   },
   {
     code: 'enterprise',
-    name: 'Enterprise',
-    description: 'Solution sur-mesure pour les grandes organisations.',
-    price: null,
+    name: 'Business / Enterprise',
+    description: 'Pour les groupes, grossistes et opérations multi-sites.',
+    price: priceBook.value.enterprise,
     recommended: false,
     icon: IconEnterprise,
-    quotas: {
-      max_users: null,
-      max_agents: null,
-      max_warehouses: null,
-    },
-    features: [
-      'Tout le plan Pro',
-      'Utilisateurs illimites',
-      'Entrepots illimites',
-      'Agents IA illimites',
-      'Domaine personnalise',
-      'SLA garanti (99.9%)',
-      'Integrateur dedié',
-      'Onboarding sur site',
-      'Support 24/7',
-    ],
+    quotas: { max_users: 10, max_agents: 10, max_warehouses: null },
+    features: ['Tous les modules métier', 'Volumes élevés ou sur devis', 'Multi-sites', 'API & intégrations', 'SLA et onboarding dédié'],
   },
-]
+])
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function formatPrice(price: number): string {
-  return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 0 }).format(price) + ' XOF'
+  return new Intl.NumberFormat(market.value.locale, { minimumFractionDigits: 0 }).format(price) + ' ' + market.value.currency
 }
 
 // ── Data fetching ──────────────────────────────────────────────────────────────
@@ -265,7 +271,7 @@ async function fetchSubscription(): Promise<void> {
 }
 
 // ── Actions ────────────────────────────────────────────────────────────────────
-function choosePlan(plan: typeof plans[0]): void {
+function choosePlan(plan: UpgradePlan): void {
   router.push({ path: '/settings', query: { tab: 'billing', plan: plan.code } })
 }
 
@@ -318,6 +324,27 @@ onMounted(fetchSubscription)
   margin: 0;
 }
 
+.market-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding: 0.45rem 0.6rem 0.45rem 0.8rem;
+  border: 1px solid var(--brand-primary-light, #d1fae5);
+  border-radius: 999px;
+  color: var(--brand-primary-dark, #047857);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+.market-selector select {
+  border: 0;
+  border-radius: 999px;
+  background: var(--brand-primary-bg, #ecfdf5);
+  color: var(--brand-primary-dark, #047857);
+  font: inherit;
+  padding: 0.3rem 0.7rem;
+}
+
 /* ── States ─────────────────────────────────────────────────────────────────── */
 .state-loading {
   text-align: center;
@@ -338,7 +365,7 @@ onMounted(fetchSubscription)
 /* ── Plans grid ─────────────────────────────────────────────────────────────── */
 .plans-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1.5rem;
   align-items: start;
 }

@@ -105,16 +105,16 @@ describe('Geo-personalization', () => {
   it('imports useGeoContent', () => { expect(script).toContain('useGeoContent') })
   it('defines isAfrica computed', () => { expect(script).toContain('isAfrica') })
   it('has Africa-specific XOF content', () => { expect(script).toContain('XOF') })
-  it('has Global Euro pricing', () => { expect(script).toMatch(/29|'€'|"€"/) })
+  it('has localized EUR pricing', () => { expect(script).toMatch(/europe_eur|'€'|"€"/) })
   it('hero eyebrow is geo-aware (heroEyebrow computed)', () => {
     expect(script).toContain('heroEyebrow')
   })
   it('hero subtitle is geo-aware (heroSub computed)', () => {
     expect(script).toContain('heroSub')
   })
-  it('global hero eyebrow mentions Europe and Americas', () => {
+  it('global hero eyebrow mentions Europe and North America', () => {
     expect(script).toContain('Europe')
-    expect(script).toContain('Amér')
+    expect(script).toContain('Amérique')
   })
   it('global stats mention 3 continents', () => {
     expect(script).toContain('continents')
@@ -130,9 +130,11 @@ describe('Geo-personalization', () => {
     expect(script).toContain('testimonialsGlobal')
     expect(script).toContain('testimonialsAfrica')
   })
-  it('has Africa + Global plans', () => {
-    expect(script).toContain('plansGlobal')
-    expect(script).toContain('plansAfrica')
+  it('has market-aware localized plans and a manual selector', () => {
+    expect(script).toContain('pricingAmounts')
+    expect(script).toContain('waemu_xof')
+    expect(script).toContain('canada_cad')
+    expect(src).toContain('market-select')
   })
   it('has Africa + Global stats', () => {
     expect(script).toContain('statsGlobal')
@@ -152,7 +154,7 @@ describe('Determinism and static content', () => {
 
 // ---- 6. Content completeness -----------------------------------------------
 describe('Content completeness', () => {
-  const WORDS = ['Inventaire', 'Commandes', 'Clients', 'Rapports', 'Starter', 'Pro', 'Enterprise']
+  const WORDS = ['Inventaire', 'Commandes', 'Clients', 'Rapports', 'Starter', 'Essentiel', 'Pro', 'Enterprise']
   WORDS.forEach(w => {
     it('contains the word "' + w + '"', () => { expect(src).toContain(w) })
   })

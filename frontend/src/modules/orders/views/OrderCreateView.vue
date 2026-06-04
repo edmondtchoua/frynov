@@ -388,6 +388,15 @@ textarea.form-input { resize:vertical; }
 /* Line items */
 .lines-head { display:flex; gap:0.5rem; padding:0 0 0.5rem; font-size:0.72rem; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--gray-400); border-bottom:1px solid var(--gray-100); }
 .line-row { display:flex; gap:0.5rem; align-items:flex-start; padding:0.625rem 0; border-bottom:1px solid var(--gray-50); }
+
+/* Mobile: the fixed columns (~390px) overflow narrow phones. Drop the unit-price
+   column (redundant with the line total) and let the product picker take the room. */
+@media (max-width: 640px) {
+  .lines-head { display:none; }
+  .line-row { flex-wrap:wrap; gap:0.4rem; }
+  .line-row .unit-price { display:none; }
+  .line-row .picker { flex:1 1 100%; }
+}
 .unit-price { font-size:0.875rem; color:var(--gray-600); padding-top:0.5rem; }
 .line-total { font-size:0.875rem; color:var(--gray-900); padding-top:0.5rem; }
 

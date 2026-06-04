@@ -244,6 +244,19 @@ h1, h2, h3, h4, h5, h6 { margin: 0; }
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tfoot td { background: var(--gray-50); }
 
+/* Mobile: many views wrap tables in cards with overflow:hidden, which CLIPS
+   wide tables (cut-off columns, no scroll). Making the table itself a block-level
+   scroll container fixes this everywhere at once — it fits its card (width:100%)
+   and scrolls its columns internally, regardless of the parent's overflow.
+   This is the standard CSS-only responsive-table technique. */
+@media (max-width: 768px) {
+  .data-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* ── Forms ───────────────────────────────────────────────── */
 .form-group {
   display: flex;

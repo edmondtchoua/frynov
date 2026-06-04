@@ -1,7 +1,7 @@
 # Plan d'implémentation — Frynov ERP
 
 > Document vivant — mis à jour à chaque fin de sprint.
-> **Dernière révision : 2026-06-03 · Sprint 17 (refonte fiche produit) + Audit qualité approfondi**
+> **Dernière révision : 2026-06-04 · Replanification pricing localisé + landing géographique**
 > Stratégie : backend + frontend **en parallèle**, docs + tests + seeders à chaque sprint.
 
 ---
@@ -32,6 +32,80 @@
 
 ---
 
+## Décision produit — Pricing localisé & accès modules (à valider avant implémentation finale)
+
+### Décision stratégique
+
+La stratégie cible est de **ne plus vendre l'accès module par module** sur les plans publics. Les modules métier principaux doivent rester visibles et utilisables, avec une sécurité par rôles/permissions, tandis que la monétisation porte sur les ressources critiques :
+
+- utilisateurs inclus et utilisateurs additionnels ;
+- produits / SKU ;
+- commandes mensuelles ;
+- clients ;
+- boutiques / branches ;
+- entrepôts ;
+- imports mensuels ;
+- API / webhooks ;
+- marketplace / synchronisations ;
+- stockage ;
+- niveau de support et accompagnement.
+
+Les modules ou fonctions sensibles peuvent rester limités par **rôle**, **permission**, **quota**, **capacité** ou **option contractuelle**, mais ils ne doivent pas disparaître sans explication commerciale. Si une action dépasse le plan, l'UX doit afficher un message d'upgrade ou de demande d'accès.
+
+### Plans cibles
+
+| Plan | Cible | Inclus | Limites principales | Positionnement |
+|---|---|---|---|---|
+| **Découverte** | Test, commerçant solo, petite boutique | 1 utilisateur | 100 produits, 50 commandes/mois, 100 clients, 1 boutique, 1 entrepôt | Acquisition gratuite / low-cost |
+| **Essentiel** | Boutique active | 2 utilisateurs | 500 produits, 300 commandes/mois, 1 000 clients, 1 boutique, 1 entrepôt | Plan quotidien pour PME locale |
+| **Croissance** | PME en expansion | 5 utilisateurs | 5 000 produits, 2 000 commandes/mois, 10 000 clients, 3 boutiques, 3 entrepôts | Automatisation + reporting avancé |
+| **Business / Enterprise** | Grossistes, franchises, réseaux multi-sites | 10 utilisateurs ou contrat | Volumes élevés ou illimités selon contrat | API, SLA, onboarding, support dédié |
+
+### Marchés et devises cibles
+
+| Marché | Pays principaux | Devise affichée | Règle |
+|---|---|---|---|
+| UEMOA | SN, CI, ML, BF, BJ, TG, NE, GW | XOF | Ne jamais libeller seulement “CFA” en base : utiliser XOF. |
+| CEMAC | CM, GA, CG, TD, CF, GQ | XAF | Ne jamais mélanger XAF avec XOF. |
+| Nigeria | NG | NGN | À brancher après validation paiement local. |
+| Ghana | GH | GHS | À brancher après validation paiement local. |
+| Kenya | KE | KES | À brancher après validation paiement local. |
+| Afrique du Sud | ZA | ZAR | À brancher après validation paiement local. |
+| Europe | FR, BE, ES, DE, etc. | EUR | Prix Europe, pas de XOF/XAF par défaut. |
+| Canada | CA | CAD | Prix CAD obligatoire par défaut pour visiteurs Canada. |
+| USA / Global | US + fallback | USD | Fallback international. |
+
+### Règles de localisation
+
+- La géolocalisation IP sert uniquement à **pré-sélectionner** un marché ; elle ne doit jamais être une barrière de sécurité.
+- L'utilisateur doit toujours pouvoir corriger la zone via un sélecteur manuel pays/devise.
+- La devise contractuelle doit venir d'un **price book validé côté backend**, pas d'un prix hardcodé durablement dans le frontend.
+- La landing peut afficher un fallback statique temporaire, mais la cible release est un endpoint public de pricing.
+
+### Audit de cohérence de la PR pricing/géo précédente
+
+| Décision | Statut | Action |
+|---|---|---|
+| `PlanPrice` + `PlanLimit` | ✅ À conserver en principe | Garder si les migrations/seeders sont validés et idempotents. |
+| Tous les modules sur plans publics | ✅ À conserver comme stratégie produit | À sécuriser avec RBAC, quotas et messages d'upgrade. |
+| `QuotaService` lisant `plan_limits` | ✅ À conserver | Tests Billing obligatoires à chaque modification. |
+| Prix hardcodés dans Landing/Upgrade | 🟡 À corriger | Sprint P3 : exposer un endpoint public de pricing, puis P4/P5 consomment cet endpoint. |
+| Refonte landing + backend pricing dans une seule PR | 🔴 À éviter | Découper en P0→P6. |
+| Ajout de dépendance frontend pour corriger les scripts | 🟡 À documenter | Garder seulement si nécessaire au build/type-check CI. |
+| Checkout local par devise | 🔵 À documenter avant code | Définir rails de paiement par marché avant implémentation. |
+
+### Risques connus
+
+- Duplication des prix entre seeders backend et frontend.
+- Migration de tenants existants (`starter`, `pro`, `enterprise`) vers `essential`/`croissance` sans plan de compatibilité.
+- Promotions et abonnements existants dépendant d'anciens `plan_code`.
+- Confusion XOF/XAF si “CFA” est utilisé dans les données techniques.
+- Landing affichant des prix non contractuels si elle ne consomme pas la source backend.
+- Paiements locaux disponibles différemment selon pays et prestataire.
+
+
+---
+
 ## Modules backend — état complet
 
 | Module | Statut | Tests | Dernière évolution |
@@ -47,7 +121,7 @@
 | Suppliers | ✅ | 8 | CRUD, code auto, findOrCreateByName |
 | ImportExport | ✅ | 30 | Upload→analyze→mapping→approve→execute pipeline, Excel/PDF export |
 | Reports | ✅ | 13 | Dashboard KPIs, sales, stock value, role:manager+ |
-| Billing | ✅ | 10 | Plan, Subscription, Promotion, ManualPayment, QuotaService (5 dimensions), quotas terrain |
+| Billing | ✅ / 🟡 Replanification | 10+ | Plan, Subscription, Promotion, ManualPayment, QuotaService. Refonte pricing localisé à découper en sprints P0→P6 avant stabilisation finale. |
 | Platform | ✅ | 28 | ErpModule registry, AuditLog HMAC (actor_role + ip), Admin back-office, `/admin/audit-logs`, verify-chain |
 | Security module | ✅ | 21 | RBAC sur 11 modules, CatalogSecurityTest, PaymentSecurityTest, MultiTenantIsolationTest, AuditTrailTest |
 | Marketplace | ✅ | — | Facebook/WhatsApp/WooCommerce adapters, sync alerts |
@@ -77,7 +151,7 @@
 | Import/Export | ✅ | — | ImportWizard + ImportHistory |
 | Rapports | ✅ | ✅ | SalesReport + StockReport (intégrés) |
 | Settings | ✅ | 5 tabs | Entreprise / Équipe / Abonnement / Intégrations (stub) / Notifications (stub) |
-| Billing | ✅ NEW | — | BillingView (plan + usages) + UpgradeView (comparatif plans) (Sprint 13) |
+| Billing | ✅ NEW / 🟡 À réaligner | — | BillingView (plan + usages) + UpgradeView. Pricing localisé à brancher sur une source backend unique avant release. |
 | Marketplace | ✅ | — | Listings + alertes |
 | Onboarding | ✅ Complet | — | Wizard 6 étapes (activité, équipe, besoins, entreprise+devise, provisioning). **Les 5 `needs_*` présents**, `provision()` persiste settings/devise + `onboarded=true`. Guard redirige tout tenant non-onboardé vers `/onboarding` ; register → onboarding |
 | Profil | ✅ | — | Page profil + sessions |
@@ -134,9 +208,9 @@
 | Seeder | Contenu | Idempotent |
 |---|---|---|
 | `RolesAndPermissionsSeeder` | 9 rôles + 68+ permissions | ✅ firstOrCreate |
-| `PlansSeeder` | starter / pro / enterprise + quotas terrain | ✅ firstOrCreate |
+| `PlansSeeder` | Plans commerciaux + quotas + prix localisés (à stabiliser via P0→P3) | ✅ updateOrCreate attendu |
 | `ErpModulesSeeder` | 10 modules ERP avec icônes | ✅ firstOrCreate |
-| `PlanModulesSeeder` | Matrice plan ↔ modules | ✅ firstOrCreate |
+| `PlanModulesSeeder` | Matrice plan ↔ modules ; stratégie cible : modules métier visibles, limites par ressources | ✅ idempotent attendu |
 | `CountryRulesSeeder` | 30+ pays africains + Europe + Amérique | ✅ firstOrCreate |
 | `SuperAdminSeeder` | superadmin@frynov.com | ✅ firstOrCreate |
 | `DemoSeeder` | 3 tenants démo (dev/staging uniquement) | ⚠️ create (prod: désactiver) |
@@ -298,6 +372,115 @@ Issu de l'audit pré-release global (verdict GO conditionnel). Actions livrées 
 - ✅ **Purge code mort** : 32 fichiers stubs générés (pluriels `Payments*`/`Customers*` + `Catalog` model/repo/events/requests), dont 2 migrations parasites créant les tables `paymentss`/`customerss`. `CatalogService`/`CatalogResource` (vrais) conservés.
 
 Reste recommandé (non bloquant) : smoke tests frontend admin back-office.
+
+---
+
+## Audit profond modules — GO / NO-GO release (2026-06-04)
+
+### Verdict global
+
+**GO conditionnel** : le socle ERP est exploitable pour une release contrôlée si le scope reste limité aux modules métier déjà couverts et si la chaîne pricing localisé est sécurisée par une source backend unique. Le principal **NO-GO produit** restant avant mise en avant commerciale internationale était l'absence d'API publique de pricing : la landing/upgrade ne doivent pas contractualiser des prix hardcodés côté frontend.
+
+### Synthèse par domaine
+
+| Domaine | Verdict | Justification | Action prioritaire |
+|---|---|---|---|
+| Auth + Workspace + Onboarding | ✅ GO | Auth Sanctum, RBAC Spatie, isolation tenant, onboarding complet et guard de redirection déjà documentés/testés. | Conserver tests Auth/tenant à chaque sprint transverse. |
+| Catalogue + Stock + Commandes | ✅ GO | Modules cœur couverts par tests unitaires/intégration, quotas produits/commandes déjà branchés, variantes et stock sécurisés. | Smoke test vente complète avant release. |
+| Paiements + Livraisons + POS | ✅ GO conditionnel | Flux métier couverts ; POS livré. Les paiements réels restent dépendants des rails par marché. | Ne pas activer checkout local sans mapping devise → moyen de paiement. |
+| Clients + Fournisseurs + Import/Export + Rapports | ✅ GO | CRUD, imports, exports et rapports présents ; RBAC sur mutations/rapports. | Garder limites d'import et export dans la matrice quotas. |
+| Marketplace + Sync | 🟡 GO contrôlé | Marketplace visible ; Sync masqué par feature flag. | Garder Sync off en production tant que Phase 3 non validée. |
+| Platform Admin + AuditLog | ✅ GO | Back-office, modules, plans, promotions, paiements manuels, audit HMAC. | Ajouter smoke tests admin UI si changement frontend. |
+| Billing / Plans / Quotas | 🟡 GO conditionnel | `PlanPrice`, `PlanLimit`, quotas et seeders existent ; compatibilité anciens codes à surveiller. | Stabiliser source publique backend des prix, puis brancher landing/upgrade. |
+| Landing géographique | 🔴 NO-GO commercial avant API | Risque d'afficher XOF/XAF à Canada/France si le frontend reste source de vérité. | Lancer Sprint P3 : API publique `/api/public/pricing`. |
+
+### Points GO validés
+
+- Les modules métier peuvent rester visibles sur les plans publics : la protection doit rester portée par RBAC, quotas et actions sensibles, pas par disparition silencieuse du menu.
+- La stratégie XOF/XAF/EUR/CAD/USD est cohérente si la devise vient du marché résolu côté backend.
+- Les anciens codes `starter`, `pro`, `enterprise` doivent rester supportés pendant la migration commerciale vers Découverte/Essentiel/Croissance/Business.
+
+### Points NO-GO à ne pas contourner
+
+- Pas de release commerciale internationale si Landing/Upgrade affichent des prix contractuels hardcodés.
+- Pas de checkout local par devise sans disponibilité paiement documentée par marché.
+- Pas de suppression/cachage de modules sans message d'upgrade ou explication d'accès.
+- Pas de commit pricing sans tests Billing ciblés et test de non-régression Canada → CAD / France → EUR / UEMOA → XOF / CEMAC → XAF.
+
+### Étape lancée maintenant
+
+**Sprint P3 — API publique de pricing** est l'étape la plus nécessaire : P0 est documenté, P1/P2 ont déjà une base de code testée, et P3 supprime le risque critique de prix dupliqués dans le frontend avant la refonte de landing P4.
+
+---
+
+### Roadmap corrigée — Pricing localisé & landing géographique
+
+> Règle : **ne plus livrer backend pricing + landing + upgrade + checkout dans une seule PR**. Chaque sprint ci-dessous doit être mergé séparément, avec tests ciblés et mise à jour documentaire.
+
+#### Sprint P0 — Documentation & décision produit
+
+**Objectif** : valider la stratégie pricing avant nouveau code applicatif.
+
+- Docs : mettre à jour `docs/plan.md`, `docs/user/billing.md`, `docs/user/navigation.md`.
+- Produit : valider noms de plans, ressources limitées, marchés, devises, règles XOF/XAF.
+- DoD : tableau des plans validé, risques listés, ordre des PRs accepté.
+- Tests : contrôle markdown + relecture fichiers docs.
+
+#### Sprint P1 — Backend pricing foundation
+
+**Objectif** : stabiliser la source backend des prix et limites.
+
+- Backend : valider ou corriger `plan_prices`, `plan_limits`, relations `Plan`, seeders idempotents.
+- Compatibilité : conserver anciens codes (`starter`, `pro`, `enterprise`) tant qu'une migration commerciale n'est pas validée.
+- Tests : `PlanLocalizationTest`, `QuotaServiceTest`, `SubscriptionServiceTest`, tests admin plans.
+- DoD : migrations propres, seeders répétables, aucune dépendance frontend.
+
+#### Sprint P2 — Stratégie d'accès modules
+
+**Objectif** : rendre cohérent “modules visibles” + “sécurité réelle”.
+
+- Backend : vérifier `PlanModulesSeeder`, RBAC, guards tenant, quotas.
+- Frontend : préparer messages verrouillés/upgrade sans cacher arbitrairement.
+- Tests : RBAC backend, tests `ModuleRegistryService`, tests navigation si modifiée.
+- DoD : tous les modules publics sont inclus si stratégie validée, mais actions critiques restent protégées.
+
+#### Sprint P3 — API publique de pricing — 🔄 lancé
+
+**Objectif** : éviter les prix hardcodés dans la landing.
+
+- ✅ Backend : créer `GET /api/public/pricing?market=waemu` ou `?country=SN`.
+- ✅ Réponse : plans, devise, prix mensuel, utilisateurs inclus, prix utilisateur additionnel, limites, marchés sélectionnables.
+- ✅ Tests : API publique pricing + fallback market + Canada/CAD + override manuel marché.
+- 🟡 Reste : ajouter prix annuels et méthodes de paiement disponibles lorsque le checkout local P6 est cadré.
+- DoD : le backend devient la source de vérité publique des prix.
+
+#### Sprint P4 — Landing géographique
+
+**Objectif** : adapter la landing à la zone sans dupliquer la source pricing.
+
+- Frontend : `useGeoContent` détecte pays/marché, sélecteur manuel, fallback global.
+- Frontend : Landing consomme l'API pricing ; contenu hero/FAQ/moyens de paiement par marché.
+- Tests : Vitest landing + geo, scénario CA→CAD, FR→EUR, SN→XOF, CM→XAF.
+- DoD : aucun XOF par défaut pour Canada/France ; correction manuelle possible.
+
+#### Sprint P5 — Upgrade/Billing localisé
+
+**Objectif** : aligner `/billing/upgrade` avec la source backend.
+
+- Frontend : consommer l'API pricing ou endpoint authentifié équivalent.
+- Backend : vérifier cohérence abonnement courant, promo codes, devises.
+- Tests : Billing frontend + Billing API.
+- DoD : prix affiché = prix backend, pas un prix hardcodé.
+
+#### Sprint P6 — Paiements locaux & checkout
+
+**Objectif** : brancher les rails de paiement selon marché.
+
+- Afrique : paiement manuel/Mobile Money selon pays et prestataire.
+- Europe/Canada/USA : carte, facture, virement selon disponibilité.
+- Admin : audit paiement, validation/rejet, notifications.
+- Tests : manual payments, promo, audit log, checkout devise.
+- DoD : chaque devise affichée correspond à un flux paiement ou à une mention “sur devis / paiement manuel”.
 
 ---
 

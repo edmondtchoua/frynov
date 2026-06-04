@@ -10,12 +10,14 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks() })
 
 describe('useGeoContent', () => {
-  it('returns reactive refs isAfrica, isLoading, region', async () => {
+  it('returns reactive refs isAfrica, isLoading, region and market', async () => {
     const { useGeoContent } = await import('@/composables/useGeoContent')
-    const { isAfrica, isLoading, region } = useGeoContent()
+    const { isAfrica, isLoading, region, market, selectableMarkets } = useGeoContent()
     expect(typeof isAfrica.value).toBe('boolean')
     expect(typeof isLoading.value).toBe('boolean')
     expect(typeof region.value).toBe('string')
+    expect(typeof market.value.currency).toBe('string')
+    expect(selectableMarkets.length).toBeGreaterThan(3)
   })
 
   it('reads africa cache from sessionStorage', async () => {
@@ -36,6 +38,14 @@ describe('useGeoContent', () => {
     await Promise.resolve()
     await Promise.resolve()
     expect(isAfrica.value).toBe(false)
+  })
+
+  it('supports manual Canada/CAD override', async () => {
+    const { useGeoContent } = await import('@/composables/useGeoContent')
+    const { market, selectedMarket } = useGeoContent()
+    selectedMarket.value = 'canada'
+    expect(market.value.currency).toBe('CAD')
+    expect(market.value.priceBook).toBe('canada_cad')
   })
 
   it('default region is a non-empty string', async () => {

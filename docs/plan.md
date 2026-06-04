@@ -21,7 +21,7 @@
 | Indicateur | Valeur |
 |---|---|
 | Tests backend | **501 / 501 ✅** (2 skipped, 1 incomplete) — +121 réactivés par le fix testsuites |
-| Tests Vitest frontend | **103 / 103 ✅** (+13 tests composant vues critiques) |
+| Tests Vitest frontend | **106 / 106 ✅** (+16 tests composant des 4 vues critiques) |
 | Branche | `feature/sprint-16-variants-batch-stock` — Sprint 17 + audit livrés |
 | Dernière tag | `v0.7.0` (Sprint 7A) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
@@ -237,10 +237,10 @@ Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateVie
 > Issu de l'audit : la couverture Vitest était à 3.8 % (gate ratchet provisoire).
 
 **Frontend**
-- ✅ Tests composant `OrderCreateView` (5), `OrderDetailView` (4), `ProductShowPage` (4)
-  → couverture **3.8 % → 12.1 %** lignes · 58 % branches · ratchet remonté à 11/55/27/11
-- ⏳ Test composant `ProductFormView` (wizard + builder variantes + modal désactivation)
-- ⏳ Remonter le ratchet par paliers (12 → 25 → 40 %)
+- ✅ Tests composant des **4 vues critiques** : `OrderCreateView` (5), `OrderDetailView` (4),
+  `ProductShowPage` (4), `ProductFormView` (3) = 16 tests
+  → couverture **3.8 % → 16.5 %** lignes · 60 % branches · ratchet à 16/59/29/16
+- ⏳ Étendre aux vues secondaires (List views, Settings) — viser 25 %
 - ⏳ Factoriser `fmtDate` (≈10 duplications) comme `money.ts` l'a été
 
 **Backend**
@@ -313,7 +313,7 @@ Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateVie
 | ✅ **Convention money centralisée** | Audit : `money.ts` |
 | ❌ App POS offline | Phase 2 (Sprint 19) |
 | ✅ 350+ tests backend | **501 tests ✅** |
-| ✅ 50+ tests Vitest frontend | **103 actifs ✅** |
-| 🔄 Couverture Vitest (vues critiques) | 12.1 % — Sprint 18 en cours (vues commande+fiche testées) |
+| ✅ 50+ tests Vitest frontend | **106 actifs ✅** |
+| ✅ Tests composant des 4 vues critiques | 16 tests — couverture 16.5 % |
 | ⚠️ Billing self-service complet | Sprint 13 partiel |
 | ❌ CountryRules UI admin | Sprint 21 |

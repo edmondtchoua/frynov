@@ -21,7 +21,7 @@
 | Indicateur | Valeur |
 |---|---|
 | Tests backend | **501 / 501 ✅** (2 skipped, 1 incomplete) — +121 réactivés par le fix testsuites |
-| Tests Vitest frontend | **123 / 123 ✅** (+27 composant, +17 util) — couverture 20.3 % |
+| Tests Vitest frontend | **133 / 133 ✅** (+37 composant, +17 util) — couverture 28.8 % |
 | Branche | `feature/sprint-16-variants-batch-stock` — Sprint 17 + audit livrés |
 | Dernière tag | `v0.7.0` (Sprint 7A) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
@@ -83,7 +83,7 @@
 | Profil | ✅ | — | Page profil + sessions |
 | Admin back-office | ✅ | 8 vues | Tenants, Modules, Plans, Promotions, Paiements manuels, Audit (AdminLayout) |
 
-**Tests Vitest frontend : 123 tests** (27 composant + 11 money + 6 date + TabNavs/services) — couverture 20.3 %
+**Tests Vitest frontend : 133 tests** (37 composant + 11 money + 6 date + TabNavs/services) — couverture 28.8 %
 
 ---
 
@@ -243,6 +243,7 @@ Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateVie
 - ✅ Factorisé `fmtDate` → `@/shared/utils/date` (3 helpers null-safe) :
   **23 formatters dupliqués éliminés** sur 21 vues + reportService, +6 tests
 - ✅ Tests composant vues secondaires (VariantsView, SupplierDetail, CustomerDetail) — couverture 16.7 → 20.3 %, ratchet 20/58/31
+- ✅ Tests composant vues liste/réglages (ProductListView ×4, StockListView ×3, SettingsView ×3) — **cible 25 % dépassée : 20.3 → 28.8 %** lignes · ratchet 28/57/31. Branches 58→57 : les gros fichiers de vue entrent dans le périmètre couvert avec beaucoup de branches non testées (le plancher suit la réalité). **133 tests verts.**
 
 **Backend**
 - ⏳ Câbler le test incomplet restant (placeholder)

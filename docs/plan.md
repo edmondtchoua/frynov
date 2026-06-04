@@ -55,7 +55,7 @@
 | Multi-sites | ⚠️ Fondation | — | Migrations `warehouse_id` orders/payments + `user_warehouses` pivot (pas encore de UI) |
 | Sync | 💤 Stub | — | Phase 3 — domaine non défini, routes protégées |
 
-**Total tests backend : 477 (2 skipped)**
+**Total tests backend : 501 (2 skipped, 1 incomplete)**
 
 ---
 
@@ -83,7 +83,7 @@
 | Profil | ✅ | — | Page profil + sessions |
 | Admin back-office | ✅ | 8 vues | Tenants, Modules, Plans, Promotions, Paiements manuels, Audit (AdminLayout) |
 
-**Tests Vitest frontend : ~30 tests**
+**Tests Vitest frontend : 112 tests** (16 composant + 11 money + 6 date + TabNavs/services)
 
 ---
 

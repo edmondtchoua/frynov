@@ -3,7 +3,7 @@
 use App\Modules\Sync\Http\Controllers\SyncController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', 'tenant'])->prefix('api')->group(function () {
     Route::apiResource('syncs', SyncController::class)->only(['index', 'show']);
     Route::apiResource('syncs', SyncController::class)
         ->only(['store', 'update', 'destroy'])

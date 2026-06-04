@@ -2,10 +2,17 @@
 
 ## Comparaison des plans
 
+> Valeurs alignées sur `database/seeders/PlansSeeder.php` (source de vérité).
+> `Illimité` = `null` en base ; `QuotaService` traite aussi `0` comme illimité par sécurité.
+
 | Fonctionnalité        | Starter | Pro     | Enterprise |
 |-----------------------|---------|---------|------------|
 | Utilisateurs          | 3       | 15      | Illimité   |
-| Produits              | 500     | 10 000  | Illimité   |
+| Produits              | 200     | 5 000   | Illimité   |
+| Commandes / mois      | 100     | 2 000   | Illimité   |
+| Entrepôts             | 1       | 3       | Illimité   |
+| Agents terrain        | 3       | 10      | Illimité   |
+| Prix (XOF/mois)       | Gratuit | 15 000  | Sur devis  |
 | Import/Export         | Basique | Complet | Complet    |
 | Support               | Email   | Email+Chat | Dédié   |
 | API                   | Non     | Oui     | Oui        |

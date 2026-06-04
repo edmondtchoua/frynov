@@ -115,6 +115,20 @@ class CustomerController extends Controller
 
         $customer = $this->service->update($customer, $data);
 
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->log(
+                'customer.updated',
+                $request->user()->tenant_id,
+                $request->user()->id,
+                $customer,
+                array_keys($data),
+                ['name' => $customer->name, 'email' => $customer->email ?? null],
+                null, null,
+                $request->ip(),
+                $request->userAgent(),
+            );
+        } catch (\Throwable) {}
+
         return response()->json(['data' => new CustomerResource($customer)]);
     }
 

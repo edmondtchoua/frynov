@@ -757,7 +757,9 @@ async function submitUpgrade() {
   const fd = new FormData()
   fd.append('plan_code',      upgradeForm.plan_code)
   fd.append('payment_method', upgradeForm.payment_method)
-  fd.append('amount_cents',   String(Number(upgradeForm.amount_fcfa))) // FCFA = 1:1 with CFA cents not applicable; treat FCFA amount directly
+  // amount_cents convention = value × 100 everywhere (admin & billing views divide
+  // by 100 to display). Sending the raw FCFA value made manual payments show 1/100th.
+  fd.append('amount_cents',   String(Math.round(Number(upgradeForm.amount_fcfa) * 100)))
   fd.append('currency',       'XOF')
   if (upgradeForm.promo_code) fd.append('promo_code', upgradeForm.promo_code.toUpperCase())
   if (upgradeForm.notes)      fd.append('notes', upgradeForm.notes)

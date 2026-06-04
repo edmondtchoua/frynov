@@ -21,9 +21,9 @@ class AdminAuditController extends Controller
             ->when($request->query('action'),    fn ($q, $v) => $q->where('action', 'like', "%{$v}%"))
             ->when($request->query('user_id'),   fn ($q, $v) => $q->where('user_id', $v))
             ->when($request->query('risk_level'), fn ($q, $v) => $q->where('risk_level', $v))
-            ->when($request->query('from_date'),  fn ($q, $v) => $q->where('occurred_at', '>=', $v))
-            ->when($request->query('to_date'),    fn ($q, $v) => $q->where('occurred_at', '<=', $v . ' 23:59:59'))
-            ->orderByDesc('occurred_at')
+            ->when($request->query('from_date'),  fn ($q, $v) => $q->where('created_at', '>=', $v))
+            ->when($request->query('to_date'),    fn ($q, $v) => $q->where('created_at', '<=', $v . ' 23:59:59'))
+            ->orderByDesc('created_at')
             ->paginate((int) $request->query('per_page', 50));
 
         return response()->json([
@@ -46,11 +46,11 @@ class AdminAuditController extends Controller
     public function verifyChain(Request $request): JsonResponse
     {
         $limit   = min((int) $request->query('limit', 100), 500);
-        $entries = AuditLog::orderBy('occurred_at')
+        $entries = AuditLog::orderBy('created_at')
             ->limit($limit)
             ->get(['id', 'integrity_hash', 'action', 'user_id', 'tenant_id',
                    'subject_type', 'subject_id', 'old_values', 'new_values',
-                   'ip_address', 'occurred_at']);
+                   'ip_address', 'created_at']);
 
         $prev  = 'GENESIS';
         $broken = null;
@@ -65,7 +65,7 @@ class AdminAuditController extends Controller
                 'subject_id'   => $entry->subject_id,
                 'subject_type' => $entry->subject_type,
                 'tenant_id'    => $entry->tenant_id,
-                'timestamp'    => $entry->occurred_at?->toIso8601String(),
+                'ts'           => $entry->created_at?->toISOString(),
                 'user_id'      => $entry->user_id,
             ], fn ($v) => $v !== null), JSON_UNESCAPED_UNICODE);
 

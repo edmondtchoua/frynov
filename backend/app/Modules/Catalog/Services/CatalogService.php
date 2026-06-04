@@ -25,6 +25,7 @@ class CatalogService
     {
         return Product::where('tenant_id', $tenantId)
             ->with('category')
+            ->withCount('variants')
             ->when(
                 isset($filters['status']),
                 fn ($q) => $q->where('status', $filters['status']),
@@ -48,6 +49,22 @@ class CatalogService
     {
         return Product::where('tenant_id', $tenantId)
             ->with(['category', 'variants'])
+            ->find($id);
+    }
+
+    /**
+     * Load full product detail for the show page:
+     * category + supplier + variants + attributes (axes + values).
+     */
+    public function findProductDetail(string $tenantId, string $id): ?Product
+    {
+        return Product::where('tenant_id', $tenantId)
+            ->with([
+                'category',
+                'supplier:id,name,code,email,phone',
+                'variants' => fn ($q) => $q->withTrashed(false)->orderBy('sort_order'),
+                'attributes.values',
+            ])
             ->find($id);
     }
 
@@ -140,6 +157,15 @@ class CatalogService
         $product->update(['status' => 'archived']);
         event(new ProductArchived($product));
 
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->log(
+                auth()->id() ?? null, 'product.archived', 'Product', $product->id,
+                ['status' => 'active'],
+                ['status' => 'archived', 'sku' => $product->sku, 'name' => $product->name],
+                request()?->ip(), request()?->userAgent(), 'medium',
+            );
+        } catch (\Throwable) {}
+
         return $product;
     }
 
@@ -175,10 +201,14 @@ class CatalogService
 
     public function listCategories(string $tenantId): Collection
     {
+        // Return ALL categories flat (roots + children).
+        // Previously used whereNull('parent_id') which caused child categories
+        // to be invisible in the list and in product form dropdowns.
+        // The frontend handles tree rendering by grouping on parent_id.
         return Category::where('tenant_id', $tenantId)
-            ->with('children')
-            ->whereNull('parent_id')
+            ->orderBy('parent_id')        // roots first (NULL < UUID alphabetically on MySQL)
             ->orderBy('sort_order')
+            ->orderBy('name')
             ->get();
     }
 

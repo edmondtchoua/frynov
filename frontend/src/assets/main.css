@@ -72,10 +72,26 @@
 /* ── Reset ───────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
-html, body, #app {
+/* ── Layout lock — prevent body scroll, only .page-content scrolls ── */
+html {
   margin: 0;
   padding: 0;
   height: 100%;
+  overflow: hidden;    /* hard lock — body cannot scroll */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;    /* body never scrolls */
+}
+
+#app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;    /* #app fills viewport, no overflow */
 }
 
 body {
@@ -227,6 +243,19 @@ h1, h2, h3, h4, h5, h6 { margin: 0; }
 .data-table tr:hover td { background: var(--gray-50); }
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tfoot td { background: var(--gray-50); }
+
+/* Mobile: many views wrap tables in cards with overflow:hidden, which CLIPS
+   wide tables (cut-off columns, no scroll). Making the table itself a block-level
+   scroll container fixes this everywhere at once — it fits its card (width:100%)
+   and scrolls its columns internally, regardless of the parent's overflow.
+   This is the standard CSS-only responsive-table technique. */
+@media (max-width: 768px) {
+  .data-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
 
 /* ── Forms ───────────────────────────────────────────────── */
 .form-group {

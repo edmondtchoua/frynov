@@ -109,7 +109,9 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
+import { formatDate } from '@/shared/utils/date'
 import { RouterLink } from 'vue-router'
+import { formatMoney } from '@/shared/utils/money'
 import SalesTabNav from '../components/SalesTabNav.vue'
 import { orderService } from '../services/orderService'
 import type { Order } from '../types'
@@ -170,13 +172,7 @@ function statusBadge(s: string) {
   return { draft: 'badge-gray', confirmed: 'badge-blue', fulfilled: 'badge-green', cancelled: 'badge-red' }[s] ?? ''
 }
 
-function formatMoney(cents: number) {
-  return new Intl.NumberFormat('fr-SN', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(cents)
-}
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('fr-SN', { day: '2-digit', month: 'short', year: 'numeric' })
-}
 </script>
 
 <style scoped>

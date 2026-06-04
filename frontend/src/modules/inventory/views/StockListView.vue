@@ -6,13 +6,14 @@
         <h2>Stock</h2>
         <p class="page-subtitle">{{ meta.total ?? '—' }} produits en stock</p>
       </div>
-      <RouterLink to="/inventory/alerts" class="btn btn-ghost" style="gap: 6px;">
+      <div class="header-actions"><RouterLink to="/inventory/batch-delivery" class="btn btn-secondary btn-sm">↓ Réception livraison</RouterLink><RouterLink to="/inventory/alerts" class="btn btn-ghost" style="gap: 6px;">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M8 2a5 5 0 0 1 5 5v2.5l1 1.5H2l1-1.5V7a5 5 0 0 1 5-5Z" stroke="var(--warning-color, #f59e0b)" stroke-width="1.4"/>
           <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="var(--warning-color, #f59e0b)" stroke-width="1.4"/>
         </svg>
         Alertes{{ alertCount > 0 ? ` (${alertCount})` : '' }}
       </RouterLink>
+    </div>
     </div>
 
     <!-- Filters -->
@@ -267,6 +268,7 @@
 <script setup lang="ts">
 import { ref, reactive, watch, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { formatMoney } from '@/shared/utils/money'
 import InventoryTabNav from "../components/InventoryTabNav.vue"
 import { inventoryService } from '../services/inventoryService'
 import { productService } from '@/modules/catalog/services/productService'
@@ -303,9 +305,7 @@ function onWarehouseChange() {
   loadWhSummary(filters.warehouse_id)
 }
 
-function fmtValue(cents: number): string {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(cents / 100)
-}
+const fmtValue = (cents: number) => formatMoney(cents)
 
 // ── Modal state ────────────────────────────────────────────────────────────────
 const modal = reactive({

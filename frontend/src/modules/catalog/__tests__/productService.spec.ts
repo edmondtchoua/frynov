@@ -40,6 +40,6 @@ describe("productService", () => {
   it("categories.list calls /api/catalog/categories", async () => {
     vi.mocked(client.get).mockResolvedValue({ data: [] })
     await productService.categories.list()
-    expect(vi.mocked(client.get)).toHaveBeenCalledWith(expect.stringContaining("categories"), undefined)
+    expect(vi.mocked(client.get)).toHaveBeenCalledWith(expect.stringContaining("categories"))
   })
 })

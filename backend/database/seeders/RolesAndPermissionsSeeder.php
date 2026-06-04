@@ -78,6 +78,24 @@ class RolesAndPermissionsSeeder extends Seeder
         'products.override_sku',
         'products.override_barcode',
         'products.manage_identifiers',
+        // Sprint 17 — Granular product permissions
+        'products.view',
+        'products.create',
+        'products.update',
+        'products.delete',
+        'products.archive',
+        'products.duplicate',
+        'products.manage_variants',
+        'products.manage_attributes',
+        'products.manage_sku',
+        'products.manage_barcode',
+        // Sprint 17 — Granular inventory permissions
+        'inventory.view',
+        'inventory.adjust',
+        'inventory.receive',
+        'inventory.transfer',
+        'inventory.audit',
+        'inventory.print_labels',
     ];
 
     public function run(): void

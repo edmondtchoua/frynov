@@ -1,7 +1,7 @@
 # Plan d'implémentation — Frynov ERP
 
 > Document vivant — mis à jour à chaque fin de sprint.
-> **Dernière révision : 2026-06-02 · Sprint 14 livré**
+> **Dernière révision : 2026-06-03 · Sprint 17 (refonte fiche produit) + Audit qualité approfondi**
 > Stratégie : backend + frontend **en parallèle**, docs + tests + seeders à chaque sprint.
 
 ---
@@ -20,10 +20,15 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **477 / 477 ✅** (2 skipped) |
-| Branche `develop` | `98afc21` — Sprint 14 livré |
+| Tests backend | **550 / 550 ✅** (2 skipped, **0 incomplete**) — +33 Sync + 10 POS (Sprint 19) |
+| Tests Vitest frontend | **142 / 142 ✅** (+46 composant, +17 util) — couverture 30.8 % |
+| Branche | `feature/sprint-16-variants-batch-stock` — Sprint 17 + audit + Sprint 19 (Sync, POS) livrés |
 | Dernière tag | `v0.7.0` (Sprint 7A) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
+
+> ⚠️ **Note critique** : avant l'audit, la config `phpunit.xml` ne matchait que certains
+> suffixes → **121 tests (dont sécurité & multi-tenant) n'étaient jamais exécutés**.
+> Le « 374 passing » historique était trompeur. Désormais 501 tous exécutés.
 
 ---
 
@@ -33,7 +38,7 @@
 |---|---|---|---|
 | Infrastructure | ✅ | — | Docker, CI/CD, modular system |
 | Auth + Workspace | ✅ | 35 | Sanctum, Spatie teams, IDOR guard, 4 rôles terrain, CountryRules, onboarded flag |
-| Catalog | ✅ | 69 | Products, Categories, Variants, Attributes, SKU auto (`tenant_sequences`), code-barres interne `FRY*`, GTIN validation GS1, Labels |
+| Catalog | ✅ | 69 | Products, Categories, Variants N-axes (cartesian), Attributes, SKU auto (`tenant_sequences`), code-barres interne `FRY*`, GTIN validation GS1, Labels |
 | Inventory | ✅ | 55 | Stock, StockMovement, Redis anti-oversell, scan, Warehouses, Transfers (state machine), Fiscal periods, CMUP async, Snapshots, PeriodLock |
 | Orders | ✅ | 40 | Order lifecycle, Returns/RMA (state machine), stock reservation, warehouse_id FK |
 | Customers | ✅ | 12 | CRUD + search, orders relation |
@@ -48,9 +53,9 @@
 | Marketplace | ✅ | — | Facebook/WhatsApp/WooCommerce adapters, sync alerts |
 | CountryRules | ✅ | 5 | Migration + Model + RegistrationRuleService + 30 pays seedés |
 | Multi-sites | ⚠️ Fondation | — | Migrations `warehouse_id` orders/payments + `user_warehouses` pivot (pas encore de UI) |
-| Sync | 💤 Stub | — | Phase 3 — domaine non défini, routes protégées |
+| Sync | 🧪 Scaffold testé | 33 | Scaffold CRUD aligné au standard (HasTenant, préfixe `/api`, middleware `tenant`, `role:manager\|admin`) + 33 tests (Unit/Integration/Modular, isolation multitenant). Domaine métier : Phase 3 |
 
-**Total tests backend : 477 (2 skipped)**
+**Total tests backend : 550 (2 skipped, 0 incomplete)**
 
 ---
 
@@ -68,7 +73,7 @@
 | Inventory | ✅ | ✅ | StockList + Alerts + Warehouses + Transfers + FiscalPeriods (tous intégrés) |
 | Ventes | ✅ | ✅ | OrderList + Returns + Payments + Deliveries (tous intégrés) |
 | Clients | ✅ | — | CustomerList + CustomerDetail |
-| Fournisseurs | ✅ | — | SupplierList (detail = placeholder) |
+| Fournisseurs | ✅ | — | SupplierList + SupplierDetailView (Sprint 15) |
 | Import/Export | ✅ | — | ImportWizard + ImportHistory |
 | Rapports | ✅ | ✅ | SalesReport + StockReport (intégrés) |
 | Settings | ✅ | 5 tabs | Entreprise / Équipe / Abonnement / Intégrations (stub) / Notifications (stub) |
@@ -78,7 +83,7 @@
 | Profil | ✅ | — | Page profil + sessions |
 | Admin back-office | ✅ | 8 vues | Tenants, Modules, Plans, Promotions, Paiements manuels, Audit (AdminLayout) |
 
-**Tests Vitest frontend : ~30 tests**
+**Tests Vitest frontend : 142 tests** (46 composant + 11 money + 6 date + TabNavs/services) — couverture 30.8 %
 
 ---
 
@@ -97,8 +102,8 @@
 | Suppliers | ✅ | ✅ manager\|admin sur delete | ✅ Complet |
 | ImportExport | ✅ | ✅ manager\|admin sur approve/execute | ✅ Complet |
 | Workspace provision | ✅ | ✅ manager\|admin | ✅ Complet |
-| **RBAC sidebar frontend** | ❌ | — | ⚠️ Aucun guard v-if sur les items sidebar |
-| **RBAC onglets TabNav** | ❌ | — | ⚠️ Aucun guard sur les onglets frontend |
+| **RBAC sidebar frontend** | ✅ | — | Computed `mainNavItems` filtré par `isManagerOrAbove` (Sprint 15) |
+| **RBAC onglets TabNav** | ✅ | — | `usePermission` injecté dans les 4 TabNavs (Sprint 15) |
 
 ---
 
@@ -116,9 +121,11 @@
 | `stock.moved_in` / `stock.adjusted` | ✅ | Sprint 13 |
 | `product.created` | ✅ | Sprint 13 |
 | `return.approved` | ✅ | Sprint 13 |
-| `stock.moved_out` | ⚠️ Non câblé | Sprint 15 |
-| `product.updated/archived` | ⚠️ Non câblé | Sprint 15 |
-| `customer.created/updated` | ⚠️ Non câblé | Sprint 15 |
+| `stock.moved_out` | ✅ Câblé | Sprint 15 |
+| `product.updated` | ✅ Câblé | Sprint 15 |
+| `product.archived` | ✅ Câblé | Sprint 15 |
+| `customer.created` | ✅ Câblé | Sprint 15 |
+| `customer.updated` | ✅ Câblé | Sprint 15 |
 
 ---
 
@@ -167,42 +174,122 @@ SIDEBAR (1 niveau, 9 entrées plates)
 | SKU | 374 | `ProductIdentifierService`, `tenant_sequences`, GTIN GS1, frontend auto/manuel |
 | 13 | 477 | Billing self-service, CountryRules, Multi-sites fondation, Audit trail +5 événements |
 | **14** | **477** | **Navigation 1 niveau : InventoryTabNav + SalesTabNav + ReportsTabNav + sidebar plate** |
+| **15** | **374+79** | **Fixes runtime : occurred_at, EnforceQuota DomainException. RBAC frontend (TabNavs + sidebar). Audit trail complet (product.archived, customer.updated). SupplierDetailView. 79 Vitest** |
+| **16** | **374+79** | **Variantes N-axes : cartesian product endpoint, builder frontend, SKU collision fix, label column, hydrate axes on load** |
+| **17** | **501+90** | **Refonte fiche produit (ProductShowPage onglets, drawers stock, product_type, attributs sync) + reconstruction OrderCreateView + Audit qualité approfondi (20 fixes)** |
+
+---
+
+## Audit qualité approfondi (2026-06-03) — 20 corrections
+
+Audit systématique module par module. Le code métier s'est révélé **fondamentalement sain** ;
+les bugs se concentraient sur 3 faiblesses systémiques, toutes corrigées à la racine.
+
+### 🔴 Critiques (5)
+| Bug | Détail |
+|---|---|
+| `fulfill()` échouait sur stock serré | `moveOut` avant `release` → `available=0` sur stock entièrement réservé. Cas PME fréquent (stock = demande exacte) |
+| **121 tests jamais exécutés** | `phpunit.xml` ne matchait que certains suffixes → tests sécurité/multi-tenant skippés. + APP_KEY de test invalide |
+| Gate couverture frontend fictif | seuils 75% vs 3.8% réel, sans `continue-on-error` → CI frontend rouge en permanence. Réalignés (ratchet) |
+| Plan Enterprise bloqué | limites `0` traitées comme strictes → tier le plus cher ne pouvait rien créer. `empty()` + seed normalisé `null` |
+| Downgrade gardait modules premium | `activatePlanModules` additif → Pro→Starter laissait 6 modules actifs. Devenu sync (active + désactive) |
+
+### 🟠 Money — convention centimes (5)
+OrderList ×100 · paiement manuel upgrade ×100 · mélange devises paiement · devise commande hardcodée XOF → `tenant.settings['currency']` · **onboarding droppait la devise** (chaîne avec le fix commande).
+→ **Cause racine éliminée** : `src/shared/utils/money.ts` (formatMoney/toCents/fromCents) + 11 vues migrées + 11 tests.
+
+### 🟠 Stock (4)
+`NotifyLowStock` (paramètres nommés invalides → audit stock-bas cassé) · transfert sur-réception → stock fantôme · `unit_cost_cents` non validé (corruption CMUP) · commande de variante impossible (frontend).
+
+### 🟠 UX/Auth (3)
+`OrderCreateView` stub (saisie UUID) reconstruit · `voidPayment` erreur silencieuse · `generateSlug` fragile (LIKE → match exact).
+
+### 🟡 Responsive (2)
+Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateView` line-row débordait.
+
+### Tests ajoutés
+10 tests de régression (stock serré, devise tenant, chaîne variante, sur-réception transfert, downgrade modules, devise onboarding) + 11 tests `money.ts`.
 
 ---
 
 ## Roadmap — prochains sprints
 
-### Sprint 15 — RBAC frontend + Filtres + Complétion (priorité)
+### ~~Sprint 15 — RBAC frontend + Audit trail~~ ✅ Livré
 
-**Backend (~4h)**
-- Câbler `stock.moved_out`, `product.updated`, `customer.created` dans l'audit trail
-- Corriger `suppliers.show` (SupplierDetailView.vue manquant)
+- ✅ RBAC guards sur les 4 TabNavs (usePermission injecté internalement)
+- ✅ RBAC sidebar (mainNavItems computed filtré)
+- ✅ Audit trail : `product.archived`, `customer.updated`
+- ✅ SupplierDetailView (vue de détail fournisseur)
+- ✅ 79 Vitest frontend (tous verts)
+- ✅ Fixes runtime : `occurred_at` → `created_at`, EnforceQuota DomainException
 
-**Frontend (~8h)**
-- RBAC guards sur les onglets TabNav (prop `allowedTabs` depuis `usePermission`)
-- RBAC guards sur les items sidebar (v-if basé sur rôle/modules actifs)
-- Filtres `OrderListView` : date, texte, client (manquants depuis l'audit)
-- `SupplierDetailView.vue` (vue de détail fournisseur)
-- Vitest : compléter à 50+ tests (ReportsTabNav, Settings, Dashboard)
+### ~~Sprint 16 — Variantes N-axes~~ ✅ Livré
 
-**Tests attendus :** +10 tests backend, +10 Vitest
+- ✅ Endpoint cartesian product `POST /api/catalog/products/{id}/variants/generate`
+- ✅ Builder frontend N-axes avec chips UI
+- ✅ Fix SKU collision (withTrashed), fix label column migration
+- ✅ Hydratation axes depuis API (hydrateVariantsFromProduct)
 
 ---
 
-### Sprint 16 — POS Web MVP + Agents terrain (Phase 2)
+### Sprint 18 — Dette technique frontend (priorité post-audit) — 🔄 en cours
 
-**Backend**
-- Module POS : `CashRegisterSession` model + migration
-- Endpoint : `POST /api/pos/sessions` (ouvrir/fermer session caisse)
-- Rôle caissier : permissions POS spécifiques
+> Issu de l'audit : la couverture Vitest était à 3.8 % (gate ratchet provisoire).
 
 **Frontend**
-- `PosView.vue` : panier, scan produit, encaissement
-- Interface simplifiée pour caissier sur tablette
+- ✅ Tests composant des **4 vues critiques** : `OrderCreateView` (5), `OrderDetailView` (4),
+  `ProductShowPage` (4), `ProductFormView` (3) = 16 tests
+  → couverture **3.8 % → 16.5 %** lignes · 60 % branches · ratchet à 16/59/29/16
+- ✅ Factorisé `fmtDate` → `@/shared/utils/date` (3 helpers null-safe) :
+  **23 formatters dupliqués éliminés** sur 21 vues + reportService, +6 tests
+- ✅ Tests composant vues secondaires (VariantsView, SupplierDetail, CustomerDetail) — couverture 16.7 → 20.3 %, ratchet 20/58/31
+- ✅ Tests composant vues liste/réglages (ProductListView ×4, StockListView ×3, SettingsView ×3) — **cible 25 % dépassée : 20.3 → 28.8 %** lignes · ratchet 28/57/31. Branches 58→57 : les gros fichiers de vue entrent dans le périmètre couvert avec beaucoup de branches non testées (le plancher suit la réalité).
+- ✅ Tests composant `PaymentListView` (×4 : montant ÷100, annulation via service, lien commande, état vide) — couverture **28.8 → 29.8 %**, ratchet 29/57/32. **137 tests verts.**
+
+**Backend**
+- ✅ Câblé le test incomplet `TenantProvisioningServiceTest` (le seul `incomplete` restant) →
+  déplacé en intégration avec 3 cas de bord réels : slug accentué (`Café Délice`→`cafe-delice`),
+  fallback `tenant` pour noms sans caractère sluggable, déduplication multi-collision
+  (`boutique` → `-1` → `-2`, régression du fix LIKE→exact-match). **0 incomplete.**
+- ✅ **Diagnostic systémique** : sous **PHPUnit 12.5**, l'annotation docblock `/** @test */`
+  n'est **plus collectée** (retirée). `TenantProvisioningTest` (4 tests réels) tournait à vide →
+  converti en attribut `#[Test]` (convention projet), **7 tests ressuscités**. Le générateur
+  `MakeModule.php` émet déjà `#[Test]` (cause racine déjà corrigée) ; **10 stubs générés morts**
+  (pluriels `Sync*`/`Customers*`/`Payments*` + `CatalogModuleTest`) purgés — ils collectaient 0 test
+  et dupliquaient les vraies suites `*ApiTest`/`*SecurityTest` singulières.
+- ✅ **Gap Sync résolu** : le module **Sync** a désormais **33 tests réels** (`#[Test]`) — Unit
+  (`SyncService` : CRUD, pagination, isolation tenant via `404`), Integration (`/api/syncs` : auth `401`,
+  RBAC `manager|admin` vs `viewer` `403`, isolation multitenant `404`/listing scoped), Modular (binding
+  `SyncRepositoryInterface`, enregistrement des routes, `TenantScope`). Le scaffold a été aligné sur le
+  standard projet : `Sync` utilise `HasTenant` (+ `tenant_id` fillable), routes sous préfixe `/api` avec
+  middleware `tenant` (qui pose le team context Spatie indispensable à `role:`). Sans ce câblage,
+  `store`/`update`/`destroy` renvoyaient `500`/`403`.
 
 ---
 
-### Sprint 17 — Multi-sites complet + Agents
+### Sprint 19 — POS Web MVP + Agents terrain (Phase 2) — ✅ POS livré
+
+**Backend — ✅ Module POS** (`app/Modules/Pos/`, 10 tests d'intégration)
+- ✅ `CashRegisterSession` (model + migration) — `HasTenant`, statuts open/closed,
+  fond de caisse, cumuls ventes/espèces, attendu/compté/écart en centimes.
+- ✅ `PosService` orchestrant `OrderService` + `PaymentService` : `checkout` atomique
+  (create → confirm → fulfill → record), rollback complet si stock insuffisant.
+- ✅ Endpoints `/api/pos/sessions` (open/current/checkout/close) — rôles `admin|manager|cashier`.
+- ✅ Migration : `cash_register_session_id` (nullable) ajouté à `orders`.
+- ✅ Rôle `cashier` + permissions `pos.*` (déjà dans `RolesAndPermissionsSeeder`).
+
+**Frontend — ✅ Caisse** (`frontend/src/modules/pos/`, 5 tests)
+- ✅ `PosView.vue` : ouverture de session, recherche/scan produit, panier (déclinaisons),
+  encaissement, clôture avec rapprochement d'écart. Convention ÷100 / ×100 respectée.
+- ✅ Service `posService`, route `/pos`, entrée menu **Caisse**.
+
+**Docs** : [`docs/modules/pos.md`](modules/pos.md) (technique) + [`docs/user/pos.md`](user/pos.md) (utilisateur).
+
+**Reste Sprint 19** : agents terrain (Phase 2), interface tablette dédiée (hors layout standard).
+
+---
+
+### Sprint 20 — Multi-sites complet + Agents
 
 **Backend**
 - `Branch` model (alias Warehouse avec metadata agence)
@@ -215,7 +302,7 @@ SIDEBAR (1 niveau, 9 entrées plates)
 
 ---
 
-### Sprint 18 — CountryRules UI + Onboarding complet
+### Sprint 21 — CountryRules UI + Onboarding complet
 
 **Backend**
 - Admin UI pour gérer les CountryRules (super-admin)
@@ -224,6 +311,13 @@ SIDEBAR (1 niveau, 9 entrées plates)
 - Onboarding : étapes `needs_stock/pos/delivery/ecommerce/offline` + `nb_branches`
 - OnboardingView → provision backend câblé complètement
 - Redirection `/onboarding` si `tenant.onboarded = false`
+
+---
+
+### Backlog — TVA / remises au niveau commande
+
+> Gap fonctionnel relevé à l'audit : `OrderService::create` calcule
+> `Σ(quantité × prix)` sans TVA ni remise. À spécifier si le besoin métier se confirme.
 
 ---
 
@@ -239,10 +333,15 @@ SIDEBAR (1 niveau, 9 entrées plates)
 | ✅ Navigation claire 1 niveau + onglets | Livré Sprint 14 |
 | ✅ Sécurité RBAC backend complète | Livré |
 | ✅ Audit trail ~85% | Livré |
-| ⚠️ RBAC sidebar/onglets frontend | Sprint 15 |
-| ⚠️ Filtres commandes (date, texte, client) | Sprint 15 |
-| ❌ App POS offline | Phase 2 |
-| ✅ 350+ tests backend | 477 tests ✅ |
-| ⚠️ 50+ tests Vitest frontend | ~30 actifs |
+| ✅ RBAC sidebar/onglets frontend | Sprint 15 livré |
+| ✅ Filtres commandes (date, texte, client) | Sprint 15 livré |
+| ✅ Refonte fiche produit (onglets + drawers stock) | Sprint 17 livré |
+| ✅ **Tous les tests réellement exécutés en CI** | Audit : +121 réactivés |
+| ✅ **Quotas de plan corrects (Enterprise + downgrade)** | Audit livré |
+| ✅ **Convention money centralisée** | Audit : `money.ts` |
+| ❌ App POS offline | Phase 2 (Sprint 19) |
+| ✅ 350+ tests backend | **501 tests ✅** |
+| ✅ 50+ tests Vitest frontend | **106 actifs ✅** |
+| ✅ Tests composant des 4 vues critiques | 16 tests — couverture 16.5 % |
 | ⚠️ Billing self-service complet | Sprint 13 partiel |
-| ❌ CountryRules UI admin | Sprint 18 |
+| ❌ CountryRules UI admin | Sprint 21 |

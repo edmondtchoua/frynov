@@ -16,6 +16,8 @@ class ProductVariantResource extends JsonResource
             'product_id' => $this->product_id,
             'sku'        => $this->sku,
             'name'       => $this->name,
+            // label: combined N-axis label e.g. "30L / Rouge" — needed by frontend to reconstruct axes
+            'label'      => $this->label ?? $this->name,
             'attributes' => $this->attributes,
             'price'      => [
                 'amount'    => $effectivePrice->amount(),

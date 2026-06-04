@@ -23,10 +23,18 @@ class TenantProvisioningService
 
     private function generateSlug(string $name): string
     {
-        $slug = Str::slug($name);
-        $count = Tenant::where('slug', 'like', "{$slug}%")->count();
+        // Exact-match loop, not LIKE: "LIKE 'boutique%'" over-matched unrelated slugs
+        // ("boutique-store") and the count suffix could collide after a mid-list delete.
+        $base = Str::slug($name) ?: 'tenant';
+        $slug = $base;
+        $i = 1;
 
-        return $count > 0 ? "{$slug}-{$count}" : $slug;
+        while (Tenant::where('slug', $slug)->exists()) {
+            $slug = "{$base}-{$i}";
+            $i++;
+        }
+
+        return $slug;
     }
 
     private function createDefaultSettings(Tenant $tenant): void

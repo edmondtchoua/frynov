@@ -17,6 +17,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { usePermission } from '@/composables/usePermission'
 
 interface Tab {
   to: string
@@ -35,6 +36,7 @@ const props = withDefaults(defineProps<{
 })
 
 const route = useRoute()
+const { catalogTabs: rbacTabs } = usePermission()
 
 const tabs = computed<Tab[]>(() => [
   {
@@ -55,6 +57,11 @@ const tabs = computed<Tab[]>(() => [
     badge: (props.counts.variants ?? 0) > 0 ? props.counts.variants : undefined,
   },
   {
+    to: '/catalog/attributes',
+    label: 'Attributs',
+    icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="4" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="4" r="2.5" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M6.5 8h3.5M9 4H6.5M9 12H6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',
+  },
+  {
     to: '/catalog/labels',
     label: 'Étiquettes',
     icon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4a1 1 0 011-1h5.586a1 1 0 01.707.293l3.414 3.414A1 1 0 0114 7.414V12a1 1 0 01-1 1H4a1 1 0 01-1-1V4z" stroke="currentColor" stroke-width="1.4"/><circle cx="6" cy="8" r="1" fill="currentColor"/></svg>',
@@ -62,8 +69,10 @@ const tabs = computed<Tab[]>(() => [
 ])
 
 const visibleTabs = computed(() => {
-  if (!props.allowedTabs) return tabs.value
-  return tabs.value.filter(tab => props.allowedTabs!.includes(tab.to))
+  // Props override > RBAC computed > show all
+  const allowed = props.allowedTabs ?? rbacTabs.value
+  if (!allowed) return tabs.value
+  return tabs.value.filter(tab => allowed.includes(tab.to))
 })
 
 function isActive(tab: Tab): boolean {

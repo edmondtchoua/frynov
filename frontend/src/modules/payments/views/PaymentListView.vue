@@ -196,6 +196,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { formatDate } from '@/shared/utils/date'
 import { RouterLink } from 'vue-router'
 import SalesTabNav from '../../orders/components/SalesTabNav.vue'
 import { paymentService } from '../services/paymentService'
@@ -301,11 +302,7 @@ function fmtAmount(cents: number, currency: string): string {
   }).format(cents / 100)
 }
 
-function fmtDate(iso: string): string {
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit', month: 'short', year: 'numeric',
-  }).format(new Date(iso))
-}
+const fmtDate = formatDate
 
 onMounted(load)
 </script>

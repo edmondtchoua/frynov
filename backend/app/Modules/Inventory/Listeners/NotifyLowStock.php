@@ -26,10 +26,10 @@ class NotifyLowStock implements ShouldQueue
         $product = $stock->product;
 
         $this->audit->log(
-            action:      'inventory.low_stock_alert',
-            subjectType: \App\Modules\Inventory\Models\Stock::class,
-            subjectId:   $stock->id,
-            newValues:   [
+            action:    'inventory.low_stock_alert',
+            tenantId:  $stock->tenant_id,
+            subject:   $stock,
+            newValues: [
                 'product_id'        => $stock->product_id,
                 'sku'               => $product?->sku,
                 'product_name'      => $product?->name,
@@ -38,7 +38,7 @@ class NotifyLowStock implements ShouldQueue
                 'reserved_quantity' => $stock->reserved_quantity,
                 'threshold'         => $stock->low_stock_threshold,
             ],
-            tenantId: $stock->tenant_id,
+            actorRole: 'system',
         );
     }
 

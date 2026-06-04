@@ -84,4 +84,27 @@ class QuotaServiceTest extends TestCase
         }
         $this->assertTrue(true);
     }
+
+    #[Test]
+    public function zero_limit_means_unlimited_like_the_seeded_enterprise_plan(): void
+    {
+        // The seeded Enterprise plan stores 0 (not null) for max_products / max_users /
+        // max_monthly_orders. 0 must be treated as unlimited, otherwise the most
+        // expensive tier cannot create a single product, user, or order.
+        $entPlan = Plan::firstOrCreate(['code' => 'enterprise'], [
+            'name' => 'Enterprise', 'price_monthly_cents' => 0, 'price_yearly_cents' => 0,
+            'currency' => 'XOF', 'trial_days' => 0, 'is_active' => true, 'is_public' => false, 'sort_order' => 99,
+        ]);
+        $entPlan->update([
+            'max_users' => 0, 'max_products' => 0, 'max_monthly_orders' => 0,
+            'max_warehouses' => null, 'max_agents' => null,
+        ]);
+        $entTenant = Tenant::create(['name' => 'E0', 'slug' => 'ent-zero', 'plan' => 'enterprise', 'status' => 'active', 'settings' => []]);
+
+        // Must NOT throw even with existing resources (0 = unlimited, not "zero allowed")
+        $this->svc->assertCanAddUser($entTenant);
+        $this->svc->assertCanAddProduct($entTenant);
+        $this->svc->assertCanCreateOrder($entTenant);
+        $this->assertTrue(true);
+    }
 }

@@ -102,35 +102,7 @@ export const reportService = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Format cents as a human-readable currency string (space-based French locale) */
-export function formatMoney(cents: number, currency = 'XOF'): string {
-  const amount = cents / 100
-  if (currency === 'XOF' || currency === 'XAF') {
-    // CFA: no decimals, space thousands separator
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  }
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount)
-}
-
-/** Format cents in a compact form (e.g. "125 k XOF") */
-export function formatMoneyCompact(cents: number): string {
-  const amount = cents / 100
-  if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)} M`
-  if (amount >= 1_000)     return `${(amount / 1_000).toFixed(1)} k`
-  return String(Math.round(amount))
-}
-
-/** Short date label: "25 mai" */
-export function shortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-}
+// Formatters now live in the shared utils (single source of truth).
+// Re-exported here for backward compat with existing imports.
+export { formatMoney, formatMoneyCompact } from '@/shared/utils/money'
+export { formatDateShort as shortDate } from '@/shared/utils/date'

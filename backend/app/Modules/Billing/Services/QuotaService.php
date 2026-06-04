@@ -18,7 +18,9 @@ class QuotaService
     public function assertCanAddUser(Tenant $tenant): void
     {
         $plan = $this->plan($tenant);
-        if ($plan?->max_users === null) return;
+        // null OR 0 = unlimited. The seeded Enterprise plan uses 0; treating it as a
+        // hard limit would block the most expensive tier from adding any resource.
+        if (empty($plan?->max_users)) return;
 
         $current = User::where('tenant_id', $tenant->id)->withTrashed(false)->count();
         if ($current >= $plan->max_users) {
@@ -33,7 +35,7 @@ class QuotaService
     public function assertCanAddWarehouse(Tenant $tenant): void
     {
         $plan = $this->plan($tenant);
-        if ($plan?->max_warehouses === null) return;
+        if (empty($plan?->max_warehouses)) return;  // null/0 = unlimited
 
         $current = Warehouse::where('tenant_id', $tenant->id)->count();
         if ($current >= $plan->max_warehouses) {
@@ -48,7 +50,7 @@ class QuotaService
     public function assertCanAddAgent(Tenant $tenant): void
     {
         $plan = $this->plan($tenant);
-        if ($plan?->max_agents === null) return;
+        if (empty($plan?->max_agents)) return;  // null/0 = unlimited
 
         // Count users with agent-type roles (agent, cashier, commercial, delivery)
         $current = User::where('tenant_id', $tenant->id)
@@ -67,7 +69,7 @@ class QuotaService
     public function assertCanCreateOrder(Tenant $tenant): void
     {
         $plan = $this->plan($tenant);
-        if ($plan?->max_monthly_orders === null) return;
+        if (empty($plan?->max_monthly_orders)) return;  // null/0 = unlimited
 
         $current = DB::table('orders')
             ->where('tenant_id', $tenant->id)
@@ -86,7 +88,7 @@ class QuotaService
     public function assertCanAddProduct(Tenant $tenant): void
     {
         $plan = $this->plan($tenant);
-        if ($plan?->max_products === null) return;
+        if (empty($plan?->max_products)) return;  // null/0 = unlimited
 
         $current = DB::table('products')
             ->where('tenant_id', $tenant->id)

@@ -100,10 +100,13 @@
               <div class="product-cell">
                 <div class="product-thumb">{{ p.name.charAt(0).toUpperCase() }}</div>
                 <div>
-                  <div class="product-name">{{ p.name }}</div>
+                  <!-- Clickable name → show page -->
+                  <RouterLink :to="`/catalog/products/${p.id}`" class="product-name product-name-link">{{ p.name }}</RouterLink>
                   <div class="product-meta">
                     <span class="sku-tag">{{ p.sku }}</span>
-                    <span v-if="p.has_variants" class="variant-tag">variantes</span>
+                    <span v-if="p.has_variants || (p.variants_count ?? 0) > 0" class="variant-tag">
+                      {{ p.variants_count ?? '' }} variante{{ (p.variants_count ?? 0) > 1 ? 's' : '' }}
+                    </span>
                     <span v-if="p.barcode" class="barcode-tag">{{ p.barcode }}</span>
                   </div>
                 </div>
@@ -124,7 +127,14 @@
             </td>
             <td>
               <div class="row-actions">
-                <RouterLink :to="`/catalog/products/${p.id}`" class="btn btn-ghost btn-sm">Éditer</RouterLink>
+                <!-- Voir → show page / Éditer → edit form -->
+                <RouterLink :to="`/catalog/products/${p.id}`" class="btn btn-ghost btn-sm" title="Voir la fiche">
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                    <circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/>
+                    <path d="M1 8C2.5 4.5 5 2.5 8 2.5S13.5 4.5 15 8c-1.5 3.5-4 5.5-7 5.5S2.5 11.5 1 8z" stroke="currentColor" stroke-width="1.4"/>
+                  </svg>
+                </RouterLink>
+                <RouterLink :to="`/catalog/products/${p.id}/edit`" class="btn btn-ghost btn-sm" title="Modifier">✏️</RouterLink>
                 <button class="btn btn-ghost btn-sm icon-btn" title="Imprimer étiquette"
                         @click.stop="printOne(p)">🏷</button>
                 <button class="btn btn-ghost btn-sm"
@@ -290,6 +300,8 @@ onMounted(() => {
   font-weight: 700; font-size: var(--text-sm); flex-shrink: 0;
 }
 .product-name { font-weight: 500; color: var(--gray-900); font-size: var(--text-sm); }
+.product-name-link { text-decoration: none; transition: color 0.15s; }
+.product-name-link:hover { color: var(--brand-primary); text-decoration: underline; }
 .product-meta { display: flex; align-items: center; gap: 0.375rem; margin-top: 2px; flex-wrap: wrap; }
 .sku-tag { font-family: monospace; font-size: 0.7rem; color: var(--gray-400); }
 .variant-tag { font-size: 0.65rem; font-weight: 600; background: var(--brand-secondary-bg); color: var(--brand-secondary-dark); padding: 1px 5px; border-radius: 3px; }

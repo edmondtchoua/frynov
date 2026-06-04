@@ -133,6 +133,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { formatDate } from '@/shared/utils/date'
 import InventoryTabNav from "../components/InventoryTabNav.vue"
 import api from '@/services/api'
 
@@ -197,9 +198,7 @@ async function verifyIntegrity(p: FiscalPeriod) {
   if (idx >= 0) periods.value[idx] = { ...periods.value[idx], integrityOk: r.data.data.integrity_ok }
 }
 
-function fmtDate(d?: string): string {
-  return d ? new Date(d).toLocaleDateString('fr-FR') : '—'
-}
+const fmtDate = formatDate
 function typeLabel(t: string): string {
   return { annual: 'Annuel', quarterly: 'Trimestriel', monthly: 'Mensuel' }[t] ?? t
 }

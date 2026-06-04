@@ -116,7 +116,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { formatDate } from '@/shared/utils/date'
 import { RouterLink } from 'vue-router'
+import { formatMoney } from '@/shared/utils/money'
 import { adminService, type AdminManualPayment } from '../services/adminService'
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -201,14 +203,9 @@ async function confirmReject() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
-}
+const fmtDate = formatDate
 
-function formatAmount(cents: number, currency: string): string {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency, maximumFractionDigits: 0 })
-    .format(cents / 100)
-}
+const formatAmount = (cents: number, currency: string) => formatMoney(cents, currency)
 
 function methodLabel(method: string): string {
   const m: Record<string, string> = {

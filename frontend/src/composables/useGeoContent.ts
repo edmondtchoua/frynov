@@ -13,11 +13,13 @@
  * Africa-tailored content without hard-coding any region in HTML.
  */
 
-import { ref, readonly } from 'vue'
+import { ref, readonly, computed } from 'vue'
 
 export type GeoRegion = 'africa' | 'global'
 
-const CACHE_KEY = 'frynov_geo_region'
+// Short key used by tests + new; legacy key still read for backward compat
+const CACHE_KEY = 'geo_region'
+const CACHE_KEY_LEGACY = 'frynov_geo_region'
 const TIMEOUT_MS = 3_000
 
 /**
@@ -32,8 +34,8 @@ const AFRICAN_COUNTRY_CODES = new Set([
 ])
 
 async function detectRegion(): Promise<GeoRegion> {
-  // 1. Check session cache
-  const cached = sessionStorage.getItem(CACHE_KEY) as GeoRegion | null
+  // 1. Check session cache (support both keys for backward compat)
+  const cached = (sessionStorage.getItem(CACHE_KEY) ?? sessionStorage.getItem(CACHE_KEY_LEGACY)) as GeoRegion | null
   if (cached === 'africa' || cached === 'global') return cached
 
   try {
@@ -60,19 +62,30 @@ async function detectRegion(): Promise<GeoRegion> {
   }
 }
 
-// Module-level singleton — shared across all callers
-const _region = ref<GeoRegion>('global')
+// Module-level singleton — shared across all callers in the same page session
+const _region    = ref<GeoRegion>('global')
+const _isLoading = ref(true)
 let _resolved = false
 
 export function useGeoContent() {
   if (!_resolved) {
     _resolved = true
-    detectRegion().then(r => { _region.value = r })
+    _isLoading.value = true
+    detectRegion().then(r => {
+      _region.value    = r
+      _isLoading.value = false
+    })
   }
+
+  // Boolean computed for convenient template bindings (isAfrica.value instead of region.value === 'africa')
+  const isAfrica = computed(() => _region.value === 'africa')
 
   return {
     /** 'africa' | 'global'  — updates reactively once detection completes */
-    region:   readonly(_region),
-    isAfrica: readonly(_region),   // alias for clarity in templates: isAfrica.value === 'africa'
+    region:    readonly(_region),
+    /** true while geo-IP fetch is in-flight */
+    isLoading: readonly(_isLoading),
+    /** Shorthand boolean: true when region === 'africa' */
+    isAfrica,
   }
 }

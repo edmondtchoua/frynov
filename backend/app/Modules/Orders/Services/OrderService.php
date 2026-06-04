@@ -58,7 +58,12 @@ class OrderService
      */
     public function create(array $data, string $tenantId, string $userId): Order
     {
-        $order = DB::transaction(function () use ($data, $tenantId, $userId) {
+        // Use the tenant's configured currency (settings['currency']), not a hardcoded
+        // 'XOF'. A tenant in Cameroon (XAF) or elsewhere otherwise got mislabeled orders.
+        $tenant   = \App\Modules\Tenants\Models\Tenant::withoutGlobalScopes()->find($tenantId);
+        $currency = $tenant?->settings['currency'] ?? 'XOF';
+
+        $order = DB::transaction(function () use ($data, $tenantId, $userId, $currency) {
             $number = $this->nextOrderNumber($tenantId);
 
             $order = Order::create([
@@ -66,7 +71,7 @@ class OrderService
                 'customer_id'  => $data['customer_id'] ?? null,
                 'number'       => $number,
                 'status'       => Order::STATUS_DRAFT,
-                'currency'     => 'XOF',
+                'currency'     => $currency,
                 'note'         => $data['note'] ?? null,
                 'performed_by' => $userId,
             ]);
@@ -176,7 +181,12 @@ class OrderService
                     $line->product_id,
                     $line->variant_id,
                 );
-                // Consume reserved stock
+                // Release the reservation FIRST so available() rises back to the
+                // physical quantity. Otherwise, when this order fully reserves the
+                // stock (available == 0), moveOut()'s availability check would throw
+                // InsufficientStockException on the order's OWN reserved stock.
+                $this->stockService->release($stock, $line->quantity);
+                // Then consume the physical stock (decrements quantity).
                 $this->stockService->moveOut(
                     $stock,
                     $line->quantity,
@@ -185,8 +195,6 @@ class OrderService
                     null,
                     $userId,
                 );
-                // Release reservation counter (moveOut decrements quantity, not reserved_quantity)
-                $this->stockService->release($stock, $line->quantity);
             }
 
             $order->update([

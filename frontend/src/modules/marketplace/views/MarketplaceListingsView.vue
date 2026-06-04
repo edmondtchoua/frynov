@@ -208,6 +208,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { formatDateTime } from '@/shared/utils/date'
 import client from '@/api/client'
 
 const activeTab      = ref<'listings'|'alerts'>('listings')
@@ -255,9 +256,7 @@ function syncLabel(s: string) {
   return { active:'Actif', closed:'Fermé', error:'Erreur', syncing:'Sync…', pending_manual:'Action req.', paused:'Pausé' }[s] ?? s
 }
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
-}
+const fmtDate = formatDateTime
 
 function openCreate() {
   Object.assign(form, { platform:'facebook', external_product_id:'', external_url:'', close_threshold:0, is_auto_close_enabled:true, is_auto_reopen_enabled:false, is_price_sync_enabled:false })

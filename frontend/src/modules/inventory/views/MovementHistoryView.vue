@@ -141,6 +141,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { formatDateTime } from '@/shared/utils/date'
 import { RouterLink, useRoute } from 'vue-router'
 import { inventoryService } from '../services/inventoryService'
 import type { StockMovement, MovementType } from '../types'
@@ -198,12 +199,7 @@ function reasonLabel(reason: string): string {
   } as Record<string, string>)[reason] ?? reason
 }
 
-function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  }).format(new Date(iso))
-}
+const formatDate = formatDateTime
 
 onMounted(() => { loadStock(); load() })
 </script>

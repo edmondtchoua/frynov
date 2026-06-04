@@ -71,10 +71,13 @@ class PlansSeeder extends Seeder
                 'price_monthly_cents'   => 0,         // custom pricing
                 'price_yearly_cents'    => 0,
                 'currency'              => 'XOF',
-                'max_users'             => 0,          // 0 = unlimited
-                'max_products'          => 0,
-                'max_monthly_orders'    => 0,
-                'max_agents'            => null,       // unlimited
+                // Convention: null = unlimited (QuotaService also treats 0 as unlimited
+                // defensively, but null is the canonical "no limit" value — the mixed
+                // 0/null here previously made the quota check block all creation).
+                'max_users'             => null,
+                'max_products'          => null,
+                'max_monthly_orders'    => null,
+                'max_agents'            => null,
                 'max_branches'          => null,
                 'max_warehouses'        => null,
                 'trial_days'            => 30,

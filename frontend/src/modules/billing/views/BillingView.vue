@@ -36,7 +36,7 @@
             <span class="plan-detail-label">Prix mensuel</span>
             <span class="plan-detail-value">
               {{ subscription?.plan_price_monthly != null
-                  ? formatMoney(subscription.plan_price_monthly / 100, subscription.currency ?? 'XOF')
+                  ? formatMoney(subscription.plan_price_monthly, subscription.currency ?? 'XOF')
                   : '—' }}
             </span>
           </div>
@@ -44,7 +44,7 @@
             <span class="plan-detail-label">Prix annuel</span>
             <span class="plan-detail-value">
               {{ subscription?.plan_price_yearly != null
-                  ? formatMoney(subscription.plan_price_yearly / 100, subscription.currency ?? 'XOF')
+                  ? formatMoney(subscription.plan_price_yearly, subscription.currency ?? 'XOF')
                   : '—' }}
             </span>
           </div>
@@ -211,7 +211,7 @@
               <tr v-for="p in payments" :key="p.id">
                 <td class="text-muted">{{ formatDate(p.created_at) }}</td>
                 <td style="font-variant-numeric:tabular-nums;font-weight:600">
-                  {{ formatMoney(p.amount_cents / 100, p.currency) }}
+                  {{ formatMoney(p.amount_cents, p.currency) }}
                 </td>
                 <td>{{ paymentMethodLabel(p.payment_method) }}</td>
                 <td><span :class="paymentBadgeClass(p.status)">{{ paymentStatusLabel(p.status) }}</span></td>
@@ -229,7 +229,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { formatDate } from '@/shared/utils/date'
 import { RouterLink } from 'vue-router'
+import { formatMoney } from '@/shared/utils/money'
 import api from '@/services/api'
 import type { Subscription } from '@/modules/auth/types'
 
@@ -319,26 +321,6 @@ onMounted(async () => {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function formatMoney(amount: number, currency = 'XOF'): string {
-  try {
-    return new Intl.NumberFormat('fr-FR', {
-      style:    'currency',
-      currency: currency.toUpperCase(),
-      maximumFractionDigits: currency.toUpperCase() === 'XOF' ? 0 : 2,
-    }).format(amount)
-  } catch {
-    return `${amount} ${currency}`
-  }
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(iso))
-  } catch {
-    return iso
-  }
-}
 
 // ── Usage helpers ─────────────────────────────────────────────────────────────
 

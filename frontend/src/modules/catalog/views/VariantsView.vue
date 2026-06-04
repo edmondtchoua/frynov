@@ -65,6 +65,7 @@
             <th>Produit parent</th>
             <th class="hide-mobile">Attributs</th>
             <th>Prix</th>
+            <th>Stock</th>
             <th class="hide-mobile">Catégorie</th>
             <th style="text-align:right">Actions</th>
           </tr>
@@ -88,32 +89,34 @@
             </td>
             <td class="hide-mobile">
               <div class="attr-chips">
+                <!-- Use attribute_chips (from JSON blob) — always populated -->
                 <span
-                  v-for="av in v.attribute_values ?? []"
-                  :key="av.id"
+                  v-for="chip in (v.attribute_chips ?? [])"
+                  :key="chip.name"
                   class="attr-chip"
-                  :title="av.attribute?.name"
-                >
-                  <span
-                    v-if="av.color_hex"
-                    class="color-dot"
-                    :style="{ background: av.color_hex }"
-                  ></span>
-                  {{ av.label }}
-                </span>
-                <span v-if="!v.attribute_values?.length" class="dim">—</span>
+                  :title="chip.name"
+                >{{ chip.label }}</span>
+                <!-- Fallback: show label if no chips -->
+                <span v-if="!v.attribute_chips?.length && v.label" class="attr-chip">{{ v.label }}</span>
+                <span v-if="!v.attribute_chips?.length && !v.label" class="dim">—</span>
               </div>
             </td>
             <td>
               <span class="price-tag">{{ formatPrice(v.price_amount, v.price_currency) }}</span>
+            </td>
+            <td>
+              <div class="stock-cell" :class="{ 'stock-zero': !v.stock_available }">
+                <span class="stock-qty">{{ v.stock_available ?? 0 }}</span>
+                <span v-if="v.stock_qty !== v.stock_available" class="stock-total">/ {{ v.stock_qty ?? 0 }}</span>
+              </div>
             </td>
             <td class="hide-mobile">
               <span v-if="v.product?.category" class="badge badge-gray">{{ v.product.category.name }}</span>
               <span v-else class="dim">—</span>
             </td>
             <td style="text-align:right">
-              <RouterLink :to="`/catalog/products/${v.product_id}`" class="btn btn-ghost btn-sm">
-                Modifier
+              <RouterLink :to="`/catalog/products/${v.product_id}`" class="btn btn-ghost btn-sm" title="Voir la fiche produit">
+                Voir
               </RouterLink>
             </td>
           </tr>
@@ -132,8 +135,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
+import { formatMoney } from '@/shared/utils/money'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
-import api from '@/services/api'
+import client from '@/api/client'
+
+interface AttributeChip { name: string; label: string }
 
 interface ProductVariantRow {
   id: string
@@ -142,12 +149,17 @@ interface ProductVariantRow {
   label?: string
   price_amount?: number
   price_currency?: string
+  stock_qty?: number
+  stock_available?: number
+  attribute_chips?: AttributeChip[]
   attribute_values?: { id: string; label: string; color_hex?: string; attribute?: { id: string; name: string } }[]
   product?: { id: string; name: string; sku: string; category?: { id: string; name: string } | null }
 }
 
+interface PaginatorMeta { current_page: number; last_page: number; total: number; per_page: number }
+
 const variants = ref<ProductVariantRow[]>([])
-const meta     = ref({ current_page: 1, last_page: 1, total: 0, per_page: 50 })
+const meta     = ref<PaginatorMeta>({ current_page: 1, last_page: 1, total: 0, per_page: 50 })
 const loading  = ref(false)
 const search   = ref('')
 const filterStatus = ref('')
@@ -162,7 +174,7 @@ function debouncedLoad() {
 async function load(page = 1) {
   loading.value = true
   try {
-    const r = await api.get('/catalog/variants', {
+    const r = await client.get('/api/catalog/variants', {
       params: {
         search:   search.value || undefined,
         status:   filterStatus.value || undefined,
@@ -170,12 +182,21 @@ async function load(page = 1) {
         page,
       },
     })
-    const data = r.data
-    variants.value = data.data ?? []
-    meta.value     = data.meta ?? data
-    statsData.productsCount = new Set(variants.value.map(v => v.product_id)).size
-  } catch {
+    // Paginator direct response: { data: [...], total, current_page, last_page, ... }
+    const paginator = r.data
+    variants.value  = paginator.data ?? []
+    // Build meta from paginator root fields (no wrapper `meta` key in Laravel paginate())
+    meta.value = {
+      current_page: paginator.current_page ?? page,
+      last_page:    paginator.last_page    ?? 1,
+      total:        paginator.total        ?? variants.value.length,
+      per_page:     paginator.per_page     ?? 50,
+    }
+    statsData.productsCount = new Set(variants.value.map((v: ProductVariantRow) => v.product_id)).size
+  } catch (e: any) {
+    console.error('[VariantsView] load error:', e?.response?.status, e?.message)
     variants.value = []
+    meta.value = { current_page: 1, last_page: 1, total: 0, per_page: 50 }
   } finally {
     loading.value = false
   }
@@ -184,8 +205,8 @@ async function load(page = 1) {
 function goPage(page: number) { load(page) }
 
 function formatPrice(amount?: number, currency?: string): string {
-  if (!amount) return '—'
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency ?? 'XOF', minimumFractionDigits: 0 }).format(amount)
+  if (amount === undefined || amount === null || amount === 0) return '—'
+  return formatMoney(amount, currency ?? 'XAF')
 }
 
 onMounted(load)
@@ -221,6 +242,12 @@ onMounted(load)
 .color-dot      { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
 
 .price-tag      { font-weight: 600; font-size: 0.875rem; color: var(--gray-900); }
+
+/* Stock column */
+.stock-cell     { display: flex; align-items: baseline; gap: 3px; }
+.stock-qty      { font-weight: 700; font-size: 0.9375rem; color: var(--gray-900); }
+.stock-total    { font-size: 0.75rem; color: var(--gray-400); }
+.stock-zero .stock-qty { color: var(--gray-300); }
 .dim            { color: var(--gray-300); font-size: 0.875rem; }
 
 .pagination-bar {

@@ -24,14 +24,20 @@ class CatalogVariantController extends Controller
             ->with([
                 'product:id,name,sku,status,category_id',
                 'product.category:id,name',
-                'attributeValues.attribute:id,name,code',
+                // NOTE: we use the attributes JSON blob (not the normalized pivot)
+                // because product_variant_attr_values pivot may be empty for
+                // variants created via the N-axis builder (JSON-only path).
+                // attributeValues.attribute:id,name,code  ← removed (causes 500 when pivot empty + orderBy issue)
             ]);
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('sku',   'like', "%{$search}%")
-                  ->orWhere('label', 'like', "%{$search}%")
-                  ->orWhereHas('product', fn ($pq) => $pq->where('name', 'like', "%{$search}%"));
+                $q->where('product_variants.sku',    'like', "%{$search}%")  // BAS-0015-V1
+                  ->orWhere('product_variants.label', 'like', "%{$search}%") // "30L / Rouge"
+                  ->orWhereHas('product', fn ($pq) => $pq
+                      ->where('name', 'like', "%{$search}%")     // "Bassine de cuisine"
+                      ->orWhere('sku',  'like', "%{$search}%")   // "BAS-0015" ← parent SKU
+                  );
             });
         }
 
@@ -43,10 +49,36 @@ class CatalogVariantController extends Controller
             $query->whereHas('product', fn ($q) => $q->where('status', $status));
         }
 
-        $variants = $query->orderBy('created_at', 'desc')
+        $paginator = $query->orderBy('product_variants.created_at', 'desc')
             ->paginate((int) $request->query('per_page', 50));
 
-        return response()->json($variants);
+        // Pre-load stock quantities for all variants on this page in ONE query
+        $variantIds = $paginator->getCollection()->pluck('id')->toArray();
+        $stocks = \App\Modules\Inventory\Models\Stock::whereIn('variant_id', $variantIds)
+            ->select('variant_id', \Illuminate\Support\Facades\DB::raw('SUM(quantity) as total_qty'), \Illuminate\Support\Facades\DB::raw('SUM(quantity - reserved_quantity) as available_qty'))
+            ->groupBy('variant_id')
+            ->get()
+            ->keyBy('variant_id');
+
+        // Transform each item: attribute_chips (JSON blob) + stock quantities
+        $paginator->getCollection()->transform(function ($variant) use ($stocks) {
+            // Attribute chips from JSON blob
+            $attrs = $variant->attributes ?? [];
+            if (is_string($attrs)) $attrs = json_decode($attrs, true) ?? [];
+            $variant->attribute_chips = collect($attrs)->map(fn ($val, $key) => [
+                'name'  => $key,
+                'label' => $val,
+            ])->values()->toArray();
+
+            // Stock quantities (0 if no stock record yet)
+            $stock = $stocks->get($variant->id);
+            $variant->stock_qty       = (int) ($stock?->total_qty     ?? 0);
+            $variant->stock_available = (int) ($stock?->available_qty ?? 0);
+
+            return $variant;
+        });
+
+        return response()->json($paginator);
     }
 
     /** GET /api/catalog/variants/stats — count by product */

@@ -20,8 +20,8 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **501 / 501 ✅** (2 skipped, 1 incomplete) — +121 réactivés par le fix testsuites |
-| Tests Vitest frontend | **133 / 133 ✅** (+37 composant, +17 util) — couverture 28.8 % |
+| Tests backend | **507 / 507 ✅** (2 skipped, **0 incomplete**) — +121 réactivés (fix testsuites) + 7 ressuscités (fix `#[Test]`) |
+| Tests Vitest frontend | **137 / 137 ✅** (+41 composant, +17 util) — couverture 29.8 % |
 | Branche | `feature/sprint-16-variants-batch-stock` — Sprint 17 + audit livrés |
 | Dernière tag | `v0.7.0` (Sprint 7A) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
@@ -83,7 +83,7 @@
 | Profil | ✅ | — | Page profil + sessions |
 | Admin back-office | ✅ | 8 vues | Tenants, Modules, Plans, Promotions, Paiements manuels, Audit (AdminLayout) |
 
-**Tests Vitest frontend : 133 tests** (37 composant + 11 money + 6 date + TabNavs/services) — couverture 28.8 %
+**Tests Vitest frontend : 137 tests** (41 composant + 11 money + 6 date + TabNavs/services) — couverture 29.8 %
 
 ---
 
@@ -243,10 +243,21 @@ Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateVie
 - ✅ Factorisé `fmtDate` → `@/shared/utils/date` (3 helpers null-safe) :
   **23 formatters dupliqués éliminés** sur 21 vues + reportService, +6 tests
 - ✅ Tests composant vues secondaires (VariantsView, SupplierDetail, CustomerDetail) — couverture 16.7 → 20.3 %, ratchet 20/58/31
-- ✅ Tests composant vues liste/réglages (ProductListView ×4, StockListView ×3, SettingsView ×3) — **cible 25 % dépassée : 20.3 → 28.8 %** lignes · ratchet 28/57/31. Branches 58→57 : les gros fichiers de vue entrent dans le périmètre couvert avec beaucoup de branches non testées (le plancher suit la réalité). **133 tests verts.**
+- ✅ Tests composant vues liste/réglages (ProductListView ×4, StockListView ×3, SettingsView ×3) — **cible 25 % dépassée : 20.3 → 28.8 %** lignes · ratchet 28/57/31. Branches 58→57 : les gros fichiers de vue entrent dans le périmètre couvert avec beaucoup de branches non testées (le plancher suit la réalité).
+- ✅ Tests composant `PaymentListView` (×4 : montant ÷100, annulation via service, lien commande, état vide) — couverture **28.8 → 29.8 %**, ratchet 29/57/32. **137 tests verts.**
 
 **Backend**
-- ⏳ Câbler le test incomplet restant (placeholder)
+- ✅ Câblé le test incomplet `TenantProvisioningServiceTest` (le seul `incomplete` restant) →
+  déplacé en intégration avec 3 cas de bord réels : slug accentué (`Café Délice`→`cafe-delice`),
+  fallback `tenant` pour noms sans caractère sluggable, déduplication multi-collision
+  (`boutique` → `-1` → `-2`, régression du fix LIKE→exact-match). **0 incomplete.**
+- ✅ **Diagnostic systémique** : sous **PHPUnit 12.5**, l'annotation docblock `/** @test */`
+  n'est **plus collectée** (retirée). `TenantProvisioningTest` (4 tests réels) tournait à vide →
+  converti en attribut `#[Test]` (convention projet), **7 tests ressuscités**. Le générateur
+  `MakeModule.php` émet déjà `#[Test]` (cause racine déjà corrigée) ; **10 stubs générés morts**
+  (pluriels `Sync*`/`Customers*`/`Payments*` + `CatalogModuleTest`) purgés — ils collectaient 0 test
+  et dupliquaient les vraies suites `*ApiTest`/`*SecurityTest` singulières.
+- ⏳ **Gap découvert** : le module **Sync n'a aucun test réel** (ses seuls fichiers étaient des stubs morts) → à implémenter (Sprint 19+).
 
 ---
 

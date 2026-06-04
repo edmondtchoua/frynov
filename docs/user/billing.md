@@ -1,50 +1,87 @@
 # Facturation et abonnement
 
-## Comparaison des plans
+> **Dernière mise à jour :** 2026-06-04 — replanification pricing localisé.
 
-> Valeurs alignées sur `database/seeders/PlansSeeder.php` (source de vérité).
-> `Illimité` = `null` en base ; `QuotaService` traite aussi `0` comme illimité par sécurité.
+## Principe de tarification cible
 
-| Fonctionnalité        | Starter | Pro     | Enterprise |
-|-----------------------|---------|---------|------------|
-| Utilisateurs          | 3       | 15      | Illimité   |
-| Produits              | 200     | 5 000   | Illimité   |
-| Commandes / mois      | 100     | 2 000   | Illimité   |
-| Entrepôts             | 1       | 3       | Illimité   |
-| Agents terrain        | 3       | 10      | Illimité   |
-| Prix (XOF/mois)       | Gratuit | 15 000  | Sur devis  |
-| Import/Export         | Basique | Complet | Complet    |
-| Support               | Email   | Email+Chat | Dédié   |
-| API                   | Non     | Oui     | Oui        |
-| Rapports avancés      | Non     | Oui     | Oui        |
+Frynov ERP évolue vers une tarification plus simple : **les modules métier principaux restent accessibles sur les plans publics**, tandis que les limites portent sur les ressources critiques.
+
+Cela signifie que les plans ne doivent pas bloquer arbitrairement l'accès à tout un module comme Clients, Paiements, Livraisons ou Rapports. En revanche, chaque plan peut limiter :
+
+- le nombre d'utilisateurs inclus ;
+- les utilisateurs additionnels ;
+- les produits / SKU ;
+- les commandes mensuelles ;
+- les clients ;
+- les boutiques / branches ;
+- les entrepôts ;
+- les imports ;
+- l'accès API ;
+- la synchronisation marketplace ;
+- le stockage ;
+- le niveau de support.
+
+## Plans cibles
+
+> Les montants ci-dessous servent de structure produit. La source contractuelle finale devra provenir du backend et du pays de facturation sélectionné.
+
+| Plan | Pour qui ? | Utilisateurs inclus | Limites indicatives | Support |
+|---|---|---:|---|---|
+| Découverte | Test, commerçant solo | 1 | 100 produits, 50 commandes/mois, 1 boutique, 1 entrepôt | Communauté / email standard |
+| Essentiel | Boutique active | 2 | 500 produits, 300 commandes/mois, 1 000 clients | Email |
+| Croissance | PME en expansion | 5 | 5 000 produits, 2 000 commandes/mois, 3 boutiques, 3 entrepôts | Prioritaire |
+| Business / Enterprise | Grossistes, franchises, réseaux multi-sites | 10 ou contrat | Volumes élevés ou sur devis, API, SLA | Dédié |
+
+## Devises et zones
+
+La devise affichée doit correspondre au pays ou marché sélectionné :
+
+| Zone | Devise |
+|---|---|
+| UEMOA — Sénégal, Côte d'Ivoire, Mali, Burkina Faso, Bénin, Togo, Niger, Guinée-Bissau | XOF |
+| CEMAC — Cameroun, Gabon, Congo, Tchad, RCA, Guinée équatoriale | XAF |
+| Nigeria | NGN |
+| Ghana | GHS |
+| Kenya | KES |
+| Afrique du Sud | ZAR |
+| Europe | EUR |
+| Canada | CAD |
+| USA / international fallback | USD |
+
+Règles importantes :
+
+- Un utilisateur au Canada ne doit pas voir des prix XOF/XAF par défaut.
+- Un utilisateur en France ne doit pas voir des prix FCFA par défaut.
+- XOF et XAF sont deux devises différentes et ne doivent pas être mélangées dans les données techniques.
+- Un sélecteur manuel de pays/devise doit permettre de corriger une détection IP erronée.
 
 ## Paiement manuel
 
-Le paiement manuel est disponible pour les marchés sans carte bancaire internationale (Mobile Money, virement bancaire local, etc.).
+Le paiement manuel reste important pour les marchés où la carte bancaire internationale n'est pas le moyen principal.
 
-1. Aller dans **Paramètres > Facturation > Paiement manuel**
-2. Sélectionner la méthode de paiement disponible dans votre pays
-3. Effectuer le virement selon les instructions affichées
-4. Téléverser la preuve de paiement (reçu, capture d'écran)
-5. Un administrateur valide le paiement sous 24-48h ouvrables
+1. Aller dans **Paramètres > Facturation > Paiement manuel**.
+2. Sélectionner la méthode disponible dans votre pays.
+3. Effectuer le paiement selon les instructions affichées.
+4. Téléverser la preuve de paiement.
+5. Un administrateur valide ou rejette le paiement.
 
 ## Mise à niveau de plan
 
-1. Aller dans **Paramètres > Facturation > Mon plan**
-2. Cliquer sur **Changer de plan**
-3. Choisir le plan cible et la période (mensuel / annuel)
-4. Confirmer le mode de paiement
-5. L'upgrade est effectif immédiatement après validation du paiement
+1. Aller dans **Paramètres > Abonnement**.
+2. Cliquer sur **Changer de plan**.
+3. Vérifier la devise et le marché affichés.
+4. Choisir le plan cible.
+5. Confirmer le mode de paiement.
 
-Le prorata est calculé automatiquement pour les jours restants du cycle en cours.
+La source backend officielle pour préparer la landing et la page d'upgrade est maintenant l'API publique `GET /api/public/pricing`. La page frontend ne doit plus maintenir durablement une grille de prix séparée.
 
 ## Limites d'utilisation
 
-- Les limites (produits, utilisateurs) sont vérifiées en temps réel.
-- Un avertissement s'affiche à 80% de la limite atteinte.
-- Au dépassement, les ajouts sont bloqués jusqu'à la mise à niveau ou la suppression d'entrées.
+- Les limites sont vérifiées côté backend.
+- Un avertissement doit être affiché avant saturation, idéalement autour de 80%.
+- Au dépassement, l'ajout est bloqué jusqu'à la mise à niveau ou la réduction du volume.
 - Les données existantes restent accessibles même en cas de dépassement.
 
 ## Codes promotionnels
 
-Saisir le code dans **Paramètres > Facturation > Code promo** avant de finaliser le paiement. Les promotions ne sont pas rétroactives.
+Les codes promotionnels doivent rester compatibles avec les codes plans existants pendant la période de migration. Toute modification des codes (`starter`, `pro`, `enterprise`, `essential`) doit être accompagnée de tests sur les promotions et abonnements.

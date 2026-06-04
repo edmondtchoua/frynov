@@ -21,7 +21,7 @@
 | Indicateur | Valeur |
 |---|---|
 | Tests backend | **501 / 501 ✅** (2 skipped, 1 incomplete) — +121 réactivés par le fix testsuites |
-| Tests Vitest frontend | **106 / 106 ✅** (+16 tests composant des 4 vues critiques) |
+| Tests Vitest frontend | **112 / 112 ✅** (+16 composant, +11 money, +6 date) |
 | Branche | `feature/sprint-16-variants-batch-stock` — Sprint 17 + audit livrés |
 | Dernière tag | `v0.7.0` (Sprint 7A) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
@@ -240,8 +240,9 @@ Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateVie
 - ✅ Tests composant des **4 vues critiques** : `OrderCreateView` (5), `OrderDetailView` (4),
   `ProductShowPage` (4), `ProductFormView` (3) = 16 tests
   → couverture **3.8 % → 16.5 %** lignes · 60 % branches · ratchet à 16/59/29/16
-- ⏳ Étendre aux vues secondaires (List views, Settings) — viser 25 %
-- ⏳ Factoriser `fmtDate` (≈10 duplications) comme `money.ts` l'a été
+- ✅ Factorisé `fmtDate` → `@/shared/utils/date` (3 helpers null-safe) :
+  **23 formatters dupliqués éliminés** sur 21 vues + reportService, +6 tests
+- ⏳ Étendre les tests aux vues secondaires (List views, Settings) — viser 25 %
 
 **Backend**
 - ⏳ Câbler le test incomplet restant (placeholder)

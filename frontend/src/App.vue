@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLayout           from '@/layouts/AppLayout.vue'
 import AuthLayout          from '@/layouts/AuthLayout.vue'
@@ -64,4 +64,11 @@ const layoutComponent = computed(() => {
   if (route.matched.some(r => r.meta.layout === 'admin')) return 'admin'
   return null
 })
+
+// Lock viewport scroll ONLY for the app/admin shells (their inner .page-content
+// scrolls). Public/auth pages (landing, login) must scroll as normal documents.
+watch(layoutComponent, (layout) => {
+  const locked = layout === 'app' || layout === 'admin'
+  document.body.classList.toggle('shell-locked', locked)
+}, { immediate: true })
 </script>

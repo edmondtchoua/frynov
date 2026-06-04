@@ -64,6 +64,30 @@ Toujours utiliser `Money` pour les calculs et l'affichage. Ne jamais diviser par
 
 ---
 
+## Argent côté frontend — `@/shared/utils/money`
+
+> ⚠️ **Convention DB** : tous les montants sont stockés en **centimes entiers (× 100)**.
+> Un prix de 4 200 XOF est stocké `420000`.
+
+Un audit a tracé **5 bugs ×100/÷100** à des formatters réimplémentés dans chaque vue
+(certains divisaient, d'autres non). **Toujours** utiliser l'utilitaire partagé :
+
+```ts
+import { formatMoney, toCents, fromCents } from '@/shared/utils/money'
+
+formatMoney(420000)            // → "4 200 XOF"  (÷100, XOF/XAF sans décimales, EUR/USD 2)
+formatMoney(p.amount_cents, p.currency)
+toCents(4200)                  // → 420000       (à la SOUMISSION d'un montant saisi)
+fromCents(420000)              // → 4200         (pour pré-remplir un input éditable)
+```
+
+**Interdit** : `new Intl.NumberFormat(...).format(cents / 100)` inline dans une vue.
+**Interdit** : envoyer un montant saisi sans `toCents()` (→ enregistré 100× trop petit).
+
+`reportService` ré-exporte `formatMoney`/`formatMoneyCompact` depuis cet util pour compat.
+
+---
+
 ## Modèles Eloquent
 
 ```php

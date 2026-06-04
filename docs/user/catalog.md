@@ -131,20 +131,33 @@ Les variantes servent quand un même produit existe en plusieurs versions : tail
 
 **Exemple :** un Boubou vendu en `Rouge/S`, `Rouge/L`, `Bleu/S`, `Bleu/L`.
 
-### Ajouter des variantes
+### Générer des variantes (constructeur d'axes N-dimensions)
 
 **Qui peut le faire :** Member, Manager, Admin
 
-1. Ouvrez un produit
-2. Cliquez sur **Ajouter des variantes**
-3. Pour chaque variante, renseignez :
-   - **Attributs** : ex `Couleur: Rouge`, `Taille: L`
-   - **Prix** (optionnel — hérite du prix parent si vide)
-4. Cliquez sur **Créer les variantes**
+Le constructeur génère **toutes les combinaisons** automatiquement (produit cartésien)
+à partir des axes que vous définissez :
 
-Chaque variante obtient son propre SKU (ex : `VET-0001-V1`, `VET-0001-V2`) et son propre code-barres.
+1. Ouvrez un produit en **modification** et activez **Variantes**
+2. Définissez vos **axes de variation** (autant que nécessaire) :
+   - Axe `Taille` → valeurs `S`, `M`, `L`
+   - Axe `Couleur` → valeurs `Rouge`, `Bleu`
+3. Le compteur affiche le nombre de combinaisons (ici 3 × 2 = **6 déclinaisons**)
+4. Cliquez sur **Générer les déclinaisons**
 
-> ✅ **Comme pour les produits simples,** chaque variante a son propre stock. Il faut effectuer une entrée de stock pour chaque variante après sa création.
+Chaque déclinaison obtient automatiquement son propre **SKU** (`VET-0001-V1`, `VET-0001-V2`…),
+son **code-barres**, et hérite du prix parent (modifiable par déclinaison).
+Les axes alimentent aussi l'onglet **Attributs**.
+
+> ⚠️ **Désactiver une déclinaison avec du stock** : une fenêtre vous demande quoi faire
+> du stock restant — le *transférer au produit principal* ou le *sortir du stock*.
+
+### Consulter un produit (fiche à onglets)
+
+Cliquer sur un produit ouvre sa **fiche de consultation** (≠ formulaire d'édition) :
+**Vue d'ensemble · Variantes · Stock · Prix**. Depuis cette fiche, des **actions rapides**
+(drawers latéraux) permettent l'**entrée de stock** et l'**ajustement** — par produit
+**ou par variante** (chaque variante a son propre stock).
 
 ---
 

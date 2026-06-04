@@ -170,27 +170,36 @@ php vendor/bin/phpunit --filter "it_returns_thermal_label_html" --no-coverage
 
 ## Configuration PHPUnit
 
+> ⚠️ **Piège corrigé (2026-06)** : PHPUnit `<directory>` ne supporte pas les wildcards
+> (`app/Modules/*/Tests`). L'ancienne config matchait par **suffixe** (`ApiTest.php`,
+> `ServiceTest.php`…) ce qui laissait **23 fichiers / 121 tests jamais exécutés** —
+> dont les tests de **sécurité et multi-tenant**. Règle d'or : **toute suite utilise un
+> catch-all `suffix="Test.php"` par racine** (racines disjointes → aucun double-comptage,
+> aucun fichier oublié). Ne jamais filtrer par suffixe spécifique.
+
 ```xml
 <!-- backend/phpunit.xml -->
 <testsuites>
-    <testsuite name="Unit">
-        <directory>app/Modules/*/Tests/Unit</directory>
-        <directory>tests/Unit</directory>
+    <testsuite name="Modules"><directory suffix="Test.php">app/Modules</directory></testsuite>
+    <testsuite name="Shared"> <directory suffix="Test.php">app/Shared</directory></testsuite>
+    <testsuite name="Tests">
+        <directory suffix="Test.php">tests/Unit</directory>
+        <directory suffix="Test.php">tests/Feature</directory>
+        <directory suffix="Test.php">tests/Integration</directory>
     </testsuite>
-    <testsuite name="Integration">
-        <directory>app/Modules/*/Tests/Integration</directory>
-        <directory>tests/Integration</directory>
-    </testsuite>
+    <testsuite name="E2E"><directory>tests/E2E</directory></testsuite>
 </testsuites>
 
 <php>
     <env name="APP_ENV" value="testing"/>
-    <env name="DB_CONNECTION" value="sqlite"/>
-    <env name="DB_DATABASE" value=":memory:"/>
+    <!-- APP_KEY DOIT décoder en 32 octets (AES-256), sinon "Unsupported cipher" -->
+    <env name="APP_KEY" value="base64:...32-byte-key..."/>
     <env name="QUEUE_CONNECTION" value="sync"/>
-    <env name="SANCTUM_STATEFUL_DOMAINS" value="localhost"/>
 </php>
 ```
+
+Après toute modif de `phpunit.xml`, **vérifier le total** : `php artisan test` doit
+afficher ~500 tests, pas ~370.
 
 ---
 

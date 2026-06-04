@@ -1,7 +1,7 @@
 # Plan d'implémentation — Frynov ERP
 
 > Document vivant — mis à jour à chaque fin de sprint.
-> **Dernière révision : 2026-06-02 · Sprint 16 livré**
+> **Dernière révision : 2026-06-03 · Sprint 17 (refonte fiche produit) + Audit qualité approfondi**
 > Stratégie : backend + frontend **en parallèle**, docs + tests + seeders à chaque sprint.
 
 ---
@@ -20,11 +20,15 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **374 / 374 ✅** (1 incomplete — placeholder) |
-| Tests Vitest frontend | **79 / 79 ✅** |
-| Branche `develop` | Sprint 16 livré |
+| Tests backend | **501 / 501 ✅** (2 skipped, 1 incomplete) — +121 réactivés par le fix testsuites |
+| Tests Vitest frontend | **90 / 90 ✅** (+11 util money) |
+| Branche | `feature/sprint-16-variants-batch-stock` — Sprint 17 + audit livrés |
 | Dernière tag | `v0.7.0` (Sprint 7A) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
+
+> ⚠️ **Note critique** : avant l'audit, la config `phpunit.xml` ne matchait que certains
+> suffixes → **121 tests (dont sécurité & multi-tenant) n'étaient jamais exécutés**.
+> Le « 374 passing » historique était trompeur. Désormais 501 tous exécutés.
 
 ---
 
@@ -172,6 +176,39 @@ SIDEBAR (1 niveau, 9 entrées plates)
 | **14** | **477** | **Navigation 1 niveau : InventoryTabNav + SalesTabNav + ReportsTabNav + sidebar plate** |
 | **15** | **374+79** | **Fixes runtime : occurred_at, EnforceQuota DomainException. RBAC frontend (TabNavs + sidebar). Audit trail complet (product.archived, customer.updated). SupplierDetailView. 79 Vitest** |
 | **16** | **374+79** | **Variantes N-axes : cartesian product endpoint, builder frontend, SKU collision fix, label column, hydrate axes on load** |
+| **17** | **501+90** | **Refonte fiche produit (ProductShowPage onglets, drawers stock, product_type, attributs sync) + reconstruction OrderCreateView + Audit qualité approfondi (20 fixes)** |
+
+---
+
+## Audit qualité approfondi (2026-06-03) — 20 corrections
+
+Audit systématique module par module. Le code métier s'est révélé **fondamentalement sain** ;
+les bugs se concentraient sur 3 faiblesses systémiques, toutes corrigées à la racine.
+
+### 🔴 Critiques (5)
+| Bug | Détail |
+|---|---|
+| `fulfill()` échouait sur stock serré | `moveOut` avant `release` → `available=0` sur stock entièrement réservé. Cas PME fréquent (stock = demande exacte) |
+| **121 tests jamais exécutés** | `phpunit.xml` ne matchait que certains suffixes → tests sécurité/multi-tenant skippés. + APP_KEY de test invalide |
+| Gate couverture frontend fictif | seuils 75% vs 3.8% réel, sans `continue-on-error` → CI frontend rouge en permanence. Réalignés (ratchet) |
+| Plan Enterprise bloqué | limites `0` traitées comme strictes → tier le plus cher ne pouvait rien créer. `empty()` + seed normalisé `null` |
+| Downgrade gardait modules premium | `activatePlanModules` additif → Pro→Starter laissait 6 modules actifs. Devenu sync (active + désactive) |
+
+### 🟠 Money — convention centimes (5)
+OrderList ×100 · paiement manuel upgrade ×100 · mélange devises paiement · devise commande hardcodée XOF → `tenant.settings['currency']` · **onboarding droppait la devise** (chaîne avec le fix commande).
+→ **Cause racine éliminée** : `src/shared/utils/money.ts` (formatMoney/toCents/fromCents) + 11 vues migrées + 11 tests.
+
+### 🟠 Stock (4)
+`NotifyLowStock` (paramètres nommés invalides → audit stock-bas cassé) · transfert sur-réception → stock fantôme · `unit_cost_cents` non validé (corruption CMUP) · commande de variante impossible (frontend).
+
+### 🟠 UX/Auth (3)
+`OrderCreateView` stub (saisie UUID) reconstruit · `voidPayment` erreur silencieuse · `generateSlug` fragile (LIKE → match exact).
+
+### 🟡 Responsive (2)
+Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateView` line-row débordait.
+
+### Tests ajoutés
+10 tests de régression (stock serré, devise tenant, chaîne variante, sur-réception transfert, downgrade modules, devise onboarding) + 11 tests `money.ts`.
 
 ---
 

@@ -20,9 +20,9 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **507 / 507 ✅** (2 skipped, **0 incomplete**) — +121 réactivés (fix testsuites) + 7 ressuscités (fix `#[Test]`) |
-| Tests Vitest frontend | **137 / 137 ✅** (+41 composant, +17 util) — couverture 29.8 % |
-| Branche | `feature/sprint-16-variants-batch-stock` — Sprint 17 + audit livrés |
+| Tests backend | **550 / 550 ✅** (2 skipped, **0 incomplete**) — +33 Sync + 10 POS (Sprint 19) |
+| Tests Vitest frontend | **142 / 142 ✅** (+46 composant, +17 util) — couverture 30.8 % |
+| Branche | `feature/sprint-16-variants-batch-stock` — Sprint 17 + audit + Sprint 19 (Sync, POS) livrés |
 | Dernière tag | `v0.7.0` (Sprint 7A) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
 
@@ -53,9 +53,9 @@
 | Marketplace | ✅ | — | Facebook/WhatsApp/WooCommerce adapters, sync alerts |
 | CountryRules | ✅ | 5 | Migration + Model + RegistrationRuleService + 30 pays seedés |
 | Multi-sites | ⚠️ Fondation | — | Migrations `warehouse_id` orders/payments + `user_warehouses` pivot (pas encore de UI) |
-| Sync | 💤 Stub | — | Phase 3 — domaine non défini, routes protégées |
+| Sync | 🧪 Scaffold testé | 33 | Scaffold CRUD aligné au standard (HasTenant, préfixe `/api`, middleware `tenant`, `role:manager\|admin`) + 33 tests (Unit/Integration/Modular, isolation multitenant). Domaine métier : Phase 3 |
 
-**Total tests backend : 501 (2 skipped, 1 incomplete)**
+**Total tests backend : 550 (2 skipped, 0 incomplete)**
 
 ---
 
@@ -83,7 +83,7 @@
 | Profil | ✅ | — | Page profil + sessions |
 | Admin back-office | ✅ | 8 vues | Tenants, Modules, Plans, Promotions, Paiements manuels, Audit (AdminLayout) |
 
-**Tests Vitest frontend : 137 tests** (41 composant + 11 money + 6 date + TabNavs/services) — couverture 29.8 %
+**Tests Vitest frontend : 142 tests** (46 composant + 11 money + 6 date + TabNavs/services) — couverture 30.8 %
 
 ---
 
@@ -257,20 +257,35 @@ Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateVie
   `MakeModule.php` émet déjà `#[Test]` (cause racine déjà corrigée) ; **10 stubs générés morts**
   (pluriels `Sync*`/`Customers*`/`Payments*` + `CatalogModuleTest`) purgés — ils collectaient 0 test
   et dupliquaient les vraies suites `*ApiTest`/`*SecurityTest` singulières.
-- ⏳ **Gap découvert** : le module **Sync n'a aucun test réel** (ses seuls fichiers étaient des stubs morts) → à implémenter (Sprint 19+).
+- ✅ **Gap Sync résolu** : le module **Sync** a désormais **33 tests réels** (`#[Test]`) — Unit
+  (`SyncService` : CRUD, pagination, isolation tenant via `404`), Integration (`/api/syncs` : auth `401`,
+  RBAC `manager|admin` vs `viewer` `403`, isolation multitenant `404`/listing scoped), Modular (binding
+  `SyncRepositoryInterface`, enregistrement des routes, `TenantScope`). Le scaffold a été aligné sur le
+  standard projet : `Sync` utilise `HasTenant` (+ `tenant_id` fillable), routes sous préfixe `/api` avec
+  middleware `tenant` (qui pose le team context Spatie indispensable à `role:`). Sans ce câblage,
+  `store`/`update`/`destroy` renvoyaient `500`/`403`.
 
 ---
 
-### Sprint 19 — POS Web MVP + Agents terrain (Phase 2)
+### Sprint 19 — POS Web MVP + Agents terrain (Phase 2) — ✅ POS livré
 
-**Backend**
-- Module POS : `CashRegisterSession` model + migration
-- Endpoint : `POST /api/pos/sessions` (ouvrir/fermer session caisse)
-- Rôle caissier : permissions POS spécifiques
+**Backend — ✅ Module POS** (`app/Modules/Pos/`, 10 tests d'intégration)
+- ✅ `CashRegisterSession` (model + migration) — `HasTenant`, statuts open/closed,
+  fond de caisse, cumuls ventes/espèces, attendu/compté/écart en centimes.
+- ✅ `PosService` orchestrant `OrderService` + `PaymentService` : `checkout` atomique
+  (create → confirm → fulfill → record), rollback complet si stock insuffisant.
+- ✅ Endpoints `/api/pos/sessions` (open/current/checkout/close) — rôles `admin|manager|cashier`.
+- ✅ Migration : `cash_register_session_id` (nullable) ajouté à `orders`.
+- ✅ Rôle `cashier` + permissions `pos.*` (déjà dans `RolesAndPermissionsSeeder`).
 
-**Frontend**
-- `PosView.vue` : panier, scan produit, encaissement
-- Interface simplifiée pour caissier sur tablette
+**Frontend — ✅ Caisse** (`frontend/src/modules/pos/`, 5 tests)
+- ✅ `PosView.vue` : ouverture de session, recherche/scan produit, panier (déclinaisons),
+  encaissement, clôture avec rapprochement d'écart. Convention ÷100 / ×100 respectée.
+- ✅ Service `posService`, route `/pos`, entrée menu **Caisse**.
+
+**Docs** : [`docs/modules/pos.md`](modules/pos.md) (technique) + [`docs/user/pos.md`](user/pos.md) (utilisateur).
+
+**Reste Sprint 19** : agents terrain (Phase 2), interface tablette dédiée (hors layout standard).
 
 ---
 

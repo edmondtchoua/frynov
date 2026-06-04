@@ -255,6 +255,13 @@ const _allNavItems = [
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="13" r="1.5" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="13" r="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 1h2l2 7h7l1.5-5H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   },
   {
+    name: 'pos',
+    to: '/pos',
+    label: 'Caisse',
+    managerOnly: false, // cashiers must see it; the backend gates the actual till operations
+    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1.5 6.5h13" stroke="currentColor" stroke-width="1.4"/><circle cx="4.5" cy="10" r="1" fill="currentColor"/></svg>',
+  },
+  {
     name: 'customers',
     to: '/customers',
     label: 'Clients',
@@ -312,6 +319,7 @@ const pageTitles: Record<string, string> = {
   'orders.create':          'Nouvelle commande',
   'orders.show':            'Commande',
   'orders.returns':         'Retours & SAV',
+  pos:                      'Caisse',
   'customers.list':         'Clients',
   'customers.show':         'Client',
   'suppliers.list':         'Fournisseurs',

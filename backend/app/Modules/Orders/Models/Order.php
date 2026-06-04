@@ -21,6 +21,7 @@ class Order extends Model
     protected $fillable = [
         'tenant_id',
         'warehouse_id',
+        'cash_register_session_id',   // set for POS sales (null otherwise)
         'customer_id',
         'number',
         'status',

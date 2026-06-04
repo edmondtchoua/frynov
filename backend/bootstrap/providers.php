@@ -24,4 +24,5 @@ return [
     App\Modules\Billing\Providers\BillingServiceProvider::class,
     App\Modules\Platform\Providers\PlatformServiceProvider::class,
     App\Modules\Marketplace\Providers\MarketplaceServiceProvider::class,
+    App\Modules\Pos\Providers\PosServiceProvider::class,
 ];

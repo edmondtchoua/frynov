@@ -233,6 +233,14 @@ const router = createRouter({
       ],
     },
 
+    // ── Point de vente (POS) ──────────────────────────────────────────────
+    {
+      path: '/pos',
+      name: 'pos',
+      component: () => import('@/modules/pos/views/PosView.vue'),
+      meta: { layout: 'app' },
+    },
+
     // ── Deliveries ────────────────────────────────────────────────────────
     {
       path: '/deliveries',

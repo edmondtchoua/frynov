@@ -36,13 +36,13 @@ export default defineConfig({
       // Ratchet thresholds — coverage may not drop below today's floor. Raised as
       // component tests are added (Sprint 18). Was an unmet aspirational 75% that
       // failed CI; reset to reality then ratcheted up.
-      // Actuals (2026-06, after critical-view component tests): stmts/lines 12% ·
-      // branches 58% · funcs 28%. Thresholds set just below to absorb minor variance.
+      // Actuals (2026-06, 4 critical views tested: Order Create/Detail, Product
+      // Show/Form): stmts/lines 16.5% · branches 60% · funcs 29%. Set just below.
       thresholds: {
-        statements: 11,
-        branches:   55,
-        functions:  27,
-        lines:      11,
+        statements: 16,
+        branches:   59,
+        functions:  29,
+        lines:      16,
       },
     },
 

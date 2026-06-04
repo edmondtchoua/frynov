@@ -232,7 +232,23 @@ Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateVie
 
 ---
 
-### Sprint 17 — POS Web MVP + Agents terrain (Phase 2)
+### Sprint 18 — Dette technique frontend (priorité post-audit)
+
+> Issu de l'audit : la couverture Vitest est à 3.8 % (gate ratchet provisoire).
+> Les vues critiques refondues n'ont aucun test composant.
+
+**Frontend**
+- Tests composant pour `OrderCreateView`, `OrderDetailView`, `ProductShowPage`,
+  `ProductFormView` (parcours commande + fiche produit)
+- Remonter progressivement le seuil de couverture (ratchet 3 → 20 → 40 %)
+- Factoriser `fmtDate` (≈10 duplications) comme `money.ts` l'a été
+
+**Backend**
+- Câbler le test incomplet restant (placeholder)
+
+---
+
+### Sprint 19 — POS Web MVP + Agents terrain (Phase 2)
 
 **Backend**
 - Module POS : `CashRegisterSession` model + migration
@@ -245,7 +261,7 @@ Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateVie
 
 ---
 
-### Sprint 17 — Multi-sites complet + Agents
+### Sprint 20 — Multi-sites complet + Agents
 
 **Backend**
 - `Branch` model (alias Warehouse avec metadata agence)
@@ -258,7 +274,7 @@ Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateVie
 
 ---
 
-### Sprint 18 — CountryRules UI + Onboarding complet
+### Sprint 21 — CountryRules UI + Onboarding complet
 
 **Backend**
 - Admin UI pour gérer les CountryRules (super-admin)
@@ -267,6 +283,13 @@ Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateVie
 - Onboarding : étapes `needs_stock/pos/delivery/ecommerce/offline` + `nb_branches`
 - OnboardingView → provision backend câblé complètement
 - Redirection `/onboarding` si `tenant.onboarded = false`
+
+---
+
+### Backlog — TVA / remises au niveau commande
+
+> Gap fonctionnel relevé à l'audit : `OrderService::create` calcule
+> `Σ(quantité × prix)` sans TVA ni remise. À spécifier si le besoin métier se confirme.
 
 ---
 
@@ -284,8 +307,13 @@ Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateVie
 | ✅ Audit trail ~85% | Livré |
 | ✅ RBAC sidebar/onglets frontend | Sprint 15 livré |
 | ✅ Filtres commandes (date, texte, client) | Sprint 15 livré |
-| ❌ App POS offline | Phase 2 |
-| ✅ 350+ tests backend | 477 tests ✅ |
-| ✅ 50+ tests Vitest frontend | 79 actifs ✅ |
+| ✅ Refonte fiche produit (onglets + drawers stock) | Sprint 17 livré |
+| ✅ **Tous les tests réellement exécutés en CI** | Audit : +121 réactivés |
+| ✅ **Quotas de plan corrects (Enterprise + downgrade)** | Audit livré |
+| ✅ **Convention money centralisée** | Audit : `money.ts` |
+| ❌ App POS offline | Phase 2 (Sprint 19) |
+| ✅ 350+ tests backend | **501 tests ✅** |
+| ✅ 50+ tests Vitest frontend | **90 actifs ✅** |
+| ⚠️ Couverture Vitest (vues critiques) | 3.8 % — dette Sprint 18 |
 | ⚠️ Billing self-service complet | Sprint 13 partiel |
-| ❌ CountryRules UI admin | Sprint 18 |
+| ❌ CountryRules UI admin | Sprint 21 |

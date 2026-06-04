@@ -21,7 +21,7 @@
 | Indicateur | Valeur |
 |---|---|
 | Tests backend | **501 / 501 ✅** (2 skipped, 1 incomplete) — +121 réactivés par le fix testsuites |
-| Tests Vitest frontend | **112 / 112 ✅** (+16 composant, +11 money, +6 date) |
+| Tests Vitest frontend | **123 / 123 ✅** (+27 composant, +17 util) — couverture 20.3 % |
 | Branche | `feature/sprint-16-variants-batch-stock` — Sprint 17 + audit livrés |
 | Dernière tag | `v0.7.0` (Sprint 7A) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
@@ -242,7 +242,7 @@ Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateVie
   → couverture **3.8 % → 16.5 %** lignes · 60 % branches · ratchet à 16/59/29/16
 - ✅ Factorisé `fmtDate` → `@/shared/utils/date` (3 helpers null-safe) :
   **23 formatters dupliqués éliminés** sur 21 vues + reportService, +6 tests
-- ⏳ Étendre les tests aux vues secondaires (List views, Settings) — viser 25 %
+- ✅ Tests composant vues secondaires (VariantsView, SupplierDetail, CustomerDetail) — couverture 16.7 → 20.3 %, ratchet 20/58/31
 
 **Backend**
 - ⏳ Câbler le test incomplet restant (placeholder)

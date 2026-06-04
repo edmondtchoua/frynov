@@ -53,7 +53,7 @@
 | Marketplace | ✅ | — | Facebook/WhatsApp/WooCommerce adapters, sync alerts |
 | CountryRules | ✅ | 5 | Migration + Model + RegistrationRuleService + 30 pays seedés |
 | Multi-sites | ⚠️ Fondation | — | Migrations `warehouse_id` orders/payments + `user_warehouses` pivot (pas encore de UI) |
-| Sync | 🧪 Scaffold testé | 33 | Scaffold CRUD aligné au standard (HasTenant, préfixe `/api`, middleware `tenant`, `role:manager\|admin`) + 33 tests (Unit/Integration/Modular, isolation multitenant). Domaine métier : Phase 3 |
+| Sync | 🧪 Scaffold testé — **masqué (feature flag)** | 33 | Scaffold CRUD (HasTenant, `/api`, `tenant`, `role:manager\|admin`) + 33 tests. **Routes derrière `config('frynov.modules.sync')` = `FEATURE_SYNC` (off par défaut)** → invisible en prod, activé en test. Domaine métier : Phase 3 |
 
 **Total tests backend : 550 (2 skipped, 0 incomplete)**
 
@@ -79,7 +79,7 @@
 | Settings | ✅ | 5 tabs | Entreprise / Équipe / Abonnement / Intégrations (stub) / Notifications (stub) |
 | Billing | ✅ NEW | — | BillingView (plan + usages) + UpgradeView (comparatif plans) (Sprint 13) |
 | Marketplace | ✅ | — | Listings + alertes |
-| Onboarding | ⚠️ Partiel | — | Wizard câblé backend, étapes needs_* manquantes |
+| Onboarding | ✅ Complet | — | Wizard 6 étapes (activité, équipe, besoins, entreprise+devise, provisioning). **Les 5 `needs_*` présents**, `provision()` persiste settings/devise + `onboarded=true`. Guard redirige tout tenant non-onboardé vers `/onboarding` ; register → onboarding |
 | Profil | ✅ | — | Page profil + sessions |
 | Admin back-office | ✅ | 8 vues | Tenants, Modules, Plans, Promotions, Paiements manuels, Audit (AdminLayout) |
 
@@ -286,6 +286,18 @@ Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateVie
 **Docs** : [`docs/modules/pos.md`](modules/pos.md) (technique) + [`docs/user/pos.md`](user/pos.md) (utilisateur).
 
 **Reste Sprint 19** : agents terrain (Phase 2), interface tablette dédiée (hors layout standard).
+
+---
+
+### Audit pré-release — durcissement (2026-06-04) — ✅
+
+Issu de l'audit pré-release global (verdict GO conditionnel). Actions livrées :
+- ✅ **Sync masqué** derrière feature flag `FEATURE_SYNC` (off par défaut) — API Phase 3 invisible en prod, 33 tests conservés (cf. `config/frynov.php`).
+- ✅ **Onboarding vérifié complet** (les 5 `needs_*` + provisioning + guard de redirection) — l'évaluation « partiel » était obsolète.
+- ✅ **Bug landing page corrigé** : le verrou de scroll global (`html/body/#app { overflow:hidden }`) clippait la page d'accueil publique. Verrou désormais scopé à `body.shell-locked` (appliqué seulement aux shells app/admin via `App.vue`). Vérifié : la landing scrolle (scrollHeight 7951px).
+- ✅ **Purge code mort** : 32 fichiers stubs générés (pluriels `Payments*`/`Customers*` + `Catalog` model/repo/events/requests), dont 2 migrations parasites créant les tables `paymentss`/`customerss`. `CatalogService`/`CatalogResource` (vrais) conservés.
+
+Reste recommandé (non bloquant) : smoke tests frontend admin back-office.
 
 ---
 

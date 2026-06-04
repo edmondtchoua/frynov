@@ -62,4 +62,16 @@ class PlanLocalizationTest extends TestCase
             $this->assertSame($moduleCount, $plan->includedModules()->count(), "Plan {$code} should include every module.");
         }
     }
+
+    #[Test]
+    public function plan_price_migration_uses_mysql_safe_index_lengths(): void
+    {
+        $migration = file_get_contents(base_path('app/Modules/Billing/database/migrations/2026_06_04_000001_create_plan_prices_table.php'));
+
+        $this->assertStringContainsString("string('market_code', 32)", $migration);
+        $this->assertStringContainsString("string('country_code', 2)", $migration);
+        $this->assertStringContainsString("string('interval', 16)", $migration);
+        $this->assertStringContainsString('plan_prices_plan_market_interval_unique', $migration);
+        $this->assertStringContainsString('plan_prices_market_currency_idx', $migration);
+    }
 }

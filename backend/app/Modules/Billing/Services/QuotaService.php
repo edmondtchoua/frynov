@@ -1,10 +1,11 @@
 <?php
+
 namespace App\Modules\Billing\Services;
 
-use App\Modules\Billing\Models\Plan;
-use App\Modules\Tenants\Models\Tenant;
 use App\Models\User;
+use App\Modules\Billing\Models\Plan;
 use App\Modules\Inventory\Models\Warehouse;
+use App\Modules\Tenants\Models\Tenant;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -18,15 +19,18 @@ class QuotaService
     public function assertCanAddUser(Tenant $tenant): void
     {
         $plan = $this->plan($tenant);
-        // null OR 0 = unlimited. The seeded Enterprise plan uses 0; treating it as a
-        // hard limit would block the most expensive tier from adding any resource.
-        if (empty($plan?->max_users)) return;
+        // null OR 0 = unlimited. Seats are still mirrored on plans for backwards
+        // compatibility, while localized prices expose included_users per market.
+        $limit = $this->limit($plan, 'max_users');
+        if (empty($limit)) {
+            return;
+        }
 
         $current = User::where('tenant_id', $tenant->id)->withTrashed(false)->count();
-        if ($current >= $plan->max_users) {
+        if ($current >= $limit) {
             throw new \DomainException(
-                "Limite atteinte : votre plan {$plan->name} autorise au maximum {$plan->max_users} utilisateurs. "
-                . "Mettez à niveau votre abonnement pour ajouter davantage de membres."
+                "Limite atteinte : votre plan {$plan->name} autorise au maximum {$limit} utilisateurs. "
+                .'Mettez à niveau votre abonnement pour ajouter davantage de membres.',
             );
         }
     }
@@ -35,13 +39,16 @@ class QuotaService
     public function assertCanAddWarehouse(Tenant $tenant): void
     {
         $plan = $this->plan($tenant);
-        if (empty($plan?->max_warehouses)) return;  // null/0 = unlimited
+        $limit = $this->limit($plan, 'max_warehouses');
+        if (empty($limit)) {
+            return;
+        }  // null/0 = unlimited
 
         $current = Warehouse::where('tenant_id', $tenant->id)->count();
-        if ($current >= $plan->max_warehouses) {
+        if ($current >= $limit) {
             throw new \DomainException(
-                "Limite atteinte : votre plan {$plan->name} autorise au maximum {$plan->max_warehouses} entrepôt(s). "
-                . "Mettez à niveau votre abonnement pour ajouter davantage d'entrepôts."
+                "Limite atteinte : votre plan {$plan->name} autorise au maximum {$limit} entrepôt(s). "
+                ."Mettez à niveau votre abonnement pour ajouter davantage d'entrepôts.",
             );
         }
     }
@@ -50,17 +57,20 @@ class QuotaService
     public function assertCanAddAgent(Tenant $tenant): void
     {
         $plan = $this->plan($tenant);
-        if (empty($plan?->max_agents)) return;  // null/0 = unlimited
+        $limit = $this->limit($plan, 'max_agents');
+        if (empty($limit)) {
+            return;
+        }  // null/0 = unlimited
 
         // Count users with agent-type roles (agent, cashier, commercial, delivery)
         $current = User::where('tenant_id', $tenant->id)
             ->whereHas('roles', fn ($q) => $q->whereIn('name', ['agent', 'cashier', 'commercial', 'delivery']))
             ->count();
 
-        if ($current >= $plan->max_agents) {
+        if ($current >= $limit) {
             throw new \DomainException(
-                "Limite atteinte : votre plan {$plan->name} autorise au maximum {$plan->max_agents} agent(s) terrain. "
-                . "Mettez à niveau votre abonnement pour ajouter davantage d'agents."
+                "Limite atteinte : votre plan {$plan->name} autorise au maximum {$limit} agent(s) terrain. "
+                ."Mettez à niveau votre abonnement pour ajouter davantage d'agents.",
             );
         }
     }
@@ -69,7 +79,10 @@ class QuotaService
     public function assertCanCreateOrder(Tenant $tenant): void
     {
         $plan = $this->plan($tenant);
-        if (empty($plan?->max_monthly_orders)) return;  // null/0 = unlimited
+        $limit = $this->limit($plan, 'max_monthly_orders');
+        if (empty($limit)) {
+            return;
+        }  // null/0 = unlimited
 
         $current = DB::table('orders')
             ->where('tenant_id', $tenant->id)
@@ -77,9 +90,9 @@ class QuotaService
             ->whereYear('created_at', now()->year)
             ->count();
 
-        if ($current >= $plan->max_monthly_orders) {
+        if ($current >= $limit) {
             throw new \DomainException(
-                "Limite mensuelle atteinte : votre plan {$plan->name} autorise {$plan->max_monthly_orders} commandes par mois."
+                "Limite mensuelle atteinte : votre plan {$plan->name} autorise {$limit} commandes par mois.",
             );
         }
     }
@@ -88,16 +101,19 @@ class QuotaService
     public function assertCanAddProduct(Tenant $tenant): void
     {
         $plan = $this->plan($tenant);
-        if (empty($plan?->max_products)) return;  // null/0 = unlimited
+        $limit = $this->limit($plan, 'max_products');
+        if (empty($limit)) {
+            return;
+        }  // null/0 = unlimited
 
         $current = DB::table('products')
             ->where('tenant_id', $tenant->id)
             ->whereNull('deleted_at')
             ->count();
 
-        if ($current >= $plan->max_products) {
+        if ($current >= $limit) {
             throw new \DomainException(
-                "Limite atteinte : votre plan {$plan->name} autorise au maximum {$plan->max_products} produits."
+                "Limite atteinte : votre plan {$plan->name} autorise au maximum {$limit} produits.",
             );
         }
     }
@@ -110,17 +126,31 @@ class QuotaService
     public function check(Tenant $tenant, string $resource): void
     {
         match ($resource) {
-            'users'      => $this->assertCanAddUser($tenant),
-            'products'   => $this->assertCanAddProduct($tenant),
-            'orders'     => $this->assertCanCreateOrder($tenant),
+            'users' => $this->assertCanAddUser($tenant),
+            'products' => $this->assertCanAddProduct($tenant),
+            'orders' => $this->assertCanCreateOrder($tenant),
             'warehouses' => $this->assertCanAddWarehouse($tenant),
-            'agents'     => $this->assertCanAddAgent($tenant),
-            default      => null, // unknown resource — no-op
+            'agents' => $this->assertCanAddAgent($tenant),
+            default => null, // unknown resource — no-op
         };
     }
 
     private function plan(Tenant $tenant): ?Plan
     {
-        return Plan::where('code', $tenant->plan)->first();
+        return Plan::with('limits')->where('code', $tenant->plan)->first();
+    }
+
+    private function limit(?Plan $plan, string $field): ?int
+    {
+        if (! $plan) {
+            return null;
+        }
+
+        $fromLimits = $plan->limits?->{$field};
+        if ($fromLimits !== null) {
+            return $fromLimits;
+        }
+
+        return $plan->{$field};
     }
 }

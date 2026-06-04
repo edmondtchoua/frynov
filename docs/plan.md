@@ -83,7 +83,7 @@
 | Profil | ✅ | — | Page profil + sessions |
 | Admin back-office | ✅ | 8 vues | Tenants, Modules, Plans, Promotions, Paiements manuels, Audit (AdminLayout) |
 
-**Tests Vitest frontend : 112 tests** (16 composant + 11 money + 6 date + TabNavs/services)
+**Tests Vitest frontend : 123 tests** (27 composant + 11 money + 6 date + TabNavs/services) — couverture 20.3 %
 
 ---
 

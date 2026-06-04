@@ -375,6 +375,44 @@ Reste recommandé (non bloquant) : smoke tests frontend admin back-office.
 
 ---
 
+## Audit profond modules — GO / NO-GO release (2026-06-04)
+
+### Verdict global
+
+**GO conditionnel** : le socle ERP est exploitable pour une release contrôlée si le scope reste limité aux modules métier déjà couverts et si la chaîne pricing localisé est sécurisée par une source backend unique. Le principal **NO-GO produit** restant avant mise en avant commerciale internationale était l'absence d'API publique de pricing : la landing/upgrade ne doivent pas contractualiser des prix hardcodés côté frontend.
+
+### Synthèse par domaine
+
+| Domaine | Verdict | Justification | Action prioritaire |
+|---|---|---|---|
+| Auth + Workspace + Onboarding | ✅ GO | Auth Sanctum, RBAC Spatie, isolation tenant, onboarding complet et guard de redirection déjà documentés/testés. | Conserver tests Auth/tenant à chaque sprint transverse. |
+| Catalogue + Stock + Commandes | ✅ GO | Modules cœur couverts par tests unitaires/intégration, quotas produits/commandes déjà branchés, variantes et stock sécurisés. | Smoke test vente complète avant release. |
+| Paiements + Livraisons + POS | ✅ GO conditionnel | Flux métier couverts ; POS livré. Les paiements réels restent dépendants des rails par marché. | Ne pas activer checkout local sans mapping devise → moyen de paiement. |
+| Clients + Fournisseurs + Import/Export + Rapports | ✅ GO | CRUD, imports, exports et rapports présents ; RBAC sur mutations/rapports. | Garder limites d'import et export dans la matrice quotas. |
+| Marketplace + Sync | 🟡 GO contrôlé | Marketplace visible ; Sync masqué par feature flag. | Garder Sync off en production tant que Phase 3 non validée. |
+| Platform Admin + AuditLog | ✅ GO | Back-office, modules, plans, promotions, paiements manuels, audit HMAC. | Ajouter smoke tests admin UI si changement frontend. |
+| Billing / Plans / Quotas | 🟡 GO conditionnel | `PlanPrice`, `PlanLimit`, quotas et seeders existent ; compatibilité anciens codes à surveiller. | Stabiliser source publique backend des prix, puis brancher landing/upgrade. |
+| Landing géographique | 🔴 NO-GO commercial avant API | Risque d'afficher XOF/XAF à Canada/France si le frontend reste source de vérité. | Lancer Sprint P3 : API publique `/api/public/pricing`. |
+
+### Points GO validés
+
+- Les modules métier peuvent rester visibles sur les plans publics : la protection doit rester portée par RBAC, quotas et actions sensibles, pas par disparition silencieuse du menu.
+- La stratégie XOF/XAF/EUR/CAD/USD est cohérente si la devise vient du marché résolu côté backend.
+- Les anciens codes `starter`, `pro`, `enterprise` doivent rester supportés pendant la migration commerciale vers Découverte/Essentiel/Croissance/Business.
+
+### Points NO-GO à ne pas contourner
+
+- Pas de release commerciale internationale si Landing/Upgrade affichent des prix contractuels hardcodés.
+- Pas de checkout local par devise sans disponibilité paiement documentée par marché.
+- Pas de suppression/cachage de modules sans message d'upgrade ou explication d'accès.
+- Pas de commit pricing sans tests Billing ciblés et test de non-régression Canada → CAD / France → EUR / UEMOA → XOF / CEMAC → XAF.
+
+### Étape lancée maintenant
+
+**Sprint P3 — API publique de pricing** est l'étape la plus nécessaire : P0 est documenté, P1/P2 ont déjà une base de code testée, et P3 supprime le risque critique de prix dupliqués dans le frontend avant la refonte de landing P4.
+
+---
+
 ### Roadmap corrigée — Pricing localisé & landing géographique
 
 > Règle : **ne plus livrer backend pricing + landing + upgrade + checkout dans une seule PR**. Chaque sprint ci-dessous doit être mergé séparément, avec tests ciblés et mise à jour documentaire.
@@ -406,13 +444,14 @@ Reste recommandé (non bloquant) : smoke tests frontend admin back-office.
 - Tests : RBAC backend, tests `ModuleRegistryService`, tests navigation si modifiée.
 - DoD : tous les modules publics sont inclus si stratégie validée, mais actions critiques restent protégées.
 
-#### Sprint P3 — API publique de pricing
+#### Sprint P3 — API publique de pricing — 🔄 lancé
 
 **Objectif** : éviter les prix hardcodés dans la landing.
 
-- Backend : créer `GET /api/public/pricing?market=waemu` ou `?country=SN`.
-- Réponse : plans, devise, prix mensuel/annuel, utilisateurs inclus, prix utilisateur additionnel, limites, méthodes de paiement disponibles.
-- Tests : API publique pricing + fallback market.
+- ✅ Backend : créer `GET /api/public/pricing?market=waemu` ou `?country=SN`.
+- ✅ Réponse : plans, devise, prix mensuel, utilisateurs inclus, prix utilisateur additionnel, limites, marchés sélectionnables.
+- ✅ Tests : API publique pricing + fallback market + Canada/CAD + override manuel marché.
+- 🟡 Reste : ajouter prix annuels et méthodes de paiement disponibles lorsque le checkout local P6 est cadré.
 - DoD : le backend devient la source de vérité publique des prix.
 
 #### Sprint P4 — Landing géographique

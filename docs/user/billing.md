@@ -73,7 +73,7 @@ Le paiement manuel reste important pour les marchés où la carte bancaire inter
 4. Choisir le plan cible.
 5. Confirmer le mode de paiement.
 
-À terme, la page d'upgrade doit afficher les prix depuis la source backend officielle, pas depuis une grille hardcodée côté frontend.
+La source backend officielle pour préparer la landing et la page d'upgrade est maintenant l'API publique `GET /api/public/pricing`. La page frontend ne doit plus maintenir durablement une grille de prix séparée.
 
 ## Limites d'utilisation
 

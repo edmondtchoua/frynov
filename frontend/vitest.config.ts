@@ -33,16 +33,16 @@ export default defineConfig({
         'src/router/**',
         'src/main.ts',
       ],
-      // Thresholds reflect the CURRENT real floor. They were an aspirational 75%
-      // that the suite never met (actual ~3.8%) → `npm run coverage` exited non-zero,
-      // failing the frontend CI job on every branch (no continue-on-error). These act
-      // as a ratchet: coverage may not drop below today's level. Raise as tests grow.
-      // Actuals (2026-06): stmts 3.8% · branches 53% · funcs 19% · lines 3.8%.
+      // Ratchet thresholds — coverage may not drop below today's floor. Raised as
+      // component tests are added (Sprint 18). Was an unmet aspirational 75% that
+      // failed CI; reset to reality then ratcheted up.
+      // Actuals (2026-06, after critical-view component tests): stmts/lines 12% ·
+      // branches 58% · funcs 28%. Thresholds set just below to absorb minor variance.
       thresholds: {
-        statements: 3,
-        branches:   50,
-        functions:  15,
-        lines:      3,
+        statements: 11,
+        branches:   55,
+        functions:  27,
+        lines:      11,
       },
     },
 

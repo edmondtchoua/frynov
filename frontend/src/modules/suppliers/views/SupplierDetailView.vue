@@ -155,6 +155,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { formatDate } from '@/shared/utils/date'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { supplierService } from '../services/supplierService'
 import { usePermission } from '@/composables/usePermission'
@@ -244,9 +245,6 @@ async function doDelete() {
   }
 }
 
-function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(iso))
-}
 
 onMounted(load)
 </script>

@@ -89,6 +89,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { formatDate } from '@/shared/utils/date'
 import { RouterLink } from 'vue-router'
 import { adminService, type AdminTenant } from '../services/adminService'
 
@@ -134,9 +135,6 @@ async function reactivate(tenant: AdminTenant) {
   load()
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
-}
 
 onMounted(load)
 </script>

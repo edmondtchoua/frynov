@@ -159,6 +159,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { formatDate } from '@/shared/utils/date'
 import { adminService, type AdminPromotion } from '../services/adminService'
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -276,9 +277,7 @@ async function doDelete(p: AdminPromotion) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
-}
+const fmtDate = formatDate
 
 function formatCents(cents: number): string {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 })

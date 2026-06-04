@@ -210,6 +210,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, defineComponent, h } from 'vue'
+import { formatDateTime } from '@/shared/utils/date'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 
@@ -357,9 +358,7 @@ async function revokeSession(id: number) {
   sessions.value = sessions.value.filter(s => s.id !== id)
 }
 
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-}
+const fmtDate = formatDateTime
 
 onMounted(loadSessions)
 </script>

@@ -142,6 +142,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { formatDate } from '@/shared/utils/date'
 import { useRoute, RouterLink } from 'vue-router'
 import { adminService, type AdminTenant, type AdminPlan } from '../services/adminService'
 import type { ErpModule } from '@/modules/auth/types'
@@ -222,10 +223,7 @@ async function toggleModule(mod: ErpModule) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
-}
+const fmtDate = formatDate
 
 onMounted(() => Promise.all([load(), loadModules()]))
 </script>

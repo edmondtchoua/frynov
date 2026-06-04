@@ -179,6 +179,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { formatDateTime } from '@/shared/utils/date'
 import { useRouter } from 'vue-router'
 import { importExportService } from '../services/importExportService'
 import type { ImportSession } from '../types'
@@ -242,9 +243,7 @@ function doExport(type: string, format: string) {
   importExportService.exportExcel(type as any, {})
 }
 
-function fmtDate(iso: string): string {
-  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso))
-}
+const fmtDate = formatDateTime
 </script>
 
 <style scoped>

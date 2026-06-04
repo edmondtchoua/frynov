@@ -154,6 +154,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { formatDate } from '@/shared/utils/date'
 import InventoryTabNav from "../components/InventoryTabNav.vue"
 import api from '@/services/api'
 
@@ -276,9 +277,7 @@ function statusBadge(s: string): string {
   return `badge ${m[s] ?? 'badge-gray'}`
 }
 
-function fmtDate(d: string): string {
-  return new Date(d).toLocaleDateString('fr-FR')
-}
+const fmtDate = formatDate
 
 onMounted(load)
 </script>

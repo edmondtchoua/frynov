@@ -693,6 +693,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue'
+import { formatDateTime } from '@/shared/utils/date'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
 import { productService } from '../services/productService'
@@ -1000,9 +1001,7 @@ function statusLabel(s: string) {
 function mvtTypeLabel(t: string) {
   return { in: 'Entrée', out: 'Sortie', adjustment: 'Ajustement', return: 'Retour' }[t] ?? t
 }
-function formatDate(iso: string) {
-  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
-}
+const formatDate = formatDateTime
 const fmtCents = (c: number) => formatMoney(c)
 
 // ── Init ───────────────────────────────────────────────────────────────────

@@ -102,11 +102,7 @@ export const reportService = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-// Money formatters now live in the shared util (single source of truth for the
-// centimes convention). Re-exported here for backward compat with existing imports.
+// Formatters now live in the shared utils (single source of truth).
+// Re-exported here for backward compat with existing imports.
 export { formatMoney, formatMoneyCompact } from '@/shared/utils/money'
-
-/** Short date label: "25 mai" */
-export function shortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-}
+export { formatDateShort as shortDate } from '@/shared/utils/date'

@@ -229,6 +229,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { formatDate } from '@/shared/utils/date'
 import { RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
 import api from '@/services/api'
@@ -320,14 +321,6 @@ onMounted(async () => {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-function formatDate(iso: string | null): string {
-  if (!iso) return '—'
-  try {
-    return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(iso))
-  } catch {
-    return iso
-  }
-}
 
 // ── Usage helpers ─────────────────────────────────────────────────────────────
 

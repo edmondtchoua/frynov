@@ -201,6 +201,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { formatDate } from '@/shared/utils/date'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
 import { customerService } from '../services/customerService'
@@ -229,9 +230,6 @@ function initials(name: string): string {
   return name.split(' ').slice(0, 2).map(n => n[0]?.toUpperCase() ?? '').join('')
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
-}
 
 function formatAddress(addr: any): string {
   return [addr.street, addr.zip, addr.city, addr.country].filter(Boolean).join(', ')

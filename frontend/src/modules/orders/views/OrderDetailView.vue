@@ -279,6 +279,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { formatDateTime, formatDateShort } from '@/shared/utils/date'
 import { useRoute, RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
 import { orderService } from '../services/orderService'
@@ -429,12 +430,8 @@ function deliveryStatusBadge(s: DeliveryStatus): string {
 function fmt(cents: number) {
   return formatMoney(cents, order.value?.currency ?? 'XOF')
 }
-function fmtDate(iso: string) {
-  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
-}
-function fmtDateShort(iso: string) {
-  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(iso))
-}
+const fmtDate = formatDateTime
+const fmtDateShort = formatDateShort
 
 onMounted(() => { load(); loadPayments(); loadDeliveries() })
 </script>

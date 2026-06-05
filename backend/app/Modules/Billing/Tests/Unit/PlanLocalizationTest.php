@@ -49,6 +49,29 @@ class PlanLocalizationTest extends TestCase
     }
 
     #[Test]
+    public function paid_plans_do_not_hard_cap_seats_only_the_free_tier_does(): void
+    {
+        $this->seed(PlansSeeder::class);
+
+        // Free Découverte tier keeps a hard 1-user cap to nudge the upgrade.
+        $this->assertSame(1, Plan::where('code', Plan::CODE_STARTER)->firstOrFail()->max_users);
+
+        // Paid plans: seats are a SOFT "included" guideline, NEVER a hard cap — a
+        // growing business must not be blocked from inviting members. (Regression:
+        // Business previously dead-ended at 10 users with a misleading "upgrade" msg.)
+        foreach ([Plan::CODE_ESSENTIAL, Plan::CODE_PRO, Plan::CODE_ENTERPRISE] as $code) {
+            $plan = Plan::where('code', $code)->firstOrFail();
+            $this->assertNull($plan->max_users, "Paid plan {$code} must not hard-cap users.");
+            $this->assertNull($plan->max_agents, "Paid plan {$code} must not hard-cap agents.");
+        }
+
+        // included_users is preserved on the localized prices for display /
+        // future per-seat overage billing.
+        $business = Plan::where('code', Plan::CODE_ENTERPRISE)->firstOrFail();
+        $this->assertDatabaseHas('plan_prices', ['plan_id' => $business->id, 'included_users' => 10]);
+    }
+
+    #[Test]
     public function every_public_plan_includes_every_seeded_module(): void
     {
         $this->seed(ErpModulesSeeder::class);

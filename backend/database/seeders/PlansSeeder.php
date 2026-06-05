@@ -84,16 +84,24 @@ class PlansSeeder extends Seeder
         ];
 
         foreach ($plans as $code => $data) {
+            // Seats are a SOFT "included" guideline on paid plans — exposed via
+            // plan_prices.included_users for display (and future per-seat overage
+            // billing) — NOT a hard cap. A growing business must never be blocked
+            // from inviting members (the Business plan otherwise dead-ended at 10
+            // with a misleading "upgrade" message). Only the free Découverte tier
+            // keeps a hard user cap to nudge the upgrade to a paid plan.
+            $userCap = $data['legacy_price_monthly_cents'] === 0 ? $data['included_users'] : null;
+
             $plan = Plan::updateOrCreate(['code' => $code], [
                 'name' => $data['name'],
                 'description' => $data['description'],
                 'price_monthly_cents' => $data['legacy_price_monthly_cents'],
                 'price_yearly_cents' => $data['legacy_price_monthly_cents'] * 10,
                 'currency' => $data['legacy_currency'],
-                'max_users' => $data['included_users'],
+                'max_users' => $userCap,
                 'max_products' => $data['limits']['max_products'],
                 'max_monthly_orders' => $data['limits']['max_monthly_orders'],
-                'max_agents' => $data['included_users'],
+                'max_agents' => $userCap,
                 'max_branches' => $data['limits']['max_branches'],
                 'max_warehouses' => $data['limits']['max_warehouses'],
                 'trial_days' => $data['trial_days'],

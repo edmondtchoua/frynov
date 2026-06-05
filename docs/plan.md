@@ -370,8 +370,11 @@ Issu de l'audit pré-release global (verdict GO conditionnel). Actions livrées 
 - ✅ **Onboarding vérifié complet** (les 5 `needs_*` + provisioning + guard de redirection) — l'évaluation « partiel » était obsolète.
 - ✅ **Bug landing page corrigé** : le verrou de scroll global (`html/body/#app { overflow:hidden }`) clippait la page d'accueil publique. Verrou désormais scopé à `body.shell-locked` (appliqué seulement aux shells app/admin via `App.vue`). Vérifié : la landing scrolle (scrollHeight 7951px).
 - ✅ **Purge code mort** : 32 fichiers stubs générés (pluriels `Payments*`/`Customers*` + `Catalog` model/repo/events/requests), dont 2 migrations parasites créant les tables `paymentss`/`customerss`. `CatalogService`/`CatalogResource` (vrais) conservés.
+- ✅ **Smoke tests admin back-office** : 8 vues couvertes (`AdminViews.spec.ts`). Couverture frontend 30.8 → 38.6 %, ratchet 38/57/33.
+- ✅ **Fix pricing sièges (audit approfondi)** : `PlansSeeder` posait `max_users = included_users` → impasse (Business plafonné à 10 utilisateurs avec message « mettez à niveau » sans plan supérieur ; sièges en sus affichés mais jamais facturés). Désormais **sièges = guide souple** sur les plans payants (`max_users`/`max_agents` = `null` = illimité), **seul le palier gratuit Découverte garde un cap dur (1)**. `included_users` conservé sur `plan_prices` pour l'affichage / futur overage facturé. Régression verrouillée par `PlanLocalizationTest::paid_plans_do_not_hard_cap_seats_only_the_free_tier_does`.
+  > ⚠️ Déploiement : re-seeder requis sur les environnements existants (`php artisan db:seed --class=Database\\Seeders\\PlansSeeder`, idempotent `updateOrCreate`).
 
-Reste recommandé (non bloquant) : smoke tests frontend admin back-office.
+Reste recommandé (non bloquant) : géolocalisation IP côté backend (la landing appelle `ipapi.co` — RGPD/consentement).
 
 ---
 

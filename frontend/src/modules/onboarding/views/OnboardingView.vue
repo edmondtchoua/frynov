@@ -398,8 +398,10 @@ import { ref, computed, reactive, watch } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import FrynovLogo from '@/shared/components/FrynovLogo.vue'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const auth   = useAuthStore()
 
 const step       = ref(1)
 const totalSteps = 6
@@ -535,6 +537,12 @@ async function submitOnboarding() {
       needs_offline:   needs.needs_offline,
       modules:         answers.modules,
     })
+
+    // Provisioning assigns the admin role + creates the subscription + sets
+    // onboarded=true. Refresh from /me so auth.user carries the (now tenant-scoped)
+    // roles and subscription before the user enters the app — otherwise the RBAC
+    // tab menus and billing screen would be empty for a freshly-onboarded account.
+    await auth.fetchCurrentUser()
   } catch (err: any) {
     provisionError.value =
       err?.response?.data?.message ?? 'Une erreur inattendue est survenue. Veuillez réessayer.'

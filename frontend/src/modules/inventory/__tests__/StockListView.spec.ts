@@ -61,4 +61,20 @@ describe('StockListView', () => {
     const w = await mountView({ data: [], current_page: 1, last_page: 1, per_page: 50, total: 0 })
     expect(w.text().toLowerCase()).toContain('aucun stock')
   })
+
+  it('opens the stock-movement modal when "Entrée" is clicked', async () => {
+    const w = await mountView()
+
+    const entreeBtn = w.findAll('button').find(b => b.text().includes('Entrée'))
+    expect(entreeBtn).toBeTruthy()
+    await entreeBtn!.trigger('click')
+
+    // The modal is teleported to <body>; its CSS lives in main.css (was missing,
+    // which made the modal render unstyled off-screen → looked like a no-op).
+    const backdrop = document.body.querySelector('.modal-backdrop')
+    expect(backdrop).not.toBeNull()
+    expect(document.body.querySelector('.modal-box')).not.toBeNull()
+    expect(backdrop?.textContent).toContain('Entrée de stock')
+    w.unmount() // clean up the teleported node for the next test
+  })
 })

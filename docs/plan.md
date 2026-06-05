@@ -23,7 +23,7 @@
 | Tests backend | **568 / 568 ✅** (2 skipped, **0 incomplete**) — +pricing localisé, plan_limits, sièges, geo RGPD, tests sécurité |
 | Tests Vitest frontend | **154 / 154 ✅** (+admin back-office, geo) — couverture 38.7 % |
 | Branche | `develop` — **réconciliée** (hardening + pricing localisé + audit approfondi) |
-| Dernière tag | `v0.7.0` (Sprint 7A) |
+| Dernière tag | `v0.7.0` (Sprint 7A) — **`release/v0.8.0` en préparation** (Sprints 8→19 + audit pré-release) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
 
 > ⚠️ **Note critique** : avant l'audit, la config `phpunit.xml` ne matchait que certains

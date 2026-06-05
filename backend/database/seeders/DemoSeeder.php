@@ -3,16 +3,24 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use App\Modules\Billing\Models\ManualPayment;
 use App\Modules\Billing\Models\Plan;
+use App\Modules\Billing\Models\Promotion;
 use App\Modules\Billing\Models\Subscription;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Customers\Models\Customer;
 use App\Modules\Delivery\Models\Delivery;
 use App\Modules\Inventory\Models\Stock;
+use App\Modules\Inventory\Models\StockMovement;
+use App\Modules\Inventory\Models\Warehouse;
+use App\Modules\Marketplace\Models\MarketplaceListing;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderLine;
+use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Payments\Models\Payment;
+use App\Modules\Pos\Models\CashRegisterSession;
 use App\Modules\Platform\Models\TenantModule;
 use App\Modules\Platform\Models\ErpModule;
 use App\Modules\Platform\Services\ModuleRegistryService;
@@ -120,7 +128,13 @@ class DemoSeeder extends Seeder
         $suppliersDouala = $this->seedSuppliers($t3, 'cm');
         $this->seedCustomersAndOrders($t3, 12, 25, true, $suppliersDouala);
 
-        $this->command->info('Demo data seeded. 3 tenants, 14 users, full catalog + orders.');
+        // ── Couverture démo complète : tous les modules MVP testables ──────────
+        $this->seedOperationalDepth($t1, hasPos: true);
+        $this->seedOperationalDepth($t2, hasPos: true);
+        $this->seedOperationalDepth($t3, hasPos: true);
+        $this->seedPromotions();
+
+        $this->command->info('Demo data seeded. 3 tenants, 14 users, catalogue + variantes + stock + caisse + retours + promos.');
         $this->command->newLine();
         $this->command->line('  Logins (password: <comment>Secret123!</comment>):');
         $this->command->line('  <info>Starter (trialing)</info>  admin@afrikstyle.sn  manager@afrikstyle.sn  membre@afrikstyle.sn  lecteur@afrikstyle.sn');
@@ -384,23 +398,25 @@ class DemoSeeder extends Seeder
             ['name' => 'Hygiène', 'description' => 'Produits d\'hygiène']
         );
 
+        // Convention uniforme : price_amount est TOUJOURS en centimes (× 100), comme
+        // les autres catalogues — pas de multiplication dans la boucle.
         $items = [
-            ['Riz parfumé 25kg',     18000, 'RIZ', $alimentaire->id, 200],
-            ['Sucre sac 50kg',       32000, 'SUC', $alimentaire->id, 150],
-            ['Huile palm 20L',       24000, 'HUI', $alimentaire->id, 100],
-            ['Farine blé 25kg',      16000, 'FAR', $alimentaire->id, 80],
-            ['Sel iodé 25kg',         4500, 'SEL', $alimentaire->id, 300],
-            ['Tomate concentrée x24',12000, 'TOM', $alimentaire->id, 120],
-            ['Sardines x48',         18000, 'SAR', $alimentaire->id, 90],
-            ['Lait en poudre 2.5kg',  9800, 'LAI', $alimentaire->id, 60],
-            ['Savon de Marseille x6', 3600, 'SAV', $hygiene->id,    500],
-            ['Lessive poudre 5kg',    7500, 'LES', $hygiene->id,    200],
-            ['Shampoing x12',         8400, 'SHA', $hygiene->id,    150],
-            ['Eau de javel 5L x4',    6800, 'EJA', $hygiene->id,    300],
-            ['Casserole inox 5L',    12500, 'CAS', $menager->id,    80],
-            ['Seau plastique 15L',    2800, 'SEA', $menager->id,    400],
-            ['Bassine 30L',           4200, 'BAS', $menager->id,    250],
-            ['Marmite aluminium 8L',  8900, 'MAR', $menager->id,    120],
+            ['Riz parfumé 25kg',     1800000, 'RIZ', $alimentaire->id, 200],
+            ['Sucre sac 50kg',       3200000, 'SUC', $alimentaire->id, 150],
+            ['Huile palm 20L',       2400000, 'HUI', $alimentaire->id, 100],
+            ['Farine blé 25kg',      1600000, 'FAR', $alimentaire->id, 80],
+            ['Sel iodé 25kg',         450000, 'SEL', $alimentaire->id, 300],
+            ['Tomate concentrée x24',1200000, 'TOM', $alimentaire->id, 120],
+            ['Sardines x48',         1800000, 'SAR', $alimentaire->id, 90],
+            ['Lait en poudre 2.5kg',  980000, 'LAI', $alimentaire->id, 60],
+            ['Savon de Marseille x6', 360000, 'SAV', $hygiene->id,    500],
+            ['Lessive poudre 5kg',    750000, 'LES', $hygiene->id,    200],
+            ['Shampoing x12',         840000, 'SHA', $hygiene->id,    150],
+            ['Eau de javel 5L x4',    680000, 'EJA', $hygiene->id,    300],
+            ['Casserole inox 5L',    1250000, 'CAS', $menager->id,    80],
+            ['Seau plastique 15L',    280000, 'SEA', $menager->id,    400],
+            ['Bassine 30L',           420000, 'BAS', $menager->id,    250],
+            ['Marmite aluminium 8L',  890000, 'MAR', $menager->id,    120],
         ];
 
         $seq = 1;
@@ -412,9 +428,9 @@ class DemoSeeder extends Seeder
                     'tenant_id'      => $tid,
                     'category_id'    => $catId,
                     'name'           => $name,
-                    'price_amount'   => $price * 100, // en centimes
+                    'price_amount'   => $price, // centimes
                     'price_currency' => $currency,
-                    'cost_amount'    => (int) ($price * 100 * 0.75),
+                    'cost_amount'    => (int) ($price * 0.75),
                     'status'         => 'active',
                     'has_variants'   => false,
                 ]
@@ -594,5 +610,155 @@ class DemoSeeder extends Seeder
                 );
             }
         }
+    }
+
+    // ── Couverture démo approfondie ───────────────────────────────────────────
+    //   Entrepôts · variantes + attributs · mouvements de stock · caisse POS ·
+    //   retours/SAV · marketplace · paiement manuel. Idempotent.
+
+    private function seedOperationalDepth(Tenant $tenant, bool $hasPos): void
+    {
+        $tid      = $tenant->id;
+        $currency = $tenant->settings['currency'] ?? 'XOF';
+
+        // 1. Entrepôt principal + rattachement du stock existant
+        $warehouse = Warehouse::updateOrCreate(
+            ['tenant_id' => $tid, 'code' => 'WH-PRINCIPAL'],
+            [
+                'tenant_id' => $tid, 'name' => 'Entrepôt principal', 'type' => 'warehouse',
+                'currency' => $currency, 'is_active' => true, 'is_default' => true,
+                'sells_online' => true, 'sort_order' => 1,
+            ]
+        );
+        Stock::where('tenant_id', $tid)->whereNull('warehouse_id')->update(['warehouse_id' => $warehouse->id]);
+
+        // 2. Produit à déclinaisons (variantes N-axes + attributs)
+        $variable = Product::updateOrCreate(
+            ['tenant_id' => $tid, 'sku' => 'DEMO-VAR-001'],
+            [
+                'tenant_id' => $tid, 'name' => 'T-shirt personnalisable (démo)',
+                'price_amount' => 1500000, 'price_currency' => $currency,
+                'cost_amount' => 600000, 'status' => 'active', 'has_variants' => true,
+            ]
+        );
+        foreach ([['Rouge', 'S'], ['Rouge', 'M'], ['Bleu', 'L']] as $i => [$couleur, $taille]) {
+            $variant = ProductVariant::updateOrCreate(
+                ['product_id' => $variable->id, 'sku' => "DEMO-VAR-001-{$couleur}-{$taille}"],
+                [
+                    'tenant_id' => $tid, 'name' => "{$couleur} / {$taille}", 'label' => "{$couleur} / {$taille}",
+                    'attributes' => ['Couleur' => $couleur, 'Taille' => $taille],
+                    'price_amount' => 1500000, 'price_currency' => $currency,
+                    'sort_order' => $i, 'is_active' => true,
+                ]
+            );
+            Stock::updateOrCreate(
+                ['tenant_id' => $tid, 'product_id' => $variable->id, 'variant_id' => $variant->id],
+                ['warehouse_id' => $warehouse->id, 'quantity' => 20, 'reserved_quantity' => 0, 'low_stock_threshold' => 5]
+            );
+        }
+
+        // 3. Mouvements de stock — historique d'entrée initial (traçabilité)
+        foreach (Stock::where('tenant_id', $tid)->get() as $stock) {
+            StockMovement::updateOrCreate(
+                ['tenant_id' => $tid, 'stock_id' => $stock->id, 'reference' => 'SEED-INIT'],
+                [
+                    'product_id' => $stock->product_id, 'variant_id' => $stock->variant_id,
+                    'type' => StockMovement::TYPE_IN, 'quantity' => $stock->quantity,
+                    'quantity_before' => 0, 'quantity_after' => $stock->quantity,
+                    'reason' => StockMovement::REASON_DELIVERY, 'note' => 'Stock initial (démo)',
+                ]
+            );
+        }
+
+        $admin = User::where('tenant_id', $tid)->first();
+
+        // 4. Caisse POS — une session clôturée (rapprochée) + une ouverte
+        if ($hasPos && $admin) {
+            CashRegisterSession::updateOrCreate(
+                ['tenant_id' => $tid, 'label' => 'Caisse 1 — clôturée (démo)'],
+                [
+                    'warehouse_id' => $warehouse->id, 'status' => CashRegisterSession::STATUS_CLOSED,
+                    'opening_float_cents' => 5000000, 'total_sales_cents' => 12500000, 'cash_sales_cents' => 9000000,
+                    'sales_count' => 7, 'expected_cash_cents' => 14000000, 'counted_cash_cents' => 13950000,
+                    'difference_cents' => -50000, 'opened_by' => $admin->id, 'closed_by' => $admin->id,
+                    'opened_at' => now()->subDay()->setTime(8, 0), 'closed_at' => now()->subDay()->setTime(18, 0),
+                    'notes' => 'Session de démonstration clôturée',
+                ]
+            );
+            CashRegisterSession::updateOrCreate(
+                ['tenant_id' => $tid, 'label' => 'Caisse 1 — ouverte (démo)'],
+                [
+                    'warehouse_id' => $warehouse->id, 'status' => CashRegisterSession::STATUS_OPEN,
+                    'opening_float_cents' => 5000000, 'total_sales_cents' => 0, 'cash_sales_cents' => 0,
+                    'sales_count' => 0, 'opened_by' => $admin->id, 'opened_at' => now()->setTime(8, 0),
+                ]
+            );
+        }
+
+        // 5. Retour / SAV sur une commande livrée
+        $fulfilled = Order::where('tenant_id', $tid)->where('status', Order::STATUS_FULFILLED)->first();
+        if ($fulfilled && $admin) {
+            // order_returns.number is globally unique → derive it from the tenant's
+            // RANDOM uuid tail (v7 uuids share a time PREFIX, which would collide).
+            $retNumber = 'RET-' . strtoupper(substr(str_replace('-', '', $tid), -8));
+            OrderReturn::updateOrCreate(
+                ['number' => $retNumber],
+                [
+                    'tenant_id' => $tid, 'order_id' => $fulfilled->id, 'status' => OrderReturn::STATUS_PENDING,
+                    'reason' => OrderReturn::REASON_DEFECTIVE, 'customer_note' => 'Article défectueux (démo)',
+                    'refund_amount_cents' => 0, 'refund_currency' => $currency, 'requested_by' => $admin->id,
+                ]
+            );
+        }
+
+        // 6. Annonce marketplace
+        $simpleProduct = Product::where('tenant_id', $tid)->where('has_variants', false)->first();
+        if ($simpleProduct) {
+            MarketplaceListing::updateOrCreate(
+                ['tenant_id' => $tid, 'product_id' => $simpleProduct->id, 'platform' => 'facebook'],
+                [
+                    'warehouse_id' => $warehouse->id,
+                    'external_product_id' => 'FB-' . $simpleProduct->sku,
+                    'external_sku' => $simpleProduct->sku,
+                    'sync_status' => 'synced', 'last_synced_at' => now()->subHours(2),
+                ]
+            );
+        }
+
+        // 7. Paiement manuel en attente — démo back-office billing
+        if (! ManualPayment::where('tenant_id', $tid)->exists()) {
+            $plan = Plan::where('code', $tenant->plan)->first();
+            if ($plan) {
+                ManualPayment::create([
+                    'tenant_id' => $tid, 'plan_id' => $plan->id,
+                    'amount_cents' => $plan->price_monthly_cents ?: 990000, 'currency' => $currency,
+                    'payment_method' => 'bank_transfer',
+                    'notes' => 'Virement bancaire (démo) en attente de validation',
+                    'status' => ManualPayment::STATUS_PENDING,
+                ]);
+            }
+        }
+    }
+
+    // ── Promotions globales (plateforme) ──────────────────────────────────────
+
+    private function seedPromotions(): void
+    {
+        Promotion::updateOrCreate(
+            ['code' => 'BIENVENUE20'],
+            [
+                'description' => '20% la première année', 'discount_type' => 'percent',
+                'discount_value' => 20, 'max_uses' => 100, 'current_uses' => 0, 'is_active' => true,
+                'valid_from' => now()->subMonth(), 'valid_until' => now()->addMonths(6),
+            ]
+        );
+        Promotion::updateOrCreate(
+            ['code' => 'LANCEMENT5000'],
+            [
+                'description' => '5 000 offerts', 'discount_type' => 'fixed_cents',
+                'discount_value' => 500000, 'max_uses' => 50, 'current_uses' => 0, 'is_active' => true,
+                'valid_from' => now()->subWeek(), 'valid_until' => now()->addMonths(3),
+            ]
+        );
     }
 }

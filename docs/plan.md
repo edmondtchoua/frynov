@@ -213,9 +213,11 @@ Les modules ou fonctions sensibles peuvent rester limités par **rôle**, **perm
 | `PlanModulesSeeder` | Matrice plan ↔ modules ; stratégie cible : modules métier visibles, limites par ressources | ✅ idempotent attendu |
 | `CountryRulesSeeder` | 30+ pays africains + Europe + Amérique | ✅ firstOrCreate |
 | `SuperAdminSeeder` | superadmin@frynov.com | ✅ firstOrCreate |
-| `DemoSeeder` | 3 tenants démo (dev/staging uniquement) | ⚠️ create (prod: désactiver) |
+| `DemoSeeder` | **3 tenants démo couvrant TOUS les modules MVP** : catalogue (simples + déclinaisons + attributs), stock + **mouvements** + **entrepôts**, clients, commandes (tous statuts) + paiements + livraisons, **retours/SAV**, **caisse POS** (session ouverte + clôturée rapprochée), **marketplace**, **promotions**, **paiement manuel**. Convention monétaire uniforme (centimes). Vérifié par `DemoSeederTest`. | ✅ updateOrCreate (idempotent, sauf n° de commande) |
 
 ---
+
+> **Démo** : `php artisan migrate:fresh --seed` → 3 tenants (Découverte/Essentiel/Croissance) testables sur **toutes** les fonctionnalités MVP. Logins : `admin@afrikstyle.sn` · `admin@techzone.ci` · `admin@grossiste.cm` (mdp `Secret123!`). `DemoSeederTest` garantit la couverture à chaque évolution.
 
 ## Navigation — architecture finale (Sprint 14 ✅)
 

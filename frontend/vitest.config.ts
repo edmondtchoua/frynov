@@ -36,14 +36,15 @@ export default defineConfig({
       // Ratchet thresholds — coverage may not drop below today's floor. Raised as
       // component tests are added (Sprint 18). Was an unmet aspirational 75% that
       // failed CI; reset to reality then ratcheted up.
-      // Actuals (2026-06, after List/Stock/Settings/Payment/POS view tests): stmts/lines
-      // 30.8% · branches 58.1% · funcs 33.4%. Branch threshold kept a point below actual
-      // (it dips when large view files enter the covered set) — the floor follows reality.
+      // Actuals (2026-06, reconciled develop — incl. admin back-office smoke tests):
+      // stmts/lines 38.7% · branches 58.0% · funcs 33.6%. Statements/lines jumped as
+      // the 8 admin views entered the covered set; branches/funcs stay a touch below
+      // actual (they dip when large view files are covered). Floor follows reality.
       thresholds: {
-        statements: 30,
+        statements: 38,
         branches:   57,
         functions:  33,
-        lines:      30,
+        lines:      38,
       },
     },
 

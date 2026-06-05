@@ -107,4 +107,19 @@ class QuotaServiceTest extends TestCase
         $this->svc->assertCanCreateOrder($entTenant);
         $this->assertTrue(true);
     }
+
+    #[Test]
+    public function plan_limits_take_precedence_over_legacy_plan_columns(): void
+    {
+        // Legacy column is generous (5); the canonical plan_limits row is strict (1).
+        // QuotaService must enforce plan_limits (1), not the legacy column (5).
+        $this->plan->update(['max_warehouses' => 5]);
+        $this->plan->limits()->create(['max_warehouses' => 1]);
+
+        Warehouse::create(['tenant_id' => $this->tenant->id, 'name' => 'W1', 'code' => 'WQP1', 'is_default' => true]);
+
+        // Already at the plan_limits ceiling (1) → must throw despite the legacy column allowing 5.
+        $this->expectException(\DomainException::class);
+        $this->svc->assertCanAddWarehouse($this->tenant);
+    }
 }

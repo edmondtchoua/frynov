@@ -1,6 +1,6 @@
 # Guide utilisateur — Navigation Frynov ERP
 
-> **Dernière mise à jour :** 2026-06-02 (Sprint 14)
+> **Dernière mise à jour :** 2026-06-04 (pricing localisé + stratégie modules visibles)
 
 ---
 
@@ -106,7 +106,7 @@ Chaque module affiche ses sections via une barre d'onglets en haut de la page.
 
 | Élément | Visible par |
 |---|---|
-| Tous les modules sidebar | Tous les utilisateurs connectés |
+| Modules sidebar | Les modules métier publics sont visibles selon rôle et configuration ; les actions restent protégées par permissions/quotas |
 | Onglet Abonnement | Tous *(données sensibles réservées admin)* |
 | Actions de mutation (créer, modifier, supprimer) | Manager et Admin uniquement |
 | Section Admin back-office | Super-admin Frynov uniquement |
@@ -117,4 +117,4 @@ Chaque module affiche ses sections via une barre d'onglets en haut de la page.
 
 ## Droits par module
 
-Certains onglets peuvent être masqués selon votre rôle. Contactez votre administrateur pour en savoir plus.
+Certains onglets ou actions peuvent être masqués ou verrouillés selon votre rôle, vos permissions, les modules activés et les limites de votre plan. Contactez votre administrateur pour en savoir plus.

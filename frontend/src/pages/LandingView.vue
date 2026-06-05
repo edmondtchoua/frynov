@@ -307,9 +307,17 @@
     <section id="pricing" class="pricing">
       <div class="container">
         <div class="section-header">
-          <div class="section-badge">Tarifs</div>
-          <h2>Transparent, <span class="accent">en XOF</span></h2>
-          <p>Commencez gratuitement. Évoluez quand vous en avez besoin. Aucun frais caché.</p>
+          <div class="section-badge">Tarifs localisés</div>
+          <h2>Transparent, <span class="accent">{{ pricingHeading }}</span></h2>
+          <p>{{ pricingSub }}</p>
+          <label class="market-selector" for="market-select">
+            <span>Tarifs pour</span>
+            <select id="market-select" v-model="selectedMarket" aria-label="Choisir le pays ou la devise">
+              <option v-for="m in selectableMarkets" :key="m.code" :value="m.code">
+                {{ m.label }}
+              </option>
+            </select>
+          </label>
         </div>
 
         <div class="plans-grid">
@@ -352,7 +360,7 @@
         </div>
 
         <p class="pricing-note">
-          Paiement par Mobile Money (Wave, Orange Money, MTN MoMo) ou virement bancaire.
+          {{ market.pricingNote }} Les modules métier sont accessibles sur tous les plans ; les limites portent sur les utilisateurs et volumes critiques.
         </p>
       </div>
     </section>
@@ -538,8 +546,7 @@ const openFaq    = ref<string | null>(null)
 
 // ── Geo-personalization ────────────────────────────────────────────────────
 // Default: global (neutral). Updates reactively once IP detection resolves.
-const { region } = useGeoContent()
-const isAfrica   = computed(() => region.value === 'africa')
+const { region, market, isAfrica, selectableMarkets, selectedMarket } = useGeoContent()
 
 function onScroll() { scrolled.value = window.scrollY > 40 }
 onMounted(()   => window.addEventListener('scroll', onScroll, { passive: true }))
@@ -573,7 +580,22 @@ const kpisAfrica = [
   { label: 'Clients actifs',     value: '367',         color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', delta: '5%',  up: true,  icon: kpisGlobal[3].icon },
 ]
 
-const kpis = computed(() => isAfrica.value ? kpisAfrica : kpisGlobal)
+const demoAmounts: Record<string, { revenue: string; orders: string[]; float: string }> = {
+  XOF: { revenue: '2.84M XOF', orders: ['38 000 XOF', '74 500 XOF', '21 000 XOF'], float: '85 000 XOF' },
+  XAF: { revenue: '2.84M XAF', orders: ['38 000 XAF', '74 500 XAF', '21 000 XAF'], float: '85 000 XAF' },
+  NGN: { revenue: '7.1M NGN', orders: ['95 000 NGN', '185 000 NGN', '52 000 NGN'], float: '210 000 NGN' },
+  GHS: { revenue: '48 000 GHS', orders: ['640 GHS', '1 250 GHS', '350 GHS'], float: '1 420 GHS' },
+  KES: { revenue: '1.5M KES', orders: ['19 000 KES', '37 000 KES', '10 500 KES'], float: '42 000 KES' },
+  ZAR: { revenue: '215 000 ZAR', orders: ['2 800 ZAR', '5 600 ZAR', '1 550 ZAR'], float: '6 400 ZAR' },
+  EUR: { revenue: '12 400 €', orders: ['1 240 €', '3 850 €', '890 €'], float: '1 240 €' },
+  CAD: { revenue: '18 600 CAD', orders: ['1 860 CAD', '5 775 CAD', '1 335 CAD'], float: '1 860 CAD' },
+  USD: { revenue: '13 500 USD', orders: ['1 350 USD', '4 190 USD', '970 USD'], float: '1 350 USD' },
+}
+
+const demoMoney = computed(() => demoAmounts[market.value.currency] ?? demoAmounts.USD)
+const kpis = computed(() => (isAfrica.value ? kpisAfrica : kpisGlobal).map((k, index) => (
+  index === 0 ? { ...k, value: demoMoney.value.revenue } : k
+)))
 
 /* ── Bar chart data ───────────────────────────────────────── */
 const bars = [35, 48, 42, 62, 55, 70, 58, 80, 72, 85, 68, 95]
@@ -591,7 +613,10 @@ const mockOrdersAfrica = [
   { name: 'Fatou Sow',        initials: 'FS', color: '#f59e0b', amount: '21 000 XOF', status: 'Confirmé', statusClass: 'status-confirmed' },
 ]
 
-const mockOrders = computed(() => isAfrica.value ? mockOrdersAfrica : mockOrdersGlobal)
+const mockOrders = computed(() => (isAfrica.value ? mockOrdersAfrica : mockOrdersGlobal).map((order, index) => ({
+  ...order,
+  amount: demoMoney.value.orders[index] ?? order.amount,
+})))
 
 /* ── Logo strip ───────────────────────────────────────────── */
 const logoNamesGlobal = ['DistribCo', 'TradePro', 'BizHub', 'RetailFlow', 'SupplySuite', 'NovaBiz']
@@ -606,10 +631,10 @@ const socialProofText = computed(() => isAfrica.value
 )
 
 /* ── Hero floating notification ───────────────────────────── */
-const floatNotif = computed(() => isAfrica.value
-  ? { title: 'Paiement Wave reçu', sub: 'CMD-00247 · 85 000 XOF' }
-  : { title: 'Paiement reçu', sub: 'CMD-00247 · 1 240 €' }
-)
+const floatNotif = computed(() => ({
+  title: isAfrica.value ? 'Paiement local reçu' : 'Paiement reçu',
+  sub: `CMD-00247 · ${demoMoney.value.float}`,
+}))
 
 /* ── Hero eyebrow text ────────────────────────────────────── */
 const heroEyebrow = computed(() => isAfrica.value
@@ -624,7 +649,7 @@ const heroSub = computed(() => isAfrica.value
 )
 
 /* ── Chart label ──────────────────────────────────────────── */
-const chartLabel = computed(() => isAfrica.value ? 'Ventes 12 mois (XOF)' : 'Ventes 12 mois')
+const chartLabel = computed(() => `Ventes 12 mois (${market.value.currency})`)
 
 /* ── Problem → Solution heading ───────────────────────────── */
 const psHeadingHighlight = computed(() => isAfrica.value
@@ -725,111 +750,105 @@ const featuresBase = [
 const features = computed(() => featuresBase.map(f => f ?? (isAfrica.value ? paymentFeatureAfrica : paymentFeatureGlobal)))
 
 /* ── Pricing plans ────────────────────────────────────────── */
-const plansGlobal = [
-  {
-    name: 'Starter',
-    price: 'Gratuit',
-    period: '',
-    tagline: 'Pour démarrer sans engagement.',
-    featured: false,
-    cta: 'Commencer gratuitement',
-    features: [
-      "Jusqu'à 3 utilisateurs",
-      "Jusqu'à 200 produits",
-      '100 commandes / mois',
-      'Tableau de bord basique',
-      'Export CSV',
-      'Support communauté',
-    ],
-  },
-  {
-    name: 'Pro',
-    price: '29',
-    period: '€ / mois',
-    tagline: 'Pour les équipes qui veulent aller plus vite.',
-    featured: true,
-    cta: 'Essayer Pro 30 jours',
-    features: [
-      "Jusqu'à 15 utilisateurs",
-      '5 000 produits · 2 000 commandes/mois',
-      'Tous les modules actifs',
-      'Paiements intégrés multi-devises',
-      'Rapports avancés & exports',
-      'Support prioritaire 24h',
-      'Multi-entrepôts',
-    ],
-  },
-  {
-    name: 'Enterprise',
-    price: 'Sur devis',
-    period: '',
-    tagline: 'Pour les groupes et distributeurs multi-sites.',
-    featured: false,
-    cta: "Contacter l'équipe",
-    features: [
-      'Utilisateurs illimités',
-      'Multi-entités / filiales',
-      'API & intégrations custom',
-      'SLA garanti 99,9%',
-      'Formation sur site',
-      'Account manager dédié',
-    ],
-  },
-]
+interface LandingPlan {
+  name: string
+  price: string
+  period: string
+  tagline: string
+  featured: boolean
+  cta: string
+  features: string[]
+}
 
-const plansAfrica = [
+const planLimits = {
+  discovery: ['1 utilisateur inclus', '100 produits · 50 commandes/mois'],
+  essential: ['2 utilisateurs inclus', '500 produits · 300 commandes/mois'],
+  growth: ['5 utilisateurs inclus', '5 000 produits · 2 000 commandes/mois'],
+  business: ['10 utilisateurs inclus', 'multi-sites + API'],
+}
+
+const pricingAmounts: Record<string, { discovery: string; essential: string; growth: string; business: string; period: string }> = {
+  waemu_xof:        { discovery: 'Gratuit', essential: '9 900',  growth: '24 900', business: '59 900', period: 'XOF / mois' },
+  cemac_xaf:        { discovery: 'Gratuit', essential: '9 900',  growth: '24 900', business: '59 900', period: 'XAF / mois' },
+  nigeria_ngn:      { discovery: 'Gratuit', essential: '15 000', growth: '39 000', business: '99 000', period: 'NGN / mois' },
+  ghana_ghs:        { discovery: 'Gratuit', essential: '150',    growth: '390',    business: '990',    period: 'GHS / mois' },
+  kenya_kes:        { discovery: 'Gratuit', essential: '2 500',  growth: '6 500',  business: '16 900', period: 'KES / mois' },
+  south_africa_zar: { discovery: 'Gratuit', essential: '349',    growth: '899',    business: '2 399',  period: 'ZAR / mois' },
+  europe_eur:       { discovery: 'Gratuit', essential: '19',     growth: '49',     business: '129',    period: '€ / mois' },
+  canada_cad:       { discovery: 'Gratuit', essential: '25',     growth: '65',     business: '169',    period: 'CAD / mois' },
+  usa_usd:          { discovery: 'Gratuit', essential: '19',     growth: '49',     business: '129',    period: 'USD / mois' },
+  global_usd:       { discovery: 'Gratuit', essential: '19',     growth: '49',     business: '129',    period: 'USD / mois' },
+}
+
+const pricing = computed(() => pricingAmounts[market.value.priceBook] ?? pricingAmounts.global_usd)
+const pricingHeading = computed(() => `${market.value.currency} · ${market.value.label}`)
+const pricingSub = computed(() => `Tous les modules métier sont inclus. Vous payez selon votre équipe, vos volumes et votre zone géographique.`)
+
+const plans = computed<LandingPlan[]>(() => [
   {
-    name: 'Starter',
-    price: 'Gratuit',
+    name: 'Starter / Découverte',
+    price: pricing.value.discovery,
     period: '',
     tagline: 'Pour tester Frynov sans engagement.',
     featured: false,
     cta: 'Commencer gratuitement',
     features: [
-      "Jusqu'à 3 utilisateurs",
-      "Jusqu'à 200 produits",
-      '100 commandes / mois',
-      'Mobile Money (Wave)',
-      'Tableau de bord basique',
+      planLimits.discovery[0],
+      planLimits.discovery[1],
+      'Tous les modules métier visibles',
+      'Catalogue, stock, commandes, clients',
       'Support communauté',
     ],
   },
   {
-    name: 'Pro',
-    price: '15 000',
-    period: 'XOF / mois',
-    tagline: 'Pour les PME qui veulent aller plus vite.',
-    featured: true,
-    cta: 'Essayer Pro 30 jours',
+    name: 'Essentiel',
+    price: pricing.value.essential,
+    period: pricing.value.period,
+    tagline: 'Pour gérer une boutique active au quotidien.',
+    featured: false,
+    cta: 'Choisir Essentiel',
     features: [
-      "Jusqu'à 15 utilisateurs",
-      '5 000 produits · 2 000 commandes/mois',
-      'Tous les modules actifs',
-      'Wave + Orange + MTN MoMo',
-      'Rapports avancés & exports',
-      'Support prioritaire 24h',
-      'Multi-entrepôts',
+      planLimits.essential[0],
+      planLimits.essential[1],
+      'Paiements, livraisons, fournisseurs',
+      'Import / Export simple',
+      `Paiement local : ${market.value.paymentCopy}`,
+      'Support email',
     ],
   },
   {
-    name: 'Enterprise',
-    price: 'Sur devis',
-    period: '',
-    tagline: 'Pour les groupes et distributeurs multi-sites.',
-    featured: false,
-    cta: "Contacter l'équipe",
+    name: 'Pro / Croissance',
+    price: pricing.value.growth,
+    period: pricing.value.period,
+    tagline: 'Pour les équipes qui vendent plus et veulent automatiser.',
+    featured: true,
+    cta: 'Essayer Croissance 30 jours',
     features: [
-      'Utilisateurs illimités',
-      'Multi-entités / filiales',
+      planLimits.growth[0],
+      planLimits.growth[1],
+      'Rapports avancés & exports',
+      'Marketplace et alertes avancées',
+      '3 boutiques / 3 entrepôts',
+      'Support prioritaire',
+    ],
+  },
+  {
+    name: 'Business / Enterprise',
+    price: pricing.value.business,
+    period: pricing.value.period,
+    tagline: 'Pour les groupes, grossistes et réseaux multi-sites.',
+    featured: false,
+    cta: 'Contacter l’équipe',
+    features: [
+      planLimits.business[0],
+      planLimits.business[1],
+      'Volumes élevés ou sur devis',
       'API & intégrations custom',
-      'SLA garanti 99,9%',
-      'Formation sur site',
+      'SLA, onboarding et formation',
       'Account manager dédié',
     ],
   },
-]
-
-const plans = computed(() => isAfrica.value ? plansAfrica : plansGlobal)
+])
 
 /* ── Testimonials ─────────────────────────────────────────── */
 const testimonialsGlobal = [
@@ -901,7 +920,9 @@ const statsAfrica = [
   { val: 'FCFA',   label: 'devise native XOF'         },
 ]
 
-const stats = computed(() => isAfrica.value ? statsAfrica : statsGlobal)
+const stats = computed(() => (isAfrica.value ? statsAfrica : statsGlobal).map(stat => (
+  stat.val === 'FCFA' ? { ...stat, val: market.value.currency, label: `devise native ${market.value.currency}` } : stat
+)))
 
 /* ── FAQ ──────────────────────────────────────────────────── */
 const faqsGlobal = [
@@ -946,7 +967,7 @@ const faqsAfrica = [
   },
   {
     q: 'Est-ce que Frynov gère plusieurs devises ?',
-    a: 'Frynov est centré sur le Franc CFA (XOF). La gestion multi-devises (GNF, XAF, NGN) est prévue dans la roadmap Enterprise 2026.',
+    a: 'Frynov affiche les tarifs et documents dans la devise de votre marché : XOF, XAF, NGN, GHS, KES, ZAR, EUR, CAD ou USD selon le pays sélectionné.',
   },
   {
     q: 'Puis-je importer mon catalogue depuis Excel ?',
@@ -1017,6 +1038,36 @@ const faqs = computed(() => isAfrica.value ? faqsAfrica : faqsGlobal)
   color: #64748b;
   line-height: 1.7;
   margin: 0;
+}
+
+.market-selector {
+  margin: 1.25rem auto 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.65rem 0.5rem 0.85rem;
+  border: 1px solid #d1fae5;
+  border-radius: 999px;
+  background: white;
+  color: #047857;
+  font-size: 0.875rem;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(16,185,129,0.08);
+}
+
+.market-selector select {
+  border: 0;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #065f46;
+  font: inherit;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+}
+
+.market-selector select:focus {
+  outline: 2px solid rgba(16,185,129,0.35);
+  outline-offset: 2px;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -1816,7 +1867,7 @@ const faqs = computed(() => isAfrica.value ? faqsAfrica : faqsGlobal)
 
 .plans-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   align-items: start;
 }

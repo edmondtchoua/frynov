@@ -214,6 +214,65 @@ class AdminApiTest extends TestCase
             ->assertStatus(200);
     }
 
+    #[Test]
+    public function super_admin_can_update_plan_limits(): void
+    {
+        $plan = Plan::create([
+            'code'                => Plan::CODE_STARTER,
+            'name'                => 'Starter',
+            'price_monthly_cents' => 0,
+            'price_yearly_cents'  => 0,
+            'currency'            => 'XOF',
+            'trial_days'          => 14,
+            'is_active'           => true,
+            'is_public'           => true,
+            'sort_order'          => 1,
+        ]);
+
+        $this->patchJson("/api/admin/plans/{$plan->id}", [
+            'limits' => [
+                'max_products'   => 250,
+                'max_warehouses' => 2,
+                'storage_mb'     => 500,
+            ],
+        ], $this->adminAuth())
+            ->assertStatus(200)
+            ->assertJsonPath('limits.max_products', 250);
+
+        $this->assertDatabaseHas('plan_limits', [
+            'plan_id'        => $plan->id,
+            'max_products'   => 250,
+            'max_warehouses' => 2,
+            'storage_mb'     => 500,
+        ]);
+    }
+
+    #[Test]
+    public function updating_a_legacy_quota_field_mirrors_into_plan_limits(): void
+    {
+        $plan = Plan::create([
+            'code'                => Plan::CODE_STARTER,
+            'name'                => 'Starter',
+            'price_monthly_cents' => 0,
+            'price_yearly_cents'  => 0,
+            'currency'            => 'XOF',
+            'trial_days'          => 14,
+            'is_active'           => true,
+            'is_public'           => true,
+            'sort_order'          => 1,
+        ]);
+        // Pre-existing canonical row with a stale ceiling.
+        $plan->limits()->create(['max_products' => 10]);
+
+        $this->patchJson("/api/admin/plans/{$plan->id}", [
+            'max_products' => 999,
+        ], $this->adminAuth())->assertStatus(200);
+
+        // The legacy edit must propagate to plan_limits (the row QuotaService reads first),
+        // otherwise the admin's change would be silently ignored at enforcement time.
+        $this->assertDatabaseHas('plan_limits', ['plan_id' => $plan->id, 'max_products' => 999]);
+    }
+
     // ── Audit log ─────────────────────────────────────────────────────────────
 
     #[Test]

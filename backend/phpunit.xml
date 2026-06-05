@@ -60,6 +60,8 @@
         <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV"            value="testing"/>
         <env name="APP_DEBUG"          value="true"/>
+        <!-- Sync module is feature-flagged off in prod; enable it so its 33 tests run. -->
+        <env name="FEATURE_SYNC"       value="true"/>
         <env name="APP_KEY"            value="base64:MHAaHIwuKPa7ykJC5L1V22DoGwajyaDvt9Euq4nU0hs="/>
 
         <!-- SQLite en mémoire pour Unit (rapide, sans serveur) -->

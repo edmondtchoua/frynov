@@ -72,26 +72,35 @@
 /* ── Reset ───────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
-/* ── Layout lock — prevent body scroll, only .page-content scrolls ── */
+/* ── Layout scroll model ──────────────────────────────────────────────
+   Public/auth pages (landing, login, register) are long documents that must
+   scroll naturally. The app/admin SHELLS lock the viewport so only their inner
+   `.page-content` scrolls — that lock is scoped to `body.shell-locked`, toggled
+   by App.vue based on the active layout. Previously the lock was global, which
+   clipped the landing page (vertical scroll impossible). */
 html {
   margin: 0;
   padding: 0;
-  height: 100%;
-  overflow: hidden;    /* hard lock — body cannot scroll */
+  height: 100%;        /* anchor for percentage heights; overflow stays visible */
 }
 
 body {
   margin: 0;
   padding: 0;
-  height: 100%;
-  overflow: hidden;    /* body never scrolls */
+  min-height: 100%;    /* grows with content → public pages scroll naturally */
 }
 
 #app {
   margin: 0;
   padding: 0;
+  min-height: 100%;
+}
+
+/* App / Admin shell: lock the viewport, only the inner .page-content scrolls */
+body.shell-locked,
+body.shell-locked #app {
   height: 100%;
-  overflow: hidden;    /* #app fills viewport, no overflow */
+  overflow: hidden;
 }
 
 body {

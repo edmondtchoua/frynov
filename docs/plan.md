@@ -20,9 +20,9 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **550 / 550 ✅** (2 skipped, **0 incomplete**) — +33 Sync + 10 POS (Sprint 19) |
-| Tests Vitest frontend | **142 / 142 ✅** (+46 composant, +17 util) — couverture 30.8 % |
-| Branche | `feature/sprint-16-variants-batch-stock` — Sprint 17 + audit + Sprint 19 (Sync, POS) livrés |
+| Tests backend | **568 / 568 ✅** (2 skipped, **0 incomplete**) — +pricing localisé, plan_limits, sièges, geo RGPD, tests sécurité |
+| Tests Vitest frontend | **154 / 154 ✅** (+admin back-office, geo) — couverture 38.7 % |
+| Branche | `develop` — **réconciliée** (hardening + pricing localisé + audit approfondi) |
 | Dernière tag | `v0.7.0` (Sprint 7A) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
 
@@ -129,7 +129,7 @@ Les modules ou fonctions sensibles peuvent rester limités par **rôle**, **perm
 | Multi-sites | ⚠️ Fondation | — | Migrations `warehouse_id` orders/payments + `user_warehouses` pivot (pas encore de UI) |
 | Sync | 🧪 Scaffold testé — **masqué (feature flag)** | 33 | Scaffold CRUD (HasTenant, `/api`, `tenant`, `role:manager\|admin`) + 33 tests. **Routes derrière `config('frynov.modules.sync')` = `FEATURE_SYNC` (off par défaut)** → invisible en prod, activé en test. Domaine métier : Phase 3 |
 
-**Total tests backend : 550 (2 skipped, 0 incomplete)**
+**Total tests backend : 568 (2 skipped, 0 incomplete)**
 
 ---
 
@@ -377,6 +377,18 @@ Issu de l'audit pré-release global (verdict GO conditionnel). Actions livrées 
 - ✅ **Fix géolocalisation RGPD (audit approfondi)** : la landing appelait `https://ipapi.co/json/` côté navigateur → l'IP de chaque visiteur partait chez un tiers sans consentement. Remplacé par un endpoint **`GET /api/public/geo`** qui dérive le pays des **headers d'edge/CDN** (`CF-IPCountry`, `CloudFront-Viewer-Country`, …) — **l'IP ne quitte jamais notre infra, aucun appel tiers**. À défaut d'edge, `useGeoContent` se rabat sur la **locale navigateur** (`navigator.language`). Tests : 3 backend (`PublicPricingApiTest`) + 2 frontend (`useGeoContent.spec.ts`, dont « never a third party »).
 
 Reste recommandé (non bloquant) : aucun — les deux findings de l'audit approfondi sont traités.
+
+---
+
+### Réconciliation `develop` + tests approfondis (2026-06-05) — ✅
+
+- ✅ **Branches réconciliées dans `develop`** : `feature/pre-release-hardening` (durcissement) ⊆ `feature/p1-admin-plan-limits` (pricing localisé + `plan_limits` éditables + sièges + geo). Merge `--no-ff` + récupération des smoke tests admin (perdus sur une branche divergente). `develop` = surensemble complet.
+- ✅ **Audit `AdminPlanController` (P1 `plan_limits` éditables)** : sain — édition **super-admin uniquement** (`RequireAdmin`), validation explicite (pas de mass-assign), source canonique `plan_limits` + miroir legacy, audité.
+- ✅ **Tests sécurité approfondis ajoutés** :
+  - `regular_user_cannot_edit_plan_limits` — un utilisateur tenant ne peut **pas** relever ses propres quotas (403, limite inchangée).
+  - `inviting_beyond_the_user_cap_is_blocked_with_402` — palier gratuit bloque la 2ᵉ invitation **de bout en bout** (HTTP → `EnforceQuota` → 402 `quota_exceeded`).
+  - `paid_plan_with_unlimited_seats_allows_inviting_beyond_included` — plan payant (`max_users=null`) laisse inviter au-delà des sièges inclus (201) → fix sièges vérifié end-to-end.
+- **État `develop`** : backend **568 verts** (0 fatal, 0 incomplete) · frontend **154 verts** (couverture 38.7 %) · `vue-tsc` propre.
 
 ---
 

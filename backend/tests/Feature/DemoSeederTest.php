@@ -6,7 +6,11 @@ use App\Models\User;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Delivery\Models\Delivery;
+use App\Modules\ImportExport\Models\ImportSession;
+use App\Modules\Inventory\Models\FiscalPeriod;
+use App\Modules\Inventory\Models\StockAdjustmentRequest;
 use App\Modules\Inventory\Models\StockMovement;
+use App\Modules\Inventory\Models\StockTransfer;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Marketplace\Models\MarketplaceListing;
 use App\Modules\Orders\Models\Order;
@@ -63,6 +67,16 @@ class DemoSeederTest extends TestCase
         $this->assertGreaterThanOrEqual(3, MarketplaceListing::count());
         $this->assertDatabaseHas('promotions', ['code' => 'BIENVENUE20']);
         $this->assertDatabaseHas('manual_payments', ['status' => 'pending']);
+
+        // ── Modules secondaires : période fiscale, import, ajustement, transfert ─
+        $this->assertGreaterThanOrEqual(3, FiscalPeriod::count());            // 1 / tenant
+        $this->assertDatabaseHas('fiscal_periods', ['status' => 'open']);
+        $this->assertGreaterThanOrEqual(3, ImportSession::count());
+        $this->assertDatabaseHas('import_sessions', ['status' => 'completed']);
+        $this->assertGreaterThanOrEqual(3, StockAdjustmentRequest::count());
+        $this->assertDatabaseHas('stock_adjustment_requests', ['status' => 'pending']);
+        $this->assertGreaterThanOrEqual(2, StockTransfer::count());           // multi-site (Pro + Enterprise)
+        $this->assertDatabaseHas('stock_transfers', ['status' => 'completed']);
     }
 
     #[Test]

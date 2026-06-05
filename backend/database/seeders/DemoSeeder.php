@@ -12,8 +12,13 @@ use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Customers\Models\Customer;
 use App\Modules\Delivery\Models\Delivery;
+use App\Modules\ImportExport\Models\ImportSession;
+use App\Modules\Inventory\Models\FiscalPeriod;
 use App\Modules\Inventory\Models\Stock;
+use App\Modules\Inventory\Models\StockAdjustmentRequest;
 use App\Modules\Inventory\Models\StockMovement;
+use App\Modules\Inventory\Models\StockTransfer;
+use App\Modules\Inventory\Models\StockTransferLine;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Marketplace\Models\MarketplaceListing;
 use App\Modules\Orders\Models\Order;
@@ -132,6 +137,9 @@ class DemoSeeder extends Seeder
         $this->seedOperationalDepth($t1, hasPos: true);
         $this->seedOperationalDepth($t2, hasPos: true);
         $this->seedOperationalDepth($t3, hasPos: true);
+        $this->seedSecondaryModules($t1, multiWarehouse: false);
+        $this->seedSecondaryModules($t2, multiWarehouse: true);
+        $this->seedSecondaryModules($t3, multiWarehouse: true);
         $this->seedPromotions();
 
         $this->command->info('Demo data seeded. 3 tenants, 14 users, catalogue + variantes + stock + caisse + retours + promos.');
@@ -736,6 +744,88 @@ class DemoSeeder extends Seeder
                     'notes' => 'Virement bancaire (démo) en attente de validation',
                     'status' => ManualPayment::STATUS_PENDING,
                 ]);
+            }
+        }
+    }
+
+    // ── Modules MVP secondaires : période fiscale, import, ajustement de stock,
+    //    transfert inter-entrepôts (multi-sites). Idempotent. ──────────────────
+
+    private function seedSecondaryModules(Tenant $tenant, bool $multiWarehouse): void
+    {
+        $tid      = $tenant->id;
+        $currency = $tenant->settings['currency'] ?? 'XOF';
+        $admin    = User::where('tenant_id', $tid)->first();
+        $warehouse = Warehouse::where('tenant_id', $tid)->where('is_default', true)->first();
+        if (! $warehouse) {
+            return;
+        }
+
+        // 1. Période fiscale ouverte (mois courant)
+        FiscalPeriod::updateOrCreate(
+            [
+                'tenant_id' => $tid, 'type' => 'monthly',
+                'starts_at' => now()->startOfMonth(), 'ends_at' => now()->endOfMonth(),
+            ],
+            ['name' => 'Période ' . now()->format('Y-m'), 'status' => 'open']
+        );
+
+        // 2. Session d'import terminée (historique import/export)
+        ImportSession::updateOrCreate(
+            ['tenant_id' => $tid, 'original_filename' => 'produits-demo.xlsx'],
+            [
+                'performed_by' => $admin?->id, 'type' => ImportSession::TYPE_PRODUCTS,
+                'status' => ImportSession::STATUS_COMPLETED, 'mode' => ImportSession::MODE_CREATE_UPDATE,
+                'stored_path' => 'imports/demo/produits-demo.xlsx',
+                'total_rows' => 50, 'valid_rows' => 48, 'error_rows' => 2, 'imported_rows' => 48,
+                'analyzed_at' => now()->subDays(3), 'completed_at' => now()->subDays(3),
+            ]
+        );
+
+        // 3. Demande d'ajustement de stock en attente (flux demande → approbation)
+        $stock = Stock::where('tenant_id', $tid)->first();
+        if ($stock && $admin) {
+            StockAdjustmentRequest::updateOrCreate(
+                ['tenant_id' => $tid, 'stock_id' => $stock->id, 'status' => StockAdjustmentRequest::STATUS_PENDING],
+                [
+                    'product_id' => $stock->product_id, 'variant_id' => $stock->variant_id,
+                    'quantity_before' => $stock->quantity, 'quantity_requested' => $stock->quantity + 5,
+                    'delta' => 5, 'value_cents' => 0, 'reason' => 'count',
+                    'note' => 'Écart constaté à l’inventaire (démo)', 'requested_by' => $admin->id,
+                ]
+            );
+        }
+
+        // 4. Transfert inter-entrepôts (démo multi-sites) — second entrepôt + transfert reçu
+        if ($multiWarehouse) {
+            $dest = Warehouse::updateOrCreate(
+                ['tenant_id' => $tid, 'code' => 'WH-SECONDAIRE'],
+                [
+                    'tenant_id' => $tid, 'name' => 'Dépôt secondaire', 'type' => 'warehouse',
+                    'currency' => $currency, 'is_active' => true, 'is_default' => false, 'sort_order' => 2,
+                ]
+            );
+            // number is globally unique → derive from the tenant's random uuid tail.
+            $transferNumber = 'TRF-' . strtoupper(substr(str_replace('-', '', $tid), -8));
+            $transfer = StockTransfer::updateOrCreate(
+                ['number' => $transferNumber],
+                [
+                    'tenant_id' => $tid, 'source_warehouse_id' => $warehouse->id,
+                    'destination_warehouse_id' => $dest->id, 'status' => 'completed',
+                    'notes' => 'Réassort dépôt secondaire (démo)', 'requested_by' => $admin?->id,
+                    'shipped_by' => $admin?->id, 'received_by' => $admin?->id,
+                    'shipped_at' => now()->subDays(2), 'received_at' => now()->subDay(), 'completed_at' => now()->subDay(),
+                ]
+            );
+            $prod = Product::where('tenant_id', $tid)->where('has_variants', false)->first();
+            if ($prod) {
+                StockTransferLine::updateOrCreate(
+                    ['transfer_id' => $transfer->id, 'product_id' => $prod->id],
+                    [
+                        'quantity_requested' => 10, 'quantity_shipped' => 10,
+                        'quantity_received' => 10, 'line_status' => 'received',
+                    ]
+                );
             }
         }
     }

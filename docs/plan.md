@@ -213,7 +213,7 @@ Les modules ou fonctions sensibles peuvent rester limités par **rôle**, **perm
 | `PlanModulesSeeder` | Matrice plan ↔ modules ; stratégie cible : modules métier visibles, limites par ressources | ✅ idempotent attendu |
 | `CountryRulesSeeder` | 30+ pays africains + Europe + Amérique | ✅ firstOrCreate |
 | `SuperAdminSeeder` | superadmin@frynov.com | ✅ firstOrCreate |
-| `DemoSeeder` | **3 tenants démo couvrant TOUS les modules MVP** : catalogue (simples + déclinaisons + attributs), stock + **mouvements** + **entrepôts**, clients, commandes (tous statuts) + paiements + livraisons, **retours/SAV**, **caisse POS** (session ouverte + clôturée rapprochée), **marketplace**, **promotions**, **paiement manuel**. Convention monétaire uniforme (centimes). Vérifié par `DemoSeederTest`. | ✅ updateOrCreate (idempotent, sauf n° de commande) |
+| `DemoSeeder` | **3 tenants démo couvrant TOUS les modules MVP** : catalogue (simples + déclinaisons + attributs), stock + **mouvements** + **entrepôts**, clients, commandes (tous statuts) + paiements + livraisons, **retours/SAV**, **caisse POS** (ouverte + clôturée), **marketplace**, **promotions**, **paiement manuel**, **période fiscale**, **import**, **ajustement de stock**, **transfert inter-entrepôts** (multi-sites). Convention monétaire uniforme (centimes). Vérifié par `DemoSeederTest` (42 assertions). | ✅ updateOrCreate (idempotent, sauf n° de commande) |
 
 ---
 

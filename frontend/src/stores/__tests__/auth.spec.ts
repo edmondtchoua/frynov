@@ -10,7 +10,7 @@ vi.mock('@/services/api', () => ({
   },
 }))
 
-vi.mock('@/services/authService', () => ({
+vi.mock('@/modules/auth/services/authService', () => ({
   authService: {
     login:  vi.fn(),
     logout: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock('@/services/authService', () => ({
   },
 }))
 
-import api from '@/services/api'
+import { authService } from '@/modules/auth/services/authService'
 
 const mockUser = {
   id:              'usr-1',
@@ -85,5 +85,25 @@ describe('useAuthStore', () => {
     localStorage.setItem('auth_token', 'persisted')
     const store = useAuthStore()
     expect(store.token).toBe('persisted')
+  })
+
+  // Regression: /login is public (no tenant middleware) → empty team-scoped roles
+  // and no subscription. login() must refresh from /me so the RBAC tab menus and
+  // the billing screen work right after sign-in.
+  it('login refreshes the full user from /me (team roles + subscription)', async () => {
+    vi.mocked(authService.login).mockResolvedValue({
+      token: 'tok', user: { ...mockUser, roles: [] },   // login: roles empty
+    } as any)
+    vi.mocked(authService.me).mockResolvedValue({
+      ...mockUser, roles: ['admin'],
+      subscription: { plan_name: 'Croissance', status: 'active' },
+    } as any)
+
+    const store = useAuthStore()
+    await store.login({ email: 'alice@test.sn', password: 'x' } as any)
+
+    expect(authService.me).toHaveBeenCalled()
+    expect(store.user?.roles).toContain('admin')                 // not the empty login roles
+    expect((store.user as any)?.subscription?.plan_name).toBe('Croissance')
   })
 })

@@ -54,6 +54,13 @@ class AuthController extends Controller
             return response()->json(['message' => 'Compte suspendu ou inactif.'], 403);
         }
 
+        // Login runs before the tenant middleware, so the Spatie team context isn't
+        // set — getRoleNames()/getPermissionNames() would return EMPTY. Anchor it to
+        // the user's tenant so the login response carries the real tenant-scoped roles.
+        if ($user->tenant_id) {
+            app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($user->tenant_id);
+        }
+
         // Use log() directly — logFromRequest uses $request->user() which is null pre-token on login
         try {
             $this->audit->log(

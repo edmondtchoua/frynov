@@ -308,4 +308,27 @@ class AdminApiTest extends TestCase
             'tenant_id' => $this->tenant->id,
         ]);
     }
+
+    // ── Privilege escalation guard on editable plan limits ────────────────────
+
+    #[Test]
+    public function regular_user_cannot_edit_plan_limits(): void
+    {
+        $plan = Plan::create([
+            'code' => Plan::CODE_STARTER, 'name' => 'Starter', 'price_monthly_cents' => 0,
+            'price_yearly_cents' => 0, 'currency' => 'XOF', 'trial_days' => 14,
+            'is_active' => true, 'is_public' => true, 'sort_order' => 1,
+        ]);
+        $plan->limits()->create(['max_products' => 100]);
+
+        // A tenant user must NOT be able to raise plan quotas (privilege escalation /
+        // revenue integrity). Editing plans is super-admin only (RequireAdmin).
+        $this->patchJson("/api/admin/plans/{$plan->id}", [
+            'limits' => ['max_products' => 999999],
+        ], $this->userAuth())->assertStatus(403);
+
+        // The canonical limit must be untouched.
+        $this->assertDatabaseHas('plan_limits', ['plan_id' => $plan->id, 'max_products' => 100]);
+        $this->assertDatabaseMissing('plan_limits', ['plan_id' => $plan->id, 'max_products' => 999999]);
+    }
 }

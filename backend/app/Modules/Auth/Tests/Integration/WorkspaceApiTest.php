@@ -3,6 +3,7 @@
 namespace App\Modules\Auth\Tests\Integration;
 
 use App\Models\User;
+use App\Modules\Billing\Models\Plan;
 use App\Modules\Tenants\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -429,5 +430,47 @@ class WorkspaceApiTest extends TestCase
             ->assertJsonPath('data.domain', null);
 
         $this->assertNull($this->tenant->fresh()->domain);
+    }
+
+    // ── Seat enforcement (localized pricing) — end-to-end via the invite endpoint ──
+
+    #[Test]
+    public function inviting_beyond_the_user_cap_is_blocked_with_402(): void
+    {
+        // Free Découverte tier: a hard 1-user cap. The tenant already has its admin.
+        Plan::create([
+            'code' => 'starter', 'name' => 'Découverte', 'price_monthly_cents' => 0,
+            'price_yearly_cents' => 0, 'currency' => 'XOF', 'max_users' => 1,
+            'trial_days' => 14, 'is_active' => true, 'is_public' => true, 'sort_order' => 1,
+        ]);
+
+        $this->withToken($this->token)->postJson('/api/workspace/users', [
+            'name' => 'Second Seat', 'email' => 'seat2@test.sn', 'role' => 'member',
+        ])->assertStatus(402)->assertJsonPath('error', 'quota_exceeded');
+
+        $this->assertDatabaseMissing('users', ['email' => 'seat2@test.sn']);
+    }
+
+    #[Test]
+    public function paid_plan_with_unlimited_seats_allows_inviting_beyond_included(): void
+    {
+        // Seat-cap fix: paid plans set max_users = null (soft "included" guideline),
+        // so a growing business is never blocked from adding members.
+        Plan::create([
+            'code' => 'business', 'name' => 'Business', 'price_monthly_cents' => 5990000,
+            'price_yearly_cents' => 59900000, 'currency' => 'XOF', 'max_users' => null,
+            'trial_days' => 30, 'is_active' => true, 'is_public' => true, 'sort_order' => 4,
+        ]);
+        $this->tenant->update(['plan' => 'business']);
+
+        foreach (['a', 'b', 'c'] as $i) {
+            User::create(['name' => "U{$i}", 'email' => "u{$i}@test.sn", 'password' => bcrypt('x'), 'tenant_id' => $this->tenant->id]);
+        }
+
+        $this->withToken($this->token)->postJson('/api/workspace/users', [
+            'name' => 'Extra Seat', 'email' => 'extra@test.sn', 'role' => 'member',
+        ])->assertStatus(201);
+
+        $this->assertDatabaseHas('users', ['email' => 'extra@test.sn', 'tenant_id' => $this->tenant->id]);
     }
 }

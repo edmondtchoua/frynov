@@ -30,6 +30,31 @@ class PublicPricingController extends Controller
         'global' => ['label' => 'International', 'currency' => 'USD', 'countries' => []],
     ];
 
+    /**
+     * GET /api/public/geo — visitor country resolved from the CDN/edge layer only.
+     *
+     * Privacy-first: the visitor's IP never leaves our infrastructure (no third-party
+     * geolocation call). Returns the ISO-3166 alpha-2 country from an edge header when
+     * present, else null — the frontend then falls back to locale-based detection.
+     */
+    public function geo(Request $request): JsonResponse
+    {
+        return response()->json(['country_code' => $this->countryFromEdge($request)]);
+    }
+
+    private function countryFromEdge(Request $request): ?string
+    {
+        foreach (['CF-IPCountry', 'CloudFront-Viewer-Country', 'X-Vercel-IP-Country', 'X-AppEngine-Country', 'X-Country-Code'] as $header) {
+            $val = strtoupper((string) $request->headers->get($header));
+            // Reject placeholders the edges emit for unknown/anonymized origins.
+            if (preg_match('/^[A-Z]{2}$/', $val) && ! in_array($val, ['XX', 'T1', 'ZZ'], true)) {
+                return $val;
+            }
+        }
+
+        return null;
+    }
+
     public function index(Request $request): JsonResponse
     {
         $interval = $request->string('interval', 'monthly')->lower()->toString();

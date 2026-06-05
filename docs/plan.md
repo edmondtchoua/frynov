@@ -374,7 +374,9 @@ Issu de l'audit pré-release global (verdict GO conditionnel). Actions livrées 
 - ✅ **Fix pricing sièges (audit approfondi)** : `PlansSeeder` posait `max_users = included_users` → impasse (Business plafonné à 10 utilisateurs avec message « mettez à niveau » sans plan supérieur ; sièges en sus affichés mais jamais facturés). Désormais **sièges = guide souple** sur les plans payants (`max_users`/`max_agents` = `null` = illimité), **seul le palier gratuit Découverte garde un cap dur (1)**. `included_users` conservé sur `plan_prices` pour l'affichage / futur overage facturé. Régression verrouillée par `PlanLocalizationTest::paid_plans_do_not_hard_cap_seats_only_the_free_tier_does`.
   > ⚠️ Déploiement : re-seeder requis sur les environnements existants (`php artisan db:seed --class=Database\\Seeders\\PlansSeeder`, idempotent `updateOrCreate`).
 
-Reste recommandé (non bloquant) : géolocalisation IP côté backend (la landing appelle `ipapi.co` — RGPD/consentement).
+- ✅ **Fix géolocalisation RGPD (audit approfondi)** : la landing appelait `https://ipapi.co/json/` côté navigateur → l'IP de chaque visiteur partait chez un tiers sans consentement. Remplacé par un endpoint **`GET /api/public/geo`** qui dérive le pays des **headers d'edge/CDN** (`CF-IPCountry`, `CloudFront-Viewer-Country`, …) — **l'IP ne quitte jamais notre infra, aucun appel tiers**. À défaut d'edge, `useGeoContent` se rabat sur la **locale navigateur** (`navigator.language`). Tests : 3 backend (`PublicPricingApiTest`) + 2 frontend (`useGeoContent.spec.ts`, dont « never a third party »).
+
+Reste recommandé (non bloquant) : aucun — les deux findings de l'audit approfondi sont traités.
 
 ---
 

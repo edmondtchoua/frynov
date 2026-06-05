@@ -40,6 +40,30 @@ describe('useGeoContent', () => {
     expect(isAfrica.value).toBe(false)
   })
 
+  it('detects the market via OUR backend geo endpoint — never a third party', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ country_code: 'SN' }) })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { useGeoContent } = await import('@/composables/useGeoContent')
+    const { market } = useGeoContent()
+    await vi.waitFor(() => expect(market.value.currency).toBe('XOF')) // SN → UEMOA/XOF
+
+    expect(fetchMock).toHaveBeenCalled()
+    const url = String(fetchMock.mock.calls[0][0])
+    expect(url).toContain('/api/public/geo')
+    expect(url).not.toContain('ipapi')   // privacy: no browser → third-party IP call
+  })
+
+  it('falls back to locale detection when the edge resolves no country', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ country_code: null }) })
+    vi.stubGlobal('fetch', fetchMock)
+    vi.spyOn(navigator, 'language', 'get').mockReturnValue('fr-CA')
+
+    const { useGeoContent } = await import('@/composables/useGeoContent')
+    const { market } = useGeoContent()
+    await vi.waitFor(() => expect(market.value.currency).toBe('CAD')) // locale CA → Canada/CAD
+  })
+
   it('supports manual Canada/CAD override', async () => {
     const { useGeoContent } = await import('@/composables/useGeoContent')
     const { market, selectedMarket } = useGeoContent()

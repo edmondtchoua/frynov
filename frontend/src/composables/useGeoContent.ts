@@ -43,6 +43,7 @@ const CACHE_KEY = 'geo_region'
 const CACHE_KEY_LEGACY = 'frynov_geo_region'
 const MARKET_CACHE_KEY = 'geo_market'
 const TIMEOUT_MS = 3_000
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
 const MARKET_BY_CODE: Record<GeoRegion, GeoMarket> = {
   africa: {
@@ -168,29 +169,46 @@ function readCachedMarket(): GeoMarket | null {
   return null
 }
 
+/** Infer an ISO country from the browser locale (e.g. "fr-SN" → "SN"). Client-only, no IP. */
+function localeCountry(): string | null {
+  try {
+    const langs = [navigator.language, ...(navigator.languages ?? [])]
+    for (const lang of langs) {
+      const m = /[-_]([A-Za-z]{2})$/.exec(lang ?? '')
+      if (m) return m[1].toUpperCase()
+    }
+  } catch { /* navigator unavailable */ }
+  return null
+}
+
 async function detectMarket(): Promise<GeoMarket> {
   const cached = readCachedMarket()
   if (cached) return cached
 
+  // Privacy-first: ask OUR backend (country from the CDN/edge layer) — the visitor's
+  // IP never reaches a third party. If the edge can't resolve a country, infer from
+  // the browser locale. No external geolocation provider is ever contacted.
+  let country: string | null = null
   try {
     const controller = new AbortController()
     const tid = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
-    const res = await fetch('https://ipapi.co/json/', {
+    const res = await fetch(`${API_BASE}/api/public/geo`, {
       signal: controller.signal,
       headers: { Accept: 'application/json' },
     })
     clearTimeout(tid)
+    if (res.ok) country = (await res.json())?.country_code ?? null
+  } catch {
+    /* network/timeout — fall through to locale-based detection */
+  }
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const data = await res.json()
-    const market = resolveMarket(data?.country_code ?? null)
+  const market = resolveMarket(country ?? localeCountry())
+  try {
     sessionStorage.setItem(CACHE_KEY, market.code === 'waemu' || market.code === 'cemac' ? 'africa' : market.code)
     sessionStorage.setItem(MARKET_CACHE_KEY, market.code)
-    return market
-  } catch {
-    return MARKET_BY_CODE.global
-  }
+  } catch { /* sessionStorage unavailable (private mode) */ }
+  return market
 }
 
 // Module-level singleton — shared across all callers in the same page session

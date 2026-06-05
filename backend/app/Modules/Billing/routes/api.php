@@ -5,6 +5,7 @@ use App\Modules\Billing\Http\Controllers\PublicPricingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('public/pricing', [PublicPricingController::class, 'index'])->name('public.pricing');
+Route::get('public/geo', [PublicPricingController::class, 'geo'])->name('public.geo');
 
 Route::middleware(['auth:sanctum'])->group(function () {
     // Promo code

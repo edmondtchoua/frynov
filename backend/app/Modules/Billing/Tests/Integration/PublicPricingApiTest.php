@@ -89,4 +89,30 @@ class PublicPricingApiTest extends TestCase
             collect($response->json('data'))->pluck('code')->all(),
         );
     }
+
+    // ── /api/public/geo — privacy-first country detection (no third-party call) ──
+
+    #[Test]
+    public function geo_endpoint_returns_country_from_a_cdn_edge_header(): void
+    {
+        $this->getJson('/api/public/geo', ['CF-IPCountry' => 'SN'])
+            ->assertOk()
+            ->assertExactJson(['country_code' => 'SN']);
+    }
+
+    #[Test]
+    public function geo_endpoint_returns_null_without_an_edge_header(): void
+    {
+        $this->getJson('/api/public/geo')
+            ->assertOk()
+            ->assertExactJson(['country_code' => null]);
+    }
+
+    #[Test]
+    public function geo_endpoint_ignores_placeholder_country_codes(): void
+    {
+        $this->getJson('/api/public/geo', ['CF-IPCountry' => 'XX'])
+            ->assertOk()
+            ->assertExactJson(['country_code' => null]);
+    }
 }

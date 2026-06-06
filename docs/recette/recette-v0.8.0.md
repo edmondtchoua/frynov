@@ -39,6 +39,7 @@ npm install && npm run dev
 - [ ] 🐛 **Régression corrigée** : **Paramètres → Abonnement** affiche le plan en cours (nom, statut, période), pas « Aucun abonnement actif »
 - [ ] **Register** d'un nouveau compte → redirigé vers `/onboarding`
 - [ ] Wizard onboarding : 6 étapes (activité, équipe, besoins `needs_*`, entreprise + devise, provisioning) → arrive sur un workspace utilisable
+- [ ] 🐛 **Régression corrigée** : un compte **fraîchement inscrit** (register → onboarding) arrive avec **tous les menus RBAC** (Catalogue 5 onglets) **et son abonnement** affiché (pas vide)
 - [ ] Un tenant non-onboardé est **redirigé** vers `/onboarding`
 - [ ] **Logout** → retour login ; session expirée (401) → redirection login
 
@@ -94,6 +95,7 @@ npm install && npm run dev
 ## 7. Stock / Inventaire
 
 - [ ] **Stock** : liste par produit/variante, qté dispo, alerte « stock bas »
+- [ ] 🐛 **Régression corrigée** : clic **Entrée / Sortie / Ajuster** → la **modale s'ouvre** (overlay centré, pas en bas de page) ; enregistrer met à jour la qté + crée un mouvement
 - [ ] **Mouvements** : historique (entrée initiale, ventes, etc.) tracé
 - [ ] **Entrepôts** : entrepôt principal + (Grossiste) dépôt secondaire
 - [ ] **Transfert inter-entrepôts** : transfert démo `TRF-*` (reçu) visible ; créer un transfert ship→receive
@@ -127,7 +129,9 @@ npm install && npm run dev
 
 - [ ] **Livraisons** : cycle `pending → dispatched → delivered/failed`
 - [ ] **Fournisseurs** : CRUD, code auto
-- [ ] **Import** : session d'import terminée visible ; pipeline upload → mapping → approuver → exécuter (réservé `manager|admin`) ; export Excel/PDF
+- [ ] **Import** : session d'import terminée visible ; pipeline upload → mapping → approuver → exécuter (réservé `manager|admin`)
+- [ ] 🐛 **Régression corrigée** : **Modèles** (Produits/Clients/Fournisseurs) se **téléchargent** depuis l'écran Import/Export
+- [ ] 🐛 **Régression corrigée** : **Export** (Produits/Clients/Fournisseurs xlsx) et **Rapport PDF** d'import se téléchargent (fichier reçu, **plus d'erreur « Route [login] not defined »**)
 - [ ] **Rapports** : ventes & valeur de stock (réservé `manager+`)
 - [ ] **Dashboard** : KPIs réels (CA, commandes, stock, clients), graphe
 
@@ -162,7 +166,9 @@ npm install && npm run dev
 - [ ] **Landing publique** : la page **scrolle** correctement (hero → tarifs → footer)
 - [ ] **Monnaie** : aucun montant affiché ×100 trop grand ; XOF/XAF sans décimales
 - [ ] **Responsive** : sidebar drawer mobile, tableaux scrollables
-- [ ] **Erreurs** : 422 (validation), 403 (permission), 404 (introuvable) propres ; pas de stack trace exposée
+- [ ] 🐛 **Régression corrigée** : les **modales** (Stock, Alertes, Ventes, Paiements, Livraisons) s'affichent en **overlay centré** (et non en bas de page)
+- [ ] **Téléchargements authentifiés** : exports/rapports/modèles passent par le token (pas de navigation directe `/api/...` qui renvoie 401)
+- [ ] **Erreurs** : 422 (validation), 403 (permission), 404 (introuvable) propres ; pas de stack trace exposée ; `/api/*` non authentifié → **401 propre** (plus « Route [login] not defined »)
 - [ ] **Sync masqué** : `/api/syncs` renvoie 404 en prod (feature flag `FEATURE_SYNC` off)
 
 ---

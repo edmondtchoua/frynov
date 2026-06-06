@@ -12,7 +12,7 @@ Route::middleware(['auth:sanctum', 'tenant'])
         Route::get('alerts',                 [MarketplaceListingController::class, 'alerts'])->name('alerts.index');
         Route::patch('alerts/{id}/read',     [MarketplaceListingController::class, 'markRead'])->name('alerts.read');
 
-        Route::middleware(['role:manager|admin'])->group(function () {
+        Route::middleware(['role_or_permission:manager|admin|marketplace.manage'])->group(function () {
             Route::post('listings',              [MarketplaceListingController::class, 'store'])->name('listings.store');
             Route::patch('listings/{id}',        [MarketplaceListingController::class, 'update'])->name('listings.update');
             Route::delete('listings/{id}',       [MarketplaceListingController::class, 'destroy'])->name('listings.destroy');

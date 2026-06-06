@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Auth\Http\Controllers\AuthController;
+use App\Modules\Auth\Http\Controllers\TenantRoleController;
 use App\Modules\Auth\Http\Controllers\UserProfileController;
 use App\Modules\Auth\Http\Controllers\WorkspaceController;
 use App\Modules\Auth\Http\Middleware\EnsureUserBelongsToTenant;
@@ -41,6 +42,12 @@ Route::prefix('workspace')->name('workspace.')
         Route::put('users/{user}/warehouses', [WorkspaceController::class, 'setUserWarehouses'])->name('users.warehouses');
         Route::post('users/{user}/temporary-access', [WorkspaceController::class, 'grantTemporaryAccess'])->name('users.temp-access.grant');
         Route::delete('temporary-access/{grant}', [WorkspaceController::class, 'revokeTemporaryAccess'])->name('temp-access.revoke');
+
+        // Custom roles (RBAC Phase B2 — tenant-admin only)
+        Route::get('roles',           [TenantRoleController::class, 'index'])->name('roles.index');
+        Route::post('roles',          [TenantRoleController::class, 'store'])->name('roles.store');
+        Route::patch('roles/{role}',  [TenantRoleController::class, 'update'])->name('roles.update');
+        Route::delete('roles/{role}', [TenantRoleController::class, 'destroy'])->name('roles.destroy');
 
         // Company settings
         Route::get('settings',        [WorkspaceController::class, 'getSettings'])->name('settings.show');

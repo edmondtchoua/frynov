@@ -3,6 +3,45 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [1.0.0-rc.4] — 2026-06-06 (RBAC Phase B2 — rôles custom + permissions fines)
+
+Achève le programme RBAC **A + B2 + C**. La Phase **B2** ajoute des rôles configurables
+par tenant **et** applique réellement les permissions fines sur les écritures sensibles.
+
+### Ajouté
+- **RBAC B2.2 — application des permissions** : 15 groupes de routes d'écriture sensibles
+  migrés de `role:manager|admin` → `role_or_permission:manager|admin|<perm-granulaire>`
+  (Catalog, Customers, Suppliers, Inventory ×6, Orders ×2, Marketplace, Delivery,
+  Import/Export, Reports) + void paiement gardé dans le contrôleur via `payments.delete`.
+  Les permissions choisies sont **exclusives à admin/manager** → le comportement des rôles
+  de base est **strictement préservé** (un `member` reste bloqué) ; un **rôle custom**
+  porteur de la permission **passe la garde**.
+- **3 permissions de gestion** ajoutées au seeder (admin/manager, accordables) pour les
+  routes de cycle de vie sans permission CRUD dédiée : `orders.manage`, `delivery.manage`,
+  `marketplace.manage`.
+- **RBAC B2.3 — UI Paramètres → Rôles** (admin) : `RolesPanel.vue` + `roleService` —
+  lister les rôles (base en lecture seule + custom éditables), créer/éditer un rôle custom
+  (permissions `grantable` **regroupées par module**), supprimer. Les sélecteurs de rôle
+  (onglet Équipe + invitation) incluent désormais les **rôles personnalisés**.
+
+### Sécurité
+- `role_or_permission` s'appuie sur `Gate::before` (Spatie) qui **avale**
+  `PermissionDoesNotExist` → une route peut référencer une permission non seedée sans
+  jamais transformer un `403` en `500` (robustesse des ~600 tests existants).
+
+### Docs
+- `docs/modules/rbac.md` (architecture 4 couches + **table route→permission**),
+  `docs/user/roles.md` (guide admin), audit `docs/recette/rbac-acl-audit-v1.0.0.md`
+  (B2 → **livré**), `docs/plan.md`.
+
+### Reste avant GO ferme v1.0.0
+- Recette finale + décision P6 (approche A recommandée) + CI install propre.
+- En perspective : invitations email + login 2FA email.
+
+### Tests
+- Backend **622** (620 passés, 2 skipped) — dont `PermissionEnforcementTest` (9).
+- Frontend **189** (+`roleService` ×5, `RolesPanel` ×3) · `vue-tsc` propre.
+
 ## [1.0.0-rc.3] — 2026-06-06 (RBAC durci)
 
 Incrément depuis rc.1 (rc.2 = UI gaps ; rc.3 = RBAC A+C). Programme RBAC **A+B2+C**

@@ -11,7 +11,7 @@
       <!-- Sidebar nav -->
       <nav class="settings-nav">
         <button
-          v-for="tab in tabs"
+          v-for="tab in visibleTabs"
           :key="tab.id"
           class="settings-nav-item"
           :class="{ active: activeTab === tab.id }"
@@ -204,6 +204,9 @@
                       <option value="manager">Manager</option>
                       <option value="member">Membre</option>
                       <option value="viewer">Lecteur</option>
+                      <optgroup v-if="customRoles.length" label="Rôles personnalisés">
+                        <option v-for="r in customRoles" :key="r.id" :value="r.name">{{ r.name }}</option>
+                      </optgroup>
                     </select>
                     <span
                       v-else
@@ -247,6 +250,11 @@
               </tbody>
             </table>
           </div>
+        </section>
+
+        <!-- Roles (admin only) -->
+        <section v-else-if="activeTab === 'roles'">
+          <RolesPanel />
         </section>
 
         <!-- Billing -->
@@ -436,6 +444,9 @@
                 <option value="manager">Manager — gestion équipe &amp; données</option>
                 <option value="member">Membre — accès complet aux modules</option>
                 <option value="viewer">Lecteur — consultation uniquement</option>
+                <optgroup v-if="customRoles.length" label="Rôles personnalisés">
+                  <option v-for="r in customRoles" :key="r.id" :value="r.name">{{ r.name }}</option>
+                </optgroup>
               </select>
             </div>
             <div v-if="inviteModal.error" class="form-error">{{ inviteModal.error }}</div>
@@ -598,6 +609,8 @@
 import { ref, computed, reactive, watch, defineComponent, h } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { authService } from '@/modules/auth/services/authService'
+import { roleService, type TenantRole } from '@/modules/settings/services/roleService'
+import RolesPanel from '@/modules/settings/components/RolesPanel.vue'
 import { useWarehouses } from '@/composables/useWarehouses'
 import type { WorkspaceUser } from '@/modules/auth/types'
 
@@ -674,6 +687,22 @@ const teamLoaded  = ref(false)
 const canManageTeam = computed(() =>
   auth.user?.roles?.some(r => ['admin', 'manager'].includes(r)) ?? false
 )
+
+// Only tenant-admins manage custom roles (GET /workspace/roles is admin-only).
+const isAdmin = computed(() => auth.user?.roles?.includes('admin') ?? false)
+
+// Custom roles for the team/invite selectors. Loaded with the team tab; for
+// managers (who cannot read the roles catalogue) this stays empty — base roles only.
+const tenantRoles = ref<TenantRole[]>([])
+const customRoles = computed(() => tenantRoles.value.filter(r => r.is_custom))
+
+async function loadTenantRoles() {
+  try {
+    tenantRoles.value = (await roleService.list()).data
+  } catch {
+    tenantRoles.value = [] // 403 for managers, or roles endpoint unavailable
+  }
+}
 
 const inviteModal = reactive({
   open:        false,
@@ -845,7 +874,10 @@ function teamFmtDate(iso: string | null): string {
 // Lazy-load each tab on first activation
 watch(activeTab, tab => {
   if (tab === 'company' && !companyLoaded.value) loadCompanySettings()
-  if (tab === 'team'    && !teamLoaded.value)    loadTeamUsers()
+  if (tab === 'team') {
+    if (!teamLoaded.value) loadTeamUsers()
+    if (!tenantRoles.value.length) loadTenantRoles() // custom roles for the role selectors
+  }
 }, { immediate: true })
 
 // ── Promo code ────────────────────────────────────────────────────────────────
@@ -1010,6 +1042,13 @@ const IconTeam = defineComponent({
   ]),
 })
 
+const IconRoles = defineComponent({
+  render: () => h('svg', { width: 16, height: 16, viewBox: '0 0 16 16', fill: 'none' }, [
+    h('path', { d: 'M8 1.5l5.5 2.2v3.4c0 3.2-2.3 5.5-5.5 6.4-3.2-.9-5.5-3.2-5.5-6.4V3.7L8 1.5z', stroke: 'currentColor', 'stroke-width': '1.4', 'stroke-linejoin': 'round' }),
+    h('path', { d: 'M5.8 8l1.6 1.6L10.4 6.4', stroke: 'currentColor', 'stroke-width': '1.4', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }),
+  ]),
+})
+
 const IconBilling = defineComponent({
   render: () => h('svg', { width: 16, height: 16, viewBox: '0 0 16 16', fill: 'none' }, [
     h('rect', { x: 1, y: 4, width: 14, height: 9, rx: 2, stroke: 'currentColor', 'stroke-width': '1.4' }),
@@ -1036,10 +1075,14 @@ const IconNotifications = defineComponent({
 const tabs = [
   { id: 'company',       label: 'Entreprise',    icon: IconCompany },
   { id: 'team',          label: 'Équipe',         icon: IconTeam },
+  { id: 'roles',         label: 'Rôles',          icon: IconRoles },
   { id: 'billing',       label: 'Abonnement',     icon: IconBilling },
   { id: 'integrations',  label: 'Intégrations (bientot)',   icon: IconIntegrations },
   { id: 'notifications', label: 'Notifications (bientot)',  icon: IconNotifications },
 ]
+
+// The Rôles tab is admin-only (role management is an escalation surface).
+const visibleTabs = computed(() => tabs.filter(t => t.id !== 'roles' || isAdmin.value))
 </script>
 
 <style scoped>

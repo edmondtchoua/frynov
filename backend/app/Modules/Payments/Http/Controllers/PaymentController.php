@@ -105,8 +105,12 @@ class PaymentController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
-        // Sprint 11: only admin/manager can void payments — viewers/members must not
-        if (!$request->user()->hasAnyRole(['admin', 'manager'])) {
+        // Sprint 11 + RBAC B2.2: admin/manager — OR a custom role granted the granular
+        // `payments.delete` permission — may void payments. Viewers/members (no such
+        // permission) must not. hasAnyPermission swallows PermissionDoesNotExist, so this
+        // stays a clean 403 even when the full permission set is not seeded (e.g. in tests).
+        $user = $request->user();
+        if (! $user->hasAnyRole(['admin', 'manager']) && ! $user->hasAnyPermission(['payments.delete'])) {
             return response()->json(['message' => 'Action réservée aux administrateurs et managers.'], 403);
         }
 

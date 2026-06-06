@@ -16,6 +16,40 @@
 
 ---
 
+## Gate sécurité audit — à faire passer par l’agent de remédiation
+
+> Ajout 2026-06-06 : l’audit sécurité est désormais traduit en tests d’acceptation exécutables. Toute implémentation/refactorisation de sécurité doit faire passer ces tests avant validation. Voir `docs/security/security-remediation-tests.md`.
+
+Suites prioritaires :
+
+- Backend : `php artisan test --filter=SecurityRemediationTest`
+- Backend : `php artisan test --filter=ModuleGatingTest`
+- Frontend : `npm run test:unit -- src/security/__tests__/frontendSecurity.spec.ts src/stores/__tests__/auth.spec.ts`
+
+Exigences bloquantes :
+
+- modules métier fail-closed côté serveur ;
+- permissions métier appliquées côté serveur ;
+- aucune relation cross-tenant via IDs front ;
+- preuves de paiement privées ;
+- audit trail vérifiable ;
+- plus de token Bearer persistant dans `localStorage`/`sessionStorage` ;
+- plus de `v-html` sur SVG/HTML venant de données modules.
+
+## Gate UX/UI audit — expérience produit et accessibilité
+
+> Ajout 2026-06-06 : un audit UX/UI approfondi est disponible dans `docs/ux-ui/audit-ux-ui-approfondi.md`. Les refontes front doivent désormais traiter les priorités P0/P1 avant toute validation production.
+
+Axes bloquants :
+
+- navigation alignée modules actifs + permissions ;
+- accessibilité clavier/ARIA sur sidebar, tabs, modales, toggles ;
+- design system partagé pour boutons, cards, tables, états et modales ;
+- états loading/empty/error/forbidden standardisés ;
+- formulaires critiques avec erreurs liées, confirmation et protection contre perte de données ;
+- responsive mobile réel pour listes produits, commandes, paiements, stock et admin ;
+- pricing/upgrade basé sur prix backend confirmé.
+
 ## État global
 
 | Indicateur | Valeur |

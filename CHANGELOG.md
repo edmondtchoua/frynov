@@ -3,6 +3,35 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [1.0.0-rc.3] — 2026-06-06 (RBAC durci)
+
+Incrément depuis rc.1 (rc.2 = UI gaps ; rc.3 = RBAC A+C). Programme RBAC **A+B2+C**
+décidé ; **A et C livrés**, **B2 (rôles custom + permissions fines) en session dédiée**.
+
+### Ajouté
+- **RBAC Phase A — gating module dynamique** : middleware `module:<code>` (data-driven) ;
+  retirer un module à un tenant **bloque réellement ses routes backend** pour TOUS les
+  utilisateurs (admins inclus), plus seulement les menus. Fail-open pour tenants non
+  provisionnés. Modules gatés : `reports`, `suppliers`, `import_export`, `delivery`.
+- **RBAC Phase C — accès temporaires auto-expirants** : `temporary_access_grants` +
+  commande planifiée `access:revoke-expired` (chaque minute → expiration **sans action
+  manuelle**) + UI « Accès temp. » (Paramètres → Équipe). `admin` non grantable temporairement.
+- **UI gaps comblés (rc.2)** : Ajustements de stock (Stock → Ajustements) + édition des
+  limites de plan (admin).
+
+### Audits
+- `docs/recette/rbac-acl-audit-v1.0.0.md` (5 exigences ↔ état + plan A/B2/C) ;
+  `docs/recette/route-audit-v1.0.0.md` (réconciliation routes front↔back, 0 lien cassé).
+
+### Reste avant GO ferme v1.0.0
+- **RBAC Phase B2** : rôles custom par tenant (bornés par le plan) + migration
+  `role:`→`permission:` des routes sensibles (session dédiée — blast-radius).
+- Recette finale + décision P6 (approche A recommandée) + CI install propre.
+- En perspective : invitations email + login 2FA email.
+
+### Tests
+- Backend **607** (605 passés, 2 skipped) · frontend **181** · `vue-tsc` propre.
+
 ## [1.0.0-rc.1] — 2026-06-06 (candidat production)
 
 Release candidate figée depuis `develop` après v0.8.0. Décision : voir

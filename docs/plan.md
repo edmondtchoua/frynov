@@ -22,8 +22,8 @@
 |---|---|
 | Tests backend | **597 ✅** (595 passed, 2 skipped, **0 incomplete**) — +Sprint 21 CountryRules, +Sprint 20 scoping d'accès par agence (isolation) |
 | Tests Vitest frontend | **175 / 175 ✅** (+Sprint 21 CountryRules, +Sprint 20 accès membre→sites) — couverture ~38 % |
-| Branche | `release/v0.8.0` — **recette en cours** (= `develop` + 8 correctifs recette) |
-| Dernière tag | `v0.7.0` (Sprint 7A) — **`release/v0.8.0` en recette** (Sprints 8→19 + audit pré-release + recette) |
+| Branche | `release/v1.0.0` — **RC `v1.0.0-rc.1`** (figée depuis `develop`) ; `develop` = intégration |
+| Dernière tag | `v0.8.0` (publiée sur `main`) → **`v1.0.0-rc.1`** candidat prod (cf. [Go/No-Go v1.0.0](recette/go-no-go-v1.0.0.md)) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
 
 > ⚠️ **Note critique** : avant l'audit, la config `phpunit.xml` ne matchait que certains

@@ -131,10 +131,15 @@ describe('Geo-personalization', () => {
     expect(script).toContain('testimonialsAfrica')
   })
   it('has market-aware localized plans and a manual selector', () => {
-    expect(script).toContain('pricingAmounts')
+    expect(script).toContain('pricingAmounts') // kept as an offline fallback
     expect(script).toContain('waemu_xof')
     expect(script).toContain('canada_cad')
     expect(src).toContain('market-select')
+  })
+  it('consumes the backend public pricing API as the source of truth', () => {
+    expect(script).toContain('fetchPublicPricing')
+    expect(script).toContain('apiPlans')
+    expect(script).toContain('planAmount')
   })
   it('has Africa + Global stats', () => {
     expect(script).toContain('statsGlobal')

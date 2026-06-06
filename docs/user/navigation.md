@@ -113,6 +113,8 @@ Chaque module affiche ses sections via une barre d'onglets en haut de la page.
 
 > Pour changer votre rôle, contactez l'administrateur de votre espace de travail (Paramètres > Équipe).
 
+> **Admin back-office (super-admin Frynov)** : `/admin` regroupe Tenants, Modules ERP, Plans & Tarifs, Paiements manuels, Promotions, **Règles pays** (devise/fuseau par défaut, approbation manuelle, blocage et plans autorisés par pays) et Journal d'audit.
+
 ---
 
 ## Droits par module

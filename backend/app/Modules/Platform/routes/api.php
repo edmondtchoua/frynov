@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Platform\Http\Controllers\AdminAuditController;
+use App\Modules\Platform\Http\Controllers\AdminCountryRuleController;
 use App\Modules\Platform\Http\Controllers\AdminDashboardController;
 use App\Modules\Platform\Http\Controllers\AdminManualPaymentController;
 use App\Modules\Platform\Http\Controllers\AdminModuleController;
@@ -58,6 +59,13 @@ Route::middleware(['auth:sanctum', RequireAdmin::class])
         Route::get('promotions/{promotion}', [AdminPromotionController::class, 'show'])->name('promotions.show');
         Route::patch('promotions/{promotion}', [AdminPromotionController::class, 'update'])->name('promotions.update');
         Route::delete('promotions/{promotion}', [AdminPromotionController::class, 'destroy'])->name('promotions.destroy');
+
+        // Country rules (per-country registration rules)
+        Route::get('country-rules',                  [AdminCountryRuleController::class, 'index'])->name('country-rules.index');
+        Route::post('country-rules',                 [AdminCountryRuleController::class, 'store'])->name('country-rules.store');
+        Route::get('country-rules/{countryRule}',    [AdminCountryRuleController::class, 'show'])->name('country-rules.show');
+        Route::patch('country-rules/{countryRule}',  [AdminCountryRuleController::class, 'update'])->name('country-rules.update');
+        Route::delete('country-rules/{countryRule}', [AdminCountryRuleController::class, 'destroy'])->name('country-rules.destroy');
 
         // Audit log
         Route::get('audit-logs',              [AdminAuditController::class, 'index'])->name('audit-logs.index');

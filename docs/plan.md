@@ -20,8 +20,8 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **579 ✅** (577 passed, 2 skipped, **0 incomplete**) — +recette v0.8.0, +P4 landing géo, +Sprint 20 filtres multi-sites (listes + rapports) |
-| Tests Vitest frontend | **172 / 172 ✅** (+P4/P5 pricing, +Sprint 20 useWarehouses/reportService) — couverture ~38 % |
+| Tests backend | **587 ✅** (585 passed, 2 skipped, **0 incomplete**) — +Sprint 20 (listes + rapports), +Sprint 21 admin CountryRules |
+| Tests Vitest frontend | **173 / 173 ✅** (+P4/P5 pricing, +Sprint 20 multi-sites, +Sprint 21 CountryRules) — couverture ~38 % |
 | Branche | `release/v0.8.0` — **recette en cours** (= `develop` + 8 correctifs recette) |
 | Dernière tag | `v0.7.0` (Sprint 7A) — **`release/v0.8.0` en recette** (Sprints 8→19 + audit pré-release + recette) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
@@ -125,7 +125,7 @@ Les modules ou fonctions sensibles peuvent rester limités par **rôle**, **perm
 | Platform | ✅ | 28 | ErpModule registry, AuditLog HMAC (actor_role + ip), Admin back-office, `/admin/audit-logs`, verify-chain |
 | Security module | ✅ | 21 | RBAC sur 11 modules, CatalogSecurityTest, PaymentSecurityTest, MultiTenantIsolationTest, AuditTrailTest |
 | Marketplace | ✅ | — | Facebook/WhatsApp/WooCommerce adapters, sync alerts |
-| CountryRules | ✅ | 5 | Migration + Model + RegistrationRuleService + 30 pays seedés |
+| CountryRules | ✅ | 5+8 | Migration + Model + RegistrationRuleService + 30 pays seedés + **admin CRUD UI** (`/api/admin/country-rules`, Sprint 21) |
 | Multi-sites | 🔄 Filtres livrés | — | `warehouse_id` orders/payments/stock + **filtres liste par site** (Sprint 20) ; reste : `Branch` metadata, scoping accès, filtres rapports |
 | Sync | 🧪 Scaffold testé — **masqué (feature flag)** | 33 | Scaffold CRUD (HasTenant, `/api`, `tenant`, `role:manager\|admin`) + 33 tests. **Routes derrière `config('frynov.modules.sync')` = `FEATURE_SYNC` (off par défaut)** → invisible en prod, activé en test. Domaine métier : Phase 3 |
 
@@ -532,15 +532,14 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 
 ---
 
-### Sprint 21 — CountryRules UI + Onboarding complet
+### Sprint 21 — CountryRules UI + Onboarding — 🔄 (admin CountryRules livré 2026-06-06)
 
-**Backend**
-- Admin UI pour gérer les CountryRules (super-admin)
+**Livré — admin CountryRules (super-admin)**
+- ✅ Backend : `AdminCountryRuleController` CRUD complet sous `/api/admin/country-rules` (`auth:sanctum` + `RequireAdmin` → super-admin uniquement, audité). Code pays/devise normalisés en majuscules **avant** validation (unique insensible à la casse).
+- ✅ Frontend : `CountryRuleListView` (table + modale créer/éditer/supprimer) + entrée menu **Règles pays** dans `AdminLayout` + route `/admin/country-rules`.
+- ✅ Tests : `AdminCountryRuleTest` (8 : CRUD, code majuscule, doublon insensible à la casse, ISO invalide, **isolation user/guest → 403/401**) + smoke `AdminViews.spec`.
 
-**Frontend**
-- Onboarding : étapes `needs_stock/pos/delivery/ecommerce/offline` + `nb_branches`
-- OnboardingView → provision backend câblé complètement
-- Redirection `/onboarding` si `tenant.onboarded = false`
+**Onboarding** — déjà vérifié **complet** à l'audit pré-release (les 5 `needs_*` + provisioning + guard de redirection). Reste : câbler `nb_branches` → création d'entrepôts secondaires (dépend du `Branch` de Sprint 20).
 
 ---
 

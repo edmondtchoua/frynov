@@ -9,6 +9,6 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('api/customers')->group(fu
     Route::get('/search',       [CustomerController::class, 'search']);
     Route::get('/{id}',         [CustomerController::class, 'show']);
     Route::put('/{id}',         [CustomerController::class, 'update']);
-    Route::delete('/{id}',      [CustomerController::class, 'destroy'])->middleware('role:manager|admin');
+    Route::delete('/{id}',      [CustomerController::class, 'destroy'])->middleware('role_or_permission:manager|admin|customers.delete');
     Route::get('/{id}/orders',  [CustomerController::class, 'orders']);
 });

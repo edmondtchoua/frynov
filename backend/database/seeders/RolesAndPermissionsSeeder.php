@@ -96,6 +96,14 @@ class RolesAndPermissionsSeeder extends Seeder
         'inventory.transfer',
         'inventory.audit',
         'inventory.print_labels',
+        // RBAC B2.2 — management permissions for sensitive lifecycle routes that
+        // have no dedicated granular CRUD permission. These are admin/manager-only
+        // by construction (granted to admin + manager below, never to member/viewer/
+        // cashier/…), so gating a route with role_or_permission:manager|admin|<perm>
+        // preserves base-role behaviour while letting custom roles be granted them.
+        'orders.manage',      // order lifecycle: confirm / fulfill / cancel + returns
+        'delivery.manage',    // delivery dispatch / deliver / fail (delivery module)
+        'marketplace.manage', // marketplace listings (no marketplace module/perm exists)
     ];
 
     public function run(): void

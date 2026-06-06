@@ -172,10 +172,10 @@ class ImportExportController extends Controller
     /**
      * GET /api/import/template/{type}
      */
-    public function downloadTemplate(string $type)
+    public function downloadTemplate(Request $request, string $type)
     {
         try {
-            return $this->templateService->download($type);
+            return $this->templateService->download($type, $request->user()?->tenant_id);
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 404);
         }

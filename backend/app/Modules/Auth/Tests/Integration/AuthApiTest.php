@@ -139,4 +139,14 @@ class AuthApiTest extends TestCase
 
         $response->assertForbidden();
     }
+
+    #[Test]
+    public function a_login_named_route_exists_so_auth_redirects_do_not_500(): void
+    {
+        // Regression: the auth middleware redirects unauthenticated browser hits to
+        // route('login'). Without a `login` named route this threw
+        // "Route [login] not defined" (e.g. opening /api/export/* directly).
+        $this->assertTrue(\Illuminate\Support\Facades\Route::has('login'));
+        $this->get('/login')->assertStatus(401);
+    }
 }

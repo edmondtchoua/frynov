@@ -20,10 +20,10 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **568 / 568 ✅** (2 skipped, **0 incomplete**) — +pricing localisé, plan_limits, sièges, geo RGPD, tests sécurité |
-| Tests Vitest frontend | **154 / 154 ✅** (+admin back-office, geo) — couverture 38.7 % |
-| Branche | `develop` — **réconciliée** (hardening + pricing localisé + audit approfondi) |
-| Dernière tag | `v0.7.0` (Sprint 7A) |
+| Tests backend | **577 ✅** (575 passed, 2 skipped, **0 incomplete**) — +recette v0.8.0, +P4 landing géo, +Sprint 20 filtres multi-sites |
+| Tests Vitest frontend | **165 / 165 ✅** (+P4 publicPricingService, +Sprint 20 useWarehouses) — couverture ~38 % |
+| Branche | `release/v0.8.0` — **recette en cours** (= `develop` + 8 correctifs recette) |
+| Dernière tag | `v0.7.0` (Sprint 7A) — **`release/v0.8.0` en recette** (Sprints 8→19 + audit pré-release + recette) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
 
 > ⚠️ **Note critique** : avant l'audit, la config `phpunit.xml` ne matchait que certains
@@ -126,7 +126,7 @@ Les modules ou fonctions sensibles peuvent rester limités par **rôle**, **perm
 | Security module | ✅ | 21 | RBAC sur 11 modules, CatalogSecurityTest, PaymentSecurityTest, MultiTenantIsolationTest, AuditTrailTest |
 | Marketplace | ✅ | — | Facebook/WhatsApp/WooCommerce adapters, sync alerts |
 | CountryRules | ✅ | 5 | Migration + Model + RegistrationRuleService + 30 pays seedés |
-| Multi-sites | ⚠️ Fondation | — | Migrations `warehouse_id` orders/payments + `user_warehouses` pivot (pas encore de UI) |
+| Multi-sites | 🔄 Filtres livrés | — | `warehouse_id` orders/payments/stock + **filtres liste par site** (Sprint 20) ; reste : `Branch` metadata, scoping accès, filtres rapports |
 | Sync | 🧪 Scaffold testé — **masqué (feature flag)** | 33 | Scaffold CRUD (HasTenant, `/api`, `tenant`, `role:manager\|admin`) + 33 tests. **Routes derrière `config('frynov.modules.sync')` = `FEATURE_SYNC` (off par défaut)** → invisible en prod, activé en test. Domaine métier : Phase 3 |
 
 **Total tests backend : 568 (2 skipped, 0 incomplete)**
@@ -394,6 +394,19 @@ Reste recommandé (non bloquant) : aucun — les deux findings de l'audit approf
 
 ---
 
+### Recette v0.8.0 — correctifs de pré-finalisation (2026-06-06) — ✅
+
+Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md`](recette/recette-v0.8.0.md)). Anomalies relevées en recette, corrigées à la racine :
+
+- ✅ **Login : rôles team-scoped + abonnement manquants** — l'endpoint public de login renvoyait des rôles vides (team context Spatie non posé) → onglets catalogue réduits + « aucun abonnement ». Corrigé : `login()` pose `setPermissionsTeamId`, le frontend rafraîchit via `/me` après login **et** après onboarding.
+- ✅ **Modales invisibles (Stock/Alertes/Ventes/Paiements/Livraisons)** — le CSS `.modal-backdrop/.modal-box/…` n'existait nulle part → modales rendues hors écran (« les boutons Entrée/Sortie ne marchent pas »). CSS global ajouté à `main.css`.
+- ✅ **Téléchargements import/export « Route [login] not defined »** — `window.open` perdait le token Bearer (401 → redirection vers une route `login` non nommée). Corrigé : downloads via axios `responseType:'blob'` (token attaché) + route web `login` nommée (401 propre).
+- ✅ **Modèles d'import téléchargeables** depuis l'écran Import/Export (Produits/Clients/Fournisseurs).
+- ✅ **Templates d'import — listes déroulantes tenant** : colonnes **Catégorie** + **Fournisseur** (valeurs du tenant) et **Statut** (enum) en déroulante Excel non bloquante (feuille masquée `Listes`, référencée par plage → nombre illimité). `TemplateService` tenant-aware, valeur hors liste créée à l'import.
+- **État `release/v0.8.0`** : backend **573** (571 verts, 2 skipped, 0 fatal) · frontend **159 verts** · `vue-tsc` propre. **8 commits** en avance sur `develop` (à fusionner à la finalisation v0.8.0 → `main` + tag + back-merge `develop`).
+
+---
+
 ## Audit profond modules — GO / NO-GO release (2026-06-04)
 
 ### Verdict global
@@ -473,14 +486,15 @@ Reste recommandé (non bloquant) : aucun — les deux findings de l'audit approf
 - 🟡 Reste : ajouter prix annuels et méthodes de paiement disponibles lorsque le checkout local P6 est cadré.
 - DoD : le backend devient la source de vérité publique des prix.
 
-#### Sprint P4 — Landing géographique
+#### Sprint P4 — Landing géographique — ✅ livré (2026-06-06)
 
 **Objectif** : adapter la landing à la zone sans dupliquer la source pricing.
 
-- Frontend : `useGeoContent` détecte pays/marché, sélecteur manuel, fallback global.
-- Frontend : Landing consomme l'API pricing ; contenu hero/FAQ/moyens de paiement par marché.
-- Tests : Vitest landing + geo, scénario CA→CAD, FR→EUR, SN→XOF, CM→XAF.
-- DoD : aucun XOF par défaut pour Canada/France ; correction manuelle possible.
+- ✅ Frontend : `useGeoContent` détecte pays/marché (via `/api/public/geo` + fallback locale), **sélecteur manuel** (`setMarketOverride`), fallback global.
+- ✅ Frontend : **la landing consomme `/api/public/pricing`** (nouveau `services/publicPricingService.ts`) — les prix/devises/périodes viennent du **backend** (source de vérité), plus de prix contractuels en dur. `pricingAmounts` conservé **uniquement** comme repli hors-ligne si l'API est injoignable. Re-fetch au changement de marché dans le sélecteur. Montants en centimes (÷100) formatés selon la devise (XOF/XAF sans décimales).
+- ✅ Tests : backend `PublicPricingApiTest::each_target_country_resolves_its_local_market_and_currency` (SN→XOF, CM→XAF, FR→EUR, CA→CAD au niveau source) ; frontend `publicPricingService.spec.ts` (3) + assertions de consommation API dans `LandingView.spec.ts`.
+- ✅ DoD : **aucun XOF par défaut pour Canada/France** (la devise suit le pays résolu) ; **correction manuelle** possible via le sélecteur.
+- 🟡 Reste (P5) : brancher `/billing/upgrade` (espace authentifié) sur la même source.
 
 #### Sprint P5 — Upgrade/Billing localisé
 
@@ -503,16 +517,17 @@ Reste recommandé (non bloquant) : aucun — les deux findings de l'audit approf
 
 ---
 
-### Sprint 20 — Multi-sites complet + Agents
+### Sprint 20 — Multi-sites : filtres par site — 🔄 en cours (filtres livrés 2026-06-06)
 
-**Backend**
-- `Branch` model (alias Warehouse avec metadata agence)
-- `user_warehouses` — scoping accès par agence
-- Filtres rapports par warehouse/branche
+**Livré — filtrage par entrepôt/site**
+- ✅ Backend : `GET /api/orders?warehouse_id=` (`OrderService::paginate`) et `GET /api/payments?warehouse_id=` (`PaymentService::list`) filtrent par site ; le stock (`GET /api/inventory?warehouse_id=`) le faisait déjà.
+- ✅ Frontend : sélecteur **« Tous les entrepôts »** sur **OrderListView** et **PaymentListView** (StockListView l'avait déjà), via le composable partagé `useWarehouses` (fail-soft : liste vide si l'API échoue → « tous les sites »).
+- ✅ Tests : `OrderServiceTest::paginate_filters_orders_by_warehouse`, `PaymentServiceTest::list_filters_payments_by_warehouse`, `useWarehouses.spec.ts` (charge + fail-soft).
 
-**Frontend**
-- Filtre entrepôt/branche sur OrderListView, PaymentListView, StockListView
-- Page Agences/Branches dans Settings > Entreprise
+**Reste Sprint 20**
+- `Branch` model (alias Warehouse avec métadonnées agence) + `user_warehouses` — **scoping d'accès** par agence (sensible sécurité → à faire avec soin et tests RBAC).
+- Filtres rapports (ventes / valeur stock) par warehouse/branche.
+- Page Agences/Branches dans Paramètres > Entreprise (l'onglet **Entrepôts** existe déjà sous Stock).
 
 ---
 

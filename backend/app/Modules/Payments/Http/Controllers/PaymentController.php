@@ -22,7 +22,7 @@ class PaymentController extends Controller
     {
         $payments = $this->service->list(
             tenantId: $request->user()->tenant_id,
-            filters:  $request->only(['order_id', 'method', 'from', 'to', 'per_page']),
+            filters:  $request->only(['order_id', 'method', 'from', 'to', 'per_page', 'warehouse_id']),
         );
 
         return PaymentResource::collection($payments);

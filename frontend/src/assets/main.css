@@ -569,3 +569,66 @@ textarea.form-input {
   height: 0.875rem;
   border-radius: 4px;
 }
+
+/* ── Modals (global) ──────────────────────────────────────────────────────
+   Shared dialog used by Stock, Alertes, Ventes, Paiements, Livraisons. These
+   structural classes had NO definition, so every modal rendered unstyled at the
+   bottom of the page — clicking "Entrée/Sortie/Ajuster" looked like a no-op. */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+.modal-box {
+  background: var(--white, #fff);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--gray-100, #f1f5f9);
+}
+.modal-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--gray-900, #0f172a);
+}
+.modal-subtitle {
+  font-size: 0.85rem;
+  color: var(--gray-500, #64748b);
+  margin: 2px 0 0;
+}
+.modal-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  line-height: 0;
+  flex-shrink: 0;
+}
+.modal-close:hover { background: var(--gray-100, #f1f5f9); }
+.modal-body { padding: 1.25rem; }
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--gray-100, #f1f5f9);
+}

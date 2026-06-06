@@ -533,10 +533,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useGeoContent } from '@/composables/useGeoContent'
+import { fetchPublicPricing, type PublicPlan } from '@/services/publicPricingService'
 import FrynovLogo from '@/shared/components/FrynovLogo.vue'
 
 const auth       = useAuthStore()
@@ -551,6 +552,54 @@ const { region, market, isAfrica, selectableMarkets, selectedMarket } = useGeoCo
 function onScroll() { scrolled.value = window.scrollY > 40 }
 onMounted(()   => window.addEventListener('scroll', onScroll, { passive: true }))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
+
+/* ── Localized pricing from the backend (single source of truth) ───────────────
+   The landing must NOT hardcode contractual prices. We fetch them from the public
+   pricing API for the resolved/selected market; `pricingAmounts` below is kept ONLY
+   as an offline fallback if the API is unreachable. Re-fetches when the visitor
+   changes market in the selector. */
+const apiPlans = ref<PublicPlan[] | null>(null)
+
+async function loadPricing(marketCode: string): Promise<void> {
+  // The API knows real markets, not the legacy 'africa' alias → map it to UEMOA/XOF.
+  const code = marketCode === 'africa' ? 'waemu' : marketCode
+  try {
+    const res = await fetchPublicPricing({ market: code })
+    apiPlans.value = res.data
+  } catch {
+    apiPlans.value = null // graceful: fall back to local currency-aware amounts
+  }
+}
+
+watch(() => market.value.code, code => { void loadPricing(code) }, { immediate: true })
+
+const apiPlanByCode = computed<Record<string, PublicPlan>>(() =>
+  Object.fromEntries((apiPlans.value ?? []).map(p => [p.code, p])),
+)
+
+/** Format an integer-centimes amount as a plain localized number (currency shown separately). */
+function formatPlanAmount(minor: number, currency: string): string {
+  const noDecimals = currency === 'XOF' || currency === 'XAF'
+  return new Intl.NumberFormat('fr-FR', {
+    minimumFractionDigits: noDecimals ? 0 : 2,
+    maximumFractionDigits: noDecimals ? 0 : 2,
+  }).format(minor / 100)
+}
+
+/** API price for a plan code, falling back to the local hardcoded amount if the API is down. */
+function planAmount(code: string, fallback: string): string {
+  const plan = apiPlanByCode.value[code]
+  if (!plan) return fallback
+  if (!plan.price || plan.price.base_amount_minor === 0) return 'Gratuit'
+  return formatPlanAmount(plan.price.base_amount_minor, plan.price.currency)
+}
+
+function planPeriod(code: string, fallback: string): string {
+  const plan = apiPlanByCode.value[code]
+  if (!plan) return fallback
+  if (!plan.price || plan.price.base_amount_minor === 0) return ''
+  return `${plan.price.currency} / mois`
+}
 
 /* ── Trust avatars ────────────────────────────────────────── */
 const trustAvatars = [
@@ -787,8 +836,8 @@ const pricingSub = computed(() => `Tous les modules métier sont inclus. Vous pa
 const plans = computed<LandingPlan[]>(() => [
   {
     name: 'Starter / Découverte',
-    price: pricing.value.discovery,
-    period: '',
+    price: planAmount('starter', pricing.value.discovery),
+    period: planPeriod('starter', ''),
     tagline: 'Pour tester Frynov sans engagement.',
     featured: false,
     cta: 'Commencer gratuitement',
@@ -802,8 +851,8 @@ const plans = computed<LandingPlan[]>(() => [
   },
   {
     name: 'Essentiel',
-    price: pricing.value.essential,
-    period: pricing.value.period,
+    price: planAmount('essential', pricing.value.essential),
+    period: planPeriod('essential', pricing.value.period),
     tagline: 'Pour gérer une boutique active au quotidien.',
     featured: false,
     cta: 'Choisir Essentiel',
@@ -818,8 +867,8 @@ const plans = computed<LandingPlan[]>(() => [
   },
   {
     name: 'Pro / Croissance',
-    price: pricing.value.growth,
-    period: pricing.value.period,
+    price: planAmount('pro', pricing.value.growth),
+    period: planPeriod('pro', pricing.value.period),
     tagline: 'Pour les équipes qui vendent plus et veulent automatiser.',
     featured: true,
     cta: 'Essayer Croissance 30 jours',
@@ -834,8 +883,8 @@ const plans = computed<LandingPlan[]>(() => [
   },
   {
     name: 'Business / Enterprise',
-    price: pricing.value.business,
-    period: pricing.value.period,
+    price: planAmount('enterprise', pricing.value.business),
+    period: planPeriod('enterprise', pricing.value.period),
     tagline: 'Pour les groupes, grossistes et réseaux multi-sites.',
     featured: false,
     cta: 'Contacter l’équipe',

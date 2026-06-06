@@ -12,13 +12,21 @@
           ⬆️ Nouvel import
         </button>
         <div class="export-menu">
+          <span class="export-label">Modèles :</span>
+          <button class="btn btn-outline btn-sm" title="Télécharger le modèle d'import (XLSX)" @click="doTemplate('products')">📊 Produits</button>
+          <button class="btn btn-outline btn-sm" title="Télécharger le modèle d'import (XLSX)" @click="doTemplate('customers')">👥 Clients</button>
+          <button class="btn btn-outline btn-sm" title="Télécharger le modèle d'import (XLSX)" @click="doTemplate('suppliers')">🏭 Fournisseurs</button>
+        </div>
+        <div class="export-menu">
           <span class="export-label">Exporter :</span>
-          <button class="btn btn-outline btn-sm" @click="doExport('products', 'xlsx')">📊 Produits</button>
-          <button class="btn btn-outline btn-sm" @click="doExport('customers', 'xlsx')">👥 Clients</button>
-          <button class="btn btn-outline btn-sm" @click="doExport('suppliers', 'xlsx')">🏭 Fournisseurs</button>
+          <button class="btn btn-outline btn-sm" @click="doExport('products')">📊 Produits</button>
+          <button class="btn btn-outline btn-sm" @click="doExport('customers')">👥 Clients</button>
+          <button class="btn btn-outline btn-sm" @click="doExport('suppliers')">🏭 Fournisseurs</button>
         </div>
       </div>
     </div>
+
+    <p v-if="downloadError" class="download-error">⚠️ {{ downloadError }}</p>
 
     <!-- ── Filters ────────────────────────────────────────────────────────── -->
     <div class="filters-bar">
@@ -101,7 +109,7 @@
             <td @click.stop>
               <div class="action-group">
                 <button v-if="s.status === 'awaiting_approval'" class="btn-action btn-approve" title="Continuer" @click="continueSession(s)">▶</button>
-                <button v-if="['completed','partial'].includes(s.status)" class="btn-action btn-report" title="Rapport PDF" @click="importExportService.downloadReport(s.id)">📄</button>
+                <button v-if="['completed','partial'].includes(s.status)" class="btn-action btn-report" title="Rapport PDF" @click="doReport(s.id)">📄</button>
                 <button v-if="canCancel(s)" class="btn-action btn-delete" title="Annuler" @click.stop="cancelSession(s)">✕</button>
               </div>
             </td>
@@ -162,7 +170,7 @@
           </div>
 
           <div class="modal-footer">
-            <button v-if="['completed','partial'].includes(detailSession.status)" class="btn btn-outline" @click="importExportService.downloadReport(detailSession.id)">
+            <button v-if="['completed','partial'].includes(detailSession.status)" class="btn btn-outline" @click="doReport(detailSession.id)">
               📄 Rapport PDF
             </button>
             <button v-if="detailSession.status === 'awaiting_approval'" class="btn btn-primary" @click="continueSession(detailSession)">
@@ -239,9 +247,29 @@ async function cancelSession(s: ImportSession) {
   }
 }
 
-function doExport(type: string, format: string) {
-  importExportService.exportExcel(type as any, {})
+const downloadError = ref('')
+
+// Downloads use responseType:'blob', so an error response (401/403/500) arrives
+// as a Blob — read & parse it to surface the real message.
+async function runDownload(task: Promise<void>) {
+  downloadError.value = ''
+  try {
+    await task
+  } catch (e: any) {
+    let msg = 'Téléchargement impossible.'
+    const data = e?.response?.data
+    if (data instanceof Blob) {
+      try { msg = JSON.parse(await data.text())?.message ?? msg } catch { /* keep default */ }
+    } else if (data?.message) {
+      msg = data.message
+    }
+    downloadError.value = msg
+  }
 }
+
+function doExport(type: string)   { runDownload(importExportService.exportExcel(type as any)) }
+function doTemplate(type: string) { runDownload(importExportService.downloadTemplate(type as any)) }
+function doReport(id: string)     { runDownload(importExportService.downloadReport(id)) }
 
 const fmtDate = formatDateTime
 </script>
@@ -256,6 +284,7 @@ const fmtDate = formatDateTime
 .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .export-menu { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .export-label { font-size: 13px; color: var(--gray-500); }
+.download-error { margin: 0 0 12px; padding: 8px 12px; border-radius: 8px; background: #fef2f2; color: #991b1b; font-size: 13px; }
 
 .filters-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
 .filter-select { padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 14px; outline: none; background: white; cursor: pointer; }

@@ -13,10 +13,17 @@ export const useAuthStore = defineStore('auth', () => {
     const response = await authService.login(credentials)
 
     token.value = response.token
-    user.value  = response.user
+    user.value  = response.user   // provisional
 
     localStorage.setItem('auth_token',  response.token)
     localStorage.setItem('tenant_slug', response.user.tenant?.slug ?? '')
+
+    // The /login endpoint is public (no tenant middleware), so its UserResource
+    // carries EMPTY team-scoped roles and no subscription. Refresh from /me (behind
+    // the tenant middleware) to load the complete user — roles drive the RBAC tab
+    // menus (Catégories/Déclinaisons/Attributs…), subscription drives the billing
+    // screen. Without this, both appear missing right after login.
+    await fetchCurrentUser()
   }
 
   async function logout() {

@@ -3,7 +3,7 @@ import type { PaginatedResponse } from '@/api/types'
 import type { CreateOrderPayload, Order } from '../types'
 
 export const orderService = {
-  list(params?: { status?: string; page?: number; per_page?: number }) {
+  list(params?: { status?: string; search?: string; from_date?: string; to_date?: string; warehouse_id?: string; page?: number; per_page?: number }) {
     return client.get<PaginatedResponse<Order>>('/api/orders', { params }).then(r => r.data)
   },
 

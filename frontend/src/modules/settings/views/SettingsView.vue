@@ -234,6 +234,12 @@
                         title="Restreindre l'accès à certains entrepôts (multi-sites)"
                         @click="openWarehouseModal(u)"
                       >Sites{{ u.warehouse_ids?.length ? ` (${u.warehouse_ids.length})` : '' }}</button>
+                      <button
+                        class="btn-toggle-user"
+                        style="margin-left:0.4rem"
+                        title="Accorder un accès temporaire (rôle à durée limitée)"
+                        @click="openTempModal(u)"
+                      >Accès temp.{{ u.temporary_access?.length ? ` (${u.temporary_access.length})` : '' }}</button>
                     </template>
                     <span v-else class="team-date">—</span>
                   </td>
@@ -477,6 +483,50 @@
       </div>
     </div>
 
+    <!-- ── Member temporary access modal (auto-expiring role) ─────────────── -->
+    <div v-if="tempModal.open" class="modal-overlay" @click.self="tempModal.open = false">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Accès temporaire — {{ tempModal.userName }}</h3>
+          <button class="modal-close" @click="tempModal.open = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-desc">Accordez un rôle à durée limitée. Il est <strong>révoqué automatiquement</strong> à l'échéance, sans action manuelle.</p>
+          <div v-if="tempModal.error" class="form-error">{{ tempModal.error }}</div>
+
+          <div v-if="tempModal.grants.length" style="margin-bottom:0.75rem; display:flex; flex-direction:column; gap:0.35rem;">
+            <div v-for="g in tempModal.grants" :key="g.id" style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.4rem 0.6rem;">
+              <span>{{ roleLabel(g.role) }} — jusqu'au {{ teamFmtDate(g.expires_at) }}</span>
+              <button style="background:none; border:0; color:#dc2626; font-weight:600; cursor:pointer;" @click="revokeTemp(g.id)">Révoquer</button>
+            </div>
+          </div>
+
+          <div class="form-row"><label>Rôle *</label>
+            <select v-model="tempForm.role" class="form-select">
+              <option value="manager">Manager</option>
+              <option value="member">Membre</option>
+              <option value="viewer">Lecteur</option>
+              <option value="cashier">Caissier</option>
+              <option value="agent">Agent</option>
+              <option value="delivery">Livreur</option>
+            </select>
+          </div>
+          <div class="form-row"><label>Expire le *</label>
+            <input v-model="tempForm.expires_at" type="datetime-local" class="form-input" />
+          </div>
+          <div class="form-row"><label>Note</label>
+            <input v-model="tempForm.note" type="text" class="form-input" placeholder="Optionnel" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="tempModal.open = false">Fermer</button>
+          <button class="btn-submit" :disabled="tempModal.saving || !tempForm.expires_at" @click="grantTemp">
+            {{ tempModal.saving ? 'Attribution…' : 'Accorder l’accès' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Upgrade / payment proof modal (teleported to root level) ───────── -->
     <div v-if="upgradeModal.open" class="modal-overlay" @click.self="upgradeModal.open = false">
       <div class="modal">
@@ -665,6 +715,47 @@ async function saveWarehouses() {
     whModal.error = err?.response?.data?.message ?? 'Enregistrement impossible.'
   } finally {
     whModal.saving = false
+  }
+}
+
+// ── Member temporary access (auto-expiring role) ──────────────────────────────
+const tempModal = reactive({ open: false, saving: false, error: '', userId: '', userName: '', grants: [] as Array<{ id: string; role: string; expires_at: string }> })
+const tempForm = reactive({ role: 'manager', expires_at: '', note: '' })
+
+function openTempModal(user: WorkspaceUser) {
+  tempModal.userId = user.id
+  tempModal.userName = user.name
+  tempModal.grants = [...(user.temporary_access ?? [])]
+  tempModal.error = ''
+  Object.assign(tempForm, { role: 'manager', expires_at: '', note: '' })
+  tempModal.open = true
+}
+
+async function grantTemp() {
+  tempModal.saving = true
+  tempModal.error = ''
+  try {
+    const iso = new Date(tempForm.expires_at).toISOString()
+    await authService.grantTemporaryAccess(tempModal.userId, { role: tempForm.role, expires_at: iso, note: tempForm.note || undefined })
+    await loadTeamUsers()
+    tempModal.grants = [...(teamUsers.value.find(u => u.id === tempModal.userId)?.temporary_access ?? [])]
+    Object.assign(tempForm, { role: 'manager', expires_at: '', note: '' })
+  } catch (e: any) {
+    tempModal.error = e?.response?.data?.message
+      ?? (Object.values(e?.response?.data?.errors ?? {})?.[0] as string[] | undefined)?.[0]
+      ?? 'Attribution impossible.'
+  } finally {
+    tempModal.saving = false
+  }
+}
+
+async function revokeTemp(grantId: string) {
+  try {
+    await authService.revokeTemporaryAccess(grantId)
+    await loadTeamUsers()
+    tempModal.grants = [...(teamUsers.value.find(u => u.id === tempModal.userId)?.temporary_access ?? [])]
+  } catch (e: any) {
+    tempModal.error = e?.response?.data?.message ?? 'Révocation impossible.'
   }
 }
 

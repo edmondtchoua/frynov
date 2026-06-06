@@ -39,6 +39,8 @@ Route::prefix('workspace')->name('workspace.')
         Route::patch('users/{user}',  [WorkspaceController::class, 'updateUser'])->name('users.update');
         Route::delete('users/{user}', [WorkspaceController::class, 'toggleUser'])->name('users.toggle');
         Route::put('users/{user}/warehouses', [WorkspaceController::class, 'setUserWarehouses'])->name('users.warehouses');
+        Route::post('users/{user}/temporary-access', [WorkspaceController::class, 'grantTemporaryAccess'])->name('users.temp-access.grant');
+        Route::delete('temporary-access/{grant}', [WorkspaceController::class, 'revokeTemporaryAccess'])->name('temp-access.revoke');
 
         // Company settings
         Route::get('settings',        [WorkspaceController::class, 'getSettings'])->name('settings.show');

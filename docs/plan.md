@@ -20,8 +20,8 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **601 ✅** (599 passed, 2 skipped, **0 incomplete**) — +Sprint 20/21, +RBAC Phase A (gating module dynamique) |
-| Tests Vitest frontend | **179 / 179 ✅** (+Sprint 21 CountryRules, +Sprint 20 accès membre→sites, +ajustements stock, +édition plan) — couverture ~38 % |
+| Tests backend | **607 ✅** (605 passed, 2 skipped, **0 incomplete**) — +RBAC Phase A (gating module) + Phase C (accès temporaires auto-expirants) |
+| Tests Vitest frontend | **181 / 181 ✅** (+RBAC accès temporaires UI) — couverture ~38 % |
 | Branche | `release/v1.0.0` — **RC `v1.0.0-rc.1`** (figée depuis `develop`) ; `develop` = intégration |
 | Dernière tag | `v0.8.0` (publiée sur `main`) → **`v1.0.0-rc.1`** candidat prod (cf. [Go/No-Go v1.0.0](recette/go-no-go-v1.0.0.md)) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |

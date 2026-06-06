@@ -73,7 +73,7 @@
 |---|---|---|
 | **A — Gating module** | ✅ Retenu | ✅ **Livré** : middleware data-driven `module:<code>` (fail-open pour tenants non provisionnés), gate sur `reports` · `suppliers` · `import_export` · `delivery` ; retrait d'un module ⇒ **403 pour tous, admins inclus** ; `ModuleGatingTest`. |
 | **B — Rôles/permissions fins** | ✅ Retenu — **B2 (rôles custom par tenant)** | 🔲 À venir : création de rôles tenant + attribution de permissions **bornée par le plan/modules actifs** + migration des routes sensibles `role:`→`permission:`. |
-| **C — Accès temporaires** | ✅ Retenu | 🔲 À venir : table `temporary_access_grants` + expiration auto (check runtime **+** job planifié) + UI. |
+| **C — Accès temporaires** | ✅ Retenu | ✅ **Livré** : `temporary_access_grants` + `TemporaryAccessService` (rôle accordé à échéance, révocation sûre — ne retire jamais un rôle permanent), commande planifiée `access:revoke-expired` (chaque minute → expiration **sans action manuelle**), endpoints workspace + UI **« Accès temp. »** (Paramètres → Équipe). `admin` non grantable temporairement (pas de super-élévation). `TemporaryAccessTest` (6). |
 
 ### Contraintes additionnelles actées
 - **Modules dynamiques** : ajouter/enrichir un module **ne doit pas** imposer de refonte → **respecté** (gating data-driven : un nouveau module = 1 ligne `module:<code>` + 1 row `erp_modules`, zéro logique hardcodée).

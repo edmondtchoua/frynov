@@ -11,6 +11,8 @@ La page d'accueil publique (`/`) affiche désormais les tarifs **dans la devise 
 - Exemples : un visiteur au **Canada** voit des prix en **CAD**, en **France** en **EUR**, au **Sénégal** en **XOF**, au **Cameroun** en **XAF** — jamais un XOF par défaut hors zone FCFA.
 - Si l'API est momentanément injoignable, un repli local (déjà adapté à la devise) garde la page fonctionnelle.
 
+**Écran d'upgrade connecté (P5)** : la page **Paramètres → Abonnement → Changer de plan** (`/billing/upgrade`) affiche les mêmes tarifs issus du backend, avec un sélecteur de devise. Votre **abonnement en cours** reste affiché dans sa devise de facturation (source `/api/me/subscription`).
+
 > Les prix affichés restent indicatifs tant que le checkout local par marché (P6) n'est pas livré ; la finalisation contractuelle se fait à la souscription.
 
 ## Principe de tarification cible

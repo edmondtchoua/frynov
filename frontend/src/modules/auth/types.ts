@@ -91,6 +91,7 @@ export interface WorkspaceUser {
   roles: string[]
   is_active: boolean
   created_at: string | null
+  warehouse_ids?: string[]
 }
 
 export interface WorkspaceSettings {

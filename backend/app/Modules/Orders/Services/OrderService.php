@@ -39,11 +39,14 @@ class OrderService
         return $order;
     }
 
-    public function paginate(string $tenantId, int $perPage = 20, ?string $status = null, ?string $warehouseId = null): LengthAwarePaginator
+    /**
+     * @param  array<int,string>|null  $warehouseIds  null = all warehouses; array = restrict to these ([] = none).
+     */
+    public function paginate(string $tenantId, int $perPage = 20, ?string $status = null, ?array $warehouseIds = null): LengthAwarePaginator
     {
         return Order::where('tenant_id', $tenantId)
             ->when($status, fn($q) => $q->where('status', $status))
-            ->when($warehouseId, fn($q) => $q->where('warehouse_id', $warehouseId))
+            ->when($warehouseIds !== null, fn($q) => $q->whereIn('warehouse_id', $warehouseIds))
             ->with('lines')
             ->latest()
             ->paginate($perPage);

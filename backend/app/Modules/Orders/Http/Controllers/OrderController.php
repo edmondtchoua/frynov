@@ -6,6 +6,7 @@ use App\Modules\Inventory\Exceptions\InsufficientStockException;
 use App\Modules\Inventory\Exceptions\StockLockException;
 use App\Modules\Orders\Exceptions\OrderNotFoundException;
 use App\Modules\Orders\Exceptions\OrderStateException;
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Modules\Orders\Http\Requests\CreateOrderRequest;
 use App\Modules\Orders\Services\OrderService;
 use Illuminate\Http\JsonResponse;
@@ -23,7 +24,7 @@ class OrderController extends Controller
             $request->user()->tenant_id,
             (int) $request->query('per_page', 20),
             $request->query('status'),
-            $request->query('warehouse_id'),
+            WarehouseScope::resolve($request->user(), $request->query('warehouse_id')),
         );
 
         return response()->json($paginator);

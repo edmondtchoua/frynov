@@ -199,6 +199,58 @@ class WorkspaceController extends Controller
         ]);
     }
 
+    /**
+     * PUT /api/workspace/users/{userId}/warehouses
+     * Set the warehouses a (non-manager) user's data access is scoped to.
+     * Empty list = unrestricted (whole tenant). Admin/manager only.
+     */
+    public function setUserWarehouses(Request $request, string $userId): JsonResponse
+    {
+        if (! $request->user()->hasAnyRole(['admin', 'manager'])) {
+            return response()->json(['message' => 'Action réservée aux administrateurs et managers.'], 403);
+        }
+
+        $tenant = $request->user()->tenant;
+        $user   = User::where('tenant_id', $tenant->id)->findOrFail($userId);
+
+        $request->validate([
+            'warehouse_ids'   => ['present', 'array'],
+            'warehouse_ids.*' => ['uuid'],
+        ]);
+
+        // Keep only warehouses that actually belong to this tenant (no cross-tenant assignment).
+        $validIds = \App\Modules\Inventory\Models\Warehouse::where('tenant_id', $tenant->id)
+            ->whereIn('id', $request->input('warehouse_ids'))
+            ->pluck('id')
+            ->all();
+
+        DB::transaction(function () use ($user, $validIds, $tenant) {
+            DB::table('user_warehouses')->where('user_id', $user->id)->delete();
+            foreach ($validIds as $wid) {
+                DB::table('user_warehouses')->insert([
+                    'id'           => (string) Str::uuid(),
+                    'user_id'      => $user->id,
+                    'warehouse_id' => $wid,
+                    'tenant_id'    => $tenant->id,
+                    'role'         => 'operator',
+                    'created_at'   => now(),
+                    'updated_at'   => now(),
+                ]);
+            }
+        });
+
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->logFromRequest(
+                $request, 'workspace.warehouses_assigned', $user, [], ['warehouse_ids' => $validIds], 'medium',
+            );
+        } catch (\Throwable) {}
+
+        return response()->json([
+            'data'    => $this->userToArray($user->refresh()),
+            'message' => 'Accès aux entrepôts mis à jour.',
+        ]);
+    }
+
     // ── Onboarding provisioning ───────────────────────────────────────────────
 
     /**
@@ -352,6 +404,7 @@ class WorkspaceController extends Controller
             'roles'      => $user->getRoleNames(),
             'is_active'  => $user->deleted_at === null,
             'created_at' => $user->created_at?->toISOString(),
+            'warehouse_ids' => DB::table('user_warehouses')->where('user_id', $user->id)->pluck('warehouse_id')->all(),
         ];
     }
 

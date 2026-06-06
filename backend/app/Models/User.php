@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -47,6 +48,40 @@ class User extends Authenticatable
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * Warehouses this user is explicitly assigned to (multi-site access scoping).
+     */
+    public function warehouses(): BelongsToMany
+    {
+        return $this->belongsToMany(\App\Modules\Inventory\Models\Warehouse::class, 'user_warehouses')
+            ->withPivot('role')
+            ->withTimestamps();
+    }
+
+    /**
+     * Warehouse IDs this user's DATA access is restricted to, or null when unrestricted.
+     *
+     * Rules (multi-site, Sprint 20):
+     *  - super-admins, admins and managers are NEVER restricted (return null);
+     *  - a user with no explicit assignment is unrestricted (whole tenant) — backward compatible;
+     *  - otherwise, access is limited to the assigned warehouse IDs.
+     *
+     * @return array<int,string>|null
+     */
+    public function accessibleWarehouseIds(): ?array
+    {
+        if ($this->isSuperAdmin() || $this->hasAnyRole(['admin', 'manager'])) {
+            return null;
+        }
+
+        $ids = \Illuminate\Support\Facades\DB::table('user_warehouses')
+            ->where('user_id', $this->id)
+            ->pluck('warehouse_id')
+            ->all();
+
+        return $ids === [] ? null : $ids;
     }
 
     public function isSuperAdmin(): bool

@@ -90,6 +90,12 @@ export const authService = {
     return data
   },
 
+  /** PUT /api/workspace/users/:id/warehouses — set the sites a member's data access is scoped to */
+  async setUserWarehouses(userId: string, warehouseIds: string[]): Promise<WorkspaceUser> {
+    const { data } = await client.put<{ data: WorkspaceUser }>(`/api/workspace/users/${userId}/warehouses`, { warehouse_ids: warehouseIds })
+    return data.data
+  },
+
   // ── Workspace: company settings ────────────────────────────────────────────
 
   /** GET /api/workspace/settings */

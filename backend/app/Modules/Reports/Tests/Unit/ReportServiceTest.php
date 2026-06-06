@@ -166,7 +166,7 @@ class ReportServiceTest extends TestCase
         $this->paymentInWarehouse(30_000, $whA->id);
         $this->paymentInWarehouse(20_000, $whB->id);
 
-        $this->assertSame(30_000, $this->service->sales($this->tenant->id, '7d', $whA->id)['total_revenue']);
+        $this->assertSame(30_000, $this->service->sales($this->tenant->id, '7d', [$whA->id])['total_revenue']);
         $this->assertSame(50_000, $this->service->sales($this->tenant->id, '7d')['total_revenue']);
     }
 
@@ -181,7 +181,7 @@ class ReportServiceTest extends TestCase
         Stock::create(['tenant_id' => $this->tenant->id, 'warehouse_id' => $whA->id, 'product_id' => $product->id, 'quantity' => 5, 'reserved_quantity' => 0, 'low_stock_threshold' => 0, 'unit_cost_cents' => 8000, 'total_value_cents' => 40000]);
         Stock::create(['tenant_id' => $this->tenant->id, 'warehouse_id' => $whB->id, 'product_id' => $product->id, 'quantity' => 3, 'reserved_quantity' => 0, 'low_stock_threshold' => 0, 'unit_cost_cents' => 8000, 'total_value_cents' => 24000]);
 
-        $a = $this->service->stock($this->tenant->id, $whA->id);
+        $a = $this->service->stock($this->tenant->id, [$whA->id]);
         $this->assertSame(1, $a['total_skus']);
         $this->assertSame(5 * 8000, $a['stock_value']);
 

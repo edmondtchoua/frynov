@@ -20,10 +20,10 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **568 / 568 ✅** (2 skipped, **0 incomplete**) — +pricing localisé, plan_limits, sièges, geo RGPD, tests sécurité |
-| Tests Vitest frontend | **154 / 154 ✅** (+admin back-office, geo) — couverture 38.7 % |
-| Branche | `develop` — **réconciliée** (hardening + pricing localisé + audit approfondi) |
-| Dernière tag | `v0.7.0` (Sprint 7A) — **`release/v0.8.0` en préparation** (Sprints 8→19 + audit pré-release) |
+| Tests backend | **573 ✅** (571 passed, 2 skipped, **0 incomplete**) — +recette v0.8.0 (auth login team-scope, import templates déroulantes) |
+| Tests Vitest frontend | **159 / 159 ✅** (+téléchargements authentifiés import/export) — couverture ~38 % |
+| Branche | `release/v0.8.0` — **recette en cours** (= `develop` + 8 correctifs recette) |
+| Dernière tag | `v0.7.0` (Sprint 7A) — **`release/v0.8.0` en recette** (Sprints 8→19 + audit pré-release + recette) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
 
 > ⚠️ **Note critique** : avant l'audit, la config `phpunit.xml` ne matchait que certains
@@ -391,6 +391,19 @@ Reste recommandé (non bloquant) : aucun — les deux findings de l'audit approf
   - `inviting_beyond_the_user_cap_is_blocked_with_402` — palier gratuit bloque la 2ᵉ invitation **de bout en bout** (HTTP → `EnforceQuota` → 402 `quota_exceeded`).
   - `paid_plan_with_unlimited_seats_allows_inviting_beyond_included` — plan payant (`max_users=null`) laisse inviter au-delà des sièges inclus (201) → fix sièges vérifié end-to-end.
 - **État `develop`** : backend **568 verts** (0 fatal, 0 incomplete) · frontend **154 verts** (couverture 38.7 %) · `vue-tsc` propre.
+
+---
+
+### Recette v0.8.0 — correctifs de pré-finalisation (2026-06-06) — ✅
+
+Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md`](recette/recette-v0.8.0.md)). Anomalies relevées en recette, corrigées à la racine :
+
+- ✅ **Login : rôles team-scoped + abonnement manquants** — l'endpoint public de login renvoyait des rôles vides (team context Spatie non posé) → onglets catalogue réduits + « aucun abonnement ». Corrigé : `login()` pose `setPermissionsTeamId`, le frontend rafraîchit via `/me` après login **et** après onboarding.
+- ✅ **Modales invisibles (Stock/Alertes/Ventes/Paiements/Livraisons)** — le CSS `.modal-backdrop/.modal-box/…` n'existait nulle part → modales rendues hors écran (« les boutons Entrée/Sortie ne marchent pas »). CSS global ajouté à `main.css`.
+- ✅ **Téléchargements import/export « Route [login] not defined »** — `window.open` perdait le token Bearer (401 → redirection vers une route `login` non nommée). Corrigé : downloads via axios `responseType:'blob'` (token attaché) + route web `login` nommée (401 propre).
+- ✅ **Modèles d'import téléchargeables** depuis l'écran Import/Export (Produits/Clients/Fournisseurs).
+- ✅ **Templates d'import — listes déroulantes tenant** : colonnes **Catégorie** + **Fournisseur** (valeurs du tenant) et **Statut** (enum) en déroulante Excel non bloquante (feuille masquée `Listes`, référencée par plage → nombre illimité). `TemplateService` tenant-aware, valeur hors liste créée à l'import.
+- **État `release/v0.8.0`** : backend **573** (571 verts, 2 skipped, 0 fatal) · frontend **159 verts** · `vue-tsc` propre. **8 commits** en avance sur `develop` (à fusionner à la finalisation v0.8.0 → `main` + tag + back-merge `develop`).
 
 ---
 

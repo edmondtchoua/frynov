@@ -3,7 +3,7 @@
 use App\Modules\Suppliers\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'tenant'])->prefix('api/suppliers')->group(function () {
+Route::middleware(['auth:sanctum', 'tenant', 'module:suppliers'])->prefix('api/suppliers')->group(function () {
     Route::get('/',         [SupplierController::class, 'index']);
     Route::post('/',        [SupplierController::class, 'store']);
     Route::get('/search',   [SupplierController::class, 'search']);

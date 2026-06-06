@@ -3,7 +3,7 @@
 use App\Modules\Delivery\Http\Controllers\DeliveryController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
+Route::middleware(['auth:sanctum', 'tenant', 'module:delivery'])->group(function () {
 
     Route::prefix('api/deliveries')->group(function () {
         Route::get('/',               [DeliveryController::class, 'index']);

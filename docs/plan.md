@@ -36,6 +36,20 @@ Exigences bloquantes :
 - plus de token Bearer persistant dans `localStorage`/`sessionStorage` ;
 - plus de `v-html` sur SVG/HTML venant de données modules.
 
+## Gate UX/UI audit — expérience produit et accessibilité
+
+> Ajout 2026-06-06 : un audit UX/UI approfondi est disponible dans `docs/ux-ui/audit-ux-ui-approfondi.md`. Les refontes front doivent désormais traiter les priorités P0/P1 avant toute validation production.
+
+Axes bloquants :
+
+- navigation alignée modules actifs + permissions ;
+- accessibilité clavier/ARIA sur sidebar, tabs, modales, toggles ;
+- design system partagé pour boutons, cards, tables, états et modales ;
+- états loading/empty/error/forbidden standardisés ;
+- formulaires critiques avec erreurs liées, confirmation et protection contre perte de données ;
+- responsive mobile réel pour listes produits, commandes, paiements, stock et admin ;
+- pricing/upgrade basé sur prix backend confirmé.
+
 ## État global
 
 | Indicateur | Valeur |

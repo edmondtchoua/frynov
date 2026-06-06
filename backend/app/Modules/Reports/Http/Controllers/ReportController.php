@@ -36,7 +36,7 @@ class ReportController extends Controller
             : '7d';
 
         return response()->json(
-            $this->service->sales($request->user()->tenant_id, $period)
+            $this->service->sales($request->user()->tenant_id, $period, $request->query('warehouse_id'))
         );
     }
 
@@ -47,7 +47,7 @@ class ReportController extends Controller
     public function stock(Request $request): JsonResponse
     {
         return response()->json(
-            $this->service->stock($request->user()->tenant_id)
+            $this->service->stock($request->user()->tenant_id, $request->query('warehouse_id'))
         );
     }
 }

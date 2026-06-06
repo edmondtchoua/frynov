@@ -63,3 +63,9 @@ secrets/
 *.tmp
 *.swp
 *.bak
+
+# ── Artefacts de capture vidéo (record_preview.mjs) ──
+# Frames PNG régénérées à chaque run + manifeste ffmpeg associé.
+# Tooling conservé (record_preview.mjs) ; sortie .mp4 versionnée à part.
+/video_frames/
+/frames.txt

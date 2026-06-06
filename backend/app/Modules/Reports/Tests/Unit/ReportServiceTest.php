@@ -4,6 +4,8 @@ namespace App\Modules\Reports\Tests\Unit;
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Models\Stock;
+use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Services\StockService;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Services\OrderService;
@@ -152,5 +154,46 @@ class ReportServiceTest extends TestCase
         }
         $this->assertSame(0, $data['stock_value']);
         $this->assertSame(0, $data['total_skus']);
+    }
+
+    #[Test]
+    public function sales_revenue_is_scoped_to_a_warehouse(): void
+    {
+        // Sprint 20 multi-sites: report revenue per site.
+        $whA = Warehouse::create(['tenant_id' => $this->tenant->id, 'name' => 'A', 'code' => 'WH-A', 'is_default' => true]);
+        $whB = Warehouse::create(['tenant_id' => $this->tenant->id, 'name' => 'B', 'code' => 'WH-B', 'is_default' => false]);
+
+        $this->paymentInWarehouse(30_000, $whA->id);
+        $this->paymentInWarehouse(20_000, $whB->id);
+
+        $this->assertSame(30_000, $this->service->sales($this->tenant->id, '7d', $whA->id)['total_revenue']);
+        $this->assertSame(50_000, $this->service->sales($this->tenant->id, '7d')['total_revenue']);
+    }
+
+    #[Test]
+    public function stock_value_is_scoped_to_a_warehouse(): void
+    {
+        $whA = Warehouse::create(['tenant_id' => $this->tenant->id, 'name' => 'A', 'code' => 'WH-A', 'is_default' => true]);
+        $whB = Warehouse::create(['tenant_id' => $this->tenant->id, 'name' => 'B', 'code' => 'WH-B', 'is_default' => false]);
+        // price_amount = unit value (no cost_amount → COALESCE falls back to price), so value is deterministic.
+        $product = Product::create(['tenant_id' => $this->tenant->id, 'sku' => 'P1', 'name' => 'P', 'price_amount' => 8000, 'price_currency' => 'EUR', 'status' => 'active']);
+
+        Stock::create(['tenant_id' => $this->tenant->id, 'warehouse_id' => $whA->id, 'product_id' => $product->id, 'quantity' => 5, 'reserved_quantity' => 0, 'low_stock_threshold' => 0, 'unit_cost_cents' => 8000, 'total_value_cents' => 40000]);
+        Stock::create(['tenant_id' => $this->tenant->id, 'warehouse_id' => $whB->id, 'product_id' => $product->id, 'quantity' => 3, 'reserved_quantity' => 0, 'low_stock_threshold' => 0, 'unit_cost_cents' => 8000, 'total_value_cents' => 24000]);
+
+        $a = $this->service->stock($this->tenant->id, $whA->id);
+        $this->assertSame(1, $a['total_skus']);
+        $this->assertSame(5 * 8000, $a['stock_value']);
+
+        $all = $this->service->stock($this->tenant->id);
+        $this->assertSame(2, $all['total_skus']);
+        $this->assertSame((5 + 3) * 8000, $all['stock_value']);
+    }
+
+    private function paymentInWarehouse(int $cents, string $warehouseId): void
+    {
+        $p = Payment::create(['tenant_id' => $this->tenant->id, 'amount_cents' => $cents, 'currency' => 'EUR', 'method' => 'cash', 'paid_at' => now()]);
+        $p->warehouse_id = $warehouseId;
+        $p->save();
     }
 }

@@ -9,6 +9,12 @@
         <p class="page-subtitle">Valeur du stock, ruptures et produits en alerte</p>
       </div>
       <div class="header-actions">
+        <select v-model="warehouseId" class="form-input" style="max-width: 190px" aria-label="Filtrer par entrepôt">
+          <option value="">Tous les entrepôts</option>
+          <option v-for="w in warehouses" :key="w.id" :value="w.id">
+            {{ w.is_default ? '⭐ ' : '' }}{{ w.name }}
+          </option>
+        </select>
         <RouterLink to="/inventory/alerts" class="btn btn-secondary btn-sm">
           Voir les alertes →
         </RouterLink>
@@ -155,23 +161,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import ReportsTabNav from '../components/ReportsTabNav.vue'
 import { reportService, formatMoneyCompact, type StockData } from '../services/reportService'
+import { useWarehouses } from '@/composables/useWarehouses'
 
 const loading = ref(true)
 const data    = ref<StockData | null>(null)
+const { warehouses, loadWarehouses } = useWarehouses()
+const warehouseId = ref('')
 
-onMounted(async () => {
+async function load() {
+  loading.value = true
   try {
-    data.value = await reportService.stock()
+    data.value = await reportService.stock(warehouseId.value)
   } catch {
     data.value = null
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(() => { loadWarehouses(); load() })
+watch(warehouseId, load)
 
 const maxMovementQty = computed(() => {
   if (!data.value?.recent_movements?.length) return 1

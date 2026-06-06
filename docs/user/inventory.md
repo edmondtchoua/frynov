@@ -11,6 +11,8 @@ Si votre entreprise gère plusieurs entrepôts ou boutiques, un sélecteur **« 
 - **Stock & Inventaire** (onglet Stock) — quantités par entrepôt + résumé KPI du site sélectionné ;
 - **Ventes → Commandes** — les commandes rattachées à l'entrepôt choisi ;
 - **Ventes → Paiements** — les encaissements du site choisi.
+- **Rapports → Ventes** — CA, top produits et méthodes de paiement du site choisi.
+- **Rapports → Stock** — valeur de stock, ruptures, alertes et mouvements du site choisi.
 
 Laisser le sélecteur sur « Tous les entrepôts » affiche l'activité consolidée. La liste des entrepôts se gère dans **Stock & Inventaire → Entrepôts**.
 

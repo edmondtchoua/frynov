@@ -9,6 +9,7 @@ const { adminService } = vi.hoisted(() => ({
     getDashboard: vi.fn(), getTenants: vi.fn(), getTenant: vi.fn(),
     getModules: vi.fn(), getPlans: vi.fn(), getAuditLogs: vi.fn(),
     getManualPayments: vi.fn(), getPromotions: vi.fn(), getTenantModules: vi.fn(),
+    getCountryRules: vi.fn(),
   },
 }))
 vi.mock('@/modules/admin/services/adminService', () => ({ adminService }))
@@ -21,6 +22,7 @@ import PlanListView       from '@/modules/admin/views/PlanListView.vue'
 import PromotionListView  from '@/modules/admin/views/PromotionListView.vue'
 import ManualPaymentView  from '@/modules/admin/views/ManualPaymentView.vue'
 import AuditLogView       from '@/modules/admin/views/AuditLogView.vue'
+import CountryRuleListView from '@/modules/admin/views/CountryRuleListView.vue'
 
 const router = createRouter({
   history: createMemoryHistory(),
@@ -115,5 +117,14 @@ describe('Admin back-office — smoke', () => {
     ]))
     const w = await mountView(AuditLogView)
     expect(w.text()).toContain('tenant.suspended')
+  })
+
+  it('CountryRuleListView lists country rules', async () => {
+    adminService.getCountryRules.mockResolvedValue(page([
+      { id: 'cr1', country_code: 'SN', is_active: true, requires_approval: false, is_blocked: false, allowed_plans: null, default_currency: 'XOF', default_timezone: 'Africa/Dakar' },
+    ]))
+    const w = await mountView(CountryRuleListView)
+    expect(w.text()).toContain('SN')
+    expect(adminService.getCountryRules).toHaveBeenCalled()
   })
 })

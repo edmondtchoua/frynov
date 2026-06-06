@@ -86,6 +86,19 @@ export interface AdminPromotion {
   created_at: string
 }
 
+export interface AdminCountryRule {
+  id: string
+  country_code: string
+  is_active: boolean
+  requires_approval: boolean
+  is_blocked: boolean
+  allowed_plans?: string[] | null
+  default_currency?: string | null
+  default_timezone?: string | null
+  metadata?: Record<string, unknown> | null
+  created_at?: string
+}
+
 export interface AuditLogEntry {
   id: string
   user_id: string | null
@@ -191,6 +204,28 @@ export const adminService = {
 
   async deletePromotion(id: string) {
     const { data } = await client.delete(`/api/admin/promotions/${id}`)
+    return data
+  },
+
+  // ── Country rules ─────────────────────────────────────────────────────────────
+
+  async getCountryRules(page = 1) {
+    const { data } = await client.get<{ data: AdminCountryRule[]; meta: any }>('/api/admin/country-rules', { params: { page } })
+    return data
+  },
+
+  async createCountryRule(payload: Partial<AdminCountryRule>) {
+    const { data } = await client.post<AdminCountryRule>('/api/admin/country-rules', payload)
+    return data
+  },
+
+  async updateCountryRule(id: string, payload: Partial<AdminCountryRule>) {
+    const { data } = await client.patch<AdminCountryRule>(`/api/admin/country-rules/${id}`, payload)
+    return data
+  },
+
+  async deleteCountryRule(id: string) {
+    const { data } = await client.delete(`/api/admin/country-rules/${id}`)
     return data
   },
 

@@ -363,6 +363,11 @@ const router = createRouter({
           component: () => import('@/modules/admin/views/PromotionListView.vue'),
         },
         {
+          path: 'country-rules',
+          name: 'admin.country-rules',
+          component: () => import('@/modules/admin/views/CountryRuleListView.vue'),
+        },
+        {
           path: 'manual-payments',
           name: 'admin.manual-payments',
           component: () => import('@/modules/admin/views/ManualPaymentView.vue'),

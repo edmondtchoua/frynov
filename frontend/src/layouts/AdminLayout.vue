@@ -107,6 +107,11 @@ const navItems = [
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M8 2v12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="5" cy="5" r="2" stroke="currentColor" stroke-width="1.4"/><circle cx="11" cy="11" r="2" stroke="currentColor" stroke-width="1.4"/></svg>',
   },
   {
+    to: '/admin/country-rules',
+    label: 'Règles pays',
+    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M1.5 8h13" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.5c1.9 1.8 2.9 4.1 2.9 6.5S9.9 12.7 8 14.5C6.1 12.7 5.1 10.4 5.1 8S6.1 3.3 8 1.5z" stroke="currentColor" stroke-width="1.2"/></svg>',
+  },
+  {
     to: '/admin/audit',
     label: 'Journal d\'audit',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4h8M4 8h6M4 12h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/></svg>',
@@ -121,6 +126,7 @@ const pageTitles: Record<string, string> = {
   'admin.plans':           'Plans & Tarifs',
   'admin.manual-payments': 'Paiements manuels',
   'admin.promotions':      'Promotions',
+  'admin.country-rules':   'Règles pays',
   'admin.audit':           'Journal d\'audit',
 }
 

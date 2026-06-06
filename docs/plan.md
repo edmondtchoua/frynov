@@ -21,7 +21,7 @@
 | Indicateur | Valeur |
 |---|---|
 | Tests backend | **577 ✅** (575 passed, 2 skipped, **0 incomplete**) — +recette v0.8.0, +P4 landing géo, +Sprint 20 filtres multi-sites |
-| Tests Vitest frontend | **165 / 165 ✅** (+P4 publicPricingService, +Sprint 20 useWarehouses) — couverture ~38 % |
+| Tests Vitest frontend | **169 / 169 ✅** (+P4 publicPricingService, +Sprint 20 useWarehouses, +P5 UpgradeView) — couverture ~38 % |
 | Branche | `release/v0.8.0` — **recette en cours** (= `develop` + 8 correctifs recette) |
 | Dernière tag | `v0.7.0` (Sprint 7A) — **`release/v0.8.0` en recette** (Sprints 8→19 + audit pré-release + recette) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
@@ -496,14 +496,15 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 - ✅ DoD : **aucun XOF par défaut pour Canada/France** (la devise suit le pays résolu) ; **correction manuelle** possible via le sélecteur.
 - 🟡 Reste (P5) : brancher `/billing/upgrade` (espace authentifié) sur la même source.
 
-#### Sprint P5 — Upgrade/Billing localisé
+#### Sprint P5 — Upgrade/Billing localisé — ✅ livré (2026-06-06)
 
 **Objectif** : aligner `/billing/upgrade` avec la source backend.
 
-- Frontend : consommer l'API pricing ou endpoint authentifié équivalent.
-- Backend : vérifier cohérence abonnement courant, promo codes, devises.
-- Tests : Billing frontend + Billing API.
-- DoD : prix affiché = prix backend, pas un prix hardcodé.
+- ✅ Frontend : **`UpgradeView` consomme `/api/public/pricing`** (même `publicPricingService` que la landing) — les prix des plans viennent du backend, plus de table `localizedPrices` en dur (conservée seulement en repli hors-ligne). Re-fetch au changement de devise dans le sélecteur ; `base_amount_minor` (centimes) ÷100 selon la devise du marché.
+- ✅ `BillingView` affiche déjà l'abonnement **courant** depuis `/api/me/subscription` (prix backend) — inchangé.
+- ✅ Tests : `UpgradeView.spec.ts` (garde anti-réintroduction de prix en dur + sélecteur), au-dessus du `publicPricingService.spec` (P4) et de `PublicPricingApiTest` (backend).
+- ✅ DoD : **prix affiché = prix backend**, pas un prix codé en dur.
+- 🟡 Affinage possible : aligner la devise d'upgrade sur la **devise de facturation du tenant** (aujourd'hui marché géo, comme avant) plutôt que sur la géolocalisation — à traiter avec P6 (checkout local).
 
 #### Sprint P6 — Paiements locaux & checkout
 

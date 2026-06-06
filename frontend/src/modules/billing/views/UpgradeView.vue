@@ -152,10 +152,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, h } from 'vue'
+import { ref, computed, watch, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { authService } from '@/modules/auth/services/authService'
 import { useGeoContent } from '@/composables/useGeoContent'
+import { fetchPublicPricing, type PublicPlan } from '@/services/publicPricingService'
 import type { Subscription } from '@/modules/auth/types'
 
 const router = useRouter()
@@ -206,12 +207,39 @@ const localizedPrices: Record<string, { starter: number; essential: number; pro:
 }
 const priceBook = computed(() => localizedPrices[market.value.priceBook] ?? localizedPrices.global_usd)
 
+// ── Localized pricing from the backend (single source of truth, same as the landing) ──
+// `localizedPrices` above is kept ONLY as an offline fallback if the API is unreachable.
+// Re-fetches whenever the visitor changes the currency/market selector.
+const apiPlans = ref<PublicPlan[] | null>(null)
+
+async function loadPricing(marketCode: string): Promise<void> {
+  // The API knows real markets, not the legacy 'africa' alias → map it to UEMOA/XOF.
+  const code = marketCode === 'africa' ? 'waemu' : marketCode
+  try {
+    apiPlans.value = (await fetchPublicPricing({ market: code })).data
+  } catch {
+    apiPlans.value = null // graceful: fall back to local currency-aware amounts
+  }
+}
+watch(() => market.value.code, code => { void loadPricing(code) }, { immediate: true })
+
+const apiPlanByCode = computed<Record<string, PublicPlan>>(() =>
+  Object.fromEntries((apiPlans.value ?? []).map(p => [p.code, p])),
+)
+
+/** Major-unit price for a plan code from the backend (centimes ÷100), else the local fallback. */
+function planPrice(code: string, fallback: number): number {
+  const plan = apiPlanByCode.value[code]
+  if (!plan) return fallback
+  return plan.price ? plan.price.base_amount_minor / 100 : 0
+}
+
 const plans = computed<UpgradePlan[]>(() => [
   {
     code: 'starter',
     name: 'Découverte',
     description: 'Pour tester Frynov sans engagement.',
-    price: priceBook.value.starter,
+    price: planPrice('starter', priceBook.value.starter),
     recommended: false,
     icon: IconStarter,
     quotas: { max_users: 1, max_agents: 1, max_warehouses: 1 },
@@ -221,7 +249,7 @@ const plans = computed<UpgradePlan[]>(() => [
     code: 'essential',
     name: 'Essentiel',
     description: 'Pour une boutique active qui veut tout gérer au quotidien.',
-    price: priceBook.value.essential,
+    price: planPrice('essential', priceBook.value.essential),
     recommended: false,
     icon: IconStarter,
     quotas: { max_users: 2, max_agents: 2, max_warehouses: 1 },
@@ -231,7 +259,7 @@ const plans = computed<UpgradePlan[]>(() => [
     code: 'pro',
     name: 'Croissance',
     description: 'Pour les PME en croissance avec automatisation et rapports avancés.',
-    price: priceBook.value.pro,
+    price: planPrice('pro', priceBook.value.pro),
     recommended: true,
     icon: IconPro,
     quotas: { max_users: 5, max_agents: 5, max_warehouses: 3 },
@@ -241,7 +269,7 @@ const plans = computed<UpgradePlan[]>(() => [
     code: 'enterprise',
     name: 'Business / Enterprise',
     description: 'Pour les groupes, grossistes et opérations multi-sites.',
-    price: priceBook.value.enterprise,
+    price: planPrice('enterprise', priceBook.value.enterprise),
     recommended: false,
     icon: IconEnterprise,
     quotas: { max_users: 10, max_agents: 10, max_warehouses: null },

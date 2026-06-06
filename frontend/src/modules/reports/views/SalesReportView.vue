@@ -9,6 +9,12 @@
         <p class="page-subtitle">Chiffre d'affaires, top produits et méthodes de paiement</p>
       </div>
       <div class="header-actions">
+        <select v-model="warehouseId" class="form-input" style="max-width: 190px" aria-label="Filtrer par entrepôt">
+          <option value="">Tous les entrepôts</option>
+          <option v-for="w in warehouses" :key="w.id" :value="w.id">
+            {{ w.is_default ? '⭐ ' : '' }}{{ w.name }}
+          </option>
+        </select>
         <button
           v-for="p in PERIODS"
           :key="p.value"
@@ -158,6 +164,7 @@
 import { ref, computed, onMounted, defineComponent, h, watch } from 'vue'
 import ReportsTabNav from '../components/ReportsTabNav.vue'
 import { reportService, formatMoneyCompact, shortDate, type SalesData, type SalesPeriod } from '../services/reportService'
+import { useWarehouses } from '@/composables/useWarehouses'
 
 // ── Period selector ───────────────────────────────────────────────────────────
 
@@ -169,13 +176,15 @@ const PERIODS: { value: SalesPeriod; label: string }[] = [
 ]
 
 const period  = ref<SalesPeriod>('30d')
+const { warehouses, loadWarehouses } = useWarehouses()
+const warehouseId = ref('')
 const loading = ref(true)
 const data    = ref<SalesData | null>(null)
 
 async function load() {
   loading.value = true
   try {
-    data.value = await reportService.sales(period.value)
+    data.value = await reportService.sales(period.value, warehouseId.value)
   } catch {
     data.value = null
   } finally {
@@ -183,8 +192,8 @@ async function load() {
   }
 }
 
-onMounted(load)
-watch(period, load)
+onMounted(() => { loadWarehouses(); load() })
+watch([period, warehouseId], load)
 
 function changePeriod(p: SalesPeriod) { period.value = p }
 

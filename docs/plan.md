@@ -20,8 +20,8 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **577 ✅** (575 passed, 2 skipped, **0 incomplete**) — +recette v0.8.0, +P4 landing géo, +Sprint 20 filtres multi-sites |
-| Tests Vitest frontend | **169 / 169 ✅** (+P4 publicPricingService, +Sprint 20 useWarehouses, +P5 UpgradeView) — couverture ~38 % |
+| Tests backend | **579 ✅** (577 passed, 2 skipped, **0 incomplete**) — +recette v0.8.0, +P4 landing géo, +Sprint 20 filtres multi-sites (listes + rapports) |
+| Tests Vitest frontend | **172 / 172 ✅** (+P4/P5 pricing, +Sprint 20 useWarehouses/reportService) — couverture ~38 % |
 | Branche | `release/v0.8.0` — **recette en cours** (= `develop` + 8 correctifs recette) |
 | Dernière tag | `v0.7.0` (Sprint 7A) — **`release/v0.8.0` en recette** (Sprints 8→19 + audit pré-release + recette) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
@@ -522,12 +522,12 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 
 **Livré — filtrage par entrepôt/site**
 - ✅ Backend : `GET /api/orders?warehouse_id=` (`OrderService::paginate`) et `GET /api/payments?warehouse_id=` (`PaymentService::list`) filtrent par site ; le stock (`GET /api/inventory?warehouse_id=`) le faisait déjà.
-- ✅ Frontend : sélecteur **« Tous les entrepôts »** sur **OrderListView** et **PaymentListView** (StockListView l'avait déjà), via le composable partagé `useWarehouses` (fail-soft : liste vide si l'API échoue → « tous les sites »).
-- ✅ Tests : `OrderServiceTest::paginate_filters_orders_by_warehouse`, `PaymentServiceTest::list_filters_payments_by_warehouse`, `useWarehouses.spec.ts` (charge + fail-soft).
+- ✅ Frontend : sélecteur **« Tous les entrepôts »** sur **OrderListView**, **PaymentListView**, **SalesReportView** et **StockReportView** (StockListView l'avait déjà), via le composable partagé `useWarehouses` (fail-soft : liste vide si l'API échoue → « tous les sites »).
+- ✅ **Rapports par site** : `GET /api/reports/sales?warehouse_id=` (CA, top produits, méthodes de paiement) et `/api/reports/stock?warehouse_id=` (valeur stock, ruptures, alertes, mouvements) scopés par entrepôt.
+- ✅ Tests : `OrderServiceTest` / `PaymentServiceTest` / `ReportServiceTest` (filtres par entrepôt), `useWarehouses.spec.ts` + `reportService.spec.ts` (forward du param).
 
 **Reste Sprint 20**
 - `Branch` model (alias Warehouse avec métadonnées agence) + `user_warehouses` — **scoping d'accès** par agence (sensible sécurité → à faire avec soin et tests RBAC).
-- Filtres rapports (ventes / valeur stock) par warehouse/branche.
 - Page Agences/Branches dans Paramètres > Entreprise (l'onglet **Entrepôts** existe déjà sous Stock).
 
 ---

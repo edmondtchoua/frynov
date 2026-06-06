@@ -91,12 +91,12 @@ export const reportService = {
     return client.get('/api/reports/dashboard').then(r => r.data)
   },
 
-  sales(period: SalesPeriod = '7d'): Promise<SalesData> {
-    return client.get('/api/reports/sales', { params: { period } }).then(r => r.data)
+  sales(period: SalesPeriod = '7d', warehouseId?: string): Promise<SalesData> {
+    return client.get('/api/reports/sales', { params: { period, warehouse_id: warehouseId || undefined } }).then(r => r.data)
   },
 
-  stock(): Promise<StockData> {
-    return client.get('/api/reports/stock').then(r => r.data)
+  stock(warehouseId?: string): Promise<StockData> {
+    return client.get('/api/reports/stock', { params: { warehouse_id: warehouseId || undefined } }).then(r => r.data)
   },
 }
 

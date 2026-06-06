@@ -20,7 +20,7 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **574 ✅** (572 passed, 2 skipped, **0 incomplete**) — +recette v0.8.0, +P4 landing géo (pricing par pays) |
+| Tests backend | **575 ✅** (573 passed, 2 skipped, **0 incomplete**) — +recette v0.8.0, +P4 landing géo (pricing par pays) |
 | Tests Vitest frontend | **163 / 163 ✅** (+downloads import/export, +P4 publicPricingService) — couverture ~38 % |
 | Branche | `release/v0.8.0` — **recette en cours** (= `develop` + 8 correctifs recette) |
 | Dernière tag | `v0.7.0` (Sprint 7A) — **`release/v0.8.0` en recette** (Sprints 8→19 + audit pré-release + recette) |

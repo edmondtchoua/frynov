@@ -221,12 +221,20 @@
                   </td>
                   <td class="team-date">{{ teamFmtDate(u.created_at) }}</td>
                   <td>
-                    <button
-                      v-if="canManageTeam && u.id !== auth.user?.id"
-                      class="btn-toggle-user"
-                      :class="{ 'btn-reactivate': !u.is_active }"
-                      @click="toggleUser(u)"
-                    >{{ u.is_active ? 'Désactiver' : 'Réactiver' }}</button>
+                    <template v-if="canManageTeam && u.id !== auth.user?.id">
+                      <button
+                        class="btn-toggle-user"
+                        :class="{ 'btn-reactivate': !u.is_active }"
+                        @click="toggleUser(u)"
+                      >{{ u.is_active ? 'Désactiver' : 'Réactiver' }}</button>
+                      <button
+                        v-if="!isManagerRole(u)"
+                        class="btn-toggle-user"
+                        style="margin-left:0.4rem"
+                        title="Restreindre l'accès à certains entrepôts (multi-sites)"
+                        @click="openWarehouseModal(u)"
+                      >Sites{{ u.warehouse_ids?.length ? ` (${u.warehouse_ids.length})` : '' }}</button>
+                    </template>
                     <span v-else class="team-date">—</span>
                   </td>
                 </tr>
@@ -441,6 +449,34 @@
       </div>
     </div>
 
+    <!-- ── Member site/warehouse access modal (multi-sites) ───────────────── -->
+    <div v-if="whModal.open" class="modal-overlay" @click.self="whModal.open = false">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Accès aux entrepôts — {{ whModal.userName }}</h3>
+          <button class="modal-close" @click="whModal.open = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-desc">
+            Cochez les entrepôts auxquels ce membre a accès. <strong>Aucune sélection = accès à tous les sites.</strong>
+            Les managers et admins voient toujours tous les sites.
+          </p>
+          <div v-if="whModal.error" class="form-error">{{ whModal.error }}</div>
+          <label v-for="w in warehouses" :key="w.id" style="display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0; font-size:0.9rem; cursor:pointer;">
+            <input v-model="whModal.selected" type="checkbox" :value="w.id" />
+            {{ w.is_default ? '⭐ ' : '' }}{{ w.name }} <span style="color:#94a3b8; font-size:0.8rem;">{{ w.code }}</span>
+          </label>
+          <p v-if="!warehouses.length" class="modal-desc">Aucun entrepôt. Créez-en dans Stock &amp; Inventaire → Entrepôts.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="whModal.open = false">Annuler</button>
+          <button class="btn-submit" :disabled="whModal.saving" @click="saveWarehouses">
+            {{ whModal.saving ? 'Enregistrement…' : 'Enregistrer' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Upgrade / payment proof modal (teleported to root level) ───────── -->
     <div v-if="upgradeModal.open" class="modal-overlay" @click.self="upgradeModal.open = false">
       <div class="modal">
@@ -512,6 +548,7 @@
 import { ref, computed, reactive, watch, defineComponent, h } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { authService } from '@/modules/auth/services/authService'
+import { useWarehouses } from '@/composables/useWarehouses'
 import type { WorkspaceUser } from '@/modules/auth/types'
 
 const activeTab = ref('company')
@@ -598,6 +635,38 @@ const inviteModal = reactive({
 
 const inviteForm = reactive({ name: '', email: '', role: '' })
 const copiedPwd  = ref(false)
+
+// ── Member warehouse access (multi-sites) ─────────────────────────────────────
+const { warehouses, loadWarehouses } = useWarehouses()
+const whModal = reactive({ open: false, saving: false, error: '', userId: '', userName: '', selected: [] as string[] })
+
+function isManagerRole(user: WorkspaceUser): boolean {
+  return user.roles.some(r => ['admin', 'manager'].includes(r))
+}
+
+function openWarehouseModal(user: WorkspaceUser) {
+  whModal.userId   = user.id
+  whModal.userName = user.name
+  whModal.selected = [...(user.warehouse_ids ?? [])]
+  whModal.error    = ''
+  whModal.open     = true
+  void loadWarehouses()
+}
+
+async function saveWarehouses() {
+  whModal.saving = true
+  whModal.error  = ''
+  try {
+    const updated = await authService.setUserWarehouses(whModal.userId, whModal.selected)
+    const idx = teamUsers.value.findIndex(u => u.id === whModal.userId)
+    if (idx !== -1) teamUsers.value[idx] = updated
+    whModal.open = false
+  } catch (err: any) {
+    whModal.error = err?.response?.data?.message ?? 'Enregistrement impossible.'
+  } finally {
+    whModal.saving = false
+  }
+}
 
 async function loadTeamUsers() {
   teamLoading.value = true

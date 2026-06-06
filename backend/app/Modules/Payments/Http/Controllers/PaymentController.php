@@ -2,6 +2,7 @@
 
 namespace App\Modules\Payments\Http\Controllers;
 
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Payments\Http\Resources\PaymentResource;
 use App\Modules\Payments\Models\Payment;
@@ -22,7 +23,10 @@ class PaymentController extends Controller
     {
         $payments = $this->service->list(
             tenantId: $request->user()->tenant_id,
-            filters:  $request->only(['order_id', 'method', 'from', 'to', 'per_page', 'warehouse_id']),
+            filters:  array_merge(
+                $request->only(['order_id', 'method', 'from', 'to', 'per_page']),
+                ['warehouse_ids' => WarehouseScope::resolve($request->user(), $request->query('warehouse_id'))],
+            ),
         );
 
         return PaymentResource::collection($payments);

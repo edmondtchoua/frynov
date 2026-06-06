@@ -167,7 +167,7 @@ class PaymentServiceTest extends TestCase
         $payB->warehouse_id = $whB->id;
         $payB->save();
 
-        $onlyA = $this->service->list($this->tenant->id, ['warehouse_id' => $whA->id]);
+        $onlyA = $this->service->list($this->tenant->id, ['warehouse_ids' => [$whA->id]]);
         $this->assertSame([$payA->id], collect($onlyA->items())->pluck('id')->all());
 
         $this->assertCount(2, $this->service->list($this->tenant->id, [])->items());

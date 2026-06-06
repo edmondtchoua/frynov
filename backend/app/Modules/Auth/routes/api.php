@@ -38,6 +38,7 @@ Route::prefix('workspace')->name('workspace.')
         Route::post('users',          [WorkspaceController::class, 'inviteUser'])->name('users.invite')->middleware('quota:users');
         Route::patch('users/{user}',  [WorkspaceController::class, 'updateUser'])->name('users.update');
         Route::delete('users/{user}', [WorkspaceController::class, 'toggleUser'])->name('users.toggle');
+        Route::put('users/{user}/warehouses', [WorkspaceController::class, 'setUserWarehouses'])->name('users.warehouses');
 
         // Company settings
         Route::get('settings',        [WorkspaceController::class, 'getSettings'])->name('settings.show');

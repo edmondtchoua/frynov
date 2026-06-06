@@ -2,6 +2,7 @@
 
 namespace App\Modules\Reports\Http\Controllers;
 
+use App\Modules\Inventory\Support\WarehouseScope;
 use App\Modules\Reports\Services\ReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,7 +37,7 @@ class ReportController extends Controller
             : '7d';
 
         return response()->json(
-            $this->service->sales($request->user()->tenant_id, $period, $request->query('warehouse_id'))
+            $this->service->sales($request->user()->tenant_id, $period, WarehouseScope::resolve($request->user(), $request->query('warehouse_id')))
         );
     }
 
@@ -47,7 +48,7 @@ class ReportController extends Controller
     public function stock(Request $request): JsonResponse
     {
         return response()->json(
-            $this->service->stock($request->user()->tenant_id, $request->query('warehouse_id'))
+            $this->service->stock($request->user()->tenant_id, WarehouseScope::resolve($request->user(), $request->query('warehouse_id')))
         );
     }
 }

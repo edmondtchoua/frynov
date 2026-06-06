@@ -226,7 +226,7 @@ class OrderServiceTest extends TestCase
         $orderB->warehouse_id = $whB->id;
         $orderB->save();
 
-        $onlyA = $this->service->paginate($this->tenant->id, 20, null, $whA->id);
+        $onlyA = $this->service->paginate($this->tenant->id, 20, null, [$whA->id]);
         $this->assertSame([$orderA->id], collect($onlyA->items())->pluck('id')->all());
 
         $this->assertCount(2, $this->service->paginate($this->tenant->id, 20, null, null)->items());

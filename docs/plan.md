@@ -20,8 +20,8 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **587 ✅** (585 passed, 2 skipped, **0 incomplete**) — +Sprint 20 (listes + rapports), +Sprint 21 admin CountryRules |
-| Tests Vitest frontend | **173 / 173 ✅** (+P4/P5 pricing, +Sprint 20 multi-sites, +Sprint 21 CountryRules) — couverture ~38 % |
+| Tests backend | **597 ✅** (595 passed, 2 skipped, **0 incomplete**) — +Sprint 21 CountryRules, +Sprint 20 scoping d'accès par agence (isolation) |
+| Tests Vitest frontend | **175 / 175 ✅** (+Sprint 21 CountryRules, +Sprint 20 accès membre→sites) — couverture ~38 % |
 | Branche | `release/v0.8.0` — **recette en cours** (= `develop` + 8 correctifs recette) |
 | Dernière tag | `v0.7.0` (Sprint 7A) — **`release/v0.8.0` en recette** (Sprints 8→19 + audit pré-release + recette) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
@@ -126,7 +126,7 @@ Les modules ou fonctions sensibles peuvent rester limités par **rôle**, **perm
 | Security module | ✅ | 21 | RBAC sur 11 modules, CatalogSecurityTest, PaymentSecurityTest, MultiTenantIsolationTest, AuditTrailTest |
 | Marketplace | ✅ | — | Facebook/WhatsApp/WooCommerce adapters, sync alerts |
 | CountryRules | ✅ | 5+8 | Migration + Model + RegistrationRuleService + 30 pays seedés + **admin CRUD UI** (`/api/admin/country-rules`, Sprint 21) |
-| Multi-sites | 🔄 Filtres livrés | — | `warehouse_id` orders/payments/stock + **filtres liste par site** (Sprint 20) ; reste : `Branch` metadata, scoping accès, filtres rapports |
+| Multi-sites | ✅ Quasi-complet | 10 | Filtres par site (listes + rapports) + **scoping d'accès par agence** (`user_warehouses`, isolation testée) ; reste : page Agences + scoping ressource-unique |
 | Sync | 🧪 Scaffold testé — **masqué (feature flag)** | 33 | Scaffold CRUD (HasTenant, `/api`, `tenant`, `role:manager\|admin`) + 33 tests. **Routes derrière `config('frynov.modules.sync')` = `FEATURE_SYNC` (off par défaut)** → invisible en prod, activé en test. Domaine métier : Phase 3 |
 
 **Total tests backend : 568 (2 skipped, 0 incomplete)**
@@ -525,10 +525,12 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 - ✅ Frontend : sélecteur **« Tous les entrepôts »** sur **OrderListView**, **PaymentListView**, **SalesReportView** et **StockReportView** (StockListView l'avait déjà), via le composable partagé `useWarehouses` (fail-soft : liste vide si l'API échoue → « tous les sites »).
 - ✅ **Rapports par site** : `GET /api/reports/sales?warehouse_id=` (CA, top produits, méthodes de paiement) et `/api/reports/stock?warehouse_id=` (valeur stock, ruptures, alertes, mouvements) scopés par entrepôt.
 - ✅ Tests : `OrderServiceTest` / `PaymentServiceTest` / `ReportServiceTest` (filtres par entrepôt), `useWarehouses.spec.ts` + `reportService.spec.ts` (forward du param).
+- ✅ **Scoping d'accès par agence** (`user_warehouses`) : un membre **non-manager** assigné à des entrepôts ne voit QUE leurs données (Commandes, Paiements, Stock, Rapports). Managers/admins jamais restreints ; aucun assignement = accès complet (rétrocompatible). `User::accessibleWarehouseIds()` + `WarehouseScope::resolve()` (centralisé, anti-fuite) appliqués aux **5 endpoints de liste**. Assignation : `PUT /api/workspace/users/{id}/warehouses` (manager/admin) + UI **Sites** dans Paramètres → Équipe.
+- ✅ Tests scoping : `WarehouseScopeTest` (5, logique) + `WarehouseAccessScopingTest` (5, **isolation HTTP end-to-end** : opérateur restreint ne voit pas l'autre site, manager voit tout, site interdit → vide, non-manager → 403) + `authService.warehouses.spec`.
 
 **Reste Sprint 20**
-- `Branch` model (alias Warehouse avec métadonnées agence) + `user_warehouses` — **scoping d'accès** par agence (sensible sécurité → à faire avec soin et tests RBAC).
-- Page Agences/Branches dans Paramètres > Entreprise (l'onglet **Entrepôts** existe déjà sous Stock).
+- Page Agences/Branches dédiée + métadonnées agence sur `Warehouse` (l'onglet **Entrepôts** CRUD existe déjà sous Stock ; l'assignation membre→sites est dans Paramètres → Équipe).
+- ⚠️ **Zone d'ombre** (à acter au Go/No-Go) : le scoping couvre les **listes** ; les GET de ressource unique (`/orders/{id}`, `/payments/{id}`…) restent **tenant**-scopés mais pas **warehouse**-scopés (un opérateur connaissant un UUID d'une autre agence pourrait l'ouvrir). À durcir si le besoin se confirme.
 
 ---
 

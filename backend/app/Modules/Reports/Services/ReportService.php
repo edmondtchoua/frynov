@@ -88,7 +88,7 @@ class ReportService
 
     // ── Sales report ──────────────────────────────────────────────────────────
 
-    public function sales(string $tenantId, string $period = '7d', ?string $warehouseId = null): array
+    public function sales(string $tenantId, string $period = '7d', ?array $warehouseIds = null): array
     {
         $days = match ($period) {
             '30d'  => 30,
@@ -99,16 +99,16 @@ class ReportService
 
         $from = now()->subDays($days - 1)->startOfDay();
 
-        $chart = $this->revenueByDay($tenantId, $days, $warehouseId);
+        $chart = $this->revenueByDay($tenantId, $days, $warehouseIds);
 
         $totalRevenue = array_sum(array_column($chart, 'amount'));
         $totalOrders  = array_sum(array_column($chart, 'count'));
 
-        $topProducts = $this->topProducts($tenantId, $days, 10, $warehouseId);
+        $topProducts = $this->topProducts($tenantId, $days, 10, $warehouseIds);
 
         $byMethod = Payment::where('tenant_id', $tenantId)
             ->where('paid_at', '>=', $from)
-            ->when($warehouseId, fn ($q) => $q->where('warehouse_id', $warehouseId))
+            ->when($warehouseIds !== null, fn ($q) => $q->whereIn('warehouse_id', $warehouseIds))
             ->selectRaw('method, SUM(amount_cents) as amount, COUNT(*) as count')
             ->groupBy('method')
             ->orderByDesc('amount')
@@ -126,28 +126,28 @@ class ReportService
 
     // ── Stock report ──────────────────────────────────────────────────────────
 
-    public function stock(string $tenantId, ?string $warehouseId = null): array
+    public function stock(string $tenantId, ?array $warehouseIds = null): array
     {
         // Stock value = quantity × cost (fallback to price if cost not set)
         $stockValue = (int) (Stock::join('products', 'stocks.product_id', '=', 'products.id')
             ->where('stocks.tenant_id', $tenantId)
             ->whereNull('products.deleted_at')
-            ->when($warehouseId, fn ($q) => $q->where('stocks.warehouse_id', $warehouseId))
+            ->when($warehouseIds !== null, fn ($q) => $q->whereIn('stocks.warehouse_id', $warehouseIds))
             ->selectRaw('SUM(stocks.quantity * COALESCE(NULLIF(products.cost_amount, 0), products.price_amount)) as total_value')
             ->value('total_value') ?? 0);
 
         $totalSkus = Stock::where('tenant_id', $tenantId)
-            ->when($warehouseId, fn ($q) => $q->where('warehouse_id', $warehouseId))
+            ->when($warehouseIds !== null, fn ($q) => $q->whereIn('warehouse_id', $warehouseIds))
             ->count();
 
         $outOfStock = Stock::where('tenant_id', $tenantId)
             ->where('quantity', '<=', 0)
-            ->when($warehouseId, fn ($q) => $q->where('warehouse_id', $warehouseId))
+            ->when($warehouseIds !== null, fn ($q) => $q->whereIn('warehouse_id', $warehouseIds))
             ->count();
 
         $lowStockItems = Stock::where('tenant_id', $tenantId)
             ->where('low_stock_threshold', '>', 0)
-            ->when($warehouseId, fn ($q) => $q->where('warehouse_id', $warehouseId))
+            ->when($warehouseIds !== null, fn ($q) => $q->whereIn('warehouse_id', $warehouseIds))
             ->whereRaw('(quantity - reserved_quantity) <= low_stock_threshold')
             ->with('product:id,name,sku')
             ->orderByRaw('(quantity - reserved_quantity) / NULLIF(low_stock_threshold, 0) ASC')
@@ -157,9 +157,9 @@ class ReportService
 
         $recentMovements = StockMovement::where('tenant_id', $tenantId)
             ->where('created_at', '>=', now()->subDays(30))
-            ->when($warehouseId, fn ($q) => $q->whereIn(
+            ->when($warehouseIds !== null, fn ($q) => $q->whereIn(
                 'stock_id',
-                Stock::where('tenant_id', $tenantId)->where('warehouse_id', $warehouseId)->select('id'),
+                Stock::where('tenant_id', $tenantId)->whereIn('warehouse_id', $warehouseIds)->select('id'),
             ))
             ->selectRaw('type, COUNT(*) as count, SUM(ABS(quantity)) as total_qty')
             ->groupBy('type')
@@ -177,13 +177,13 @@ class ReportService
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    private function revenueByDay(string $tenantId, int $days, ?string $warehouseId = null): array
+    private function revenueByDay(string $tenantId, int $days, ?array $warehouseIds = null): array
     {
         $from = now()->subDays($days - 1)->startOfDay();
 
         $rows = Payment::where('tenant_id', $tenantId)
             ->where('paid_at', '>=', $from)
-            ->when($warehouseId, fn ($q) => $q->where('warehouse_id', $warehouseId))
+            ->when($warehouseIds !== null, fn ($q) => $q->whereIn('warehouse_id', $warehouseIds))
             ->selectRaw('DATE(paid_at) as date, SUM(amount_cents) as amount, COUNT(*) as count')
             ->groupByRaw('DATE(paid_at)')
             ->orderBy('date')
@@ -204,7 +204,7 @@ class ReportService
         return $chart;
     }
 
-    private function topProducts(string $tenantId, int $days, int $limit, ?string $warehouseId = null): Collection
+    private function topProducts(string $tenantId, int $days, int $limit, ?array $warehouseIds = null): Collection
     {
         $from = now()->subDays($days - 1)->startOfDay();
 
@@ -212,7 +212,7 @@ class ReportService
             ->where('orders.tenant_id', $tenantId)
             ->where('orders.status', '!=', Order::STATUS_CANCELLED)
             ->where('orders.created_at', '>=', $from)
-            ->when($warehouseId, fn ($q) => $q->where('orders.warehouse_id', $warehouseId))
+            ->when($warehouseIds !== null, fn ($q) => $q->whereIn('orders.warehouse_id', $warehouseIds))
             ->selectRaw(
                 'order_lines.product_id,
                  order_lines.name    AS product_name,

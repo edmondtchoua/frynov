@@ -12,6 +12,7 @@ use App\Modules\Inventory\Http\Requests\ScanActionRequest;
 use App\Modules\Inventory\Models\Stock;
 use App\Modules\Inventory\Services\InventoryService;
 use App\Modules\Inventory\Services\StockService;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -30,11 +31,10 @@ class InventoryController extends Controller
         $query = Stock::where('stocks.tenant_id', $request->user()->tenant_id)
             ->with(['product.category', 'variant', 'warehouse:id,name,code,type']);
 
-        // Filter by warehouse
-        if ($warehouseId = $request->query('warehouse_id')) {
-            \App\Modules\Inventory\Models\Warehouse::where('tenant_id', $request->user()->tenant_id)
-                ->where('id', $warehouseId)->firstOrFail();
-            $query->where('stocks.warehouse_id', $warehouseId);
+        // Filter by warehouse + enforce per-agency access scoping (multi-site).
+        $warehouseIds = WarehouseScope::resolve($request->user(), $request->query('warehouse_id'));
+        if ($warehouseIds !== null) {
+            $query->whereIn('stocks.warehouse_id', $warehouseIds);
         }
 
         // Search by product name or SKU

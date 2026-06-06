@@ -1,6 +1,29 @@
 import client from '@/api/client'
 import type { ImportEntityType, ImportHistoryResponse, ImportMode, ImportSession } from '../types'
 
+/**
+ * Fetch a protected file THROUGH axios so the Bearer token is attached, then
+ * trigger a browser download. Using window.open()/<a href> would navigate the
+ * browser without the token → backend 401 → "Route [login] not defined".
+ */
+async function downloadFile(url: string, fallbackName: string): Promise<void> {
+  const res = await client.get(url, { responseType: 'blob' })
+
+  // Prefer the server-provided filename (Content-Disposition) when present.
+  const disposition = (res.headers as Record<string, string>)?.['content-disposition']
+  const match = disposition?.match(/filename\*?=(?:UTF-8'')?["']?([^"';\n]+)/i)
+  const filename = match ? decodeURIComponent(match[1].trim()) : fallbackName
+
+  const objectUrl = URL.createObjectURL(res.data as Blob)
+  const a = document.createElement('a')
+  a.href = objectUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(objectUrl)
+}
+
 export const importExportService = {
 
   // ── Import ──────────────────────────────────────────────────────────────────
@@ -38,7 +61,7 @@ export const importExportService = {
 
   /** Cancel / delete the session. */
   cancel(id: string): Promise<void> {
-    return client.delete(`/api/import/${id}`)
+    return client.delete(`/api/import/${id}`).then(() => undefined)
   },
 
   /** List import history. */
@@ -46,26 +69,27 @@ export const importExportService = {
     return client.get('/api/import/history', { params }).then(r => r.data)
   },
 
-  /** Download PDF report for a completed session. */
-  downloadReport(id: string): void {
-    window.open(`/api/import/${id}/report`, '_blank')
+  // ── Downloads (authenticated blob — NOT window.open, which loses the token) ──
+
+  /** Download the PDF report for a completed session. */
+  downloadReport(id: string): Promise<void> {
+    return downloadFile(`/api/import/${id}/report`, `rapport-import-${id}.pdf`)
   },
 
-  // ── Templates ───────────────────────────────────────────────────────────────
-
-  downloadTemplate(type: ImportEntityType): void {
-    window.open(`/api/import/template/${type}`, '_blank')
+  /** Download an import template (XLSX) for the given entity type. */
+  downloadTemplate(type: ImportEntityType): Promise<void> {
+    return downloadFile(`/api/import/template/${type}`, `modele-import-${type}.xlsx`)
   },
 
-  // ── Export ──────────────────────────────────────────────────────────────────
-
-  exportExcel(type: ImportEntityType, filters?: Record<string, string>): void {
+  /** Export an entity as XLSX. */
+  exportExcel(type: ImportEntityType, filters: Record<string, string> = {}): Promise<void> {
     const params = new URLSearchParams({ format: 'xlsx', ...filters })
-    window.open(`/api/export/${type}?${params}`, '_blank')
+    return downloadFile(`/api/export/${type}?${params.toString()}`, `export-${type}.xlsx`)
   },
 
-  exportPdf(type: ImportEntityType, filters?: Record<string, string>): void {
+  /** Export an entity as PDF. */
+  exportPdf(type: ImportEntityType, filters: Record<string, string> = {}): Promise<void> {
     const params = new URLSearchParams({ format: 'pdf', ...filters })
-    window.open(`/api/export/${type}?${params}`, '_blank')
+    return downloadFile(`/api/export/${type}?${params.toString()}`, `export-${type}.pdf`)
   },
 }

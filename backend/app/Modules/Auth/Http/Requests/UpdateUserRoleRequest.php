@@ -44,8 +44,21 @@ class UpdateUserRoleRequest extends FormRequest
 
     public function rules(): array
     {
-        $callerRole  = $this->user()->getRoleNames()->first() ?? 'viewer';
+        $caller       = $this->user();
+        $callerRole   = $caller->getRoleNames()->first() ?? 'viewer';
         $allowedRoles = self::ROLE_HIERARCHY[$callerRole] ?? [];
+
+        // RBAC B2: custom tenant roles are assignable by admin/manager. They carry
+        // only plan-bounded, non-escalating permissions (no admin.*, no role/billing
+        // management), so they never breach the hierarchy guard.
+        if ($caller->tenant_id && $caller->hasAnyRole(['admin', 'manager'])) {
+            $custom = \Spatie\Permission\Models\Role::query()
+                ->where('guard_name', 'web')
+                ->where('tenant_id', $caller->tenant_id)
+                ->pluck('name')
+                ->all();
+            $allowedRoles = array_values(array_unique([...$allowedRoles, ...$custom]));
+        }
 
         return [
             'name' => 'sometimes|string|max:255',

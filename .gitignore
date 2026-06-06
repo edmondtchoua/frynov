@@ -69,3 +69,6 @@ secrets/
 # Tooling conservé (record_preview.mjs) ; sortie .mp4 versionnée à part.
 /video_frames/
 /frames.txt
+
+# Claude Code installed plugin (not a project asset)
+.claude/skills/ui-ux-pro-max/

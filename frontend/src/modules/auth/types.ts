@@ -92,6 +92,7 @@ export interface WorkspaceUser {
   is_active: boolean
   created_at: string | null
   warehouse_ids?: string[]
+  temporary_access?: Array<{ id: string; role: string; expires_at: string }>
 }
 
 export interface WorkspaceSettings {

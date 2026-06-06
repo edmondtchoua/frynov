@@ -4,7 +4,10 @@ namespace App\Modules\Auth\Http\Controllers;
 
 use App\Models\User;
 use App\Modules\Auth\Http\Requests\UpdateUserRoleRequest;
+use App\Modules\Auth\Models\TemporaryAccessGrant;
+use App\Modules\Auth\Services\TemporaryAccessService;
 use App\Modules\Tenants\Models\Tenant;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -251,6 +254,64 @@ class WorkspaceController extends Controller
         ]);
     }
 
+    /**
+     * POST /api/workspace/users/{userId}/temporary-access
+     * Grant a member a tenant role until an expiry. Auto-revoked by the scheduler.
+     * Admin/manager only; 'admin' is NOT temporarily grantable (no temp super-elevation).
+     */
+    public function grantTemporaryAccess(Request $request, string $userId): JsonResponse
+    {
+        if (! $request->user()->hasAnyRole(['admin', 'manager'])) {
+            return response()->json(['message' => 'Action réservée aux administrateurs et managers.'], 403);
+        }
+
+        $data = $request->validate([
+            'role'       => 'required|string|in:manager,member,viewer,agent,cashier,commercial,delivery',
+            'expires_at' => 'required|date|after:now',
+            'note'       => 'nullable|string|max:255',
+        ]);
+
+        $tenant = $request->user()->tenant;
+        $user   = User::where('tenant_id', $tenant->id)->findOrFail($userId);
+
+        if ($user->hasTenantRole($data['role'])) {
+            return response()->json(['message' => 'Ce membre possède déjà ce rôle.'], 422);
+        }
+
+        $grant = app(TemporaryAccessService::class)->grant(
+            $user,
+            $data['role'],
+            Carbon::parse($data['expires_at']),
+            $request->user(),
+            $data['note'] ?? null,
+        );
+
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->logFromRequest(
+                $request, 'workspace.temp_access_granted', $user, [],
+                ['role' => $data['role'], 'expires_at' => $data['expires_at']], 'medium',
+            );
+        } catch (\Throwable) {}
+
+        return response()->json(['data' => $grant, 'message' => 'Accès temporaire accordé.'], 201);
+    }
+
+    /**
+     * DELETE /api/workspace/temporary-access/{grantId}
+     * Revoke a temporary access grant early (admin/manager). Drops the role now.
+     */
+    public function revokeTemporaryAccess(Request $request, string $grantId): JsonResponse
+    {
+        if (! $request->user()->hasAnyRole(['admin', 'manager'])) {
+            return response()->json(['message' => 'Action réservée aux administrateurs et managers.'], 403);
+        }
+
+        $grant = TemporaryAccessGrant::where('tenant_id', $request->user()->tenant_id)->findOrFail($grantId);
+        app(TemporaryAccessService::class)->revoke($grant);
+
+        return response()->json(['message' => 'Accès temporaire révoqué.']);
+    }
+
     // ── Onboarding provisioning ───────────────────────────────────────────────
 
     /**
@@ -405,6 +466,7 @@ class WorkspaceController extends Controller
             'is_active'  => $user->deleted_at === null,
             'created_at' => $user->created_at?->toISOString(),
             'warehouse_ids' => DB::table('user_warehouses')->where('user_id', $user->id)->pluck('warehouse_id')->all(),
+            'temporary_access' => TemporaryAccessGrant::where('user_id', $user->id)->active()->get(['id', 'role', 'expires_at'])->all(),
         ];
     }
 

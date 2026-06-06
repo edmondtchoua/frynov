@@ -138,4 +138,42 @@ class User extends Authenticatable
 
         return $this;
     }
+
+    /**
+     * Remove a role scoped to this user's tenant (Spatie teams=true).
+     */
+    public function removeTenantRole(string $role): static
+    {
+        $registrar = app(\Spatie\Permission\PermissionRegistrar::class);
+        $prev      = $registrar->getPermissionsTeamId();
+
+        if ($this->tenant_id) {
+            $registrar->setPermissionsTeamId($this->tenant_id);
+        }
+
+        $this->removeRole($role);
+
+        $registrar->setPermissionsTeamId($prev);
+
+        return $this;
+    }
+
+    /**
+     * Check a role within this user's tenant team context.
+     */
+    public function hasTenantRole(string $role): bool
+    {
+        $registrar = app(\Spatie\Permission\PermissionRegistrar::class);
+        $prev      = $registrar->getPermissionsTeamId();
+
+        if ($this->tenant_id) {
+            $registrar->setPermissionsTeamId($this->tenant_id);
+        }
+
+        $has = $this->hasRole($role);
+
+        $registrar->setPermissionsTeamId($prev);
+
+        return $has;
+    }
 }

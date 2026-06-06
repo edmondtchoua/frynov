@@ -96,6 +96,18 @@ export const authService = {
     return data.data
   },
 
+  /** POST /api/workspace/users/:id/temporary-access — grant a role until expires_at (auto-revoked) */
+  async grantTemporaryAccess(userId: string, payload: { role: string; expires_at: string; note?: string }) {
+    const { data } = await client.post(`/api/workspace/users/${userId}/temporary-access`, payload)
+    return data
+  },
+
+  /** DELETE /api/workspace/temporary-access/:id — revoke a temporary grant early */
+  async revokeTemporaryAccess(grantId: string) {
+    const { data } = await client.delete(`/api/workspace/temporary-access/${grantId}`)
+    return data
+  },
+
   // ── Workspace: company settings ────────────────────────────────────────────
 
   /** GET /api/workspace/settings */

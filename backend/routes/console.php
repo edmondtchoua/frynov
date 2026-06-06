@@ -17,3 +17,11 @@ Schedule::job(new InventorySnapshotJob())
     ->dailyAt('00:15')
     ->name('inventory:snapshot-daily')
     ->withoutOverlapping(30);  // 30 min overlap guard
+
+// ── RBAC Phase C — auto-expire temporary access grants ─────────────────────
+// Revokes lapsed temporary roles every minute → access expires without any
+// manual action (the ≤1-min window is acceptable; tighten the cadence if needed).
+Schedule::command('access:revoke-expired')
+    ->everyMinute()
+    ->name('access:revoke-expired')
+    ->withoutOverlapping();

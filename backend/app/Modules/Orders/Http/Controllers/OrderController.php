@@ -23,6 +23,7 @@ class OrderController extends Controller
             $request->user()->tenant_id,
             (int) $request->query('per_page', 20),
             $request->query('status'),
+            $request->query('warehouse_id'),
         );
 
         return response()->json($paginator);

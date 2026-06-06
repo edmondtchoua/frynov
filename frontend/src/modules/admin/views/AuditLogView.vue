@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { formatDateTime } from '@/shared/utils/date'
 import { adminService, type AuditLogEntry } from '../services/adminService'
 
 const logs    = ref<AuditLogEntry[]>([])
@@ -53,12 +54,7 @@ async function load() {
   }
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString('fr-FR', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
-}
+const formatDate = formatDateTime
 
 onMounted(load)
 </script>

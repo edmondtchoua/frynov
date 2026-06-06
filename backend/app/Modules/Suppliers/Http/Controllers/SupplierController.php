@@ -15,10 +15,16 @@ class SupplierController extends Controller
 
     // ── GET /api/suppliers ────────────────────────────────────────────────────
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection|\Illuminate\Http\JsonResponse
     {
+        $tenantId = $request->user()->tenant_id;
+
+        if (! $tenantId) {
+            return response()->json(['message' => 'Aucun tenant associé à cet utilisateur.'], 400);
+        }
+
         return SupplierResource::collection(
-            $this->service->list($request->user()->tenant_id, $request->query())
+            $this->service->list($tenantId, $request->query())
         );
     }
 

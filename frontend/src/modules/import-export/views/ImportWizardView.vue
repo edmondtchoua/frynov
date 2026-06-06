@@ -27,7 +27,7 @@
       <!-- ══ STEP 0: Choose type ══════════════════════════════════════════ -->
       <div v-if="currentStep === 0" class="step-panel">
         <h2>Que souhaitez-vous importer ?</h2>
-        <p class="step-desc">Choisissez le type de données à importer dans Nexora ERP.</p>
+        <p class="step-desc">Choisissez le type de données à importer dans Frynov ERP.</p>
 
         <div class="type-grid">
           <button v-for="t in entityTypes" :key="t.value" class="type-card" :class="{ selected: selectedType === t.value }" @click="selectedType = t.value">
@@ -71,7 +71,7 @@
         <div class="template-card">
           <div class="template-icon">📊</div>
           <div class="template-info">
-            <span class="template-name">Modèle {{ entityTypeLabel }} — Nexora ERP</span>
+            <span class="template-name">Modèle {{ entityTypeLabel }} — Frynov ERP</span>
             <span class="template-desc">Fichier Excel avec colonnes, exemples et consignes de remplissage.</span>
           </div>
           <button class="btn btn-outline" @click="downloadTemplate">
@@ -156,7 +156,7 @@
             <thead>
               <tr>
                 <th>Colonne du fichier</th>
-                <th>→ Champ Nexora ERP</th>
+                <th>→ Champ Frynov ERP</th>
                 <th>Statut</th>
               </tr>
             </thead>

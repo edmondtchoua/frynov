@@ -122,6 +122,9 @@
                 </button>
               </div>
             </div>
+
+            <!-- Surfaced void/record errors (was silently swallowed before) -->
+            <p v-if="payActionError" class="form-error" style="margin-top:8px;font-size:0.8rem;">{{ payActionError }}</p>
           </div>
 
           <!-- ── Delivery panel ─────────────────────────────────────────────── -->
@@ -228,9 +231,13 @@
                   class="form-input" style="flex:1;"
                   placeholder="0"
                 />
-                <select v-model="payForm.currency" class="form-input" style="width: 90px;">
-                  <option>XOF</option><option>XAF</option><option>EUR</option><option>USD</option>
-                </select>
+                <!-- Currency locked to the order's: the balance sums centimes across
+                     payments without converting, so mixing currencies would corrupt it. -->
+                <input
+                  :value="payForm.currency"
+                  class="form-input" style="width: 90px; background:var(--gray-50); text-align:center;"
+                  readonly tabindex="-1" title="Devise de la commande"
+                />
               </div>
             </div>
 
@@ -272,7 +279,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { formatDateTime, formatDateShort } from '@/shared/utils/date'
 import { useRoute, RouterLink } from 'vue-router'
+import { formatMoney } from '@/shared/utils/money'
 import { orderService } from '../services/orderService'
 import { paymentService } from '@/modules/payments/services/paymentService'
 import { deliveryService } from '@/modules/deliveries/services/deliveryService'
@@ -295,6 +304,7 @@ const payments     = ref<Payment[]>([])
 const payLoading   = ref(false)
 const payBalance   = ref(0)
 const payIsFullyPaid = ref(false)
+const payActionError = ref<string | null>(null)   // surfaced void/record errors
 const payModal     = reactive({ open: false, saving: false, error: '' })
 const payForm      = reactive({ amount: undefined as number | undefined, currency: 'XOF', method: 'cash' as PaymentMethod, reference: '' })
 
@@ -389,10 +399,13 @@ async function submitPayment() {
 
 async function voidPayment(paymentId: string) {
   if (!confirm('Annuler ce paiement ?')) return
+  payActionError.value = null
   try {
     await paymentService.void(paymentId)
     loadPayments()
-  } catch { /* ignore */ }
+  } catch (e: any) {
+    payActionError.value = e?.response?.data?.message ?? "Impossible d'annuler ce paiement."
+  }
 }
 
 // ── Formatters ────────────────────────────────────────────────────────────────
@@ -415,14 +428,10 @@ function deliveryStatusBadge(s: DeliveryStatus): string {
   return ({ pending: 'badge-gray', dispatched: 'badge-blue', in_transit: 'badge-blue', delivered: 'badge-success', failed: 'badge-error' } as Record<DeliveryStatus, string>)[s] ?? 'badge-gray'
 }
 function fmt(cents: number) {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: order.value?.currency ?? 'XOF', maximumFractionDigits: 0 }).format(cents / 100)
+  return formatMoney(cents, order.value?.currency ?? 'XOF')
 }
-function fmtDate(iso: string) {
-  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
-}
-function fmtDateShort(iso: string) {
-  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(iso))
-}
+const fmtDate = formatDateTime
+const fmtDateShort = formatDateShort
 
 onMounted(() => { load(); loadPayments(); loadDeliveries() })
 </script>

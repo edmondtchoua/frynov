@@ -96,7 +96,7 @@ class SubscriptionService
     public function suspend(Tenant $tenant, ?string $reason = null): void
     {
         $sub = $this->current($tenant);
-        $sub?->update(['status' => Subscription::STATUS_SUSPENDED]);
+        $sub?->update(['status' => Subscription::STATUS_SUSPENDED, 'suspension_reason' => $reason]);
         $tenant->update(['subscription_status' => Subscription::STATUS_SUSPENDED, 'status' => 'suspended']);
     }
 

@@ -13,8 +13,8 @@ class MoveStockRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'quantity'  => ['required', 'integer', 'min:1'],
-            'reason'    => ['required', Rule::in([
+            'quantity'   => ['required', 'integer', 'min:1'],
+            'reason'     => ['required', Rule::in([
                 StockMovement::REASON_DELIVERY,
                 StockMovement::REASON_SALE,
                 StockMovement::REASON_RETURN,
@@ -22,8 +22,10 @@ class MoveStockRequest extends FormRequest
                 StockMovement::REASON_COUNT,
                 StockMovement::REASON_MANUAL,
             ])],
-            'reference' => ['nullable', 'string', 'max:100'],
-            'note'      => ['nullable', 'string', 'max:500'],
+            // variant_id — optional, scopes the stock movement to a specific variant
+            'variant_id' => ['nullable', 'uuid'],
+            'reference'  => ['nullable', 'string', 'max:100'],
+            'note'       => ['nullable', 'string', 'max:500'],
         ];
     }
 }

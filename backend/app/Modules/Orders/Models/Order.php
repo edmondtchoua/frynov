@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Shared\Traits\HasTenant;
 
 class Order extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasTenant, HasUuids, SoftDeletes;
 
     public const STATUS_DRAFT     = 'draft';
     public const STATUS_CONFIRMED = 'confirmed';
@@ -19,6 +20,8 @@ class Order extends Model
 
     protected $fillable = [
         'tenant_id',
+        'warehouse_id',
+        'cash_register_session_id',   // set for POS sales (null otherwise)
         'customer_id',
         'number',
         'status',

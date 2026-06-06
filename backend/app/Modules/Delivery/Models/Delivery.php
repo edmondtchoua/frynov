@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Shared\Traits\HasTenant;
 
 class Delivery extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasTenant, HasUuids, SoftDeletes;
 
     const STATUS_PENDING    = 'pending';
     const STATUS_DISPATCHED = 'dispatched';
@@ -26,8 +27,22 @@ class Delivery extends Model
         self::STATUS_FAILED,
     ];
 
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::updating(function (Delivery $delivery) {
+            if ($delivery->isDirty('number') && $delivery->getOriginal('number') !== null) {
+                throw new \DomainException(
+                    "BL number '{$delivery->getOriginal('number')}' is immutable and cannot be changed."
+                );
+            }
+        });
+    }
+
     protected $fillable = [
         'tenant_id',
+        'number',
         'order_id',
         'status',
         'address',
@@ -51,21 +66,21 @@ class Delivery extends Model
         ];
     }
 
-    // ── Relations ──────────────────────────────────────────────────────────────
+    // â”€â”€ Relations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function order(): BelongsTo
     {
         return $this->belongsTo(\App\Modules\Orders\Models\Order::class);
     }
 
-    // ── Scopes ─────────────────────────────────────────────────────────────────
+    // â”€â”€ Scopes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function scopeForTenant(Builder $query, string $tenantId): Builder
     {
         return $query->where('tenant_id', $tenantId);
     }
 
-    // ── Status helpers ─────────────────────────────────────────────────────────
+    // â”€â”€ Status helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function isPending(): bool    { return $this->status === self::STATUS_PENDING; }
     public function isDispatched(): bool { return $this->status === self::STATUS_DISPATCHED; }

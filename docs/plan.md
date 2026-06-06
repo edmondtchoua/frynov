@@ -1,525 +1,576 @@
-# Plan d'implémentation — Nexora ERP
+# Plan d'implémentation — Frynov ERP
 
-> Document vivant — mis à jour à chaque session.  
-> Dernière révision : **2026-05-31 (Sprint 7A)**  
-> Stratégie : backend + frontend **en parallèle** dans chaque session.
-
----
-
-## État actuel par couche
-
-### Backend (Laravel 13)
-
-| Module | Statut | Tests | Remarques |
-|--------|--------|-------|-----------|
-| Infrastructure | ✅ Livré | — | Docker, CI/CD, modular system |
-| Auth | ✅ Livré | 30 | Sanctum, Spatie teams, multitenant |
-| Catalog | ✅ Livré | 36 | Products, Categories, Variants, SKU, QR/Barcode, Labels |
-| Inventory | ✅ Livré | 25 | Stock, StockMovement, Redis anti-oversell, scan-to-action |
-| Orders | ✅ Livré | 26 | Order lifecycle, stock reservation, anti-oversell, 6 endpoints |
-| Customers | ✅ Livré | 25 | CRUD + search + typeahead, orders relation, tenant isolation |
-| Payments | ✅ Livré | 23 | record/void/balance/isFullyPaid, split payments, tenant isolation |
-| Delivery | ✅ Livré | 26 | pending→dispatched→delivered→failed, order relation, tenant isolation |
-| **Suppliers** | ✅ Livré | 14 | CRUD, code auto, findOrCreateByName, tenant isolation |
-| **ImportExport** | ✅ Livré | 21 | Upload→analyze→mapping→approve→execute pipeline, Horizon jobs, Excel/PDF export |
-| **Reports** | ✅ Livré | 22 | Dashboard KPIs, sales by period, stock value, top products, payment breakdown |
-| **Billing** | ✅ Livré | 6 | Plan model (starter/pro/enterprise), Subscription lifecycle (trialing/active/suspended/cancelled/pending_approval), SubscriptionService |
-| **Platform** | ✅ Livré | 18 | ErpModule registry, TenantModule activation, AuditLog, ModuleRegistryService, AuditService, Admin back-office API (5 controllers) |
-| Sync | 💤 Différé | — | Phase 2 |
-
-**Backend MVP : 100% complet. Tests : 293 passent.**
+> Document vivant — mis à jour à chaque fin de sprint.
+> **Dernière révision : 2026-06-04 · Replanification pricing localisé + landing géographique**
+> Stratégie : backend + frontend **en parallèle**, docs + tests + seeders à chaque sprint.
 
 ---
 
-### Frontend (Vue 3 + Vite + TypeScript + PrimeVue 4)
+## Règle documentaire
 
-| Couche | Statut | Remarques |
-|--------|--------|-----------|
-| Stack / config | ✅ Livré | package.json `nexora-erp-frontend`, vite, tsconfig, vitest |
-| **Design system** | ✅ Livré | CSS custom properties, tokens couleurs, composants utilitaires |
-| **NexoraLogo** | ✅ Livré | Composant SVG réutilisable, 3 variantes (light/dark/color) |
-| Foundation (API client, router, stores) | ✅ Livré | Axios interceptors, Pinia auth, guards |
-| **AppLayout** | ✅ Livré | Sidebar responsive, hamburger mobile, sidebar overlay, SVG nav |
-| **AuthLayout** | ✅ Livré | Logo Nexora, fond gradient, footer marque |
-| Auth UI (login, register) | ✅ Livré | LoginView, RegisterView (4 champs, jauge force MDP) |
-| **Landing page** | ✅ Livré | Hero, features, how-it-works, modules, FAQ accordéon, footer |
-| **Onboarding wizard** | ✅ Livré | 5 étapes, card-choices, auto-suggestion modules, transitions |
-| **Dashboard** | ✅ Livré | KPIs réels (API), revenue bar chart SVG, commandes récentes, top produits |
-| **Settings** | ✅ Livré | 5 onglets (entreprise, équipe, abonnement, intégrations, notifs) |
-| Orders UI | ✅ Livré | OrderListView, OrderCreateView, OrderDetailView |
-| Catalog UI | ✅ Livré | ProductListView, ProductFormView, CategoryListView |
-| Customers UI | ✅ Livré | CustomerListView (avatars, modal inline), CustomerDetailView |
-| **Inventory UI** | ✅ Livré | StockListView (move modal), StockAlertsView (cards + progress bar), MovementHistoryView (timeline) |
-| **Payments UI** | ✅ Livré | PaymentListView (global ledger, void), OrderDetailView enrichi (balance panel + modal) |
-| **Delivery UI** | ✅ Livré | DeliveryListView (dispatch/deliver/fail actions), OrderDetailView panel livraison |
-| **Suppliers UI** | ✅ Livré | SupplierListView (CRUD modal, code badge, pagination) |
-| **Import/Export UI** | ✅ Livré | ImportWizardView (5 étapes, polling), ImportHistoryView (filtres, modal détail) |
-| **Reports UI** | ✅ Livré | Dashboard KPIs réels, SalesReportView (chart + top produits + méthodes), StockReportView (valeur + alertes) |
-| **Admin back-office** | ✅ Livré | AdminLayout (dark sidebar), AdminDashboardView (KPIs + recent), TenantListView (search/filter/suspend), ModuleListView (toggle visibility/status), PlanListView, AuditLogView |
-
-**Frontend MVP : 100% complet.**
+> À chaque sprint livré, mettre à jour :
+> 1. Ce fichier `plan.md` — état modules, tests, roadmap
+> 2. `docs/user/` — guides utilisateur impactés
+> 3. `database/seeders/` — données de référence si nouveaux modèles
+> 4. Tests — backend + Vitest frontend
 
 ---
 
-### Mobile Flutter (POS)
+## État global
 
-| Couche | Statut |
-|--------|--------|
-| Projet Flutter | ⏳ Phase 3 (mois 5-7) |
-| Foundation + offline | ⏳ |
-| POS caisse | ⏳ |
-| Inventory scan | ⏳ |
+| Indicateur | Valeur |
+|---|---|
+| Tests backend | **577 ✅** (575 passed, 2 skipped, **0 incomplete**) — +recette v0.8.0, +P4 landing géo, +Sprint 20 filtres multi-sites |
+| Tests Vitest frontend | **165 / 165 ✅** (+P4 publicPricingService, +Sprint 20 useWarehouses) — couverture ~38 % |
+| Branche | `release/v0.8.0` — **recette en cours** (= `develop` + 8 correctifs recette) |
+| Dernière tag | `v0.7.0` (Sprint 7A) — **`release/v0.8.0` en recette** (Sprints 8→19 + audit pré-release + recette) |
+| Dernière PR | #2 `feature/sprint-13` → `main` |
 
----
-
-### Documentation
-
-| Section | Statut |
-|---------|--------|
-| Architecture, guides dev | ✅ |
-| Auth, Catalog, Inventory (tech + user) | ✅ |
-| Orders (tech + API + user) | ✅ |
-| Suppliers (tech + API + user) | ✅ |
-| Import/Export (tech + API + user) | ✅ |
-| Reports (tech + API + user) | ✅ |
-| Customers, Payments, Delivery | ⏳ À compléter |
+> ⚠️ **Note critique** : avant l'audit, la config `phpunit.xml` ne matchait que certains
+> suffixes → **121 tests (dont sécurité & multi-tenant) n'étaient jamais exécutés**.
+> Le « 374 passing » historique était trompeur. Désormais 501 tous exécutés.
 
 ---
 
-## Design system — Nexora ERP
+## Décision produit — Pricing localisé & accès modules (à valider avant implémentation finale)
 
-### Identité visuelle
+### Décision stratégique
 
-| Token | Valeur | Usage |
-|-------|--------|-------|
-| `--brand-primary` | `#10b981` | Vert émeraude — CTA primaire |
-| `--brand-primary-dark` | `#059669` | Hover boutons primaires |
-| `--brand-secondary` | `#3b82f6` | Bleu — liens, boutons secondaires |
-| `--sidebar-bg` | `#1e293b` | Slate foncé — sidebar app |
-| `--color-error` | `#ef4444` | Erreurs, alertes stock |
-| `--color-warning` | `#f59e0b` | Avertissements |
-| `--radius-lg` | `10px` | Cards, panels |
-| `--sidebar-width` | `248px` | Largeur sidebar desktop |
-| `--topbar-height` | `60px` | Hauteur barre haute |
+La stratégie cible est de **ne plus vendre l'accès module par module** sur les plans publics. Les modules métier principaux doivent rester visibles et utilisables, avec une sécurité par rôles/permissions, tandis que la monétisation porte sur les ressources critiques :
 
-### Composants globaux (`src/assets/main.css`)
+- utilisateurs inclus et utilisateurs additionnels ;
+- produits / SKU ;
+- commandes mensuelles ;
+- clients ;
+- boutiques / branches ;
+- entrepôts ;
+- imports mensuels ;
+- API / webhooks ;
+- marketplace / synchronisations ;
+- stockage ;
+- niveau de support et accompagnement.
 
-- `.btn`, `.btn-primary`, `.btn-secondary`, `.btn-blue`, `.btn-danger`, `.btn-ghost`
-- `.btn-sm`, `.btn-lg`, `.btn-xl`
-- `.badge-*` (success/warning/error/gray/blue)
-- `.alert`, `.alert-error`, `.alert-success`
-- `.data-table` avec hover rows
-- `.form-group`, `.form-input`, `.form-label`, `.form-error`
-- `.card`, `.page-header`
-- `.spinner-sm`, `.spinner-white`
-- `.empty-state`, `.loading-center`
-- `.hide-mobile`, `.show-mobile-only`
+Les modules ou fonctions sensibles peuvent rester limités par **rôle**, **permission**, **quota**, **capacité** ou **option contractuelle**, mais ils ne doivent pas disparaître sans explication commerciale. Si une action dépasse le plan, l'UX doit afficher un message d'upgrade ou de demande d'accès.
 
-### Responsive breakpoints
+### Plans cibles
 
-| Breakpoint | Valeur | Impact |
-|-----------|--------|--------|
-| Mobile | `≤ 768px` | Sidebar fixe + hamburger, grids 1 col, textes réduits |
-| Tablet | `≤ 1024px` | Grids 2 cols |
-| Desktop | `> 1024px` | Layout standard 3 cols |
+| Plan | Cible | Inclus | Limites principales | Positionnement |
+|---|---|---|---|---|
+| **Découverte** | Test, commerçant solo, petite boutique | 1 utilisateur | 100 produits, 50 commandes/mois, 100 clients, 1 boutique, 1 entrepôt | Acquisition gratuite / low-cost |
+| **Essentiel** | Boutique active | 2 utilisateurs | 500 produits, 300 commandes/mois, 1 000 clients, 1 boutique, 1 entrepôt | Plan quotidien pour PME locale |
+| **Croissance** | PME en expansion | 5 utilisateurs | 5 000 produits, 2 000 commandes/mois, 10 000 clients, 3 boutiques, 3 entrepôts | Automatisation + reporting avancé |
+| **Business / Enterprise** | Grossistes, franchises, réseaux multi-sites | 10 utilisateurs ou contrat | Volumes élevés ou illimités selon contrat | API, SLA, onboarding, support dédié |
+
+### Marchés et devises cibles
+
+| Marché | Pays principaux | Devise affichée | Règle |
+|---|---|---|---|
+| UEMOA | SN, CI, ML, BF, BJ, TG, NE, GW | XOF | Ne jamais libeller seulement “CFA” en base : utiliser XOF. |
+| CEMAC | CM, GA, CG, TD, CF, GQ | XAF | Ne jamais mélanger XAF avec XOF. |
+| Nigeria | NG | NGN | À brancher après validation paiement local. |
+| Ghana | GH | GHS | À brancher après validation paiement local. |
+| Kenya | KE | KES | À brancher après validation paiement local. |
+| Afrique du Sud | ZA | ZAR | À brancher après validation paiement local. |
+| Europe | FR, BE, ES, DE, etc. | EUR | Prix Europe, pas de XOF/XAF par défaut. |
+| Canada | CA | CAD | Prix CAD obligatoire par défaut pour visiteurs Canada. |
+| USA / Global | US + fallback | USD | Fallback international. |
+
+### Règles de localisation
+
+- La géolocalisation IP sert uniquement à **pré-sélectionner** un marché ; elle ne doit jamais être une barrière de sécurité.
+- L'utilisateur doit toujours pouvoir corriger la zone via un sélecteur manuel pays/devise.
+- La devise contractuelle doit venir d'un **price book validé côté backend**, pas d'un prix hardcodé durablement dans le frontend.
+- La landing peut afficher un fallback statique temporaire, mais la cible release est un endpoint public de pricing.
+
+### Audit de cohérence de la PR pricing/géo précédente
+
+| Décision | Statut | Action |
+|---|---|---|
+| `PlanPrice` + `PlanLimit` | ✅ À conserver en principe | Garder si les migrations/seeders sont validés et idempotents. |
+| Tous les modules sur plans publics | ✅ À conserver comme stratégie produit | À sécuriser avec RBAC, quotas et messages d'upgrade. |
+| `QuotaService` lisant `plan_limits` | ✅ À conserver | Tests Billing obligatoires à chaque modification. |
+| Prix hardcodés dans Landing/Upgrade | 🟡 À corriger | Sprint P3 : exposer un endpoint public de pricing, puis P4/P5 consomment cet endpoint. |
+| Refonte landing + backend pricing dans une seule PR | 🔴 À éviter | Découper en P0→P6. |
+| Ajout de dépendance frontend pour corriger les scripts | 🟡 À documenter | Garder seulement si nécessaire au build/type-check CI. |
+| Checkout local par devise | 🔵 À documenter avant code | Définir rails de paiement par marché avant implémentation. |
+
+### Risques connus
+
+- Duplication des prix entre seeders backend et frontend.
+- Migration de tenants existants (`starter`, `pro`, `enterprise`) vers `essential`/`croissance` sans plan de compatibilité.
+- Promotions et abonnements existants dépendant d'anciens `plan_code`.
+- Confusion XOF/XAF si “CFA” est utilisé dans les données techniques.
+- Landing affichant des prix non contractuels si elle ne consomme pas la source backend.
+- Paiements locaux disponibles différemment selon pays et prestataire.
+
 
 ---
 
-## Architecture frontend
+## Modules backend — état complet
+
+| Module | Statut | Tests | Dernière évolution |
+|---|---|---|---|
+| Infrastructure | ✅ | — | Docker, CI/CD, modular system |
+| Auth + Workspace | ✅ | 35 | Sanctum, Spatie teams, IDOR guard, 4 rôles terrain, CountryRules, onboarded flag |
+| Catalog | ✅ | 69 | Products, Categories, Variants N-axes (cartesian), Attributes, SKU auto (`tenant_sequences`), code-barres interne `FRY*`, GTIN validation GS1, Labels |
+| Inventory | ✅ | 55 | Stock, StockMovement, Redis anti-oversell, scan, Warehouses, Transfers (state machine), Fiscal periods, CMUP async, Snapshots, PeriodLock |
+| Orders | ✅ | 40 | Order lifecycle, Returns/RMA (state machine), stock reservation, warehouse_id FK |
+| Customers | ✅ | 12 | CRUD + search, orders relation |
+| Payments | ✅ | 16 | record/void/balance, idempotency key, amount cap server-side, warehouse_id FK |
+| Delivery | ✅ | 12 | pending→dispatched→delivered→failed, role guard |
+| Suppliers | ✅ | 8 | CRUD, code auto, findOrCreateByName |
+| ImportExport | ✅ | 30 | Upload→analyze→mapping→approve→execute pipeline, Excel/PDF export |
+| Reports | ✅ | 13 | Dashboard KPIs, sales, stock value, role:manager+ |
+| Billing | ✅ / 🟡 Replanification | 10+ | Plan, Subscription, Promotion, ManualPayment, QuotaService. Refonte pricing localisé à découper en sprints P0→P6 avant stabilisation finale. |
+| Platform | ✅ | 28 | ErpModule registry, AuditLog HMAC (actor_role + ip), Admin back-office, `/admin/audit-logs`, verify-chain |
+| Security module | ✅ | 21 | RBAC sur 11 modules, CatalogSecurityTest, PaymentSecurityTest, MultiTenantIsolationTest, AuditTrailTest |
+| Marketplace | ✅ | — | Facebook/WhatsApp/WooCommerce adapters, sync alerts |
+| CountryRules | ✅ | 5 | Migration + Model + RegistrationRuleService + 30 pays seedés |
+| Multi-sites | 🔄 Filtres livrés | — | `warehouse_id` orders/payments/stock + **filtres liste par site** (Sprint 20) ; reste : `Branch` metadata, scoping accès, filtres rapports |
+| Sync | 🧪 Scaffold testé — **masqué (feature flag)** | 33 | Scaffold CRUD (HasTenant, `/api`, `tenant`, `role:manager\|admin`) + 33 tests. **Routes derrière `config('frynov.modules.sync')` = `FEATURE_SYNC` (off par défaut)** → invisible en prod, activé en test. Domaine métier : Phase 3 |
+
+**Total tests backend : 568 (2 skipped, 0 incomplete)**
+
+---
+
+## Modules frontend — état complet
+
+| Module | Statut | TabNav | Dernière évolution |
+|---|---|---|---|
+| AppLayout | ✅ | — | Sidebar **1 niveau** (Sprint 14), 9 entrées plates, responsive drawer |
+| CatalogTabNav | ✅ | 4 tabs | Produits / Catégories / Déclinaisons / Étiquettes (Sprint 14 : renommage + CTA VariantsView) |
+| InventoryTabNav | ✅ NEW | 5 tabs | Stock / Alertes / Entrepôts / Transferts / Clôture (Sprint 14) |
+| SalesTabNav | ✅ NEW | 4 tabs | Commandes / Retours & SAV / Paiements / Livraisons (Sprint 14) |
+| ReportsTabNav | ✅ NEW | 2 tabs | Ventes / Stock (Sprint 14) |
+| Dashboard | ✅ | — | KPIs réels, chart, top produits |
+| Catalogue | ✅ | ✅ | ProductList + Form + Categories + Variants + Labels |
+| Inventory | ✅ | ✅ | StockList + Alerts + Warehouses + Transfers + FiscalPeriods (tous intégrés) |
+| Ventes | ✅ | ✅ | OrderList + Returns + Payments + Deliveries (tous intégrés) |
+| Clients | ✅ | — | CustomerList + CustomerDetail |
+| Fournisseurs | ✅ | — | SupplierList + SupplierDetailView (Sprint 15) |
+| Import/Export | ✅ | — | ImportWizard + ImportHistory |
+| Rapports | ✅ | ✅ | SalesReport + StockReport (intégrés) |
+| Settings | ✅ | 5 tabs | Entreprise / Équipe / Abonnement / Intégrations (stub) / Notifications (stub) |
+| Billing | ✅ NEW / 🟡 À réaligner | — | BillingView (plan + usages) + UpgradeView. Pricing localisé à brancher sur une source backend unique avant release. |
+| Marketplace | ✅ | — | Listings + alertes |
+| Onboarding | ✅ Complet | — | Wizard 6 étapes (activité, équipe, besoins, entreprise+devise, provisioning). **Les 5 `needs_*` présents**, `provision()` persiste settings/devise + `onboarded=true`. Guard redirige tout tenant non-onboardé vers `/onboarding` ; register → onboarding |
+| Profil | ✅ | — | Page profil + sessions |
+| Admin back-office | ✅ | 8 vues | Tenants, Modules, Plans, Promotions, Paiements manuels, Audit (AdminLayout) |
+
+**Tests Vitest frontend : 142 tests** (46 composant + 11 money + 6 date + TabNavs/services) — couverture 30.8 %
+
+---
+
+## Sécurité — couverture RBAC
+
+| Module | EnsureUserBelongsToTenant | Role guard | Statut |
+|---|---|---|---|
+| Catalog | ✅ | ✅ manager\|admin sur writes | ✅ Complet |
+| Inventory | ✅ | ✅ manager\|admin sur mutations | ✅ Complet |
+| Orders | ✅ | ✅ manager\|admin sur confirm/cancel/returns | ✅ Complet |
+| Payments | ✅ | ✅ manager\|admin sur void | ✅ Complet |
+| Customers | ✅ | ✅ manager\|admin sur delete | ✅ Complet |
+| Delivery | ✅ | ✅ manager\|admin sur dispatch/deliver | ✅ Complet |
+| Reports | ✅ | ✅ manager\|admin | ✅ Complet |
+| Marketplace | ✅ | ✅ manager\|admin sur writes | ✅ Complet |
+| Suppliers | ✅ | ✅ manager\|admin sur delete | ✅ Complet |
+| ImportExport | ✅ | ✅ manager\|admin sur approve/execute | ✅ Complet |
+| Workspace provision | ✅ | ✅ manager\|admin | ✅ Complet |
+| **RBAC sidebar frontend** | ✅ | — | Computed `mainNavItems` filtré par `isManagerOrAbove` (Sprint 15) |
+| **RBAC onglets TabNav** | ✅ | — | `usePermission` injecté dans les 4 TabNavs (Sprint 15) |
+
+---
+
+## Audit trail — couverture événements
+
+| Événement | Câblé | Depuis |
+|---|---|---|
+| `auth.login` + ip_address | ✅ | Sprint 12 + fix Sprint 14 |
+| `auth.logout` | ✅ | Sprint 12 |
+| `order.created/confirmed/fulfilled/cancelled` | ✅ | Sprint 12 |
+| `payment.recorded` | ✅ | Sprint 12 |
+| `workspace.role_changed` / `user_activated` | ✅ | Sprint 12 |
+| `module.activated` / `plan.changed` | ✅ | Sprint 11 |
+| `security.idor_attempt` | ✅ | Sprint 11 |
+| `stock.moved_in` / `stock.adjusted` | ✅ | Sprint 13 |
+| `product.created` | ✅ | Sprint 13 |
+| `return.approved` | ✅ | Sprint 13 |
+| `stock.moved_out` | ✅ Câblé | Sprint 15 |
+| `product.updated` | ✅ Câblé | Sprint 15 |
+| `product.archived` | ✅ Câblé | Sprint 15 |
+| `customer.created` | ✅ Câblé | Sprint 15 |
+| `customer.updated` | ✅ Câblé | Sprint 15 |
+
+---
+
+## Seeders — état
+
+| Seeder | Contenu | Idempotent |
+|---|---|---|
+| `RolesAndPermissionsSeeder` | 9 rôles + 68+ permissions | ✅ firstOrCreate |
+| `PlansSeeder` | Plans commerciaux + quotas + prix localisés (à stabiliser via P0→P3) | ✅ updateOrCreate attendu |
+| `ErpModulesSeeder` | 10 modules ERP avec icônes | ✅ firstOrCreate |
+| `PlanModulesSeeder` | Matrice plan ↔ modules ; stratégie cible : modules métier visibles, limites par ressources | ✅ idempotent attendu |
+| `CountryRulesSeeder` | 30+ pays africains + Europe + Amérique | ✅ firstOrCreate |
+| `SuperAdminSeeder` | superadmin@frynov.com | ✅ firstOrCreate |
+| `DemoSeeder` | **3 tenants démo couvrant TOUS les modules MVP** : catalogue (simples + déclinaisons + attributs), stock + **mouvements** + **entrepôts**, clients, commandes (tous statuts) + paiements + livraisons, **retours/SAV**, **caisse POS** (ouverte + clôturée), **marketplace**, **promotions**, **paiement manuel**, **période fiscale**, **import**, **ajustement de stock**, **transfert inter-entrepôts** (multi-sites). Convention monétaire uniforme (centimes). Vérifié par `DemoSeederTest` (42 assertions). | ✅ updateOrCreate (idempotent, sauf n° de commande) |
+
+---
+
+> **Démo** : `php artisan migrate:fresh --seed` → 3 tenants (Découverte/Essentiel/Croissance) testables sur **toutes** les fonctionnalités MVP. Logins : `admin@afrikstyle.sn` · `admin@techzone.ci` · `admin@grossiste.cm` (mdp `Secret123!`). `DemoSeederTest` garantit la couverture à chaque évolution.
+
+## Navigation — architecture finale (Sprint 14 ✅)
 
 ```
-src/
-├── assets/
-│   └── main.css                 ← Design system complet (CSS custom props)
-├── layouts/
-│   ├── AppLayout.vue            ← Shell app (sidebar + topbar responsive)
-│   └── AuthLayout.vue           ← Centré, NexoraLogo, carte
-├── pages/
-│   └── LandingView.vue          ← Landing page publique (autonome, sans shell)
-├── shared/
-│   └── components/
-│       └── NexoraLogo.vue       ← Logo SVG réutilisable
-├── modules/
-│   ├── auth/views/
-│   │   ├── LoginView.vue
-│   │   └── RegisterView.vue     ← 4 champs + jauge force mot de passe
-│   ├── onboarding/views/
-│   │   └── OnboardingView.vue   ← Wizard 5 étapes, card-choices
-│   ├── dashboard/views/
-│   │   └── DashboardView.vue    ← KPIs réels + bar chart SVG + top produits
-│   ├── settings/views/
-│   │   └── SettingsView.vue     ← 5 onglets (entreprise, équipe, facturation...)
-│   ├── catalog/views/           ← ProductListView, ProductFormView, CategoryListView
-│   ├── inventory/views/         ← StockListView, StockAlertsView, MovementHistoryView
-│   ├── orders/views/            ← OrderListView, OrderCreateView, OrderDetailView
-│   ├── customers/views/         ← CustomerListView, CustomerDetailView
-│   ├── suppliers/views/         ← SupplierListView (CRUD modal)
-│   ├── import-export/views/     ← ImportWizardView (5 étapes), ImportHistoryView
-│   └── reports/views/           ← SalesReportView, StockReportView
-└── router/
-    ├── index.ts                 ← Routes modulaires, lazy loading
-    └── guards.ts                ← Auth guard, tenant guard
-```
-
-### Système de layouts (App.vue)
-
-```
-meta.layout = undefined  →  <RouterView />  (page gère son propre shell)
-meta.layout = 'auth'     →  <AuthLayout>    (login, register)
-meta.layout = 'app'      →  <AppLayout>     (toutes les vues authentifiées)
-meta.layout = 'admin'    →  <AdminLayout>   (back-office super-admin uniquement)
-```
-
-Pages sans layout (`meta.public: true` sans `meta.layout`) : landing, onboarding.
-
-Routes `/admin/*` nécessitent `meta.requiresSuperAdmin: true` — guard redirige vers `/dashboard` si non super-admin.
-
----
-
-## Stratégie d'implémentation
-
-### Règle principale
-
-**Chaque session = 1 module backend + vues frontend du même domaine + tests cross-couche + docs.**
-
-Ne jamais finir tout le backend avant de commencer le frontend.
-
-### Dépendances
-
-```
-Auth → tout le reste (obligatoire en premier)
-Catalog → Inventory (stock lié aux produits)
-Catalog → Orders (lignes de commande)
-Inventory → Orders (réservation stock)
-Orders → Payments (une commande est payée)
-Orders → Delivery (une commande est livrée)
-Customers → Orders (optionnel en Phase 1)
-Catalog + Orders + Payments + Inventory → Reports (agrégation cross-module)
-```
-
----
-
-## Roadmap détaillée
-
----
-
-### Phase 1 — MVP Backend + Frontend admin
-**Objectif : application web complète et fonctionnelle**  
-**Durée estimée totale : mois 3 → mois 7**
-
----
-
-#### Sprint 1 — Foundation Frontend + Orders backend ✅
-**Statut : LIVRÉ**
-
-- Backend Orders : migrations, Order/OrderLine models, OrderService (create/confirm/fulfill/cancel), OrderController (6 endpoints), tests (8 unit + 12 intégration + 4 modular cross-module)
-- Frontend foundation : Axios client, Pinia stores, router avec guards
-- Frontend auth : LoginView, RegisterView, AppLayout, AuthLayout
-- Frontend orders : OrderListView, OrderCreateView, OrderDetailView
-- Design system Nexora ERP : CSS custom properties, composants utilitaires
-- Pages publiques : LandingView (hero + features + FAQ), OnboardingView (wizard 5 étapes)
-- Dashboard : DashboardView avec SVG icons, CSS tokens, actions rapides
-- Settings : SettingsView (5 onglets)
-
----
-
-#### Sprint 2 — Customers backend + Catalog UI ✅
-**Statut : LIVRÉ**
-
-**Backend — Customers**
-
-| Livrable | Description |
-|----------|-------------|
-| Migration `customers` | name, phone, email, address JSON, notes, tenant_id |
-| `Customer` model | |
-| `CustomerService` | CRUD + search par nom/téléphone |
-| `CustomerController` | CRUD + search + liste commandes |
-| Lier Orders à Customers | `customer_id` FK sur `orders` |
-| Tests | Unit + Integration |
-
-**Frontend — Catalog UI**
-
-| Livrable | Description |
-|----------|-------------|
-| `ProductListView.vue` | Table paginée + filtre statut/catégorie + recherche |
-| `ProductFormView.vue` | Création/édition produit, prix, statut |
-| `VariantPanel.vue` | Gestion variantes (ajout, suppression) |
-| `CategoryListView.vue` | Arbre hiérarchique des catégories |
-| `LabelPrint.vue` | Sélecteur format + copies → ouvre HTML dans onglet |
-| `productService.ts` | Appels API Catalog |
-
----
-
-#### Sprint 3 — Payments backend + Inventory UI ✅
-**Statut : LIVRÉ**
-
-**Backend — Payments**
-
-| Livrable | Description |
-|----------|-------------|
-| Migration `payments` | order_id, amount, currency, method, reference, paid_at |
-| `Payment` model | méthodes : cash, mobile_money (Orange/Wave/MTN), card, transfer |
-| `PaymentService` | record() · balance() · isFullyPaid() |
-| Intégration Orders | markPaid() quand fully paid |
-| Tests | Unit + Integration |
-
-**Frontend — Inventory UI**
-
-| Livrable | Description |
-|----------|-------------|
-| `StockListView.vue` | Table produits + badges vert/orange/rouge |
-| `StockAlertsView.vue` | Bandeau + page alertes stock bas |
-| `MoveStockForm.vue` | Formulaires entrée/sortie/ajustement |
-| `BarcodeScanner.vue` | Input texte (douchette USB → keydown) → résolution SKU |
-| `MovementHistoryView.vue` | Timeline mouvements par produit |
-| `inventoryService.ts` | Appels API Inventory |
-
----
-
-#### Sprint 4 — Delivery backend + Payments UI + Delivery UI ✅
-**Statut : LIVRÉ**
-
-**Backend — Delivery**
-
-| Livrable | Description |
-|----------|-------------|
-| Migration `deliveries` | order_id, status, address, carrier, notes, dispatched_at, delivered_at |
-| `Delivery` model | statuts : pending → dispatched → delivered → failed |
-| `DeliveryService` | dispatch(), confirmDelivery(), fail() |
-| Tests | Unit + Integration |
-
-**Frontend — Customers + Payments + Delivery UI**
-
-| Livrable | Description |
-|----------|-------------|
-| `CustomerListView.vue` | CRUD + historique commandes |
-| `CustomerDetailView.vue` | Fiche client, commandes liées |
-| `PaymentListView.vue` | Paiements globaux, void |
-| `DeliveryListView.vue` | dispatch/deliver/fail actions |
-
----
-
-#### Sprint 5 — Suppliers + Import/Export module ✅
-**Statut : LIVRÉ**
-
-**Backend — Suppliers**
-
-| Livrable | Description |
-|----------|-------------|
-| Migration `suppliers` | name, code, email, phone, contact, payment_terms, notes, status |
-| `Supplier` model | code auto-généré, findOrCreateByName |
-| `SupplierService` | CRUD + search + findOrCreateByName |
-| `SupplierController` | 6 endpoints |
-| Tests | 7 unit + 7 integration |
-
-**Backend — Import/Export**
-
-| Livrable | Description |
-|----------|-------------|
-| Migration `import_sessions` | status machine, column_mapping, stats |
-| Migration `import_rows` | raw_data, mapped_data, errors, status, action |
-| `ImportSession` / `ImportRow` models | Status constants + helpers |
-| `ColumnMapper` | Auto-mapping FR/EN aliases par entité |
-| `ProductImportParser`, `CustomerImportParser`, `SupplierImportParser` | Validation, doublons, mode (create/update/simulate) |
-| `ImportService` | upload→analyze→mapping→approve→execute (sync ≤200 rows / async > 200) |
-| `TemplateService` | Téléchargement Excel template stylisé par entité |
-| `ExcelExporter` | Export Excel stylisé par entité |
-| `PdfExporter` | Export PDF + rapport d'import (dompdf) |
-| `AnalyzeImportJob`, `ExecuteImportJob` | Horizon jobs sur queue `imports` |
-| `ImportExportController` | 10 endpoints |
-| Tests | 5 mapper + 9 parser + 8 API + 8 module |
-
-**Frontend — Suppliers + Import/Export**
-
-| Livrable | Description |
-|----------|-------------|
-| `SupplierListView.vue` | Table paginée, modal CRUD inline |
-| `ImportWizardView.vue` | Wizard 5 étapes, polling async (2s) |
-| `ImportHistoryView.vue` | Historique filtrable, modal détail, actions rapides |
-| `importExportService.ts` | 10 appels API |
-| `supplierService.ts` | 6 appels API |
-
----
-
-#### Sprint 7A — SaaS billing, module registry, admin back-office ✅
-**Statut : LIVRÉ**
-
-**Backend — Billing module**
-
-| Livrable | Description |
-|----------|-------------|
-| `Plan` model + migration | starter (gratuit 14j), pro (15 000 XOF/mois), enterprise (custom) |
-| `Subscription` model + migration | Lifecycle : trialing → active → suspended → cancelled → pending_approval |
-| `SubscriptionService` | createStarter, current, changePlan, suspend, reactivate |
-| `BillingServiceProvider` | Auto-charge migrations et routes du module Billing |
-
-**Backend — Platform module**
-
-| Livrable | Description |
-|----------|-------------|
-| `ErpModule` + migration | 10 modules ERP configurables en DB (code, status, is_core, route_prefix, color) |
-| `TenantModule` + migration | Activation par tenant (active/inactive/suspended/trial) |
-| `AuditLog` + migration | Log immuable (pas d'updated_at), toutes actions sensibles |
-| `plan_modules` pivot | Quels modules sont inclus dans quel plan |
-| `ModuleRegistryService` | listForTenant, activeCodes, tenantHasModule, activate, deactivate, activatePlanModules |
-| `AuditService` | logFromRequest, logCreated/Updated/Deleted, logLogin/Logout, logModuleActivated, logPlanChanged |
-| `RequireAdmin` middleware | Vérifie `is_super_admin`, retourne 403 sinon |
-| `AdminDashboardController` | Stats globales (tenants, users, plans, abonnements par statut, logs récents) |
-| `AdminTenantController` | Liste/détail/suspend/réactiver/changePlan tenants |
-| `AdminModuleController` | Liste modules + stats activations, activer/désactiver pour un tenant |
-| `AdminPlanController` | Liste plans, audit log paginé |
-| `ModulesController` | `GET /api/me/modules` — retourne modules actifs du tenant courant |
-| `PlatformServiceProvider` | Auto-charge migrations + routes Platform |
-
-**Backend — Registration fix (P0)**
-
-| Livrable | Description |
-|----------|-------------|
-| `RegisterRequest` | Accepte `company_name` au lieu de `tenant_id` |
-| `AuthController::register()` | Transaction atomique : provision tenant → créer user → assignRole('admin') → createStarter subscription |
-| `Tenant` model | Ajoute `subscription_status` dans `$fillable`, relation `users()` HasMany |
-
-**Backend — Seeders**
-
-| Livrable | Description |
-|----------|-------------|
-| `RolesAndPermissionsSeeder` | 5 rôles (super-admin/admin/manager/member/viewer), 65 permissions par module et action |
-| `PlansSeeder` | starter, pro, enterprise avec prix et features |
-| `ErpModulesSeeder` | 10 modules avec icônes SVG, couleurs, catégories |
-| `PlanModulesSeeder` | Matrice plan ↔ modules inclus |
-
-**Frontend — Admin back-office**
-
-| Livrable | Description |
-|----------|-------------|
-| `AdminLayout.vue` | Dark sidebar (#0f172a), topbar sticky, nav 5 entrées, badge "Super Admin" |
-| `AdminDashboardView.vue` | KPI grid, abonnements par statut, répartition plans, derniers tenants, activité récente |
-| `TenantListView.vue` | Table paginée avec filtres search/status/plan, actions suspend/réactiver |
-| `ModuleListView.vue` | Grid de cards modules, toggle visibility, sélecteur statut, compteur activations |
-| `PlanListView.vue` | Cards plans avec prix, limites, features |
-| `AuditLogView.vue` | Table paginée des actions sensibles |
-| `adminService.ts` | API complète admin (dashboard, tenants CRUD, modules, plans, audit logs) |
-
-**Frontend — Registration fix (P0)**
-
-| Livrable | Description |
-|----------|-------------|
-| `authService.ts` | Ajout `register(payload: RegisterPayload)` |
-| `auth/types.ts` | Ajout `RegisterPayload`, `ErpModule`, `ModulesResponse`, `subscription_status` dans `Tenant` |
-| `RegisterView.vue` | Appelle vraiment l'API (était `TODO + fake delay`) |
-| `auth store` | Ajout `setToken()` + `setUser()` pour flow registration |
-| `router/guards.ts` | Vérifie `requiresSuperAdmin`, redirige non-admins |
-| `/admin/*` routes | 5 routes admin avec `meta.requiresSuperAdmin: true` + layout `admin` |
-
-**Tests (293/293)**
-
-| Suite | Tests | Description |
-|-------|-------|-------------|
-| `SubscriptionServiceTest` | 6 | createStarter, trialing status, module activation, current, suspend, changePlan |
-| `ModuleRegistryServiceTest` | 9 | listForTenant, activeCodes, tenantHasModule (core/active/trial), activate, deactivate (core protection), activatePlanModules |
-| `RegistrationTest` | 5 | Full flow, company_name requis, email unique, password fort, login post-register |
-| `AdminApiTest` | 9 | Access control (403/401), dashboard, list/show tenants, search, suspend, modules, plans, audit |
-
----
-
-#### Sprint 6 — Reports + Dashboard réel ✅
-**Statut : LIVRÉ**
-
-**Backend — Reports**
-
-| Livrable | Description |
-|----------|-------------|
-| `ReportService` | dashboard(), sales(period), stock() |
-| `GET /api/reports/dashboard` | KPIs jour, chart 7j, commandes récentes, top 5 produits |
-| `GET /api/reports/sales?period=7d\|30d\|90d\|1y` | CA par jour, top 10 produits, répartition par méthode |
-| `GET /api/reports/stock` | Valeur stock, SKUs, ruptures, alertes, mouvements 30j |
-| Tests | 9 unit + 13 integration |
-
-**Frontend — Dashboard + Reports**
-
-| Livrable | Description |
-|----------|-------------|
-| `DashboardView.vue` (refait) | KPIs réels, bar chart SVG 7j, commandes récentes, top produits |
-| `SalesReportView.vue` | 4 KPIs, chart CA sélecteur période, top produits table, méthodes barres |
-| `StockReportView.vue` | 4 KPIs, alertes stock avec barre progression, mouvements 30j |
-| `reportService.ts` | 3 appels API + helpers formatMoney / shortDate |
-
----
-
-### Phase 2 — Mobile POS (Flutter)
-**Objectif : caisse offline-first sur tablette/téléphone**  
-**Démarre : mois 5, parallèle au Sprint 4-5 frontend**
-
-| Sprint | Livrable |
-|--------|----------|
-| F-1 | Projet Flutter, auth, Drift SQLite, SyncEngine base |
-| F-2 | Écran caisse, panier, scan caméra, scan Bluetooth |
-| F-3 | Paiement (cash, Mobile Money), ticket thermique |
-| F-4 | Scan réception livraison, impression étiquettes WebView |
-| F-5 | Mode hors ligne complet, tests Flutter |
-
----
-
-### Phase 3 — Connecteurs + API publique
-**Mois 7-12**
-
-| Livrable | Description |
-|----------|-------------|
-| Shopify connector | Sync commandes, produits, stock |
-| WooCommerce connector | Sync bidirectionnel |
-| Mobile Money API | webhooks sortants |
-| API publique v1 | Docs OpenAPI, rate limiting, webhooks |
-| Multi-dépôt | Warehouses, transferts inter-dépôts |
-
----
-
-## Tests — stratégie par niveau
-
-| Niveau | Outil | Portée | Objectif couverture |
-|--------|-------|--------|---------------------|
-| Unit | PHPUnit 12 | Services isolés (mocks) | 80%+ services |
-| Integration | PHPUnit 12 + SQLite | Routes HTTP + DB | Tous les endpoints |
-| Modular | PHPUnit 12 | Flux cross-modules | Scénarios métier complets |
-| E2E backend | — | Différé Phase 2 | — |
-| Unit frontend | Vitest | Stores, composables | 70%+ |
-| E2E frontend | Playwright | Flux critiques | Login, commande, paiement |
-| Mobile | Flutter test | Widgets, unitaires | 70%+ |
-
-**Tests cross-modules requis (backend) :**
-- `Order::create()` → Stock réservé
-- `Order::fulfill()` → StockMovement créé
-- `Order::cancel()` → Réservation libérée
-- `Payment::record()` plein → Order status = paid
-- Delivery confirmée → Order status = fulfilled
-
----
-
-## Résumé calendrier
-
-```
-Mois 1-3  ✅ Auth + Catalog + Inventory (backend complet)
-Mois 4    ✅ Sprint 1: Orders backend + Frontend foundation + Auth UI + Design system
-Mois 4    ✅ Sprint 2: Customers backend + Catalog UI + Customers UI
-Mois 5    ✅ Sprint 3: Payments backend + Inventory UI (StockList, Alerts, Timeline)
-Mois 5    ✅ Sprint 4: Delivery backend + Payments UI + Delivery UI
-Mois 6    ✅ Sprint 5: Suppliers + Import/Export module complet
-Mois 6    ✅ Sprint 6: Reports + Dashboard réel — 264 tests passent
-Mois 6    ✅ Sprint 7A: SaaS billing + module registry + admin back-office — 293 tests passent
-Mois 7    🎯 MVP livré — Beta terrain (3-5 boutiques pilotes)
-Mois 7-12 🔮 Phase 2: Connecteurs + API publique + Mobile Money
+SIDEBAR (1 niveau, 9 entrées plates)
+├── Tableau de bord
+├── Catalogue         → CatalogTabNav : Produits | Catégories | Déclinaisons | Étiquettes
+├── Stock & Inventaire → InventoryTabNav : Stock | Alertes [N] | Entrepôts | Transferts | Clôture
+├── Ventes            → SalesTabNav : Commandes | Retours & SAV | Paiements | Livraisons
+├── Clients
+├── Fournisseurs
+├── Rapports          → ReportsTabNav : Ventes | Stock
+├── Import / Export
+├── Marketplace [badge]
+│─── CONFIGURATION ───
+└── Paramètres        → Settings tabs : Entreprise | Équipe | Abonnement | Intégrations | Notifications
 ```
 
 ---
 
-## Critères MVP (Go/No-Go beta)
+## Historique des sprints livrés
 
-- [x] Authentification multitenant fonctionnelle
-- [x] Catalogue produits complet avec étiquettes
-- [x] Stock suivi en temps réel (entrée/sortie/inventaire)
-- [x] Commandes créées et tracées jusqu'à la livraison
-- [x] Paiements enregistrés (cash + 1 Mobile Money)
-- [x] Dashboard avec CA et stock du jour
-- [x] Frontend web utilisable sur desktop + tablette
-- [ ] App POS offline basique (vente + scan) — Phase 2
-- [x] 200+ tests backend passants (293 actifs)
-- [ ] 50+ tests frontend passants — Vitest à compléter
+| Sprint | Tests | Contenu principal |
+|---|---|---|
+| 1-7A | 293 | MVP Foundation : Auth, Catalog, Inventory, Orders, Customers, Payments, Delivery, Suppliers, ImportExport, Reports, Billing, Platform |
+| 8-9 | 340 | Sécurité multitenant, Marketplace adapters (FB/WA/WC), Inventory Axes 1-4 (Fiscal, Transfers, Snapshots, CMUP) |
+| 10 | 351 | Returns/RMA, StockTransferView, FiscalPeriodView, ReturnsView, Vitest auth/composables |
+| 11 (S1) | 376 | Sécurité P0 : RBAC 11 modules, EnsureUserBelongsToTenant, idempotency payments, onboarding backend, 4 rôles terrain |
+| 12 (S2) | 358 | Audit trail 80%, QuotaService, `/admin/audit-logs`, navigation sidebar groupée |
+| SKU | 374 | `ProductIdentifierService`, `tenant_sequences`, GTIN GS1, frontend auto/manuel |
+| 13 | 477 | Billing self-service, CountryRules, Multi-sites fondation, Audit trail +5 événements |
+| **14** | **477** | **Navigation 1 niveau : InventoryTabNav + SalesTabNav + ReportsTabNav + sidebar plate** |
+| **15** | **374+79** | **Fixes runtime : occurred_at, EnforceQuota DomainException. RBAC frontend (TabNavs + sidebar). Audit trail complet (product.archived, customer.updated). SupplierDetailView. 79 Vitest** |
+| **16** | **374+79** | **Variantes N-axes : cartesian product endpoint, builder frontend, SKU collision fix, label column, hydrate axes on load** |
+| **17** | **501+90** | **Refonte fiche produit (ProductShowPage onglets, drawers stock, product_type, attributs sync) + reconstruction OrderCreateView + Audit qualité approfondi (20 fixes)** |
+
+---
+
+## Audit qualité approfondi (2026-06-03) — 20 corrections
+
+Audit systématique module par module. Le code métier s'est révélé **fondamentalement sain** ;
+les bugs se concentraient sur 3 faiblesses systémiques, toutes corrigées à la racine.
+
+### 🔴 Critiques (5)
+| Bug | Détail |
+|---|---|
+| `fulfill()` échouait sur stock serré | `moveOut` avant `release` → `available=0` sur stock entièrement réservé. Cas PME fréquent (stock = demande exacte) |
+| **121 tests jamais exécutés** | `phpunit.xml` ne matchait que certains suffixes → tests sécurité/multi-tenant skippés. + APP_KEY de test invalide |
+| Gate couverture frontend fictif | seuils 75% vs 3.8% réel, sans `continue-on-error` → CI frontend rouge en permanence. Réalignés (ratchet) |
+| Plan Enterprise bloqué | limites `0` traitées comme strictes → tier le plus cher ne pouvait rien créer. `empty()` + seed normalisé `null` |
+| Downgrade gardait modules premium | `activatePlanModules` additif → Pro→Starter laissait 6 modules actifs. Devenu sync (active + désactive) |
+
+### 🟠 Money — convention centimes (5)
+OrderList ×100 · paiement manuel upgrade ×100 · mélange devises paiement · devise commande hardcodée XOF → `tenant.settings['currency']` · **onboarding droppait la devise** (chaîne avec le fix commande).
+→ **Cause racine éliminée** : `src/shared/utils/money.ts` (formatMoney/toCents/fromCents) + 11 vues migrées + 11 tests.
+
+### 🟠 Stock (4)
+`NotifyLowStock` (paramètres nommés invalides → audit stock-bas cassé) · transfert sur-réception → stock fantôme · `unit_cost_cents` non validé (corruption CMUP) · commande de variante impossible (frontend).
+
+### 🟠 UX/Auth (3)
+`OrderCreateView` stub (saisie UUID) reconstruit · `voidPayment` erreur silencieuse · `generateSlug` fragile (LIKE → match exact).
+
+### 🟡 Responsive (2)
+Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateView` line-row débordait.
+
+### Tests ajoutés
+10 tests de régression (stock serré, devise tenant, chaîne variante, sur-réception transfert, downgrade modules, devise onboarding) + 11 tests `money.ts`.
+
+---
+
+## Roadmap — prochains sprints
+
+### ~~Sprint 15 — RBAC frontend + Audit trail~~ ✅ Livré
+
+- ✅ RBAC guards sur les 4 TabNavs (usePermission injecté internalement)
+- ✅ RBAC sidebar (mainNavItems computed filtré)
+- ✅ Audit trail : `product.archived`, `customer.updated`
+- ✅ SupplierDetailView (vue de détail fournisseur)
+- ✅ 79 Vitest frontend (tous verts)
+- ✅ Fixes runtime : `occurred_at` → `created_at`, EnforceQuota DomainException
+
+### ~~Sprint 16 — Variantes N-axes~~ ✅ Livré
+
+- ✅ Endpoint cartesian product `POST /api/catalog/products/{id}/variants/generate`
+- ✅ Builder frontend N-axes avec chips UI
+- ✅ Fix SKU collision (withTrashed), fix label column migration
+- ✅ Hydratation axes depuis API (hydrateVariantsFromProduct)
+
+---
+
+### Sprint 18 — Dette technique frontend (priorité post-audit) — 🔄 en cours
+
+> Issu de l'audit : la couverture Vitest était à 3.8 % (gate ratchet provisoire).
+
+**Frontend**
+- ✅ Tests composant des **4 vues critiques** : `OrderCreateView` (5), `OrderDetailView` (4),
+  `ProductShowPage` (4), `ProductFormView` (3) = 16 tests
+  → couverture **3.8 % → 16.5 %** lignes · 60 % branches · ratchet à 16/59/29/16
+- ✅ Factorisé `fmtDate` → `@/shared/utils/date` (3 helpers null-safe) :
+  **23 formatters dupliqués éliminés** sur 21 vues + reportService, +6 tests
+- ✅ Tests composant vues secondaires (VariantsView, SupplierDetail, CustomerDetail) — couverture 16.7 → 20.3 %, ratchet 20/58/31
+- ✅ Tests composant vues liste/réglages (ProductListView ×4, StockListView ×3, SettingsView ×3) — **cible 25 % dépassée : 20.3 → 28.8 %** lignes · ratchet 28/57/31. Branches 58→57 : les gros fichiers de vue entrent dans le périmètre couvert avec beaucoup de branches non testées (le plancher suit la réalité).
+- ✅ Tests composant `PaymentListView` (×4 : montant ÷100, annulation via service, lien commande, état vide) — couverture **28.8 → 29.8 %**, ratchet 29/57/32. **137 tests verts.**
+
+**Backend**
+- ✅ Câblé le test incomplet `TenantProvisioningServiceTest` (le seul `incomplete` restant) →
+  déplacé en intégration avec 3 cas de bord réels : slug accentué (`Café Délice`→`cafe-delice`),
+  fallback `tenant` pour noms sans caractère sluggable, déduplication multi-collision
+  (`boutique` → `-1` → `-2`, régression du fix LIKE→exact-match). **0 incomplete.**
+- ✅ **Diagnostic systémique** : sous **PHPUnit 12.5**, l'annotation docblock `/** @test */`
+  n'est **plus collectée** (retirée). `TenantProvisioningTest` (4 tests réels) tournait à vide →
+  converti en attribut `#[Test]` (convention projet), **7 tests ressuscités**. Le générateur
+  `MakeModule.php` émet déjà `#[Test]` (cause racine déjà corrigée) ; **10 stubs générés morts**
+  (pluriels `Sync*`/`Customers*`/`Payments*` + `CatalogModuleTest`) purgés — ils collectaient 0 test
+  et dupliquaient les vraies suites `*ApiTest`/`*SecurityTest` singulières.
+- ✅ **Gap Sync résolu** : le module **Sync** a désormais **33 tests réels** (`#[Test]`) — Unit
+  (`SyncService` : CRUD, pagination, isolation tenant via `404`), Integration (`/api/syncs` : auth `401`,
+  RBAC `manager|admin` vs `viewer` `403`, isolation multitenant `404`/listing scoped), Modular (binding
+  `SyncRepositoryInterface`, enregistrement des routes, `TenantScope`). Le scaffold a été aligné sur le
+  standard projet : `Sync` utilise `HasTenant` (+ `tenant_id` fillable), routes sous préfixe `/api` avec
+  middleware `tenant` (qui pose le team context Spatie indispensable à `role:`). Sans ce câblage,
+  `store`/`update`/`destroy` renvoyaient `500`/`403`.
+
+---
+
+### Sprint 19 — POS Web MVP + Agents terrain (Phase 2) — ✅ POS livré
+
+**Backend — ✅ Module POS** (`app/Modules/Pos/`, 10 tests d'intégration)
+- ✅ `CashRegisterSession` (model + migration) — `HasTenant`, statuts open/closed,
+  fond de caisse, cumuls ventes/espèces, attendu/compté/écart en centimes.
+- ✅ `PosService` orchestrant `OrderService` + `PaymentService` : `checkout` atomique
+  (create → confirm → fulfill → record), rollback complet si stock insuffisant.
+- ✅ Endpoints `/api/pos/sessions` (open/current/checkout/close) — rôles `admin|manager|cashier`.
+- ✅ Migration : `cash_register_session_id` (nullable) ajouté à `orders`.
+- ✅ Rôle `cashier` + permissions `pos.*` (déjà dans `RolesAndPermissionsSeeder`).
+
+**Frontend — ✅ Caisse** (`frontend/src/modules/pos/`, 5 tests)
+- ✅ `PosView.vue` : ouverture de session, recherche/scan produit, panier (déclinaisons),
+  encaissement, clôture avec rapprochement d'écart. Convention ÷100 / ×100 respectée.
+- ✅ Service `posService`, route `/pos`, entrée menu **Caisse**.
+
+**Docs** : [`docs/modules/pos.md`](modules/pos.md) (technique) + [`docs/user/pos.md`](user/pos.md) (utilisateur).
+
+**Reste Sprint 19** : agents terrain (Phase 2), interface tablette dédiée (hors layout standard).
+
+---
+
+### Audit pré-release — durcissement (2026-06-04) — ✅
+
+Issu de l'audit pré-release global (verdict GO conditionnel). Actions livrées :
+- ✅ **Sync masqué** derrière feature flag `FEATURE_SYNC` (off par défaut) — API Phase 3 invisible en prod, 33 tests conservés (cf. `config/frynov.php`).
+- ✅ **Onboarding vérifié complet** (les 5 `needs_*` + provisioning + guard de redirection) — l'évaluation « partiel » était obsolète.
+- ✅ **Bug landing page corrigé** : le verrou de scroll global (`html/body/#app { overflow:hidden }`) clippait la page d'accueil publique. Verrou désormais scopé à `body.shell-locked` (appliqué seulement aux shells app/admin via `App.vue`). Vérifié : la landing scrolle (scrollHeight 7951px).
+- ✅ **Purge code mort** : 32 fichiers stubs générés (pluriels `Payments*`/`Customers*` + `Catalog` model/repo/events/requests), dont 2 migrations parasites créant les tables `paymentss`/`customerss`. `CatalogService`/`CatalogResource` (vrais) conservés.
+- ✅ **Smoke tests admin back-office** : 8 vues couvertes (`AdminViews.spec.ts`). Couverture frontend 30.8 → 38.6 %, ratchet 38/57/33.
+- ✅ **Fix pricing sièges (audit approfondi)** : `PlansSeeder` posait `max_users = included_users` → impasse (Business plafonné à 10 utilisateurs avec message « mettez à niveau » sans plan supérieur ; sièges en sus affichés mais jamais facturés). Désormais **sièges = guide souple** sur les plans payants (`max_users`/`max_agents` = `null` = illimité), **seul le palier gratuit Découverte garde un cap dur (1)**. `included_users` conservé sur `plan_prices` pour l'affichage / futur overage facturé. Régression verrouillée par `PlanLocalizationTest::paid_plans_do_not_hard_cap_seats_only_the_free_tier_does`.
+  > ⚠️ Déploiement : re-seeder requis sur les environnements existants (`php artisan db:seed --class=Database\\Seeders\\PlansSeeder`, idempotent `updateOrCreate`).
+
+- ✅ **Fix géolocalisation RGPD (audit approfondi)** : la landing appelait `https://ipapi.co/json/` côté navigateur → l'IP de chaque visiteur partait chez un tiers sans consentement. Remplacé par un endpoint **`GET /api/public/geo`** qui dérive le pays des **headers d'edge/CDN** (`CF-IPCountry`, `CloudFront-Viewer-Country`, …) — **l'IP ne quitte jamais notre infra, aucun appel tiers**. À défaut d'edge, `useGeoContent` se rabat sur la **locale navigateur** (`navigator.language`). Tests : 3 backend (`PublicPricingApiTest`) + 2 frontend (`useGeoContent.spec.ts`, dont « never a third party »).
+
+Reste recommandé (non bloquant) : aucun — les deux findings de l'audit approfondi sont traités.
+
+---
+
+### Réconciliation `develop` + tests approfondis (2026-06-05) — ✅
+
+- ✅ **Branches réconciliées dans `develop`** : `feature/pre-release-hardening` (durcissement) ⊆ `feature/p1-admin-plan-limits` (pricing localisé + `plan_limits` éditables + sièges + geo). Merge `--no-ff` + récupération des smoke tests admin (perdus sur une branche divergente). `develop` = surensemble complet.
+- ✅ **Audit `AdminPlanController` (P1 `plan_limits` éditables)** : sain — édition **super-admin uniquement** (`RequireAdmin`), validation explicite (pas de mass-assign), source canonique `plan_limits` + miroir legacy, audité.
+- ✅ **Tests sécurité approfondis ajoutés** :
+  - `regular_user_cannot_edit_plan_limits` — un utilisateur tenant ne peut **pas** relever ses propres quotas (403, limite inchangée).
+  - `inviting_beyond_the_user_cap_is_blocked_with_402` — palier gratuit bloque la 2ᵉ invitation **de bout en bout** (HTTP → `EnforceQuota` → 402 `quota_exceeded`).
+  - `paid_plan_with_unlimited_seats_allows_inviting_beyond_included` — plan payant (`max_users=null`) laisse inviter au-delà des sièges inclus (201) → fix sièges vérifié end-to-end.
+- **État `develop`** : backend **568 verts** (0 fatal, 0 incomplete) · frontend **154 verts** (couverture 38.7 %) · `vue-tsc` propre.
+
+---
+
+### Recette v0.8.0 — correctifs de pré-finalisation (2026-06-06) — ✅
+
+Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md`](recette/recette-v0.8.0.md)). Anomalies relevées en recette, corrigées à la racine :
+
+- ✅ **Login : rôles team-scoped + abonnement manquants** — l'endpoint public de login renvoyait des rôles vides (team context Spatie non posé) → onglets catalogue réduits + « aucun abonnement ». Corrigé : `login()` pose `setPermissionsTeamId`, le frontend rafraîchit via `/me` après login **et** après onboarding.
+- ✅ **Modales invisibles (Stock/Alertes/Ventes/Paiements/Livraisons)** — le CSS `.modal-backdrop/.modal-box/…` n'existait nulle part → modales rendues hors écran (« les boutons Entrée/Sortie ne marchent pas »). CSS global ajouté à `main.css`.
+- ✅ **Téléchargements import/export « Route [login] not defined »** — `window.open` perdait le token Bearer (401 → redirection vers une route `login` non nommée). Corrigé : downloads via axios `responseType:'blob'` (token attaché) + route web `login` nommée (401 propre).
+- ✅ **Modèles d'import téléchargeables** depuis l'écran Import/Export (Produits/Clients/Fournisseurs).
+- ✅ **Templates d'import — listes déroulantes tenant** : colonnes **Catégorie** + **Fournisseur** (valeurs du tenant) et **Statut** (enum) en déroulante Excel non bloquante (feuille masquée `Listes`, référencée par plage → nombre illimité). `TemplateService` tenant-aware, valeur hors liste créée à l'import.
+- **État `release/v0.8.0`** : backend **573** (571 verts, 2 skipped, 0 fatal) · frontend **159 verts** · `vue-tsc` propre. **8 commits** en avance sur `develop` (à fusionner à la finalisation v0.8.0 → `main` + tag + back-merge `develop`).
+
+---
+
+## Audit profond modules — GO / NO-GO release (2026-06-04)
+
+### Verdict global
+
+**GO conditionnel** : le socle ERP est exploitable pour une release contrôlée si le scope reste limité aux modules métier déjà couverts et si la chaîne pricing localisé est sécurisée par une source backend unique. Le principal **NO-GO produit** restant avant mise en avant commerciale internationale était l'absence d'API publique de pricing : la landing/upgrade ne doivent pas contractualiser des prix hardcodés côté frontend.
+
+### Synthèse par domaine
+
+| Domaine | Verdict | Justification | Action prioritaire |
+|---|---|---|---|
+| Auth + Workspace + Onboarding | ✅ GO | Auth Sanctum, RBAC Spatie, isolation tenant, onboarding complet et guard de redirection déjà documentés/testés. | Conserver tests Auth/tenant à chaque sprint transverse. |
+| Catalogue + Stock + Commandes | ✅ GO | Modules cœur couverts par tests unitaires/intégration, quotas produits/commandes déjà branchés, variantes et stock sécurisés. | Smoke test vente complète avant release. |
+| Paiements + Livraisons + POS | ✅ GO conditionnel | Flux métier couverts ; POS livré. Les paiements réels restent dépendants des rails par marché. | Ne pas activer checkout local sans mapping devise → moyen de paiement. |
+| Clients + Fournisseurs + Import/Export + Rapports | ✅ GO | CRUD, imports, exports et rapports présents ; RBAC sur mutations/rapports. | Garder limites d'import et export dans la matrice quotas. |
+| Marketplace + Sync | 🟡 GO contrôlé | Marketplace visible ; Sync masqué par feature flag. | Garder Sync off en production tant que Phase 3 non validée. |
+| Platform Admin + AuditLog | ✅ GO | Back-office, modules, plans, promotions, paiements manuels, audit HMAC. | Ajouter smoke tests admin UI si changement frontend. |
+| Billing / Plans / Quotas | 🟡 GO conditionnel | `PlanPrice`, `PlanLimit`, quotas et seeders existent ; compatibilité anciens codes à surveiller. | Stabiliser source publique backend des prix, puis brancher landing/upgrade. |
+| Landing géographique | 🔴 NO-GO commercial avant API | Risque d'afficher XOF/XAF à Canada/France si le frontend reste source de vérité. | Lancer Sprint P3 : API publique `/api/public/pricing`. |
+
+### Points GO validés
+
+- Les modules métier peuvent rester visibles sur les plans publics : la protection doit rester portée par RBAC, quotas et actions sensibles, pas par disparition silencieuse du menu.
+- La stratégie XOF/XAF/EUR/CAD/USD est cohérente si la devise vient du marché résolu côté backend.
+- Les anciens codes `starter`, `pro`, `enterprise` doivent rester supportés pendant la migration commerciale vers Découverte/Essentiel/Croissance/Business.
+
+### Points NO-GO à ne pas contourner
+
+- Pas de release commerciale internationale si Landing/Upgrade affichent des prix contractuels hardcodés.
+- Pas de checkout local par devise sans disponibilité paiement documentée par marché.
+- Pas de suppression/cachage de modules sans message d'upgrade ou explication d'accès.
+- Pas de commit pricing sans tests Billing ciblés et test de non-régression Canada → CAD / France → EUR / UEMOA → XOF / CEMAC → XAF.
+
+### Étape lancée maintenant
+
+**Sprint P3 — API publique de pricing** est l'étape la plus nécessaire : P0 est documenté, P1/P2 ont déjà une base de code testée, et P3 supprime le risque critique de prix dupliqués dans le frontend avant la refonte de landing P4.
+
+---
+
+### Roadmap corrigée — Pricing localisé & landing géographique
+
+> Règle : **ne plus livrer backend pricing + landing + upgrade + checkout dans une seule PR**. Chaque sprint ci-dessous doit être mergé séparément, avec tests ciblés et mise à jour documentaire.
+
+#### Sprint P0 — Documentation & décision produit
+
+**Objectif** : valider la stratégie pricing avant nouveau code applicatif.
+
+- Docs : mettre à jour `docs/plan.md`, `docs/user/billing.md`, `docs/user/navigation.md`.
+- Produit : valider noms de plans, ressources limitées, marchés, devises, règles XOF/XAF.
+- DoD : tableau des plans validé, risques listés, ordre des PRs accepté.
+- Tests : contrôle markdown + relecture fichiers docs.
+
+#### Sprint P1 — Backend pricing foundation
+
+**Objectif** : stabiliser la source backend des prix et limites.
+
+- Backend : valider ou corriger `plan_prices`, `plan_limits`, relations `Plan`, seeders idempotents.
+- Compatibilité : conserver anciens codes (`starter`, `pro`, `enterprise`) tant qu'une migration commerciale n'est pas validée.
+- Tests : `PlanLocalizationTest`, `QuotaServiceTest`, `SubscriptionServiceTest`, tests admin plans.
+- DoD : migrations propres, seeders répétables, aucune dépendance frontend.
+
+#### Sprint P2 — Stratégie d'accès modules
+
+**Objectif** : rendre cohérent “modules visibles” + “sécurité réelle”.
+
+- Backend : vérifier `PlanModulesSeeder`, RBAC, guards tenant, quotas.
+- Frontend : préparer messages verrouillés/upgrade sans cacher arbitrairement.
+- Tests : RBAC backend, tests `ModuleRegistryService`, tests navigation si modifiée.
+- DoD : tous les modules publics sont inclus si stratégie validée, mais actions critiques restent protégées.
+
+#### Sprint P3 — API publique de pricing — 🔄 lancé
+
+**Objectif** : éviter les prix hardcodés dans la landing.
+
+- ✅ Backend : créer `GET /api/public/pricing?market=waemu` ou `?country=SN`.
+- ✅ Réponse : plans, devise, prix mensuel, utilisateurs inclus, prix utilisateur additionnel, limites, marchés sélectionnables.
+- ✅ Tests : API publique pricing + fallback market + Canada/CAD + override manuel marché.
+- 🟡 Reste : ajouter prix annuels et méthodes de paiement disponibles lorsque le checkout local P6 est cadré.
+- DoD : le backend devient la source de vérité publique des prix.
+
+#### Sprint P4 — Landing géographique — ✅ livré (2026-06-06)
+
+**Objectif** : adapter la landing à la zone sans dupliquer la source pricing.
+
+- ✅ Frontend : `useGeoContent` détecte pays/marché (via `/api/public/geo` + fallback locale), **sélecteur manuel** (`setMarketOverride`), fallback global.
+- ✅ Frontend : **la landing consomme `/api/public/pricing`** (nouveau `services/publicPricingService.ts`) — les prix/devises/périodes viennent du **backend** (source de vérité), plus de prix contractuels en dur. `pricingAmounts` conservé **uniquement** comme repli hors-ligne si l'API est injoignable. Re-fetch au changement de marché dans le sélecteur. Montants en centimes (÷100) formatés selon la devise (XOF/XAF sans décimales).
+- ✅ Tests : backend `PublicPricingApiTest::each_target_country_resolves_its_local_market_and_currency` (SN→XOF, CM→XAF, FR→EUR, CA→CAD au niveau source) ; frontend `publicPricingService.spec.ts` (3) + assertions de consommation API dans `LandingView.spec.ts`.
+- ✅ DoD : **aucun XOF par défaut pour Canada/France** (la devise suit le pays résolu) ; **correction manuelle** possible via le sélecteur.
+- 🟡 Reste (P5) : brancher `/billing/upgrade` (espace authentifié) sur la même source.
+
+#### Sprint P5 — Upgrade/Billing localisé
+
+**Objectif** : aligner `/billing/upgrade` avec la source backend.
+
+- Frontend : consommer l'API pricing ou endpoint authentifié équivalent.
+- Backend : vérifier cohérence abonnement courant, promo codes, devises.
+- Tests : Billing frontend + Billing API.
+- DoD : prix affiché = prix backend, pas un prix hardcodé.
+
+#### Sprint P6 — Paiements locaux & checkout
+
+**Objectif** : brancher les rails de paiement selon marché.
+
+- Afrique : paiement manuel/Mobile Money selon pays et prestataire.
+- Europe/Canada/USA : carte, facture, virement selon disponibilité.
+- Admin : audit paiement, validation/rejet, notifications.
+- Tests : manual payments, promo, audit log, checkout devise.
+- DoD : chaque devise affichée correspond à un flux paiement ou à une mention “sur devis / paiement manuel”.
+
+---
+
+### Sprint 20 — Multi-sites : filtres par site — 🔄 en cours (filtres livrés 2026-06-06)
+
+**Livré — filtrage par entrepôt/site**
+- ✅ Backend : `GET /api/orders?warehouse_id=` (`OrderService::paginate`) et `GET /api/payments?warehouse_id=` (`PaymentService::list`) filtrent par site ; le stock (`GET /api/inventory?warehouse_id=`) le faisait déjà.
+- ✅ Frontend : sélecteur **« Tous les entrepôts »** sur **OrderListView** et **PaymentListView** (StockListView l'avait déjà), via le composable partagé `useWarehouses` (fail-soft : liste vide si l'API échoue → « tous les sites »).
+- ✅ Tests : `OrderServiceTest::paginate_filters_orders_by_warehouse`, `PaymentServiceTest::list_filters_payments_by_warehouse`, `useWarehouses.spec.ts` (charge + fail-soft).
+
+**Reste Sprint 20**
+- `Branch` model (alias Warehouse avec métadonnées agence) + `user_warehouses` — **scoping d'accès** par agence (sensible sécurité → à faire avec soin et tests RBAC).
+- Filtres rapports (ventes / valeur stock) par warehouse/branche.
+- Page Agences/Branches dans Paramètres > Entreprise (l'onglet **Entrepôts** existe déjà sous Stock).
+
+---
+
+### Sprint 21 — CountryRules UI + Onboarding complet
+
+**Backend**
+- Admin UI pour gérer les CountryRules (super-admin)
+
+**Frontend**
+- Onboarding : étapes `needs_stock/pos/delivery/ecommerce/offline` + `nb_branches`
+- OnboardingView → provision backend câblé complètement
+- Redirection `/onboarding` si `tenant.onboarded = false`
+
+---
+
+### Backlog — TVA / remises au niveau commande
+
+> Gap fonctionnel relevé à l'audit : `OrderService::create` calcule
+> `Σ(quantité × prix)` sans TVA ni remise. À spécifier si le besoin métier se confirme.
+
+---
+
+## Critères Go/No-Go beta (mise à jour)
+
+| Critère | Statut |
+|---|---|
+| ✅ Authentification multitenant | Livré |
+| ✅ Catalogue + identifiants (SKU/barcode/GTIN) | Livré |
+| ✅ Stock multi-entrepôts | Livré |
+| ✅ Commandes → Paiements → Livraisons → Retours | Livré |
+| ✅ Dashboard opérationnel | Livré |
+| ✅ Navigation claire 1 niveau + onglets | Livré Sprint 14 |
+| ✅ Sécurité RBAC backend complète | Livré |
+| ✅ Audit trail ~85% | Livré |
+| ✅ RBAC sidebar/onglets frontend | Sprint 15 livré |
+| ✅ Filtres commandes (date, texte, client) | Sprint 15 livré |
+| ✅ Refonte fiche produit (onglets + drawers stock) | Sprint 17 livré |
+| ✅ **Tous les tests réellement exécutés en CI** | Audit : +121 réactivés |
+| ✅ **Quotas de plan corrects (Enterprise + downgrade)** | Audit livré |
+| ✅ **Convention money centralisée** | Audit : `money.ts` |
+| ❌ App POS offline | Phase 2 (Sprint 19) |
+| ✅ 350+ tests backend | **501 tests ✅** |
+| ✅ 50+ tests Vitest frontend | **106 actifs ✅** |
+| ✅ Tests composant des 4 vues critiques | 16 tests — couverture 16.5 % |
+| ⚠️ Billing self-service complet | Sprint 13 partiel |
+| ❌ CountryRules UI admin | Sprint 21 |

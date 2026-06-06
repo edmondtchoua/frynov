@@ -1,5 +1,6 @@
 <template>
   <div>
+    <CatalogTabNav />
     <div class="page-header">
       <div>
         <h2>Catégories</h2>
@@ -165,6 +166,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import CatalogTabNav from '../components/CatalogTabNav.vue'
 import { productService } from '../services/productService'
 import type { Category } from '../types'
 

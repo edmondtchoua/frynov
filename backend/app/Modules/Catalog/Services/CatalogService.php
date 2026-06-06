@@ -8,8 +8,10 @@ use App\Modules\Catalog\Events\ProductUpdated;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
+use App\Modules\Catalog\Services\ProductIdentifierService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Validation\ValidationException;
 
 class CatalogService
 {
@@ -23,6 +25,7 @@ class CatalogService
     {
         return Product::where('tenant_id', $tenantId)
             ->with('category')
+            ->withCount('variants')
             ->when(
                 isset($filters['status']),
                 fn ($q) => $q->where('status', $filters['status']),
@@ -49,6 +52,22 @@ class CatalogService
             ->find($id);
     }
 
+    /**
+     * Load full product detail for the show page:
+     * category + supplier + variants + attributes (axes + values).
+     */
+    public function findProductDetail(string $tenantId, string $id): ?Product
+    {
+        return Product::where('tenant_id', $tenantId)
+            ->with([
+                'category',
+                'supplier:id,name,code,email,phone',
+                'variants' => fn ($q) => $q->withTrashed(false)->orderBy('sort_order'),
+                'attributes.values',
+            ])
+            ->find($id);
+    }
+
     public function findProductBySku(string $tenantId, string $sku): ?Product
     {
         return Product::where('tenant_id', $tenantId)
@@ -59,8 +78,37 @@ class CatalogService
 
     public function createProduct(string $tenantId, array $data): Product
     {
+        /** @var ProductIdentifierService $identifierService */
+        $identifierService = app(ProductIdentifierService::class);
+
+        // ── SKU ──────────────────────────────────────────────────────────────
         if (empty($data['sku'])) {
-            $data['sku'] = $this->skuGenerator->generate($tenantId, $data['sku_prefix'] ?? 'PRD');
+            $categoryPrefix = null;
+            if (! empty($data['category_id'])) {
+                $categoryPrefix = Category::find($data['category_id'])?->name;
+            }
+            $data['sku'] = $identifierService->generateSku($tenantId, $categoryPrefix);
+        }
+
+        // ── Internal barcode ─────────────────────────────────────────────────
+        if (empty($data['internal_barcode'])) {
+            $data['internal_barcode']       = $identifierService->generateInternalBarcode($tenantId);
+            $data['barcode_auto_generated'] = true;
+            $data['barcode_source']         = 'AUTO';
+        } else {
+            $data['barcode_auto_generated'] = false;
+            $data['barcode_source']         = 'MANUAL';
+        }
+
+        // ── GTIN validation ──────────────────────────────────────────────────
+        if (! empty($data['gtin'])) {
+            try {
+                $identifierService->validateGtin($data['gtin']);
+            } catch (\Throwable $e) {
+                throw ValidationException::withMessages([
+                    'gtin' => $e->getMessage(),
+                ]);
+            }
         }
 
         $product = Product::create(array_merge($data, [
@@ -70,6 +118,15 @@ class CatalogService
 
         event(new ProductCreated($product));
 
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->log(
+                auth()->id() ?? null, "product.created", "Product", $product->id,
+                [],
+                ["sku" => $product->sku, "name" => $product->name],
+                request()?->ip(), request()?->userAgent(), "low"
+            );
+        } catch (\Throwable) {}
+
         return $product->load('category');
     }
 
@@ -78,6 +135,20 @@ class CatalogService
         $product->update($data);
         event(new ProductUpdated($product));
 
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->log(
+                "product.updated",
+                $product->tenant_id,
+                auth()->id() ?? null,
+                $product,
+                array_keys($data),
+                ["name" => $product->name, "sku" => $product->sku, "status" => $product->status],
+                null, null,
+                request()?->ip(),
+                request()?->userAgent(),
+            );
+        } catch (\Throwable) {}
+
         return $product->fresh(['category', 'variants']);
     }
 
@@ -85,6 +156,15 @@ class CatalogService
     {
         $product->update(['status' => 'archived']);
         event(new ProductArchived($product));
+
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->log(
+                auth()->id() ?? null, 'product.archived', 'Product', $product->id,
+                ['status' => 'active'],
+                ['status' => 'archived', 'sku' => $product->sku, 'name' => $product->name],
+                request()?->ip(), request()?->userAgent(), 'medium',
+            );
+        } catch (\Throwable) {}
 
         return $product;
     }
@@ -121,10 +201,14 @@ class CatalogService
 
     public function listCategories(string $tenantId): Collection
     {
+        // Return ALL categories flat (roots + children).
+        // Previously used whereNull('parent_id') which caused child categories
+        // to be invisible in the list and in product form dropdowns.
+        // The frontend handles tree rendering by grouping on parent_id.
         return Category::where('tenant_id', $tenantId)
-            ->with('children')
-            ->whereNull('parent_id')
+            ->orderBy('parent_id')        // roots first (NULL < UUID alphabetically on MySQL)
             ->orderBy('sort_order')
+            ->orderBy('name')
             ->get();
     }
 

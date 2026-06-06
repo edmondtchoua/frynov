@@ -3,6 +3,7 @@
 namespace App\Modules\Delivery\Tests\Integration;
 
 use App\Models\User;
+use App\Modules\Billing\Models\Plan;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Delivery\Models\Delivery;
 use App\Modules\Inventory\Services\StockService;
@@ -11,6 +12,7 @@ use App\Modules\Tenants\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class DeliveryApiTest extends TestCase
@@ -26,13 +28,19 @@ class DeliveryApiTest extends TestCase
     {
         parent::setUp();
 
+        Role::firstOrCreate(['name' => 'admin',   'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'viewer',  'guard_name' => 'web']);
+        Plan::firstOrCreate(['code' => 'starter'], ['name' => 'Starter', 'price_monthly_cents' => 0, 'price_yearly_cents' => 0, 'currency' => 'XOF', 'trial_days' => 14, 'is_active' => true, 'is_public' => true, 'sort_order' => 1]);
+
         $this->tenant = Tenant::create([
-            'name' => 'Livraison Shop', 'slug' => 'livraison-shop', 'plan' => 'starter', 'status' => 'active',
+            'name' => 'Livraison Shop', 'slug' => 'livraison-shop', 'plan' => 'starter', 'status' => 'active', 'settings' => [],
         ]);
         $this->user  = User::create([
             'name' => 'Manager', 'email' => 'mgr@livraison.com',
             'password' => Hash::make('Secret123!'), 'tenant_id' => $this->tenant->id,
         ]);
+        $this->user->assignTenantRole('admin');
         $this->token = $this->user->createToken('api')->plainTextToken;
 
         $product = Product::create([
@@ -94,8 +102,9 @@ class DeliveryApiTest extends TestCase
     #[Test]
     public function it_rejects_order_from_another_tenant(): void
     {
-        $other = Tenant::create(['name' => 'Other', 'slug' => 'other-x', 'plan' => 'starter', 'status' => 'active']);
+        $other = Tenant::create(['name' => 'Other', 'slug' => 'other-x', 'plan' => 'starter', 'status' => 'active', 'settings' => []]);
         $user2 = User::create(['name' => 'U2', 'email' => 'u2@other.com', 'password' => Hash::make('p'), 'tenant_id' => $other->id]);
+        $user2->assignTenantRole('admin');
         $product2 = Product::create(['tenant_id' => $other->id, 'sku' => 'O-1', 'name' => 'P', 'price_amount' => 1000, 'price_currency' => 'XOF', 'status' => 'active']);
         $stock2   = $this->app->make(StockService::class)->findOrCreate($other->id, $product2->id, null);
         $this->app->make(StockService::class)->moveIn($stock2, 10);
@@ -187,7 +196,7 @@ class DeliveryApiTest extends TestCase
     #[Test]
     public function it_cannot_access_another_tenants_delivery(): void
     {
-        $other    = Tenant::create(['name' => 'Other2', 'slug' => 'other2', 'plan' => 'starter', 'status' => 'active']);
+        $other    = Tenant::create(['name' => 'Other2', 'slug' => 'other2', 'plan' => 'starter', 'status' => 'active', 'settings' => []]);
         $delivery = Delivery::create([
             'tenant_id' => $other->id,
             'status'    => 'pending',

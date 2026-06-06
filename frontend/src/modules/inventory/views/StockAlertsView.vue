@@ -1,5 +1,6 @@
 <template>
   <div>
+    <InventoryTabNav />
     <div class="page-header">
       <div>
         <h2>Alertes stock bas</h2>
@@ -187,6 +188,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import InventoryTabNav from "../components/InventoryTabNav.vue"
 import { inventoryService } from '../services/inventoryService'
 import type { Stock, MovementReason } from '../types'
 

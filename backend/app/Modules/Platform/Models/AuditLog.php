@@ -17,6 +17,7 @@ class AuditLog extends Model
     protected $fillable = [
         'user_id',
         'tenant_id',
+        'actor_role',
         'action',
         'subject_type',
         'subject_id',
@@ -25,7 +26,57 @@ class AuditLog extends Model
         'ip_address',
         'user_agent',
         'notes',
+        'risk_level',
+        'integrity_hash',
     ];
+
+    // ── Immutability enforcement ───────────────────────────────────────────────
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        // ── Compute integrity hash on creation (blockchain-lite chaining) ───
+        static::creating(function (AuditLog $log) {
+            // Chain: each entry hashes its own content + the previous entry's hash
+            $prev  = static::latest('created_at')->value('integrity_hash') ?? 'GENESIS';
+            $data  = [
+                'action'       => $log->action,
+                'ip_address'   => $log->ip_address,
+                'new_values'   => $log->new_values,
+                'old_values'   => $log->old_values,
+                'prev'         => $prev,
+                'subject_id'   => $log->subject_id,
+                'subject_type' => $log->subject_type,
+                'tenant_id'    => $log->tenant_id,
+                'ts'           => now()->toISOString(),
+                'user_id'      => $log->user_id,
+            ];
+            // Keys already sorted alphabetically above — ensures deterministic hash
+            // (PHP has no JSON_SORT_KEYS constant; manual sort is equivalent)
+            $payload = json_encode($data, \JSON_UNESCAPED_UNICODE);
+
+            $log->integrity_hash = hash_hmac(
+                'sha256',
+                $payload,
+                config('app.key', 'fallback-key'),
+            );
+        });
+
+        // ── Block any UPDATE on audit entries ─────────────────────────────
+        static::updating(function (AuditLog $log) {
+            throw new \DomainException(
+                'AuditLog entries are immutable. Attempted to modify ID: ' . $log->id
+            );
+        });
+
+        // ── Block any DELETE on audit entries ─────────────────────────────
+        static::deleting(function (AuditLog $log) {
+            throw new \DomainException(
+                'AuditLog entries cannot be deleted. Attempted to delete ID: ' . $log->id
+            );
+        });
+    }
 
     protected function casts(): array
     {

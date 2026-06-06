@@ -1,17 +1,19 @@
 <template>
   <div>
+    <InventoryTabNav />
     <div class="page-header">
       <div>
         <h2>Stock</h2>
         <p class="page-subtitle">{{ meta.total ?? '—' }} produits en stock</p>
       </div>
-      <RouterLink to="/inventory/alerts" class="btn btn-ghost" style="gap: 6px;">
+      <div class="header-actions"><RouterLink to="/inventory/batch-delivery" class="btn btn-secondary btn-sm">↓ Réception livraison</RouterLink><RouterLink to="/inventory/alerts" class="btn btn-ghost" style="gap: 6px;">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M8 2a5 5 0 0 1 5 5v2.5l1 1.5H2l1-1.5V7a5 5 0 0 1 5-5Z" stroke="var(--warning-color, #f59e0b)" stroke-width="1.4"/>
           <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="var(--warning-color, #f59e0b)" stroke-width="1.4"/>
         </svg>
         Alertes{{ alertCount > 0 ? ` (${alertCount})` : '' }}
       </RouterLink>
+    </div>
     </div>
 
     <!-- Filters -->
@@ -30,11 +32,39 @@
         />
       </div>
 
+      <!-- Warehouse filter (P0 multi-entrepôts) -->
+      <select v-model="filters.warehouse_id" class="form-input filter-sel" @change="onWarehouseChange">
+        <option value="">Tous les entrepôts</option>
+        <option v-for="w in warehouses" :key="w.id" :value="w.id">
+          {{ w.is_default ? '⭐ ' : '' }}{{ w.name }}
+        </option>
+      </select>
+
+      <select v-model="filters.category_id" class="form-input filter-sel" @change="load">
+        <option value="">Toutes les catégories</option>
+        <option v-for="c in categories" :key="c.id" :value="c.id">
+          {{ c.parent_id ? '└ ' : '' }}{{ c.name }}
+        </option>
+      </select>
+
       <label class="toggle-label">
         <input v-model="filters.lowStockOnly" type="checkbox" class="toggle-checkbox" @change="load" />
         <span class="toggle-text">Stock bas uniquement</span>
       </label>
     </div>
+
+    <!-- Warehouse KPI summary bar (visible when a specific warehouse is selected) -->
+    <Transition name="slide-up">
+      <div v-if="whSummary" class="wh-summary-bar">
+        <div class="wh-kpi"><div class="wh-kpi-val">{{ whSummary.sku_count }}</div><div class="wh-kpi-lbl">SKUs</div></div>
+        <div class="wh-kpi"><div class="wh-kpi-val">{{ whSummary.total_qty.toLocaleString('fr-FR') }}</div><div class="wh-kpi-lbl">Total</div></div>
+        <div class="wh-kpi"><div class="wh-kpi-val">{{ whSummary.available_qty.toLocaleString('fr-FR') }}</div><div class="wh-kpi-lbl">Disponible</div></div>
+        <div class="wh-kpi" :class="{ 'wh-kpi--warn': whSummary.low_stock_count > 0 }">
+          <div class="wh-kpi-val">{{ whSummary.low_stock_count }}</div><div class="wh-kpi-lbl">Stock bas</div>
+        </div>
+        <div class="wh-kpi"><div class="wh-kpi-val">{{ fmtValue(whSummary.total_value_cents) }}</div><div class="wh-kpi-lbl">Valeur</div></div>
+      </div>
+    </Transition>
 
     <!-- Loading -->
     <div v-if="loading" class="loading-center" style="min-height: 300px;">
@@ -236,17 +266,46 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, watch, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { formatMoney } from '@/shared/utils/money'
+import InventoryTabNav from "../components/InventoryTabNav.vue"
 import { inventoryService } from '../services/inventoryService'
+import { productService } from '@/modules/catalog/services/productService'
+import client from '@/api/client'
 import type { Stock, MovementReason } from '../types'
+import type { Category } from '@/modules/catalog/types'
+
+interface Warehouse { id: string; name: string; code: string; type: string; is_default: boolean }
+interface WhSummary  { sku_count: number; total_qty: number; available_qty: number; low_stock_count: number; total_value_cents: number }
 
 const stocks     = ref<Stock[]>([])
+const categories = ref<Category[]>([])
+const warehouses = ref<Warehouse[]>([])
+const whSummary  = ref<WhSummary | null>(null)
 const loading    = ref(false)
 const alertCount = ref(0)
 const meta       = reactive({ current_page: 1, last_page: 1, per_page: 20, total: 0 })
 
-const filters = reactive({ search: '', lowStockOnly: false, page: 1 })
+const filters = reactive({ search: '', lowStockOnly: false, category_id: '', warehouse_id: '', page: 1 })
+
+async function loadWarehouses() {
+  try { warehouses.value = (await client.get('/api/inventory/warehouses')).data.data ?? [] }
+  catch { warehouses.value = [] }
+}
+
+async function loadWhSummary(id: string) {
+  if (!id) { whSummary.value = null; return }
+  try { whSummary.value = (await client.get(`/api/inventory/warehouses/${id}/summary`)).data.data ?? null }
+  catch { whSummary.value = null }
+}
+
+function onWarehouseChange() {
+  load()
+  loadWhSummary(filters.warehouse_id)
+}
+
+const fmtValue = (cents: number) => formatMoney(cents)
 
 // ── Modal state ────────────────────────────────────────────────────────────────
 const modal = reactive({
@@ -282,8 +341,10 @@ async function load() {
   loading.value = true
   try {
     const params: Record<string, string | number | boolean> = { page: filters.page, per_page: meta.per_page }
-    if (filters.search)      params.search       = filters.search
+    if (filters.search)       params.search      = filters.search
     if (filters.lowStockOnly) params.low_stock    = true
+    if (filters.category_id)  params.category_id  = filters.category_id
+    if (filters.warehouse_id) params.warehouse_id  = filters.warehouse_id
     const res = await inventoryService.list(params as any)
     stocks.value = res.data
     Object.assign(meta, res.meta)
@@ -300,6 +361,14 @@ async function loadAlertCount() {
     alertCount.value = alerts.length
   } catch {
     alertCount.value = 0
+  }
+}
+
+async function loadCategories() {
+  try {
+    categories.value = await productService.categories.list()
+  } catch {
+    categories.value = []
   }
 }
 
@@ -356,10 +425,109 @@ async function submitModal() {
   }
 }
 
-onMounted(() => { load(); loadAlertCount() })
+onMounted(() => { load(); loadAlertCount(); loadCategories(); loadWarehouses() })
 </script>
 
 <style scoped>
+/* ── Filter bar — force inline row ──────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Search wrapper — relative so the icon can be positioned inside the input */
+.search-wrap {
+  position: relative;  /* ← required for absolute icon */
+  flex: 1;
+  min-width: 160px;
+  max-width: 300px;
+}
+
+/* Magnifier icon — centred vertically inside the input */
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Extra left padding so text doesn't overlap the icon */
+.search-input {
+  padding-left: 2.25rem !important;
+}
+
+.filter-sel {
+  width: 190px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .filter-sel { width: 100%; }
+  .search-wrap { max-width: 100%; }
+}
+
+/* ── Product cell ────────────────────────────────────────────────────────── */
+.product-cell  { display: flex; align-items: center; gap: 0.75rem; }
+.product-thumb {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--brand-primary-bg);
+  color: var(--brand-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  flex-shrink: 0;
+}
+.product-name { font-weight: 500; color: var(--gray-900); font-size: 0.875rem; }
+.product-sku  { font-size: 0.75rem; color: var(--gray-400); font-family: ui-monospace, monospace; margin-top: 1px; }
+
+.page-subtitle { color: var(--gray-500); font-size: 0.875rem; margin-top: 0.2rem; }
+
+/* ── Warehouse KPI summary bar ───────────────────────────────────────────── */
+.wh-summary-bar {
+  display: flex;
+  gap: 0;
+  background: white;
+  border: 1px solid var(--brand-primary-light);
+  border-radius: var(--radius-lg);
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+.wh-kpi {
+  flex: 1;
+  padding: 0.875rem 1rem;
+  text-align: center;
+  border-right: 1px solid var(--gray-100);
+  transition: background 0.12s;
+}
+.wh-kpi:last-child { border-right: none; }
+.wh-kpi:hover { background: var(--gray-50); }
+.wh-kpi--warn .wh-kpi-val { color: #b45309 !important; }
+.wh-kpi--warn { background: #fffbeb; }
+
+.wh-kpi-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+.wh-kpi-lbl {
+  font-size: 0.6875rem;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
 .row-warning td { background: #fffbeb; }
 
 .toggle-label {

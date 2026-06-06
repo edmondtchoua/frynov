@@ -13,8 +13,19 @@ interface PaginatedMovements {
 
 export const inventoryService = {
   // ── Stock list ─────────────────────────────────────────────────────────────
-  list(params?: { page?: number; per_page?: number }): Promise<PaginatedStocks> {
-    return client.get('/api/inventory/stock', { params }).then(r => r.data)
+  // The backend returns a Laravel LengthAwarePaginator serialized at root level:
+  // { current_page, data, last_page, per_page, total }
+  // We map it to the standard { data, meta } shape expected by the views.
+  list(params?: Record<string, string | number | boolean>): Promise<PaginatedStocks> {
+    return client.get('/api/inventory/stock', { params }).then(r => ({
+      data: r.data.data ?? [],
+      meta: {
+        current_page: r.data.current_page ?? 1,
+        last_page:    r.data.last_page    ?? 1,
+        per_page:     r.data.per_page     ?? 20,
+        total:        r.data.total        ?? 0,
+      },
+    }))
   },
 
   // ── Single stock ───────────────────────────────────────────────────────────

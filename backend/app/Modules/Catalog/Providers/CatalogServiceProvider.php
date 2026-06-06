@@ -4,6 +4,7 @@ namespace App\Modules\Catalog\Providers;
 
 use App\Modules\Catalog\Services\LabelService;
 use App\Modules\Catalog\Services\ProductCodeService;
+use App\Modules\Catalog\Services\ProductIdentifierService;
 use App\Shared\ModuleServiceProvider;
 use Picqer\Barcode\BarcodeGeneratorSVG;
 use SimpleSoftwareIO\QrCode\Generator as QrCodeGenerator;
@@ -25,6 +26,8 @@ class CatalogServiceProvider extends ModuleServiceProvider
         $this->app->singleton(LabelService::class, function ($app) {
             return new LabelService($app->make(ProductCodeService::class));
         });
+
+        $this->app->singleton(ProductIdentifierService::class);
     }
 
     public function boot(): void

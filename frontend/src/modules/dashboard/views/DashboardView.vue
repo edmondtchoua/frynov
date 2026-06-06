@@ -104,6 +104,50 @@
         </div>
       </div>
 
+      <!-- ── Modules section ─────────────────────────────────────── -->
+      <div class="card modules-section" style="margin-top:1.5rem">
+        <div class="chart-card-header" style="margin-bottom:1rem">
+          <h3>Mes modules</h3>
+          <RouterLink to="/settings" class="chart-card-link">Gérer l'abonnement →</RouterLink>
+        </div>
+
+        <!-- Trial banner -->
+        <div v-if="subscriptionStatus === 'trialing' && trialDaysLeft !== null" class="trial-banner">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3.5L10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Période d'essai — <strong>{{ trialDaysLeft }} jour{{ trialDaysLeft > 1 ? 's' : '' }}</strong> restant{{ trialDaysLeft > 1 ? 's' : '' }}
+        </div>
+
+        <div v-if="loadingModules" class="loading-center" style="min-height:80px"><span class="spinner-sm"></span></div>
+
+        <div v-else-if="modulesList.length" class="modules-grid-dash">
+          <RouterLink
+            v-for="mod in modulesList"
+            :key="mod.code"
+            :to="mod.tenant_active && mod.route_prefix ? '/' + mod.route_prefix : '#'"
+            class="module-dash-card"
+            :class="{
+              'module-dash--active':   mod.tenant_active,
+              'module-dash--inactive': !mod.tenant_active && mod.status !== 'coming_soon',
+              'module-dash--soon':     mod.status === 'coming_soon',
+            }"
+          >
+            <div class="module-dash-icon" :style="{ background: mod.color + '18', border: '1.5px solid ' + mod.color + '30' }">
+              <span v-html="mod.icon_svg" :style="{ color: mod.color }"></span>
+            </div>
+            <div class="module-dash-info">
+              <span class="module-dash-name">{{ mod.name }}</span>
+              <span v-if="mod.tenant_active"         class="module-status-badge badge-success">Actif</span>
+              <span v-else-if="mod.status === 'coming_soon'" class="module-status-badge badge-gray">Bientôt</span>
+              <span v-else                           class="module-status-badge badge-warning">Inactif</span>
+            </div>
+          </RouterLink>
+        </div>
+
+        <div v-else class="empty-state" style="padding:1.5rem 0">
+          <p>Aucun module configuré.</p>
+        </div>
+      </div>
+
       <!-- Quick actions -->
       <div class="card" style="margin-top: 1.5rem;">
         <div class="chart-card-header" style="margin-bottom: 1rem;">
@@ -161,6 +205,9 @@
 import { ref, computed, onMounted, defineComponent, h } from 'vue'
 import { RouterLink } from 'vue-router'
 import { reportService, formatMoneyCompact, shortDate, type DashboardData } from '@/modules/reports/services/reportService'
+import { authService } from '@/modules/auth/services/authService'
+import { useAuthStore } from '@/stores/auth'
+import type { ErpModule } from '@/modules/auth/types'
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -249,15 +296,27 @@ const RevenueBarChart = defineComponent({
 
 const loading       = ref(true)
 const dashboardData = ref<DashboardData | null>(null)
+const loadingModules = ref(true)
+const modulesList   = ref<ErpModule[]>([])
+const auth          = useAuthStore()
+
+// Subscription helpers
+const subscriptionStatus = computed(() => auth.user?.subscription?.status ?? null)
+const trialDaysLeft      = computed(() => {
+  const end = auth.user?.subscription?.trial_ends_at
+  if (!end) return null
+  const diff = Math.ceil((new Date(end).getTime() - Date.now()) / 86_400_000)
+  return diff > 0 ? diff : null
+})
 
 onMounted(async () => {
-  try {
-    dashboardData.value = await reportService.dashboard()
-  } catch {
-    // Silently fail — data stays null, UI shows zero values
-  } finally {
-    loading.value = false
-  }
+  // Load dashboard KPIs and modules in parallel
+  await Promise.all([
+    reportService.dashboard().then(d => { dashboardData.value = d }).catch(() => {}),
+    authService.getModules().then(r => { modulesList.value = r.data }).catch(() => {}),
+  ])
+  loading.value       = false
+  loadingModules.value = false
 })
 
 // ── KPI cards ─────────────────────────────────────────────────────────────────
@@ -504,5 +563,100 @@ function orderBadge(status: string): string {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+/* ── Modules section ──────────────────────────────────────────────────────── */
+.trial-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  border-radius: var(--radius-md);
+  padding: 0.625rem 1rem;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.modules-grid-dash {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 0.75rem;
+}
+
+.module-dash-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gray-200);
+  background: white;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.module-dash--active:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: var(--brand-primary-light);
+}
+.module-dash--inactive,
+.module-dash--soon {
+  opacity: 0.6;
+  cursor: default;
+  pointer-events: none;
+}
+
+.module-dash-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.module-dash-icon :deep(svg) {
+  width: 18px;
+  height: 18px;
+}
+
+.module-dash-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.module-dash-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--gray-800);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.module-status-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.badge-success {
+  background: var(--brand-primary-bg);
+  color: var(--brand-primary-dark);
+}
+.badge-warning {
+  background: #fff7ed;
+  color: #c2410c;
+}
+.badge-gray {
+  background: var(--gray-100);
+  color: var(--gray-500);
 }
 </style>

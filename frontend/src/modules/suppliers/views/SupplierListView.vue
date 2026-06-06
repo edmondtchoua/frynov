@@ -86,6 +86,9 @@
             </td>
             <td class="col-actions">
               <div class="action-group">
+                <RouterLink :to="`/suppliers/${s.id}`" class="btn-action btn-view" title="Voir le détail">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 8C2.5 4.5 5 2.5 8 2.5S13.5 4.5 15 8c-1.5 3.5-4 5.5-7 5.5S2.5 11.5 1 8z" stroke="currentColor" stroke-width="1.4"/></svg>
+                </RouterLink>
                 <button class="btn-action btn-edit" title="Modifier" @click="openEdit(s)">✏️</button>
                 <button class="btn-action btn-delete" title="Supprimer" @click="confirmDelete(s)">🗑️</button>
               </div>
@@ -163,6 +166,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { RouterLink } from 'vue-router'
 import { supplierService } from '../services/supplierService'
 import type { Supplier } from '../types'
 

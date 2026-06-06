@@ -19,6 +19,7 @@ class Tenant extends Model
         'domain',
         'plan',
         'status',
+        'onboarded',
         'subscription_status',
         'settings',
     ];
@@ -26,6 +27,7 @@ class Tenant extends Model
     protected function casts(): array
     {
         return [
+            'onboarded'  => 'boolean',
             'settings'   => 'array',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',

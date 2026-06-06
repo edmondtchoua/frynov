@@ -3,9 +3,16 @@
     <div class="page-header">
       <div>
         <h2>{{ isEdit ? 'Modifier le produit' : 'Nouveau produit' }}</h2>
-        <p v-if="isEdit && product" class="page-subtitle">SKU : {{ product.sku }}</p>
+        <p v-if="isEdit && product" class="page-subtitle">
+          <span class="mono">{{ product.sku }}</span>
+          <span v-if="product.has_variants" class="variant-count-badge">{{ product.variants?.length ?? 0 }} variante(s)</span>
+        </p>
       </div>
-      <RouterLink to="/catalog" class="btn btn-ghost">← Retour au catalogue</RouterLink>
+      <!-- In edit mode, go back to show page; in create mode, back to list -->
+      <RouterLink
+        :to="isEdit && product ? `/catalog/products/${product.id}` : '/catalog'"
+        class="btn btn-ghost"
+      >← {{ isEdit ? 'Fiche produit' : 'Catalogue' }}</RouterLink>
     </div>
 
     <div v-if="pageLoading" class="loading-center" style="min-height: 300px;">
@@ -15,197 +22,445 @@
     <form v-else @submit.prevent="handleSubmit" novalidate>
       <div class="form-layout">
 
-        <!-- Main column -->
+        <!-- ── Main column ──────────────────────────────────────── -->
         <div class="form-main">
 
+          <!-- General info -->
           <div class="card">
-            <h3 class="card-section-title">Informations générales</h3>
-
+            <h3 class="card-title">Informations générales</h3>
             <div class="form-group">
-              <label class="form-label" for="name">Nom du produit <span class="required">*</span></label>
-              <input
-                id="name"
-                v-model="form.name"
-                type="text"
-                class="form-input"
-                :class="{ error: errors.name }"
-                placeholder="Ex : T-shirt Premium Coton"
-                @input="clearError('name')"
-              />
+              <label class="form-label">Nom du produit <span class="req">*</span></label>
+              <input v-model="form.name" type="text" class="form-input" :class="{ error: errors.name }"
+                     placeholder="Ex : Boubou bazin brodé" @input="clearError('name')" />
               <span v-if="errors.name" class="form-error">{{ errors.name }}</span>
             </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="sku">SKU</label>
-                <input
-                  id="sku"
-                  v-model="form.sku"
-                  type="text"
-                  class="form-input"
-                  placeholder="Auto-généré si vide"
-                />
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="barcode">Code-barres</label>
-                <input
-                  id="barcode"
-                  v-model="form.barcode"
-                  type="text"
-                  class="form-input"
-                  placeholder="EAN-13, UPC…"
-                />
-              </div>
+            <!-- Toggle identifiers mode (managers only) -->
+            <div v-if="isManagerOrAbove" class="form-group" style="margin-bottom:0.5rem">
+              <button type="button" class="btn btn-ghost btn-sm"
+                      @click="showManualIdentifiers = !showManualIdentifiers">
+                {{ showManualIdentifiers ? 'Identifiants automatiques' : 'Definir manuellement' }}
+              </button>
             </div>
 
-            <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label" for="description">Description</label>
-              <textarea
-                id="description"
-                v-model="form.description"
-                class="form-input"
-                rows="4"
-                placeholder="Description complète du produit…"
-              ></textarea>
+            <!-- SKU and internal barcode -->
+            <div v-if="!showManualIdentifiers && !isEdit" class="form-row2">
+              <div class="form-group">
+                <label class="form-label">SKU</label>
+                <input type="text" class="form-input mono" readonly
+                       placeholder="(genere automatiquement)" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Code-barres interne</label>
+                <input type="text" class="form-input mono" readonly
+                       placeholder="(genere automatiquement)" />
+              </div>
+            </div>
+            <p v-if="!showManualIdentifiers && !isEdit" class="form-hint-auto">
+              SKU et code-barres generes automatiquement a l'enregistrement
+            </p>
+
+            <!-- Editable SKU / internal barcode when manual mode or edit mode -->
+            <div v-if="showManualIdentifiers || isEdit" class="form-row2">
+              <div class="form-group">
+                <label class="form-label">SKU</label>
+                <input v-model="form.sku" type="text" class="form-input mono"
+                       :readonly="isEdit"
+                       :placeholder="isEdit ? '' : 'VET-0001'" />
+                <span v-if="isEdit" class="form-hint-readonly">Non modifiable apres creation</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Préfixe SKU <span class="hint">(auto-gen)</span></label>
+                <input v-model="form.sku_prefix" type="text" class="form-input mono"
+                       placeholder="VET" maxlength="5" style="text-transform:uppercase" />
+              </div>
+            </div>
+            <div v-if="showManualIdentifiers && !isEdit" class="form-group">
+              <label class="form-label">Code-barres interne</label>
+              <input v-model="form.internal_barcode" type="text" class="form-input mono"
+                     placeholder="BC-0001" />
+            </div>
+            <div v-if="isEdit" class="form-group">
+              <label class="form-label">Code-barres interne</label>
+              <input :value="form.internal_barcode || form.barcode" type="text"
+                     class="form-input mono" readonly />
+              <span class="form-hint-readonly">Non modifiable apres creation</span>
+            </div>
+
+            <!-- GTIN (always visible, always editable) -->
+            <div class="form-group">
+              <label class="form-label">GTIN / EAN / UPC officiel</label>
+              <input v-model="form.gtin" type="text" class="form-input mono"
+                     placeholder="3700123456789" />
+              <p class="form-hint-gtin">
+                Uniquement si le produit possede un code officiel GS1 (EAN-13, UPC-A...). Ne jamais saisir un code fictif.
+              </p>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Description</label>
+              <textarea v-model="form.description" class="form-input" rows="3"
+                        placeholder="Description du produit…"></textarea>
             </div>
           </div>
 
+          <!-- Pricing -->
           <div class="card">
-            <h3 class="card-section-title">Prix</h3>
-
-            <div class="form-row">
-              <div class="form-group" style="flex: 2;">
-                <label class="form-label" for="price_amount">Prix de vente <span class="required">*</span></label>
-                <div class="input-currency-wrap">
-                  <input
-                    id="price_amount"
-                    v-model.number="form.price_amount_display"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    class="form-input"
-                    :class="{ error: errors.price_amount }"
-                    placeholder="0.00"
-                    @input="clearError('price_amount')"
-                  />
-                  <span class="currency-badge">{{ form.price_currency }}</span>
+            <h3 class="card-title">Prix de base</h3>
+            <div class="form-row2">
+              <div class="form-group" style="flex:2">
+                <label class="form-label">Prix de vente <span class="req">*</span></label>
+                <div class="input-adorn-right">
+                  <input v-model.number="form.price_display" type="number" step="1" min="0"
+                         class="form-input" :class="{ error: errors.price_amount }"
+                         placeholder="0" @input="clearError('price_amount')" />
+                  <span class="adorn-text">{{ form.price_currency }}</span>
                 </div>
                 <span v-if="errors.price_amount" class="form-error">{{ errors.price_amount }}</span>
               </div>
               <div class="form-group">
-                <label class="form-label" for="currency">Devise</label>
-                <select id="currency" v-model="form.price_currency" class="form-input">
-                  <option v-for="c in currencies" :key="c.code" :value="c.code">
-                    {{ c.code }} — {{ c.label }}
-                  </option>
+                <label class="form-label">Devise</label>
+                <select v-model="form.price_currency" class="form-input">
+                  <option v-for="c in CURRENCIES" :key="c.code" :value="c.code">{{ c.code }} — {{ c.label }}</option>
                 </select>
               </div>
             </div>
-
-            <div class="form-row">
+            <div class="form-row2">
               <div class="form-group">
-                <label class="form-label" for="compare_at">Prix barré (optionnel)</label>
-                <input
-                  id="compare_at"
-                  v-model.number="form.compare_at_price_amount_display"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  class="form-input"
-                  placeholder="0.00"
-                />
+                <label class="form-label">Prix barré <span class="hint">(optionnel)</span></label>
+                <input v-model.number="form.compare_display" type="number" step="1" min="0"
+                       class="form-input" placeholder="0" />
               </div>
               <div class="form-group">
-                <label class="form-label" for="cost">Coût d'achat (optionnel)</label>
-                <input
-                  id="cost"
-                  v-model.number="form.cost_amount_display"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  class="form-input"
-                  placeholder="0.00"
-                />
+                <label class="form-label">Coût d'achat <span class="hint">(CMUP)</span></label>
+                <input v-model.number="form.cost_display" type="number" step="1" min="0"
+                       class="form-input" placeholder="0" />
               </div>
             </div>
-
-            <div v-if="margin !== null" class="margin-display">
-              <span class="margin-label">Marge estimée :</span>
-              <span :class="margin > 0 ? 'margin-positive' : 'margin-negative'">
-                {{ margin.toFixed(1) }}%
-              </span>
+            <div v-if="margin !== null" class="margin-info" :class="margin > 0 ? 'margin-ok' : 'margin-bad'">
+              Marge estimée : <strong>{{ margin.toFixed(1) }}%</strong>
             </div>
+
+            <!-- Stock initial — uniquement à la création ET sans variantes -->
+            <div v-if="!isEdit && !form.has_variants" class="form-group" style="margin-top:1rem;margin-bottom:0;padding-top:1rem;border-top:1px solid var(--gray-100)">
+              <label class="form-label">
+                Quantité en stock initiale
+                <span class="hint">(optionnel — peut être ajoutée plus tard depuis l'inventaire)</span>
+              </label>
+              <input v-model.number="initialQty" type="number" min="0" class="form-input"
+                     placeholder="0" style="width:120px" />
+            </div>
+          </div>
+
+          <!-- Variants -->
+          <div class="card">
+            <div class="variants-header">
+              <div>
+                <h3 class="card-title" style="margin-bottom:0.25rem">Variantes</h3>
+                <p class="card-hint">Activez si ce produit existe en plusieurs tailles, couleurs, etc.</p>
+              </div>
+              <label class="toggle-wrap">
+                <input v-model="form.has_variants" type="checkbox" class="sr-only" />
+                <span class="toggle-track">
+                  <span class="toggle-thumb"></span>
+                </span>
+                <span class="toggle-lbl">{{ form.has_variants ? 'Activé' : 'Désactivé' }}</span>
+              </label>
+            </div>
+
+            <Transition name="slide-up">
+              <div v-if="form.has_variants" class="variants-body">
+
+                <!-- ══ N-AXIS BUILDER (création et édition) ══════════════════ -->
+                <div class="axes-builder">
+                  <div class="axes-builder-header">
+                    <span class="axes-builder-title">Axes de variation</span>
+                    <span class="axes-hint">Ajoutez autant d'axes que nécessaire (Couleur, RAM, ROM, Taille…)</span>
+                  </div>
+
+                  <!-- Axis rows -->
+                  <div v-for="(axis, i) in variantAxes" :key="i" class="axis-row">
+                    <!-- Axis name with suggestions -->
+                    <div class="axis-name-wrap">
+                      <input
+                        v-model="axis.name"
+                        type="text"
+                        class="form-input axis-name-input"
+                        placeholder="Nom de l'axe (ex: Couleur)"
+                        list="axis-suggestions"
+                        @keydown.enter.prevent
+                      />
+                      <datalist id="axis-suggestions">
+                        <option v-for="s in AXIS_SUGGESTIONS" :key="s" :value="s" />
+                      </datalist>
+                    </div>
+
+                    <!-- Values chips -->
+                    <div class="axis-values-wrap">
+                      <div class="axis-values">
+                        <span v-for="(val, j) in axis.values" :key="j" class="axis-value-chip">
+                          {{ val }}
+                          <button type="button" class="chip-remove" @click="removeAxisValue(i, j)">×</button>
+                        </span>
+                        <input
+                          v-model="axis.newValue"
+                          type="text"
+                          class="form-input axis-value-input"
+                          :placeholder="axis.name ? axis.name + '…' : 'Valeur'"
+                          @keydown.enter.prevent="addAxisValue(i)"
+                          @blur="addAxisValue(i)"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- Remove axis -->
+                    <button
+                      type="button"
+                      class="btn btn-ghost btn-sm axis-remove-btn"
+                      @click="removeAxis(i)"
+                      :disabled="variantAxes.length <= 1"
+                      title="Supprimer cet axe"
+                    >✕</button>
+                  </div>
+
+                  <!-- Add axis -->
+                  <button type="button" class="btn btn-ghost btn-sm add-axis-btn" @click="addAxis">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    Ajouter un axe
+                  </button>
+
+                  <!-- Preview / combinaison count -->
+                  <div v-if="combinationCount > 0" class="combo-preview">
+                    <div class="combo-info">
+                      <span class="combo-count">{{ combinationCount }} déclinaison(s)</span>
+                      <span class="combo-formula">
+                        = {{ variantAxes.filter(a => a.values.length).map(a => a.values.length).join(' × ') }}
+                      </span>
+                      <span class="combo-example">
+                        Ex : {{ comboExample }}
+                      </span>
+                    </div>
+                    <p v-if="isEdit" class="combo-note">
+                      💡 Les combinaisons seront générées via le bouton ci-dessous
+                      (les déclinaisons existantes sont conservées).
+                    </p>
+                    <p v-else class="combo-note">
+                      💡 Les déclinaisons seront générées automatiquement à l'enregistrement du produit.
+                    </p>
+                    <button
+                      v-if="isEdit"
+                      type="button"
+                      class="btn btn-primary btn-sm"
+                      :disabled="generatingVariants"
+                      @click="generateVariantsNow"
+                    >
+                      <span v-if="generatingVariants" class="spinner-sm spinner-white"></span>
+                      {{ generatingVariants ? 'Génération…' : 'Générer les déclinaisons' }}
+                    </button>
+                    <div v-if="generateResult" class="generate-result" :class="generateResult.ok ? 'ok' : 'warn'">
+                      {{ generateResult.message }}
+                    </div>
+                  </div>
+
+                  <p v-else-if="!axesHaveValues" class="variant-hint">
+                    Ajoutez des valeurs à chaque axe pour calculer les combinaisons.
+                    <br><small>Ex : Axe "Couleur" → valeurs "Rouge", "Bleu", "Noir"</small>
+                  </p>
+                </div>
+
+                <!-- ══ TABLE DES DÉCLINAISONS EXISTANTES (mode édition) ═══ -->
+                <div v-if="isEdit && variants.length" class="variant-table-wrap" style="margin-top:16px">
+                  <div class="variant-table-title">
+                    Déclinaisons existantes ({{ variants.filter(v => !v._deleted).length }})
+                  </div>
+                  <table class="variant-table">
+                    <thead>
+                      <tr>
+                        <th>Déclinaison</th>
+                        <th>SKU</th>
+                        <th>Prix ({{ form.price_currency }})</th>
+                        <th>Actif</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(v, i) in variants" :key="v._key" :class="{ 'row-deleted': v._deleted }">
+                        <td>
+                          <input v-model="v.label" type="text" class="var-input" :disabled="v._deleted" />
+                        </td>
+                        <td>
+                          <input v-model="v.sku" type="text" class="var-input mono" placeholder="auto" :disabled="v._deleted" />
+                        </td>
+                        <td>
+                          <input v-model.number="v.price_display" type="number" step="1" min="0"
+                                 class="var-input" :placeholder="String(form.price_display || 0)" :disabled="v._deleted" />
+                        </td>
+                        <td>
+                          <input v-model="v.is_active" type="checkbox" :disabled="v._deleted" />
+                        </td>
+                        <td>
+                          <button v-if="!v._deleted" type="button" class="var-delete-btn"
+                                  @click="markDeleteVariant(i)" title="Supprimer">✕</button>
+                          <button v-else type="button" class="var-restore-btn" @click="variants[i]._deleted = false">↩</button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+            </Transition>
           </div>
 
         </div>
 
-        <!-- Side column -->
+        <!-- ── Side column ──────────────────────────────────────── -->
         <div class="form-side">
 
           <div class="card">
-            <h3 class="card-section-title">Statut</h3>
-            <div class="status-radios">
-              <label
-                v-for="s in statuses"
-                :key="s.value"
-                class="status-radio"
-                :class="{ active: form.status === s.value }"
-              >
+            <h3 class="card-title">Statut</h3>
+            <div class="status-list">
+              <label v-for="s in STATUSES" :key="s.value"
+                     class="status-opt" :class="{ active: form.status === s.value }">
                 <input v-model="form.status" type="radio" :value="s.value" class="sr-only" />
                 <span class="status-dot" :class="`dot-${s.value}`"></span>
                 <div>
-                  <div class="status-radio-label">{{ s.label }}</div>
-                  <div class="status-radio-hint">{{ s.hint }}</div>
+                  <div class="status-opt-name">{{ s.label }}</div>
+                  <div class="status-opt-hint">{{ s.hint }}</div>
                 </div>
               </label>
             </div>
           </div>
 
           <div class="card">
-            <h3 class="card-section-title">Catégorie</h3>
-            <select v-model="form.category_id" class="form-input" style="margin-bottom: 0;">
+            <h3 class="card-title">Catégorie</h3>
+            <select v-model="form.category_id" class="form-input" style="margin-bottom:0">
               <option value="">Aucune catégorie</option>
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+              <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
           </div>
 
+          <div class="card" v-if="isEdit && product">
+            <h3 class="card-title">Étiquettes</h3>
+            <div class="label-actions">
+              <button type="button" class="btn btn-secondary btn-sm" style="width:100%"
+                      @click="printLabel('thermal')">
+                🖨 Étiquette thermique
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" style="width:100%"
+                      @click="printLabel('a4sheet')">
+                📄 Planche A4
+              </button>
+            </div>
+          </div>
+
           <div class="card">
-            <h3 class="card-section-title">Expédition</h3>
-            <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label" for="weight">Poids (kg)</label>
-              <input
-                id="weight"
-                v-model.number="form.weight_kg"
-                type="number"
-                step="0.01"
-                min="0"
-                class="form-input"
-                placeholder="0.00"
-              />
+            <h3 class="card-title">Expédition</h3>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Poids (kg)</label>
+              <input v-model.number="form.weight_kg" type="number" step="0.01" min="0"
+                     class="form-input" placeholder="0.00" />
             </div>
           </div>
 
         </div>
       </div>
 
-      <!-- Global error -->
-      <div v-if="globalError" class="alert alert-error" role="alert" style="margin-top: 1rem;">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
-          <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/>
-          <path d="M8 5v3.5M8 10.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
+      <div v-if="globalError" class="alert alert-error" style="margin-top:1rem">
         {{ globalError }}
       </div>
 
-      <!-- Actions -->
       <div class="form-actions">
-        <RouterLink to="/catalog" class="btn btn-ghost">Annuler</RouterLink>
+        <RouterLink
+          :to="isEdit && product ? `/catalog/products/${product.id}` : '/catalog'"
+          class="btn btn-ghost"
+        >Annuler</RouterLink>
         <button type="submit" class="btn btn-primary" :disabled="saving">
           <span v-if="saving" class="spinner-sm spinner-white"></span>
           {{ saving ? 'Enregistrement…' : (isEdit ? 'Mettre à jour' : 'Créer le produit') }}
         </button>
       </div>
     </form>
+
+    <!-- ── Deactivation modal ────────────────────────────────────────────── -->
+    <Teleport to="body">
+      <div v-if="showDeactivationModal" class="modal-overlay deact-overlay" @click.self="cancelDeactivation">
+        <div class="modal-box deact-box">
+          <div class="modal-header">
+            <h3>Gestion du stock — Désactivation de variante</h3>
+          </div>
+          <div class="modal-body">
+            <p class="deact-intro">
+              Les variantes suivantes ont du stock. Que souhaitez-vous faire avec ce stock ?
+            </p>
+
+            <!-- Variant list with quantities -->
+            <div class="deact-variants">
+              <div v-for="item in deactivationQueue" :key="item.variantId" class="deact-variant-row">
+                <span class="deact-label">{{ item.variantLabel }}</span>
+                <span class="deact-qty">{{ item.stockQty }} unité(s) en stock</span>
+              </div>
+            </div>
+
+            <!-- Action choice -->
+            <div class="deact-options">
+              <label class="deact-opt" :class="{ active: deactivationAction === 'transfer' }">
+                <input v-model="deactivationAction" type="radio" value="transfer" />
+                <div class="deact-opt-content">
+                  <div class="deact-opt-title">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Transférer au produit principal
+                  </div>
+                  <div class="deact-opt-desc">
+                    Le stock de la variante est réintégré au stock général du produit.
+                  </div>
+                </div>
+              </label>
+
+              <label class="deact-opt" :class="{ active: deactivationAction === 'writeoff' }">
+                <input v-model="deactivationAction" type="radio" value="writeoff" />
+                <div class="deact-opt-content">
+                  <div class="deact-opt-title">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9a1 1 0 001 1h6a1 1 0 001-1l1-9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Sortir du stock (perte / dépréciation)
+                  </div>
+                  <div class="deact-opt-desc">
+                    Le stock est soustrait définitivement. Un mouvement de sortie est créé.
+                  </div>
+                </div>
+              </label>
+
+              <label class="deact-opt" :class="{ active: deactivationAction === 'keep' }">
+                <input v-model="deactivationAction" type="radio" value="keep" />
+                <div class="deact-opt-content">
+                  <div class="deact-opt-title">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M8 3a5 5 0 100 10A5 5 0 008 3z" stroke="currentColor" stroke-width="1.4"/>
+                      <path d="M8 6v2l1.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                    </svg>
+                    Conserver le stock sans modification
+                  </div>
+                  <div class="deact-opt-desc">
+                    Le stock reste attaché à la variante (peut être géré plus tard).
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" @click="cancelDeactivation">Annuler la désactivation</button>
+            <button class="btn btn-primary" @click="confirmDeactivation">
+              Confirmer et continuer
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
   </div>
 </template>
 
@@ -213,10 +468,14 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { productService } from '../services/productService'
+import client from '@/api/client'
 import type { Category, Product } from '../types'
+import { usePermission } from '@/composables/usePermission'
 
 const route  = useRoute()
 const router = useRouter()
+const { isManagerOrAbove } = usePermission()
+const showManualIdentifiers = ref(false)
 
 const isEdit      = computed(() => !!route.params.id)
 const product     = ref<Product | null>(null)
@@ -226,121 +485,455 @@ const saving      = ref(false)
 const globalError = ref('')
 const errors      = reactive<Record<string, string>>({})
 
+// ── Form state ─────────────────────────────────────────────────────────────
 const form = reactive({
-  name:                          '',
-  sku:                           '',
-  description:                   '',
-  price_amount_display:          0 as number | '',
-  price_currency:                'EUR',
-  compare_at_price_amount_display: '' as number | '',
-  cost_amount_display:           '' as number | '',
-  status:                        'draft' as 'draft' | 'active' | 'archived',
-  category_id:                   '',
-  barcode:                       '',
-  weight_kg:                     '' as number | '',
+  name:           '',
+  sku:            '',
+  sku_prefix:     '',
+  description:    '',
+  price_display:  0 as number | '',
+  price_currency: 'XOF',
+  compare_display:'' as number | '',
+  cost_display:   '' as number | '',
+  status:         'draft' as 'draft' | 'active' | 'archived',
+  category_id:    '',
+  barcode:        '',
+  internal_barcode: '',
+  gtin:           '',
+  barcode_type:   'INTERNAL' as 'INTERNAL' | 'GTIN',
+  weight_kg:      '' as number | '',
+  has_variants:   false,
 })
 
-const currencies = [
-  { code: 'EUR', label: 'Euro' },
-  { code: 'USD', label: 'Dollar US' },
-  { code: 'GBP', label: 'Livre Sterling' },
+// ── Stock initial (produits sans variantes) ────────────────────────────────
+const initialQty = ref(0)
+
+// ── Variant state ──────────────────────────────────────────────────────────
+interface VariantRow {
+  _key:          string   // temp key for v-for
+  _id:           string   // '' = new
+  _deleted:      boolean
+  _wasActive:    boolean  // original is_active value (detect deactivation)
+  _origPrice:    number | '' // original price (detect change)
+  label:         string   // e.g. "M", "Rouge"
+  sku:           string
+  price_display: number | ''
+  barcode:       string
+  is_active:     boolean
+  initial_qty:   number   // stock initial à créer (0 = aucun move-in)
+}
+
+// ── Deactivation modal state ────────────────────────────────────────────────
+interface DeactivationItem {
+  variantId:    string
+  variantLabel: string
+  stockQty:     number    // current available stock
+}
+const showDeactivationModal = ref(false)
+const deactivationQueue     = ref<DeactivationItem[]>([])
+const deactivationAction    = ref<'transfer' | 'writeoff' | 'keep'>('keep')
+const deactivationResolve   = ref<((action: 'transfer' | 'writeoff' | 'keep') => void) | null>(null)
+
+function askDeactivation(items: DeactivationItem[]): Promise<'transfer' | 'writeoff' | 'keep'> {
+  return new Promise(resolve => {
+    deactivationQueue.value   = items
+    deactivationAction.value  = 'keep'
+    deactivationResolve.value = resolve
+    showDeactivationModal.value = true
+  })
+}
+
+function confirmDeactivation() {
+  showDeactivationModal.value = false
+  deactivationResolve.value?.(deactivationAction.value)
+  deactivationResolve.value = null
+}
+
+function cancelDeactivation() {
+  showDeactivationModal.value = false
+  deactivationResolve.value?.('keep')
+  deactivationResolve.value = null
+}
+
+const variants = ref<VariantRow[]>([])
+let _vKey = 0
+function makeKey() { return `vk-${++_vKey}` }
+
+function markDeleteVariant(i: number) {
+  const v = variants.value[i]
+  if (!v._id) { variants.value.splice(i, 1) }
+  else { v._deleted = true }
+}
+
+// ── N-AXIS BUILDER (Sprint 17) ──────────────────────────────────────────────
+interface VariantAxis { name: string; values: string[]; newValue: string }
+
+const AXIS_SUGGESTIONS = ['Taille', 'Couleur', 'Matière', 'Volume', 'RAM', 'ROM', 'Stockage', 'Puissance', 'Format', 'Modèle']
+
+const variantAxes = ref<VariantAxis[]>([
+  { name: 'Taille', values: [], newValue: '' },
+])
+
+const generatingVariants = ref(false)
+const generateResult = ref<{ ok: boolean; message: string } | null>(null)
+
+const axesHaveValues = computed(() =>
+  variantAxes.value.some(a => a.name && a.values.length > 0)
+)
+
+const combinationCount = computed(() => {
+  const counts = variantAxes.value
+    .filter(a => a.name.trim() && a.values.length > 0)
+    .map(a => a.values.length)
+  return counts.length ? counts.reduce((a, b) => a * b, 1) : 0
+})
+
+const comboExample = computed(() => {
+  const first = variantAxes.value
+    .filter(a => a.name.trim() && a.values.length > 0)
+    .map(a => a.values[0])
+  return first.join(' / ')
+})
+
+function addAxis() {
+  variantAxes.value.push({ name: '', values: [], newValue: '' })
+}
+
+function removeAxis(i: number) {
+  if (variantAxes.value.length > 1) variantAxes.value.splice(i, 1)
+}
+
+function addAxisValue(i: number) {
+  const axis = variantAxes.value[i]
+  const v = axis.newValue.trim()
+  if (v && !axis.values.includes(v)) axis.values.push(v)
+  axis.newValue = ''
+}
+
+function removeAxisValue(i: number, j: number) {
+  variantAxes.value[i].values.splice(j, 1)
+}
+
+/**
+ * Reconstruct variantAxes from existing variant attributes (edit mode).
+ * Scans all variants, aggregates unique values per axis key.
+ * Also populates the edit-mode variants table.
+ */
+function hydrateVariantsFromProduct(variantList: any[]) {
+  // Build edit-mode variant rows
+  variants.value = variantList.map(v => ({
+    _key:       makeKey(),
+    _id:        v.id,
+    _deleted:   false,
+    _wasActive: (v as any).is_active ?? true,          // track original value
+    _origPrice: v.price ? v.price.amount / 100 : '',   // track original price
+    label:         (v as any).label ?? (v.attributes ? Object.values(v.attributes as Record<string,string>).join(' / ') : v.name ?? v.sku),
+    sku:           v.sku,
+    price_display: v.price ? v.price.amount / 100 : '',
+    barcode:       (v as any).barcode ?? '',
+    is_active:     (v as any).is_active ?? true,
+    initial_qty:   0,
+  }))
+
+  // Reconstruct variantAxes from attributes (e.g. {Taille:"S", Couleur:"Rouge"})
+  const axesMap: Record<string, string[]> = {}
+  for (const v of variantList) {
+    const attrs = (v as any).attributes as Record<string, string> | null
+    if (!attrs) continue
+    for (const [key, val] of Object.entries(attrs)) {
+      if (!axesMap[key]) axesMap[key] = []
+      if (!axesMap[key].includes(String(val))) axesMap[key].push(String(val))
+    }
+  }
+  const reconstructed = Object.entries(axesMap).map(([name, values]) => ({
+    name, values, newValue: '',
+  }))
+  if (reconstructed.length > 0) {
+    variantAxes.value = reconstructed
+  }
+}
+
+/**
+ * Reload variants from the API after generation (edit mode).
+ */
+async function loadVariants() {
+  if (!product.value?.id) return
+  try {
+    const p = await productService.get(product.value.id)
+    if (p.variants) {
+      hydrateVariantsFromProduct(p.variants)
+    }
+  } catch {
+    // silent — variants table stays as-is
+  }
+}
+
+async function generateVariantsNow() {
+  if (!product.value?.id) return
+  generatingVariants.value = true
+  generateResult.value = null
+  try {
+    const axes = variantAxes.value
+      .filter(a => a.name.trim() && a.values.length > 0)
+      .map(a => ({ name: a.name.trim(), values: a.values }))
+    const basePrice = typeof form.price_display === 'number' ? form.price_display * 100 : 0
+    const r = await productService.generateVariants(product.value.id, {
+      axes,
+      base_price:    basePrice || undefined,
+      base_currency: form.price_currency,
+    })
+    // created=0 + skipped>0 = all variants already exist → still a success
+    const ok = r.created > 0 || r.skipped > 0
+    generateResult.value = {
+      ok,
+      message: r.message ?? `${r.created} créée(s), ${r.skipped} ignorée(s).`,
+    }
+    await loadVariants()
+  } catch (e) {
+    console.error('generateVariants error:', e)
+    generateResult.value = { ok: false, message: 'Erreur lors de la génération. Vérifiez la console.' }
+  } finally {
+    generatingVariants.value = false
+  }
+}
+
+// ── Label printing (opens backend HTML in new tab) ─────────────────────────
+async function printLabel(format: 'thermal' | 'a4sheet') {
+  if (!product.value) return
+  const url = productService.getLabelUrl(product.value.id, { format, price: true, qr: true })
+  const token = localStorage.getItem('auth_token') ?? ''
+  const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+  const html  = await resp.text()
+  const win   = window.open('', '_blank')
+  if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 400) }
+}
+
+// ── Constants ──────────────────────────────────────────────────────────────
+const CURRENCIES = [
   { code: 'XOF', label: 'Franc CFA (UEMOA)' },
   { code: 'XAF', label: 'Franc CFA (CEMAC)' },
-  { code: 'MAD', label: 'Dirham Marocain' },
-  { code: 'DZD', label: 'Dinar Algérien' },
-  { code: 'TND', label: 'Dinar Tunisien' },
   { code: 'GHS', label: 'Cedi Ghanéen' },
+  { code: 'NGN', label: 'Naira Nigérian' },
+  { code: 'MAD', label: 'Dirham Marocain' },
+  { code: 'EUR', label: 'Euro' },
+  { code: 'USD', label: 'Dollar US' },
 ]
 
-const statuses = [
-  { value: 'active',   label: 'Actif',      hint: 'Visible et disponible à la vente.' },
-  { value: 'draft',    label: 'Brouillon',  hint: 'Invisible, en cours de création.' },
-  { value: 'archived', label: 'Archivé',    hint: 'Masqué, non modifiable facilement.' },
+const STATUSES = [
+  { value: 'active',   label: 'Actif',     hint: 'Visible et en vente.' },
+  { value: 'draft',    label: 'Brouillon', hint: 'Invisible, en cours de création.' },
+  { value: 'archived', label: 'Archivé',   hint: 'Masqué, non disponible.' },
 ]
 
+// ── Computed ───────────────────────────────────────────────────────────────
 const margin = computed<number | null>(() => {
-  const price = Number(form.price_amount_display)
-  const cost  = Number(form.cost_amount_display)
-  if (!price || !cost) return null
-  return ((price - cost) / price) * 100
+  const p = Number(form.price_display)
+  const c = Number(form.cost_display)
+  if (!p || !c) return null
+  return ((p - c) / p) * 100
 })
 
-function clearError(field: string) {
-  delete errors[field]
-  globalError.value = ''
+// ── Helpers ────────────────────────────────────────────────────────────────
+function clearError(k: string) { delete errors[k]; globalError.value = '' }
+function toCents(v: number | ''): number | undefined {
+  if (v === '') return undefined
+  return Math.round(Number(v) * 100)
 }
 
-function toApiCents(val: number | ''): number | undefined {
-  if (val === '' || val === null) return undefined
-  return Math.round(Number(val) * 100)
-}
-
+// ── Submit ─────────────────────────────────────────────────────────────────
 function validate(): boolean {
-  let valid = true
-  if (!form.name.trim()) { errors.name = 'Le nom est requis'; valid = false }
-  if (form.price_amount_display === '' || Number(form.price_amount_display) < 0) {
-    errors.price_amount = 'Le prix est requis'; valid = false
+  let ok = true
+  if (!form.name.trim()) { errors.name = 'Le nom est requis'; ok = false }
+  if (form.price_display === '' || Number(form.price_display) < 0) {
+    errors.price_amount = 'Le prix est requis'; ok = false
   }
-  return valid
+  return ok
 }
 
 async function handleSubmit() {
   if (!validate()) return
-  saving.value      = true
+  saving.value = true
   globalError.value = ''
 
-  const payload = {
-    name:                    form.name,
-    sku:                     form.sku || undefined,
-    description:             form.description || undefined,
-    price_amount:            toApiCents(form.price_amount_display)!,
-    price_currency:          form.price_currency,
-    compare_at_price_amount: toApiCents(form.compare_at_price_amount_display),
-    cost_amount:             toApiCents(form.cost_amount_display),
-    status:                  form.status,
-    category_id:             form.category_id || undefined,
-    barcode:                 form.barcode || undefined,
-    weight_kg:               form.weight_kg === '' ? undefined : Number(form.weight_kg),
-  }
-
   try {
-    if (isEdit.value) {
-      await productService.update(route.params.id as string, payload)
-    } else {
-      await productService.create(payload)
+    const payload: any = {
+      name:                    form.name,
+      sku:                     showManualIdentifiers.value ? (form.sku || undefined) : undefined,
+      sku_prefix:              form.sku_prefix.toUpperCase() || undefined,
+      description:             form.description || undefined,
+      price_amount:            toCents(form.price_display)!,
+      price_currency:          form.price_currency,
+      compare_at_price_amount: toCents(form.compare_display),
+      cost_amount:             toCents(form.cost_display),
+      status:                  form.status,
+      category_id:             form.category_id || undefined,
+      barcode:                 form.barcode || undefined,
+      weight_kg:               form.weight_kg === '' ? undefined : Number(form.weight_kg),
+      has_variants:            form.has_variants,
     }
-    router.push('/catalog')
-  } catch (err: any) {
-    const status = err?.response?.status
-    if (status === 422) {
-      const apiErrors = err.response?.data?.errors ?? {}
-      Object.entries(apiErrors).forEach(([field, msgs]: [string, any]) => {
-        errors[field] = msgs[0]
-      })
+
+    if (showManualIdentifiers.value) {
+      if (form.internal_barcode) payload.internal_barcode = form.internal_barcode
+      if (form.barcode_type) payload.barcode_type = form.barcode_type
+    }
+    if (form.gtin) payload.gtin = form.gtin
+
+    let savedProduct: Product
+    if (isEdit.value) {
+      savedProduct = await productService.update(route.params.id as string, payload)
     } else {
-      globalError.value = 'Une erreur est survenue. Réessayez.'
+      savedProduct = await productService.create(payload)
+    }
+
+    // ── Sync variants ────────────────────────────────────────────────────
+    if (form.has_variants) {
+      const currency = form.price_currency
+
+      // Step 1 — Detect deactivations with stock and ask user what to do
+      const deactivating = variants.value.filter(v =>
+        !v._deleted && v._id && v._wasActive && !v.is_active
+      )
+      if (deactivating.length > 0) {
+        // Fetch current stocks for deactivating variants (best-effort)
+        const stockItems: DeactivationItem[] = []
+        for (const v of deactivating) {
+          try {
+            const res = await client.get(`/api/inventory/stock/${savedProduct.id}`, {
+              params: { variant_id: v._id }
+            })
+            const qty = res.data?.stock?.quantity ?? res.data?.available ?? 0
+            if (qty > 0) stockItems.push({ variantId: v._id, variantLabel: v.label, stockQty: qty })
+          } catch { /* ignore — treat as 0 stock */ }
+        }
+        if (stockItems.length > 0) {
+          const action = await askDeactivation(stockItems)
+          for (const item of stockItems) {
+            if (action === 'transfer') {
+              // Move variant stock OUT then back IN at product level
+              await client.post(`/api/inventory/stock/${savedProduct.id}/move-out`, {
+                quantity: item.stockQty, reason: 'manual',
+                note: `Transfert stock au produit principal — désactivation variante ${item.variantLabel}`,
+                variant_id: item.variantId,
+              }).catch(() => {})
+              await client.post(`/api/inventory/stock/${savedProduct.id}/move-in`, {
+                quantity: item.stockQty, reason: 'manual',
+                note: `Transfert depuis variante ${item.variantLabel} désactivée`,
+              }).catch(() => {})
+            } else if (action === 'writeoff') {
+              // Adjust variant stock to 0
+              await client.post(`/api/inventory/stock/${savedProduct.id}/adjust`, {
+                quantity: 0, variant_id: item.variantId,
+                note: `Sortie de stock — variante ${item.variantLabel} désactivée`,
+              }).catch(() => {})
+            }
+            // 'keep' → do nothing with stock
+          }
+        }
+      }
+
+      // Step 2 — N-AXIS: generate new combinations if axes changed
+      const axes = variantAxes.value.filter(a => a.name.trim() && a.values.length > 0)
+      if (axes.length > 0) {
+        const basePrice = typeof form.price_display === 'number' ? toCents(form.price_display) : 0
+        await productService.generateVariants(savedProduct.id, {
+          axes: axes.map(a => ({ name: a.name.trim(), values: a.values })),
+          base_price:    basePrice || undefined,
+          base_currency: currency,
+        })
+      }
+
+      // Step 3 — Process all existing variant rows (deletions + updates)
+      for (const v of variants.value) {
+        if (v._deleted && v._id) {
+          // Delete
+          await productService.deleteVariant(savedProduct.id, v._id)
+
+        } else if (!v._deleted && v._id) {
+          // Update — always persist is_active and price changes
+          const priceChanged  = v.price_display !== v._origPrice
+          const activeChanged = v.is_active !== v._wasActive
+          if (activeChanged || priceChanged) {
+            await productService.updateVariant(savedProduct.id, v._id, {
+              name:           v.label,
+              label:          v.label,
+              price_amount:   v.price_display !== '' ? toCents(v.price_display as number) : null,
+              price_currency: currency,
+              barcode:        v.barcode || null,
+              is_active:      v.is_active,
+            })
+          }
+
+        } else if (!v._deleted && !v._id && v.label) {
+          // New variant (manual mode only)
+          const created = await productService.createVariant(savedProduct.id, {
+            name:           v.label,
+            label:          v.label,
+            sku:            v.sku || undefined,
+            attributes:     {},
+            price_amount:   v.price_display !== '' ? toCents(v.price_display as number) : null,
+            price_currency: currency,
+            barcode:        v.barcode || null,
+            is_active:      v.is_active,
+          })
+          if (v.initial_qty > 0) {
+            await client.post(`/api/inventory/stock/${savedProduct.id}/move-in`, {
+              quantity: v.initial_qty, reason: 'delivery', variant_id: created.id,
+            }).catch(() => {})
+          }
+        }
+      }
+
+    } else if (!isEdit.value) {
+      // No variants: initialize product stock if initial quantity provided
+      if (initialQty.value > 0) {
+        await client.post(`/api/inventory/stock/${savedProduct.id}/move-in`, {
+          quantity: initialQty.value,
+          reason:   'delivery',
+          note:     'Stock initial à la création du produit',
+        })
+      }
+    }
+
+    // After save: go to show page for new products, or stay on show page for edits
+    router.push(`/catalog/products/${savedProduct.id}`)
+  } catch (err: any) {
+    if (err?.response?.status === 422) {
+      const apiErrors = err.response?.data?.errors ?? {}
+      Object.entries(apiErrors).forEach(([k, msgs]: any) => { errors[k] = msgs[0] })
+    } else {
+      globalError.value = err?.response?.data?.message ?? 'Une erreur est survenue.'
     }
   } finally {
     saving.value = false
   }
 }
 
+// ── Load product (edit mode) ───────────────────────────────────────────────
 async function loadProduct() {
   if (!isEdit.value) return
   pageLoading.value = true
   try {
-    product.value = await productService.get(route.params.id as string)
-    const p = product.value
-    form.name                             = p.name
-    form.sku                              = p.sku
-    form.description                      = p.description ?? ''
-    form.price_amount_display             = p.price.amount / 100
-    form.price_currency                   = p.price.currency
-    form.compare_at_price_amount_display  = p.compare_at_price ? p.compare_at_price.amount / 100 : ''
-    form.status                           = p.status
-    form.category_id                      = p.category?.id ?? ''
-    form.barcode                          = p.barcode ?? ''
-    form.weight_kg                        = p.weight_kg ?? ''
+    const p = await productService.get(route.params.id as string)
+    product.value = p
+
+    form.name              = p.name
+    form.sku               = p.sku
+    form.description       = p.description ?? ''
+    form.price_display     = p.price.amount / 100
+    form.price_currency    = p.price.currency
+    form.compare_display   = p.compare_at_price ? p.compare_at_price.amount / 100 : ''
+    form.status            = p.status
+    form.category_id       = p.category?.id ?? ''
+    form.barcode           = p.barcode ?? ''
+    form.internal_barcode  = (p as any).internal_barcode ?? ''
+    form.gtin              = (p as any).gtin ?? ''
+    form.barcode_type      = (p as any).barcode_type ?? 'INTERNAL'
+    form.weight_kg         = p.weight_kg ?? ''
+    form.has_variants      = p.has_variants
+
+    if (p.has_variants && p.variants?.length) {
+      hydrateVariantsFromProduct(p.variants)
+    }
   } catch {
     globalError.value = 'Produit introuvable.'
   } finally {
@@ -355,62 +948,184 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page-subtitle { color: var(--gray-500); font-size: var(--text-sm); margin-top: 0.2rem; }
-.required { color: var(--color-error); }
+.page-subtitle { color: var(--gray-500); font-size: var(--text-sm); margin-top: 0.2rem; display: flex; align-items: center; gap: 0.5rem; }
+.mono { font-family: ui-monospace, monospace; font-size: 0.8125rem; }
+.req  { color: var(--color-error); }
+.hint { font-size: var(--text-xs); font-weight: 400; color: var(--gray-400); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 
+.variant-count-badge {
+  font-size: var(--text-xs);
+  background: var(--brand-primary-bg);
+  color: var(--brand-primary-dark);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
 .form-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 300px;
   gap: 1.5rem;
   align-items: flex-start;
 }
 @media (max-width: 900px) { .form-layout { grid-template-columns: 1fr; } }
 
-.card-section-title {
+.card-title {
   font-size: var(--text-base);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--gray-900);
   margin: 0 0 1.25rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--gray-100);
 }
+.card-hint { font-size: var(--text-xs); color: var(--gray-400); margin: 0; }
 
-.form-row {
+.form-row2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
-@media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .form-row2 { grid-template-columns: 1fr; } }
 
-.input-currency-wrap { position: relative; }
-.currency-badge {
+/* Price input with currency adornment */
+.input-adorn-right { position: relative; }
+.input-adorn-right .form-input { padding-right: 3.5rem; }
+.adorn-text {
   position: absolute;
   right: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--gray-400);
   pointer-events: none;
 }
 
-.margin-display {
+.margin-info {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
   font-size: var(--text-sm);
   padding: 0.5rem 0.75rem;
-  background: var(--gray-50);
   border-radius: var(--radius-md);
   margin-top: 0.5rem;
 }
-.margin-label    { color: var(--gray-500); }
-.margin-positive { color: var(--brand-primary-dark); font-weight: 600; }
-.margin-negative { color: var(--color-error); font-weight: 600; }
+.margin-ok  { background: var(--brand-primary-bg);  color: var(--brand-primary-dark); }
+.margin-bad { background: var(--color-error-bg);    color: #991b1b; }
 
-.status-radios { display: flex; flex-direction: column; gap: 0.5rem; }
-.status-radio {
+/* ── Variants section ────────────────────────────────────────────────────── */
+.variants-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.toggle-track {
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--gray-300);
+  position: relative;
+  transition: background 0.2s;
+}
+.sr-only:checked + .toggle-track { background: var(--brand-primary); }
+.toggle-thumb {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.sr-only:checked + .toggle-track .toggle-thumb { transform: translateX(18px); }
+.toggle-lbl { font-size: var(--text-sm); color: var(--gray-600); white-space: nowrap; }
+
+.variants-body { padding-top: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+
+.attr-row { display: flex; flex-direction: column; gap: 0.375rem; }
+.attr-chips { display: flex; gap: 0.375rem; flex-wrap: wrap; }
+.attr-chip {
+  padding: 0.25rem 0.75rem;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  background: white;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.attr-chip.active { border-color: var(--brand-primary); background: var(--brand-primary-bg); color: var(--brand-primary-dark); }
+.attr-chip:hover:not(.active) { border-color: var(--gray-400); }
+
+.variant-table-wrap { overflow-x: auto; border: 1px solid var(--gray-200); border-radius: var(--radius-md); }
+.variant-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.variant-table th {
+  background: var(--gray-50);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--gray-200);
+}
+.variant-table td { padding: 0.5rem 0.5rem; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+.variant-table tr:last-child td { border-bottom: none; }
+.row-deleted td { opacity: 0.4; }
+
+.var-input {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  padding: 0.375rem 0.5rem;
+  font-size: var(--text-sm);
+  outline: none;
+  width: 100%;
+  min-width: 70px;
+  background: white;
+  transition: border-color 0.12s;
+}
+.var-input:focus { border-color: var(--brand-primary); }
+.var-input.mono  { font-family: ui-monospace, monospace; }
+
+.var-delete-btn {
+  background: none;
+  border: none;
+  color: var(--color-error);
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  opacity: 0.7;
+}
+.var-delete-btn:hover { opacity: 1; background: var(--color-error-bg); }
+.var-restore-btn { background: none; border: none; cursor: pointer; color: var(--brand-primary); font-size: 1rem; padding: 0 0.5rem; }
+
+.add-variant-row { display: flex; gap: 0.5rem; align-items: center; }
+.var-add-input { flex: 1; }
+.variant-hint { font-size: var(--text-xs); color: var(--gray-400); margin: 0; }
+
+/* ── Status selector ─────────────────────────────────────────────────────── */
+.status-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.status-opt {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
@@ -418,16 +1133,20 @@ onMounted(async () => {
   border: 1.5px solid var(--gray-200);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: border-color 0.12s, background 0.12s;
+  transition: all 0.12s;
 }
-.status-radio.active { border-color: var(--brand-primary); background: var(--brand-primary-bg); }
+.status-opt.active { border-color: var(--brand-primary); background: var(--brand-primary-bg); }
 .status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
 .dot-active   { background: var(--brand-primary); }
 .dot-draft    { background: var(--gray-400); }
 .dot-archived { background: var(--color-warning); }
-.status-radio-label { font-size: var(--text-sm); font-weight: 500; color: var(--gray-900); }
-.status-radio-hint  { font-size: var(--text-xs); color: var(--gray-400); margin-top: 1px; }
+.status-opt-name { font-size: var(--text-sm); font-weight: 600; color: var(--gray-900); }
+.status-opt-hint { font-size: var(--text-xs); color: var(--gray-400); }
 
+/* ── Label actions ───────────────────────────────────────────────────────── */
+.label-actions { display: flex; flex-direction: column; gap: 0.5rem; }
+
+/* ── Form footer ─────────────────────────────────────────────────────────── */
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -436,4 +1155,247 @@ onMounted(async () => {
   padding-top: 1.5rem;
   border-top: 1px solid var(--gray-200);
 }
+
+/* ── Identifier helper texts ─────────────────────────────────────────────── */
+.form-hint-auto {
+  font-size: var(--text-xs);
+  color: var(--gray-400);
+  margin: -0.5rem 0 0.75rem;
+  font-style: italic;
+}
+.form-hint-readonly {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--gray-400);
+  margin-top: 0.25rem;
+}
+.form-hint-gtin {
+  font-size: var(--text-xs);
+  color: var(--gray-400);
+  margin: 0.25rem 0 0;
+  line-height: 1.4;
+}
+
+/* ── N-Axis variant builder ──────────────────────────────────────────────── */
+.axes-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 12px 0 0;
+}
+
+.axes-builder-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.axes-builder-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.axes-hint {
+  font-size: var(--text-xs);
+  color: var(--gray-400);
+}
+
+/* Each axis row (name input + values + remove button) */
+.axis-row {
+  display: grid;
+  grid-template-columns: 180px 1fr 32px;
+  gap: 8px;
+  align-items: start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.axis-row:last-of-type {
+  border-bottom: none;
+}
+
+.axis-name-wrap {
+  padding-top: 2px;
+}
+
+.axis-name-input {
+  font-size: var(--text-sm) !important;
+  font-weight: 600;
+}
+
+/* Values area */
+.axis-values-wrap {
+  min-height: 36px;
+}
+
+.axis-values {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+}
+
+.axis-value-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--gray-100);
+  color: var(--gray-700);
+  padding: 3px 8px 3px 10px;
+  border-radius: 14px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.chip-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gray-400);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0 0 2px;
+  display: flex;
+  align-items: center;
+}
+.chip-remove:hover { color: var(--color-error); }
+
+.axis-value-input {
+  flex: 1;
+  min-width: 100px;
+  font-size: var(--text-sm) !important;
+  padding: 4px 8px !important;
+  height: 28px !important;
+}
+
+.axis-remove-btn {
+  color: var(--gray-300);
+  padding: 6px 4px;
+  margin-top: 2px;
+}
+.axis-remove-btn:hover:not(:disabled) { color: var(--color-error); }
+.axis-remove-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* + Add axis button */
+.add-axis-btn {
+  align-self: flex-start;
+  margin-top: 10px;
+  color: var(--brand-secondary, #3b82f6);
+  font-size: var(--text-sm);
+  gap: 4px;
+}
+
+/* Combination preview */
+.combo-preview {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--brand-primary-bg, #ecfdf5);
+  border: 1px solid #a7f3d0;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.combo-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.combo-count {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--brand-primary);
+}
+
+.combo-formula {
+  font-size: var(--text-sm);
+  color: var(--gray-500);
+}
+
+.combo-example {
+  font-size: var(--text-sm);
+  color: var(--gray-600);
+  background: white;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-style: italic;
+}
+
+.combo-note {
+  font-size: var(--text-xs);
+  color: var(--gray-500);
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.generate-result {
+  font-size: var(--text-sm);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+.generate-result.ok   { background: #ecfdf5; color: #065f46; }
+.generate-result.warn { background: #fff7ed; color: #9a3412; }
+
+/* Existing variants table in edit mode */
+.variant-table-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 8px;
+}
+
+/* ── Deactivation modal ───────────────────────────────────────────────────── */
+.deact-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 500; padding: 1rem;
+}
+.deact-box {
+  background: white; border-radius: var(--radius-lg);
+  width: 100%; max-width: 520px;
+  box-shadow: var(--shadow-xl);
+  display: flex; flex-direction: column; max-height: 90vh; overflow: hidden;
+}
+.deact-intro {
+  font-size: 0.875rem; color: var(--gray-600); margin: 0 0 1rem;
+}
+.deact-variants {
+  display: flex; flex-direction: column; gap: 0.375rem; margin-bottom: 1.25rem;
+}
+.deact-variant-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.5rem 0.75rem; background: var(--gray-50);
+  border-radius: var(--radius-sm); border: 1px solid var(--gray-200);
+}
+.deact-label { font-weight: 600; font-size: 0.875rem; color: var(--gray-900); }
+.deact-qty   { font-size: 0.8125rem; color: var(--brand-primary); font-weight: 600; }
+
+.deact-options { display: flex; flex-direction: column; gap: 0.5rem; }
+.deact-opt {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  padding: 0.75rem 1rem; border-radius: var(--radius-md);
+  border: 1.5px solid var(--gray-200); cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.deact-opt input[type=radio] { margin-top: 3px; flex-shrink: 0; }
+.deact-opt.active { border-color: var(--brand-primary); background: var(--brand-primary-bg); }
+.deact-opt-content { flex: 1; }
+.deact-opt-title {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.875rem; font-weight: 600; color: var(--gray-900); margin-bottom: 0.25rem;
+}
+.deact-opt.active .deact-opt-title { color: var(--brand-primary); }
+.deact-opt-desc  { font-size: 0.78rem; color: var(--gray-500); line-height: 1.4; }
 </style>

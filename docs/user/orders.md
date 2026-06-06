@@ -60,6 +60,8 @@ Une commande passe par 4 statuts possibles :
 
 ## Filtrer les commandes
 
+La liste des commandes offre maintenant 3 filtres: recherche texte (numéro/client), plage de dates, et statut.
+
 Utilisez les onglets en haut de la liste pour filtrer par statut :
 - **Toutes** — affiche toutes les commandes
 - **Brouillons** — commandes non encore confirmées

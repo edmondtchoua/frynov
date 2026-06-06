@@ -144,9 +144,7 @@ class LabelController extends Controller
 
     private function resolveTenantId(Request $request): string
     {
-        return $request->user()?->tenant_id
-            ?? $request->attributes->get('tenant')?->id
-            ?? $request->header('X-Tenant-ID', '');
+        return $request->user()->tenant_id;
     }
 
     private function resolveFormat(Request $request): string

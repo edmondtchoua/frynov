@@ -3,6 +3,7 @@
 namespace App\Modules\Payments\Tests\Integration;
 
 use App\Models\User;
+use App\Modules\Billing\Models\Plan;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Inventory\Services\StockService;
 use App\Modules\Orders\Models\Order;
@@ -12,6 +13,7 @@ use App\Modules\Tenants\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class PaymentApiTest extends TestCase
@@ -27,8 +29,13 @@ class PaymentApiTest extends TestCase
     {
         parent::setUp();
 
-        $this->tenant = Tenant::create(['name' => 'Boutique Test', 'slug' => 'boutique-test', 'plan' => 'starter', 'status' => 'active']);
+        // Sprint 11: admin role required for void (destroy) operations
+        Role::firstOrCreate(['name' => 'admin',  'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'manager','guard_name' => 'web']);
+        Plan::firstOrCreate(['code' => 'starter'], ['name' => 'Starter', 'price_monthly_cents' => 0, 'price_yearly_cents' => 0, 'currency' => 'XOF', 'trial_days' => 14, 'is_active' => true, 'is_public' => true, 'sort_order' => 1]);
+        $this->tenant = Tenant::create(['name' => 'Boutique Test', 'slug' => 'boutique-test', 'plan' => 'starter', 'status' => 'active', 'settings' => []]);
         $this->user   = User::create(['name' => 'Manager', 'email' => 'manager@test.com', 'password' => Hash::make('Secret123!'), 'tenant_id' => $this->tenant->id]);
+        $this->user->assignTenantRole('admin'); // admin can void payments (Sprint 11 role guard)
         $this->token  = $this->user->createToken('api')->plainTextToken;
 
         $product = Product::create(['tenant_id' => $this->tenant->id, 'sku' => 'TST-001', 'name' => 'Produit', 'price_amount' => 20000, 'price_currency' => 'EUR', 'status' => 'active']);
@@ -146,4 +153,40 @@ class PaymentApiTest extends TestCase
         $res = $this->getJson('/api/payments?method=cash', $this->auth());
         $res->assertOk()->assertJsonCount(1, 'data');
     }
+
+    #[Test]
+    public function it_returns_existing_payment_on_idempotent_replay(): void
+    {
+        $key     = 'test-idem-key-abc123';
+        $headers = array_merge($this->auth(), ['X-Idempotency-Key' => $key]);
+
+        $payload = ['amount_cents' => 5000, 'currency' => 'EUR', 'method' => 'cash'];
+
+        $first = $this->postJson('/api/payments', $payload, $headers);
+        $first->assertCreated();
+        $firstId = $first->json('data.id');
+
+        $second = $this->postJson('/api/payments', $payload, $headers);
+        $second->assertOk()
+               ->assertJsonPath('data.id', $firstId);
+
+        $this->assertDatabaseCount('payments', 1);
+    }
+
+    #[Test]
+    public function it_stores_idempotency_key_on_first_request(): void
+    {
+        $key     = 'test-idem-key-store';
+        $headers = array_merge($this->auth(), ['X-Idempotency-Key' => $key]);
+
+        $res = $this->postJson('/api/payments', ['amount_cents' => 3000, 'currency' => 'EUR', 'method' => 'cash'], $headers);
+        $res->assertCreated();
+
+        $this->assertDatabaseHas('payments', [
+            'id'              => $res->json('data.id'),
+            'idempotency_key' => $key,
+            'tenant_id'       => $this->tenant->id,
+        ]);
+    }
+
 }

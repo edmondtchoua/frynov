@@ -18,15 +18,21 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       // Proxifier les appels API vers le backend Laravel
+      // VITE_PROXY_TARGET=http://nginx:80 (Docker) ou http://localhost:8000 (local)
       '/api': {
-        target:      'http://nginx:80',
+        target:      process.env.VITE_PROXY_TARGET ?? 'http://localhost:8000',
         changeOrigin: true,
       },
       '/webhooks': {
-        target:      'http://nginx:80',
+        target:      process.env.VITE_PROXY_TARGET ?? 'http://localhost:8000',
         changeOrigin: true,
       },
     },
+  },
+
+  // primeicons@7 has empty main/module/exports — tell Vite to skip it
+  optimizeDeps: {
+    exclude: ['primeicons'],
   },
 
   build: {
@@ -34,12 +40,13 @@ export default defineConfig({
     sourcemap:     false,
     chunkSizeWarningLimit: 600,
     rollupOptions: {
+      // Treat primeicons as external (CSS is handled separately if needed)
+      external: ['primeicons'],
       output: {
         manualChunks: {
-          // Séparer les grosses dépendances en chunks distincts
-          'vendor-vue':     ['vue', 'vue-router', 'pinia'],
-          'vendor-query':   ['@tanstack/vue-query'],
-          'vendor-prime':   ['primevue', 'primeicons'],
+          'vendor-vue':   ['vue', 'vue-router', 'pinia'],
+          'vendor-query': ['@tanstack/vue-query'],
+          'vendor-prime': ['primevue'],
         },
       },
     },

@@ -3,12 +3,14 @@
 namespace App\Modules\Catalog\Tests\Integration;
 
 use App\Models\User;
+use App\Modules\Billing\Models\Plan;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Tenants\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class CatalogApiTest extends TestCase
@@ -22,6 +24,11 @@ class CatalogApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // S1: catalog writes require manager|admin role
+        Role::firstOrCreate(['name' => 'admin',   'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
+        Plan::firstOrCreate(['code' => 'starter'], ['name' => 'Starter', 'price_monthly_cents' => 0, 'price_yearly_cents' => 0, 'currency' => 'XOF', 'trial_days' => 14, 'is_active' => true, 'is_public' => true, 'sort_order' => 1]);
 
         $this->tenant = Tenant::create([
             'name'     => 'Boutique Dakar',
@@ -37,6 +44,7 @@ class CatalogApiTest extends TestCase
             'password'  => Hash::make('Secret123!'),
             'tenant_id' => $this->tenant->id,
         ]);
+        $this->user->assignTenantRole('admin'); // S1: writes need manager|admin
 
         $this->token = $this->user->createToken('api')->plainTextToken;
     }
@@ -58,7 +66,8 @@ class CatalogApiTest extends TestCase
             ->assertJsonPath('data.price.currency', 'XOF')
             ->assertJsonPath('data.status', 'draft');
 
-        $this->assertMatchesRegularExpression('/^PRD-\d{4}$/', $response->json('data.sku'));
+        // New format from ProductIdentifierService: PROD-000001 (prefix + 6-digit padding)
+        $this->assertMatchesRegularExpression('/^[A-Z]+-\d+$/', $response->json('data.sku'));
     }
 
     #[Test]
@@ -155,8 +164,8 @@ class CatalogApiTest extends TestCase
             'price_currency' => 'XOF',
         ]);
 
-        // Public endpoint — no auth needed (for POS scanner)
-        $response = $this->withHeader('X-Tenant-ID', $this->tenant->id)
+        // S1: SKU lookup now requires auth (moved inside auth:sanctum group)
+        $response = $this->withToken($this->token)
             ->getJson('/api/catalog/products/sku/VET-0001');
 
         $response->assertOk()->assertJsonPath('data.sku', 'VET-0001');

@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Shared\Traits\HasTenant;
 
 class Supplier extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasTenant, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'tenant_id',
@@ -32,14 +33,14 @@ class Supplier extends Model
         ];
     }
 
-    // ── Relations ─────────────────────────────────────────────────────────────
+    // â”€â”€ Relations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function products(): HasMany
     {
         return $this->hasMany(\App\Modules\Catalog\Models\Product::class);
     }
 
-    // ── Scopes ────────────────────────────────────────────────────────────────
+    // â”€â”€ Scopes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function scopeForTenant(Builder $query, string $tenantId): Builder
     {
@@ -63,7 +64,7 @@ class Supplier extends Model
         });
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function isActive(): bool { return $this->status === 'active'; }
 }

@@ -1,5 +1,5 @@
 /* ════════════════════════════════════════════════════════════
-   Nexora ERP — Global Design System
+   Frynov ERP — Global Design System
    ════════════════════════════════════════════════════════════ */
 
 /* ── CSS Custom Properties (Design Tokens) ───────────────── */
@@ -72,10 +72,35 @@
 /* ── Reset ───────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
-html, body, #app {
+/* ── Layout scroll model ──────────────────────────────────────────────
+   Public/auth pages (landing, login, register) are long documents that must
+   scroll naturally. The app/admin SHELLS lock the viewport so only their inner
+   `.page-content` scrolls — that lock is scoped to `body.shell-locked`, toggled
+   by App.vue based on the active layout. Previously the lock was global, which
+   clipped the landing page (vertical scroll impossible). */
+html {
   margin: 0;
   padding: 0;
+  height: 100%;        /* anchor for percentage heights; overflow stays visible */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;    /* grows with content → public pages scroll naturally */
+}
+
+#app {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+/* App / Admin shell: lock the viewport, only the inner .page-content scrolls */
+body.shell-locked,
+body.shell-locked #app {
   height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -228,6 +253,19 @@ h1, h2, h3, h4, h5, h6 { margin: 0; }
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tfoot td { background: var(--gray-50); }
 
+/* Mobile: many views wrap tables in cards with overflow:hidden, which CLIPS
+   wide tables (cut-off columns, no scroll). Making the table itself a block-level
+   scroll container fixes this everywhere at once — it fits its card (width:100%)
+   and scrolls its columns internally, regardless of the parent's overflow.
+   This is the standard CSS-only responsive-table technique. */
+@media (max-width: 768px) {
+  .data-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* ── Forms ───────────────────────────────────────────────── */
 .form-group {
   display: flex;
@@ -364,4 +402,233 @@ textarea.form-input {
 
 @media (min-width: 641px) {
   .show-mobile-only { display: none !important; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   Page & block transitions
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Route-level page transition ─────────────────────────── */
+.page-enter-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.page-leave-active {
+  transition: opacity 0.12s ease;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(7px);
+}
+.page-leave-to {
+  opacity: 0;
+}
+
+/* ── Auth pages (scale-in, more dramatic) ────────────────── */
+.page-auth-enter-active {
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+.page-auth-leave-active {
+  transition: opacity 0.14s ease;
+}
+.page-auth-enter-from {
+  opacity: 0;
+  transform: scale(0.97);
+}
+.page-auth-leave-to {
+  opacity: 0;
+}
+
+/* ── Fade — for toggling single blocks ───────────────────── */
+.fade-enter-active { transition: opacity 0.2s ease; }
+.fade-leave-active { transition: opacity 0.15s ease; }
+.fade-enter-from,
+.fade-leave-to     { opacity: 0; }
+
+/* ── Fade + slide up — for cards / panels appearing ─────── */
+.slide-up-enter-active {
+  transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.slide-up-leave-active {
+  transition: opacity 0.15s ease;
+}
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(14px);
+}
+.slide-up-leave-to {
+  opacity: 0;
+}
+
+/* ── Slide-down — for dropdowns / toasts appearing ──────── */
+.slide-down-enter-active {
+  transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.slide-down-leave-active {
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+.slide-down-enter-from {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+/* ── Staggered list items (add to <TransitionGroup>) ─────── */
+.list-enter-active {
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.list-leave-active {
+  transition: opacity 0.15s ease;
+  position: absolute;
+}
+.list-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.list-leave-to {
+  opacity: 0;
+}
+.list-move {
+  transition: transform 0.25s ease;
+}
+
+/* ── Expand (height) — for collapsible sections ──────────── */
+.expand-enter-active,
+.expand-leave-active {
+  transition: max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+  overflow: hidden;
+}
+.expand-enter-from,
+.expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+.expand-enter-to,
+.expand-leave-from {
+  max-height: 600px;   /* enough for most panels */
+  opacity: 1;
+}
+
+/* ════════════════════════════════════════════════════════════
+   Loading skeletons & pulse animations
+   ════════════════════════════════════════════════════════════ */
+
+/* Generic pulse shimmer for skeleton loaders */
+@keyframes skeleton-pulse {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--gray-100) 25%,
+    var(--gray-200) 50%,
+    var(--gray-100) 75%
+  );
+  background-size: 800px 100%;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-text  { height: 0.875rem; margin-bottom: 0.5rem; }
+.skeleton-title { height: 1.25rem;  width: 55%; margin-bottom: 0.75rem; }
+.skeleton-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Lightweight pulse for inline loading indicators */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+.animate-pulse { animation: pulse 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* ════════════════════════════════════════════════════════════
+   Skeleton card — ready-made loading placeholder
+   ════════════════════════════════════════════════════════════ */
+.skeleton-card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+/* ════════════════════════════════════════════════════════════
+   Table row shimmer (for async table loads)
+   ════════════════════════════════════════════════════════════ */
+.table-loading tbody tr td {
+  padding: 0.85rem 1rem;
+}
+.table-loading tbody tr td > .skeleton {
+  height: 0.875rem;
+  border-radius: 4px;
+}
+
+/* ── Modals (global) ──────────────────────────────────────────────────────
+   Shared dialog used by Stock, Alertes, Ventes, Paiements, Livraisons. These
+   structural classes had NO definition, so every modal rendered unstyled at the
+   bottom of the page — clicking "Entrée/Sortie/Ajuster" looked like a no-op. */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+.modal-box {
+  background: var(--white, #fff);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--gray-100, #f1f5f9);
+}
+.modal-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--gray-900, #0f172a);
+}
+.modal-subtitle {
+  font-size: 0.85rem;
+  color: var(--gray-500, #64748b);
+  margin: 2px 0 0;
+}
+.modal-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  line-height: 0;
+  flex-shrink: 0;
+}
+.modal-close:hover { background: var(--gray-100, #f1f5f9); }
+.modal-body { padding: 1.25rem; }
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--gray-100, #f1f5f9);
 }

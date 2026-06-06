@@ -74,6 +74,20 @@ class CustomerController extends Controller
 
         $customer = $this->service->create($data, $request->user()->tenant_id);
 
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->log(
+                "customer.created",
+                $request->user()->tenant_id,
+                $request->user()->id,
+                $customer,
+                [],
+                ["name" => $customer->name, "email" => $customer->email ?? null],
+                null, null,
+                $request->ip(),
+                $request->userAgent(),
+            );
+        } catch (\Throwable) {}
+
         return response()->json(['data' => new CustomerResource($customer)], 201);
     }
 
@@ -100,6 +114,20 @@ class CustomerController extends Controller
         ]);
 
         $customer = $this->service->update($customer, $data);
+
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->log(
+                'customer.updated',
+                $request->user()->tenant_id,
+                $request->user()->id,
+                $customer,
+                array_keys($data),
+                ['name' => $customer->name, 'email' => $customer->email ?? null],
+                null, null,
+                $request->ip(),
+                $request->userAgent(),
+            );
+        } catch (\Throwable) {}
 
         return response()->json(['data' => new CustomerResource($customer)]);
     }

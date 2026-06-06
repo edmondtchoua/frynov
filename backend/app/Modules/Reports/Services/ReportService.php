@@ -141,13 +141,13 @@ class ReportService
             ->count();
 
         $lowStockItems = Stock::where('tenant_id', $tenantId)
-            ->where('quantity', '>', 0)
             ->where('low_stock_threshold', '>', 0)
-            ->whereColumn('quantity', '<=', 'low_stock_threshold')
+            ->whereRaw('(quantity - reserved_quantity) <= low_stock_threshold')
             ->with('product:id,name,sku')
-            ->orderByRaw('CAST(quantity AS REAL) / NULLIF(low_stock_threshold, 0) ASC')
+            ->orderByRaw('(quantity - reserved_quantity) / NULLIF(low_stock_threshold, 0) ASC')
             ->limit(10)
-            ->get(['id', 'product_id', 'quantity', 'reserved_quantity', 'low_stock_threshold']);
+            ->get(['id', 'product_id', 'quantity', 'reserved_quantity', 'low_stock_threshold'])
+            ->map(fn ($s) => array_merge($s->toArray(), ['available' => max(0, $s->quantity - $s->reserved_quantity)]));
 
         $recentMovements = StockMovement::where('tenant_id', $tenantId)
             ->where('created_at', '>=', now()->subDays(30))
@@ -212,5 +212,158 @@ class ReportService
             ->orderByDesc('total_revenue')
             ->limit($limit)
             ->get();
+    }
+
+    // ── ABC Classification (Pareto 80/15/5) ──────────────────────────────────
+
+    public function abcClassification(string $tenantId, int $days = 90): array
+    {
+        $from = now()->subDays($days)->startOfDay();
+
+        $productRevenue = OrderLine::join('orders', 'order_lines.order_id', '=', 'orders.id')
+            ->where('orders.tenant_id', $tenantId)
+            ->whereNotIn('orders.status', [Order::STATUS_CANCELLED])
+            ->where('orders.created_at', '>=', $from)
+            ->selectRaw('
+                order_lines.product_id,
+                order_lines.name        AS product_name,
+                order_lines.sku,
+                SUM(order_lines.quantity * order_lines.unit_price_cents) AS revenue_cents,
+                SUM(order_lines.quantity)                                 AS total_qty
+            ')
+            ->groupBy('order_lines.product_id', 'order_lines.name', 'order_lines.sku')
+            ->orderByDesc('revenue_cents')
+            ->get();
+
+        $totalRevenue = $productRevenue->sum('revenue_cents');
+
+        if ($totalRevenue == 0) {
+            return ['period_days' => $days, 'total_revenue' => 0, 'summary' => [], 'items' => []];
+        }
+
+        $cumulative = 0;
+        $classified = $productRevenue->map(function ($p) use ($totalRevenue, &$cumulative) {
+            $share      = $p->revenue_cents / $totalRevenue * 100;
+            $cumulative += $share;
+
+            return [
+                'product_id'        => $p->product_id,
+                'product_name'      => $p->product_name,
+                'sku'               => $p->sku,
+                'revenue_cents'     => (int) $p->revenue_cents,
+                'revenue_share_pct' => round($share, 2),
+                'cumulative_pct'    => round($cumulative, 2),
+                'total_qty_sold'    => (int) $p->total_qty,
+                'abc_class'         => $cumulative <= 80 ? 'A' : ($cumulative <= 95 ? 'B' : 'C'),
+            ];
+        });
+
+        $summary = $classified->groupBy('abc_class')
+            ->map(fn ($group, $class) => [
+                'class'             => $class,
+                'product_count'     => $group->count(),
+                'revenue_cents'     => $group->sum('revenue_cents'),
+                'revenue_share_pct' => round($group->sum('revenue_share_pct'), 1),
+            ])->values();
+
+        return [
+            'period_days'   => $days,
+            'total_revenue' => (int) $totalRevenue,
+            'summary'       => $summary,
+            'items'         => $classified->values(),
+        ];
+    }
+
+    // ── KPIs: DSI / Rotation / Fill Rate / Dead Stock ─────────────────────────
+
+    public function inventoryKpis(string $tenantId, int $days = 90): array
+    {
+        $from = now()->subDays($days)->startOfDay();
+
+        $totalStockValue = (int) \Illuminate\Support\Facades\DB::table('stocks')
+            ->where('tenant_id', $tenantId)
+            ->sum('total_value_cents');
+
+        $cogs = (int) OrderLine::join('orders', 'order_lines.order_id', '=', 'orders.id')
+            ->join('stocks', fn ($j) => $j
+                ->on('stocks.product_id', '=', 'order_lines.product_id')
+                ->where('stocks.tenant_id', $tenantId)
+            )
+            ->where('orders.tenant_id', $tenantId)
+            ->whereNotIn('orders.status', [Order::STATUS_CANCELLED])
+            ->where('orders.created_at', '>=', $from)
+            ->sum(\Illuminate\Support\Facades\DB::raw('order_lines.quantity * stocks.unit_cost_cents'));
+
+        $dsi          = ($cogs > 0) ? round($totalStockValue / $cogs * $days, 1) : null;
+        $rotationRate = ($totalStockValue > 0) ? round($cogs / $totalStockValue * (365 / $days), 2) : null;
+
+        $totalOrders     = Order::where('tenant_id', $tenantId)
+            ->whereIn('status', [Order::STATUS_CONFIRMED, Order::STATUS_FULFILLED])
+            ->where('created_at', '>=', $from)->count();
+        $fulfilledOrders = Order::where('tenant_id', $tenantId)
+            ->where('status', Order::STATUS_FULFILLED)
+            ->where('created_at', '>=', $from)->count();
+
+        $fillRate = $totalOrders > 0 ? round($fulfilledOrders / $totalOrders * 100, 1) : null;
+
+        $deadStockValue = (int) \Illuminate\Support\Facades\DB::table('stocks')
+            ->where('stocks.tenant_id', $tenantId)
+            ->where('stocks.quantity', '>', 0)
+            ->whereNotExists(fn ($q) => $q->from('stock_movements')
+                ->whereColumn('stock_movements.stock_id', 'stocks.id')
+                ->where('stock_movements.created_at', '>=', now()->subDays(180))
+            )
+            ->sum('total_value_cents');
+
+        $deadStockRate = $totalStockValue > 0
+            ? round($deadStockValue / $totalStockValue * 100, 1)
+            : 0;
+
+        return [
+            'period_days'         => $days,
+            'dsi'                 => $dsi,
+            'rotation_rate'       => $rotationRate,
+            'fill_rate_pct'       => $fillRate,
+            'dead_stock_rate_pct' => $deadStockRate,
+            'cogs_cents'          => $cogs,
+            'total_stock_value'   => $totalStockValue,
+            'total_orders'        => $totalOrders,
+            'fulfilled_orders'    => $fulfilledOrders,
+        ];
+    }
+
+    // ── Stock reconciliation report ───────────────────────────────────────────
+
+    public function stockReconciliation(string $tenantId): array
+    {
+        $lines = \Illuminate\Support\Facades\DB::table('stocks')
+            ->join('products', 'stocks.product_id', '=', 'products.id')
+            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
+            ->where('stocks.tenant_id', $tenantId)
+            ->whereNull('products.deleted_at')
+            ->selectRaw("
+                COALESCE(categories.name, 'Sans catégorie') AS category_name,
+                COUNT(stocks.id)                              AS sku_count,
+                SUM(stocks.quantity)                          AS total_qty,
+                SUM(stocks.quantity - stocks.reserved_quantity) AS available_qty,
+                SUM(stocks.total_value_cents)                 AS erp_value_cents,
+                AVG(stocks.unit_cost_cents)                   AS avg_cmup_cents
+            ")
+            ->groupBy('categories.name')
+            ->orderByDesc('erp_value_cents')
+            ->get();
+
+        $movementsSummary = StockMovement::where('tenant_id', $tenantId)
+            ->where('created_at', '>=', now()->subMonth())
+            ->selectRaw('reason, type, COUNT(*) as count, SUM(quantity) as total_qty')
+            ->groupBy('reason', 'type')
+            ->get();
+
+        return [
+            'generated_at'      => now()->toISOString(),
+            'total_erp_value'   => (int) $lines->sum('erp_value_cents'),
+            'lines_by_category' => $lines,
+            'movements_summary' => $movementsSummary,
+        ];
     }
 }

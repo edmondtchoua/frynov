@@ -33,13 +33,15 @@ class AdminApiTest extends TestCase
             'status' => 'active',
         ]);
 
+        // is_super_admin is NOT fillable (security: prevent mass-assignment).
+        // Use forceFill() or promoteToSuperAdmin() for internal test setup.
         $this->superAdmin = User::create([
-            'name'           => 'Super Admin',
-            'email'          => 'superadmin@nexora.com',
-            'password'       => Hash::make('Admin123!'),
-            'is_super_admin' => true,
-            'tenant_id'      => null,
+            'name'      => 'Super Admin',
+            'email'     => 'superadmin@nexora.com',
+            'password'  => Hash::make('Admin123!'),
+            'tenant_id' => null,
         ]);
+        $this->superAdmin->promoteToSuperAdmin();
 
         $this->regularUser = User::create([
             'name'      => 'Regular User',
@@ -212,6 +214,65 @@ class AdminApiTest extends TestCase
             ->assertStatus(200);
     }
 
+    #[Test]
+    public function super_admin_can_update_plan_limits(): void
+    {
+        $plan = Plan::create([
+            'code'                => Plan::CODE_STARTER,
+            'name'                => 'Starter',
+            'price_monthly_cents' => 0,
+            'price_yearly_cents'  => 0,
+            'currency'            => 'XOF',
+            'trial_days'          => 14,
+            'is_active'           => true,
+            'is_public'           => true,
+            'sort_order'          => 1,
+        ]);
+
+        $this->patchJson("/api/admin/plans/{$plan->id}", [
+            'limits' => [
+                'max_products'   => 250,
+                'max_warehouses' => 2,
+                'storage_mb'     => 500,
+            ],
+        ], $this->adminAuth())
+            ->assertStatus(200)
+            ->assertJsonPath('limits.max_products', 250);
+
+        $this->assertDatabaseHas('plan_limits', [
+            'plan_id'        => $plan->id,
+            'max_products'   => 250,
+            'max_warehouses' => 2,
+            'storage_mb'     => 500,
+        ]);
+    }
+
+    #[Test]
+    public function updating_a_legacy_quota_field_mirrors_into_plan_limits(): void
+    {
+        $plan = Plan::create([
+            'code'                => Plan::CODE_STARTER,
+            'name'                => 'Starter',
+            'price_monthly_cents' => 0,
+            'price_yearly_cents'  => 0,
+            'currency'            => 'XOF',
+            'trial_days'          => 14,
+            'is_active'           => true,
+            'is_public'           => true,
+            'sort_order'          => 1,
+        ]);
+        // Pre-existing canonical row with a stale ceiling.
+        $plan->limits()->create(['max_products' => 10]);
+
+        $this->patchJson("/api/admin/plans/{$plan->id}", [
+            'max_products' => 999,
+        ], $this->adminAuth())->assertStatus(200);
+
+        // The legacy edit must propagate to plan_limits (the row QuotaService reads first),
+        // otherwise the admin's change would be silently ignored at enforcement time.
+        $this->assertDatabaseHas('plan_limits', ['plan_id' => $plan->id, 'max_products' => 999]);
+    }
+
     // ── Audit log ─────────────────────────────────────────────────────────────
 
     #[Test]
@@ -246,5 +307,28 @@ class AdminApiTest extends TestCase
         $this->assertDatabaseHas('tenant_modules', [
             'tenant_id' => $this->tenant->id,
         ]);
+    }
+
+    // ── Privilege escalation guard on editable plan limits ────────────────────
+
+    #[Test]
+    public function regular_user_cannot_edit_plan_limits(): void
+    {
+        $plan = Plan::create([
+            'code' => Plan::CODE_STARTER, 'name' => 'Starter', 'price_monthly_cents' => 0,
+            'price_yearly_cents' => 0, 'currency' => 'XOF', 'trial_days' => 14,
+            'is_active' => true, 'is_public' => true, 'sort_order' => 1,
+        ]);
+        $plan->limits()->create(['max_products' => 100]);
+
+        // A tenant user must NOT be able to raise plan quotas (privilege escalation /
+        // revenue integrity). Editing plans is super-admin only (RequireAdmin).
+        $this->patchJson("/api/admin/plans/{$plan->id}", [
+            'limits' => ['max_products' => 999999],
+        ], $this->userAuth())->assertStatus(403);
+
+        // The canonical limit must be untouched.
+        $this->assertDatabaseHas('plan_limits', ['plan_id' => $plan->id, 'max_products' => 100]);
+        $this->assertDatabaseMissing('plan_limits', ['plan_id' => $plan->id, 'max_products' => 999999]);
     }
 }

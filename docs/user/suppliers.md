@@ -47,6 +47,13 @@ Le formulaire s'ouvre en modal :
 
 ---
 
+## Consulter la fiche d'un fournisseur
+
+Cliquez sur le nom d'un fournisseur dans la liste pour accéder à sa fiche complète.
+Vous pouvez modifier ses informations en cliquant sur Modifier.
+
+---
+
 ## Modifier un fournisseur
 
 Cliquez sur le **crayon ✏** dans la ligne du fournisseur. Le même formulaire s'ouvre pré-rempli.

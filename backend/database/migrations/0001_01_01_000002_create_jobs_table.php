@@ -37,12 +37,13 @@ return new class extends Migration
         Schema::create('failed_jobs', function (Blueprint $table) {
             $table->id();
             $table->string('uuid')->unique();
-            $table->string('connection');
-            $table->string('queue');
+            $table->string('connection', 100); // explicit limit to keep composite index < 1000 bytes
+            $table->string('queue', 100);      // on MySQL/MariaDB without innodb_large_prefix
             $table->longText('payload');
             $table->longText('exception');
             $table->timestamp('failed_at')->useCurrent();
 
+            // 100 chars × 4 bytes (utf8mb4) × 2 cols + 4 bytes (timestamp) = 804 bytes ✓
             $table->index(['connection', 'queue', 'failed_at']);
         });
     }

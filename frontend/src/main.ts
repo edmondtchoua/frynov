@@ -2,7 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Aura from '@primevue/themes/aura'
-import 'primeicons/primeicons.css'
+// import 'primeicons/primeicons.css'  // disabled: package has broken exports in this env
 
 import App    from './App.vue'
 import router from './router'

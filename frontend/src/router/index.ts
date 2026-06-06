@@ -2,7 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { setupGuards } from './guards'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  // createWebHistory() without base URL prevents the //path double-slash bug
+  // in Vue Router 4 when BASE_URL = '/'
+  history: createWebHistory(),
   scrollBehavior: (to, _from, savedPosition) => {
     if (savedPosition) return savedPosition
     if (to.hash) return { el: to.hash, behavior: 'smooth' }
@@ -64,14 +66,36 @@ const router = createRouter({
           component: () => import('@/modules/catalog/views/ProductFormView.vue'),
         },
         {
+          // ── Detail / consultation page (Sprint 17) ──
           path: 'products/:id',
           name: 'catalog.products.show',
+          component: () => import('@/modules/catalog/views/ProductShowPage.vue'),
+        },
+        {
+          // ── Edit form — separate from show page ──
+          path: 'products/:id/edit',
+          name: 'catalog.products.edit',
           component: () => import('@/modules/catalog/views/ProductFormView.vue'),
         },
         {
           path: 'categories',
           name: 'catalog.categories',
           component: () => import('@/modules/catalog/views/CategoryListView.vue'),
+        },
+        {
+          path: 'variants',
+          name: 'catalog.variants',
+          component: () => import('@/modules/catalog/views/VariantsView.vue'),
+        },
+        {
+          path: 'labels',
+          name: 'catalog.labels',
+          component: () => import('@/modules/catalog/views/LabelPrintView.vue'),
+        },
+        {
+          path: 'attributes',
+          name: 'catalog.attributes',
+          component: () => import('@/modules/catalog/views/AttributesView.vue'),
         },
       ],
     },
@@ -96,6 +120,39 @@ const router = createRouter({
           name: 'inventory.movements',
           component: () => import('@/modules/inventory/views/MovementHistoryView.vue'),
         },
+        {
+          path: 'warehouses',
+          name: 'inventory.warehouses',
+          component: () => import('@/modules/inventory/views/WarehouseView.vue'),
+        },
+        {
+          path: 'transfers',
+          name: 'inventory.transfers',
+          component: () => import('@/modules/inventory/views/StockTransferView.vue'),
+        },
+        {
+          path: 'fiscal-periods',
+          name: 'inventory.fiscal-periods',
+          component: () => import('@/modules/inventory/views/FiscalPeriodView.vue'),
+        },
+        {
+          path: 'batch-delivery',
+          name: 'inventory.batch-delivery',
+          component: () => import('@/modules/inventory/views/BatchDeliveryView.vue'),
+        },
+      ],
+    },
+
+    // ── Marketplace ───────────────────────────────────────────────────────
+    {
+      path: '/marketplace',
+      meta: { layout: 'app' },
+      children: [
+        {
+          path: '',
+          name: 'marketplace.listings',
+          component: () => import('@/modules/marketplace/views/MarketplaceListingsView.vue'),
+        },
       ],
     },
 
@@ -115,9 +172,32 @@ const router = createRouter({
           component: () => import('@/modules/orders/views/OrderCreateView.vue'),
         },
         {
+          path: 'returns',
+          name: 'orders.returns',
+          component: () => import('@/modules/orders/views/ReturnsView.vue'),
+        },
+        {
           path: ':id',
           name: 'orders.show',
           component: () => import('@/modules/orders/views/OrderDetailView.vue'),
+        },
+      ],
+    },
+
+    // ── Billing ───────────────────────────────────────────────────────────
+    {
+      path: '/billing',
+      meta: { layout: 'app' },
+      children: [
+        {
+          path: '',
+          name: 'billing',
+          component: () => import('@/modules/billing/views/BillingView.vue'),
+        },
+        {
+          path: 'upgrade',
+          name: 'billing.upgrade',
+          component: () => import('@/modules/billing/views/UpgradeView.vue'),
         },
       ],
     },
@@ -153,6 +233,14 @@ const router = createRouter({
       ],
     },
 
+    // ── Point de vente (POS) ──────────────────────────────────────────────
+    {
+      path: '/pos',
+      name: 'pos',
+      component: () => import('@/modules/pos/views/PosView.vue'),
+      meta: { layout: 'app' },
+    },
+
     // ── Deliveries ────────────────────────────────────────────────────────
     {
       path: '/deliveries',
@@ -176,6 +264,12 @@ const router = createRouter({
           name: 'suppliers.list',
           component: () => import('@/modules/suppliers/views/SupplierListView.vue'),
         },
+        {
+          path: ':id',
+          name: 'suppliers.show',
+          component: () => import('@/modules/suppliers/views/SupplierDetailView.vue'),
+          meta: { layout: 'app', title: 'Fournisseur' },
+        },
       ],
     },
 
@@ -184,6 +278,7 @@ const router = createRouter({
       path: '/import',
       meta: { layout: 'app' },
       children: [
+        { path: '', redirect: { name: 'import.history' } },
         {
           path: 'history',
           name: 'import.history',
@@ -202,6 +297,7 @@ const router = createRouter({
       path: '/reports',
       meta: { layout: 'app' },
       children: [
+        { path: '', redirect: { name: 'reports.sales' } },
         {
           path: 'sales',
           name: 'reports.sales',
@@ -223,6 +319,14 @@ const router = createRouter({
       meta: { layout: 'app' },
     },
 
+    // ── Profile (all authenticated users, incl. super-admin) ──────────────
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('@/modules/auth/views/ProfileView.vue'),
+      meta: { layout: 'app' },
+    },
+
     // ── Admin back-office ─────────────────────────────────────────────────
     {
       path: '/admin',
@@ -239,6 +343,11 @@ const router = createRouter({
           component: () => import('@/modules/admin/views/TenantListView.vue'),
         },
         {
+          path: 'tenants/:id',
+          name: 'admin.tenants.detail',
+          component: () => import('@/modules/admin/views/TenantDetailView.vue'),
+        },
+        {
           path: 'modules',
           name: 'admin.modules',
           component: () => import('@/modules/admin/views/ModuleListView.vue'),
@@ -247,6 +356,16 @@ const router = createRouter({
           path: 'plans',
           name: 'admin.plans',
           component: () => import('@/modules/admin/views/PlanListView.vue'),
+        },
+        {
+          path: 'promotions',
+          name: 'admin.promotions',
+          component: () => import('@/modules/admin/views/PromotionListView.vue'),
+        },
+        {
+          path: 'manual-payments',
+          name: 'admin.manual-payments',
+          component: () => import('@/modules/admin/views/ManualPaymentView.vue'),
         },
         {
           path: 'audit',

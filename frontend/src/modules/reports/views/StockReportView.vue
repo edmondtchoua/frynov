@@ -1,6 +1,8 @@
 <template>
   <div>
 
+    <ReportsTabNav />
+
     <div class="page-header">
       <div>
         <h2>Rapport de stock</h2>
@@ -155,6 +157,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import ReportsTabNav from '../components/ReportsTabNav.vue'
 import { reportService, formatMoneyCompact, type StockData } from '../services/reportService'
 
 const loading = ref(true)

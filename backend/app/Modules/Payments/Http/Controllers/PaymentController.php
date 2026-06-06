@@ -4,6 +4,7 @@ namespace App\Modules\Payments\Http\Controllers;
 
 use App\Modules\Orders\Models\Order;
 use App\Modules\Payments\Http\Resources\PaymentResource;
+use App\Modules\Payments\Models\Payment;
 use App\Modules\Payments\Services\PaymentService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +22,7 @@ class PaymentController extends Controller
     {
         $payments = $this->service->list(
             tenantId: $request->user()->tenant_id,
-            filters:  $request->only(['order_id', 'method', 'from', 'to', 'per_page']),
+            filters:  $request->only(['order_id', 'method', 'from', 'to', 'per_page', 'warehouse_id']),
         );
 
         return PaymentResource::collection($payments);
@@ -31,6 +32,19 @@ class PaymentController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $idempotencyKey = $request->header('X-Idempotency-Key');
+
+        if ($idempotencyKey) {
+            $existing = Payment::where('tenant_id', $request->user()->tenant_id)
+                ->where('idempotency_key', $idempotencyKey)
+                ->first();
+
+            if ($existing) {
+                $existing->load('order');
+                return response()->json(['data' => new PaymentResource($existing)]);
+            }
+        }
+
         $data = $request->validate([
             'order_id'     => ['nullable', 'uuid'],
             'amount_cents' => ['required', 'integer', 'min:1'],
@@ -51,7 +65,11 @@ class PaymentController extends Controller
             }
         }
 
-        $payment = $this->service->record($data, $request->user()->tenant_id, $request->user()->id);
+        $payment = $this->service->record(
+            $data + ['idempotency_key' => $idempotencyKey],
+            $request->user()->tenant_id,
+            $request->user()->id,
+        );
         $payment->load('order');
 
         // Append balance info when linked to an order
@@ -83,6 +101,11 @@ class PaymentController extends Controller
 
     public function destroy(Request $request, string $id): JsonResponse
     {
+        // Sprint 11: only admin/manager can void payments — viewers/members must not
+        if (!$request->user()->hasAnyRole(['admin', 'manager'])) {
+            return response()->json(['message' => 'Action réservée aux administrateurs et managers.'], 403);
+        }
+
         try {
             $payment = $this->service->findOrFail($id, $request->user()->tenant_id);
         } catch (ModelNotFoundException) {

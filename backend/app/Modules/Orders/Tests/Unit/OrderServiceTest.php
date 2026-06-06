@@ -4,6 +4,7 @@ namespace App\Modules\Orders\Tests\Unit;
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Services\StockService;
 use App\Modules\Orders\Exceptions\OrderStateException;
 use App\Modules\Orders\Models\Order;
@@ -189,17 +190,45 @@ class OrderServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_uses_custom_unit_price_when_provided(): void
+    public function client_supplied_price_is_ignored_and_db_price_is_used(): void
     {
+        // SECURITY (OWASP API6): unit_price_cents supplied by the client
+        // must be silently ignored. Price ALWAYS comes from products.price_amount.
+        // This prevents price manipulation attacks (e.g. buying at 1 centime).
         $order = $this->service->create([
             'items' => [[
                 'product_id'       => $this->product->id,
                 'quantity'         => 2,
-                'unit_price_cents' => 20000, // discounted
+                'unit_price_cents' => 20000, // client attack: try to use discounted price
             ]],
         ], $this->tenant->id, $this->user->id);
 
-        $this->assertEquals(40000, $order->total_amount);
-        $this->assertEquals(20000, $order->lines->first()->unit_price_cents);
+        // Products are created with price_amount = 25000 in setUp
+        // Total must be 2 × 25000 = 50000, NOT 2 × 20000 = 40000
+        $this->assertEquals(50000, $order->total_amount,
+            'Price manipulation: client-supplied price must be ignored');
+        $this->assertEquals(25000, $order->lines->first()->unit_price_cents,
+            'Line item must use DB price, not client-supplied price');
+    }
+
+    #[Test]
+    public function paginate_filters_orders_by_warehouse(): void
+    {
+        // Sprint 20 multi-sites: list orders scoped to a single site/warehouse.
+        $whA = Warehouse::create(['tenant_id' => $this->tenant->id, 'name' => 'Dépôt A', 'code' => 'WH-A', 'is_default' => true]);
+        $whB = Warehouse::create(['tenant_id' => $this->tenant->id, 'name' => 'Dépôt B', 'code' => 'WH-B', 'is_default' => false]);
+
+        $orderA = $this->service->create(['items' => [['product_id' => $this->product->id, 'quantity' => 1]]], $this->tenant->id, $this->user->id);
+        $orderA->warehouse_id = $whA->id;
+        $orderA->save();
+
+        $orderB = $this->service->create(['items' => [['product_id' => $this->product->id, 'quantity' => 1]]], $this->tenant->id, $this->user->id);
+        $orderB->warehouse_id = $whB->id;
+        $orderB->save();
+
+        $onlyA = $this->service->paginate($this->tenant->id, 20, null, $whA->id);
+        $this->assertSame([$orderA->id], collect($onlyA->items())->pluck('id')->all());
+
+        $this->assertCount(2, $this->service->paginate($this->tenant->id, 20, null, null)->items());
     }
 }

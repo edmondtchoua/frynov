@@ -239,4 +239,39 @@ class ModuleRegistryServiceTest extends TestCase
             'module_id' => $inventory->id,
         ]);
     }
+
+    #[Test]
+    public function downgrade_deactivates_modules_not_in_the_new_plan(): void
+    {
+        $catalog  = $this->makeModule('catalog');
+        $payments = $this->makeModule('payments');
+
+        $pro = Plan::create([
+            'code' => 'pro-d', 'name' => 'Pro', 'price_monthly_cents' => 0, 'price_yearly_cents' => 0,
+            'currency' => 'XOF', 'trial_days' => 0, 'is_active' => true, 'is_public' => true, 'sort_order' => 2,
+        ]);
+        $pro->modules()->attach($catalog->id,  ['is_included' => true, 'limits' => null]);
+        $pro->modules()->attach($payments->id, ['is_included' => true, 'limits' => null]);
+
+        $starter = Plan::create([
+            'code' => 'starter-d', 'name' => 'Starter', 'price_monthly_cents' => 0, 'price_yearly_cents' => 0,
+            'currency' => 'XOF', 'trial_days' => 0, 'is_active' => true, 'is_public' => true, 'sort_order' => 1,
+        ]);
+        $starter->modules()->attach($catalog->id, ['is_included' => true, 'limits' => null]);
+
+        // Tenant on Pro: both modules active
+        $this->service->activatePlanModules($this->tenant, $pro);
+        $this->assertDatabaseHas('tenant_modules', [
+            'tenant_id' => $this->tenant->id, 'module_id' => $payments->id, 'status' => TenantModule::STATUS_ACTIVE,
+        ]);
+
+        // Downgrade to Starter: payments must be deactivated, catalog stays active
+        $this->service->activatePlanModules($this->tenant, $starter);
+        $this->assertDatabaseHas('tenant_modules', [
+            'tenant_id' => $this->tenant->id, 'module_id' => $catalog->id, 'status' => TenantModule::STATUS_ACTIVE,
+        ]);
+        $this->assertDatabaseHas('tenant_modules', [
+            'tenant_id' => $this->tenant->id, 'module_id' => $payments->id, 'status' => TenantModule::STATUS_INACTIVE,
+        ]);
+    }
 }

@@ -242,13 +242,17 @@ class ImportService
                     }
 
                     try {
-                        $entityId = $this->executeRow($session, $row);
+                        // Per-row savepoint: if executeRow fails mid-way (e.g. SKU
+                        // collision after a category/supplier firstOrCreate), roll back
+                        // ONLY this row's writes so no orphan category/supplier is left.
+                        $entityId = DB::transaction(fn () => $this->executeRow($session, $row));
                         $row->update([
                             'status'    => ImportRow::STATUS_IMPORTED,
                             'entity_id' => $entityId,
                         ]);
                         $importedRows++;
                     } catch (\Throwable $e) {
+                        // Marked outside the rolled-back savepoint (outer tx still valid)
                         $row->update([
                             'status' => ImportRow::STATUS_ERROR,
                             'errors' => [['field' => 'general', 'message' => $e->getMessage()]],

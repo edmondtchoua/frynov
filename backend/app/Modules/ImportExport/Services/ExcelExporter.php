@@ -134,7 +134,7 @@ class ExcelExporter
         $sheet->freezePane('A2');
 
         $spreadsheet->getProperties()
-            ->setCreator('Nexora ERP')
+            ->setCreator('Frynov ERP')
             ->setTitle($title . ' — Export ' . date('d/m/Y'));
 
         return $spreadsheet;

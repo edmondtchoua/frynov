@@ -2,11 +2,14 @@
 
 namespace App\Modules\ImportExport\Services;
 
+use App\Modules\Catalog\Models\Category;
+use App\Modules\Suppliers\Models\Supplier;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -21,7 +24,7 @@ class TemplateService
 {
     private static array $templates = [
         'products' => [
-            'title'    => 'Import Produits — Nexora ERP',
+            'title'    => 'Import Produits — Frynov ERP',
             'filename' => 'template_produits.xlsx',
             'headers'  => [
                 'SKU'             => ['required' => true,  'note' => 'Identifiant unique du produit (obligatoire)'],
@@ -38,7 +41,7 @@ class TemplateService
             'example' => ['PROD-001', 'T-Shirt Coton Premium', '15000', 'T-shirt 100% coton, coupe moderne', '8000', '5901234123457', 'Vêtements', 'Fournisseur ABC', '0.3', 'active'],
         ],
         'customers' => [
-            'title'    => 'Import Clients — Nexora ERP',
+            'title'    => 'Import Clients — Frynov ERP',
             'filename' => 'template_clients.xlsx',
             'headers'  => [
                 'Nom'         => ['required' => true,  'note' => 'Nom complet ou raison sociale (obligatoire)'],
@@ -50,7 +53,7 @@ class TemplateService
             'example' => ['Amadou Traoré', 'amadou@exemple.com', '+225 07 00 00 00', 'Abidjan, Plateau', ''],
         ],
         'suppliers' => [
-            'title'    => 'Import Fournisseurs — Nexora ERP',
+            'title'    => 'Import Fournisseurs — Frynov ERP',
             'filename' => 'template_fournisseurs.xlsx',
             'headers'  => [
                 'Nom'                  => ['required' => true,  'note' => 'Raison sociale (obligatoire)'],
@@ -66,12 +69,12 @@ class TemplateService
         ],
     ];
 
-    public function download(string $entityType): StreamedResponse
+    public function download(string $entityType, ?string $tenantId = null): StreamedResponse
     {
         $tpl = self::$templates[$entityType]
             ?? throw new \InvalidArgumentException("Type inconnu: {$entityType}");
 
-        $spreadsheet = $this->build($tpl);
+        $spreadsheet = $this->build($tpl, $this->resolveDropdowns($entityType, $tenantId));
         $filename    = $tpl['filename'];
 
         return new StreamedResponse(function () use ($spreadsheet) {
@@ -84,7 +87,44 @@ class TemplateService
         ]);
     }
 
-    private function build(array $tpl): Spreadsheet
+    /**
+     * Build the dropdown map (header → allowed values) for a template:
+     * - tenant-data lists (categories, suppliers) resolved from the DB, scoped to
+     *   the tenant — the user picks what already exists (still free-text: a new name
+     *   is created at import);
+     * - fixed enum lists (status) always offered.
+     *
+     * @return array<string, list<string>>
+     */
+    private function resolveDropdowns(string $entityType, ?string $tenantId): array
+    {
+        // Fixed enum lists (independent of tenant data).
+        $static = [
+            'products'  => ['Statut' => ['active', 'draft']],
+            'suppliers' => ['Statut' => ['active', 'inactive']],
+        ];
+        $dropdowns = $static[$entityType] ?? [];
+
+        if (! $tenantId) {
+            return $dropdowns;
+        }
+
+        // Tenant-data lists — only the columns the template actually has.
+        if ($entityType === 'products') {
+            $categories = Category::where('tenant_id', $tenantId)->orderBy('name')->pluck('name')->filter()->values()->all();
+            if ($categories !== []) {
+                $dropdowns['Catégorie'] = $categories;
+            }
+            $suppliers = Supplier::where('tenant_id', $tenantId)->orderBy('name')->pluck('name')->filter()->values()->all();
+            if ($suppliers !== []) {
+                $dropdowns['Fournisseur'] = $suppliers;
+            }
+        }
+
+        return $dropdowns;
+    }
+
+    private function build(array $tpl, array $dropdowns = []): Spreadsheet
     {
         $spreadsheet = new Spreadsheet();
         $sheet       = $spreadsheet->getActiveSheet();
@@ -134,13 +174,72 @@ class TemplateService
         ]);
         $sheet->mergeCells('A' . $legendRow . ':' . chr(64 + $colCount) . $legendRow);
 
+        // ── Dropdowns (data-validation lists) on selected columns ─────────────
+        if ($dropdowns !== []) {
+            $this->applyDropdowns($spreadsheet, $sheet, $headers, $dropdowns);
+        }
+
         // Freeze header row
         $sheet->freezePane('A2');
 
         $spreadsheet->getProperties()
-            ->setCreator('Nexora ERP')
+            ->setCreator('Frynov ERP')
             ->setTitle($tpl['title']);
 
         return $spreadsheet;
+    }
+
+    /**
+     * Add Excel data-validation dropdowns. Values live on a hidden "Listes" sheet
+     * (referenced by range, so any number of entries works — unlike the 255-char
+     * inline-list limit). INFORMATION style keeps it non-blocking: a value outside
+     * the list is allowed (and created at import).
+     *
+     * @param  array<string, list<string>>  $dropdowns  header name → allowed values
+     */
+    private function applyDropdowns(Spreadsheet $spreadsheet, $sheet, array $headers, array $dropdowns): void
+    {
+        $listSheet = null;
+        $listColIdx = 0;
+
+        foreach ($dropdowns as $headerName => $values) {
+            $colIdx = array_search($headerName, $headers, true);
+            if ($colIdx === false || $values === []) {
+                continue;
+            }
+
+            if ($listSheet === null) {
+                $listSheet = $spreadsheet->createSheet();
+                $listSheet->setTitle('Listes');
+                $listSheet->setSheetState(Worksheet::SHEETSTATE_HIDDEN);
+            }
+
+            $listColLetter = chr(65 + $listColIdx);
+            foreach ($values as $i => $name) {
+                $listSheet->setCellValue($listColLetter . ($i + 1), $name);
+            }
+            $rangeRef = "Listes!\${$listColLetter}\$1:\${$listColLetter}\$" . count($values);
+
+            $dataColLetter = chr(65 + $colIdx);
+            $validation = new DataValidation();
+            $validation->setType(DataValidation::TYPE_LIST);
+            $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
+            $validation->setAllowBlank(true);
+            $validation->setShowDropDown(true);
+            $validation->setShowInputMessage(true);
+            $validation->setShowErrorMessage(true);
+            $validation->setPromptTitle($headerName);
+            $validation->setPrompt('Choisissez dans la liste ou saisissez un nouveau nom (créé à l’import).');
+            $validation->setErrorTitle('Hors liste');
+            $validation->setError('Cette valeur n’est pas dans la liste — elle sera créée à l’import.');
+            $validation->setFormula1($rangeRef);
+
+            $sheet->setDataValidation("{$dataColLetter}2:{$dataColLetter}500", $validation);
+
+            // Use a real value in the example row for coherence.
+            $sheet->setCellValue($dataColLetter . '2', $values[0]);
+
+            $listColIdx++;
+        }
     }
 }

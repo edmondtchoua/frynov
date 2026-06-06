@@ -1,5 +1,6 @@
 <template>
   <div>
+    <SalesTabNav />
     <div class="page-header">
       <div>
         <h2>Livraisons</h2>
@@ -204,7 +205,9 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { formatDateShort } from '@/shared/utils/date'
 import { RouterLink } from 'vue-router'
+import SalesTabNav from '../../orders/components/SalesTabNav.vue'
 import { deliveryService } from '../services/deliveryService'
 import type { Delivery, DeliveryStatus } from '../types'
 
@@ -328,9 +331,7 @@ function statusBadge(s: DeliveryStatus): string {
   } as Record<DeliveryStatus, string>)[s] ?? 'badge-gray'
 }
 
-function fmtDate(iso: string): string {
-  return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short' }).format(new Date(iso))
-}
+const fmtDate = formatDateShort
 
 onMounted(load)
 </script>

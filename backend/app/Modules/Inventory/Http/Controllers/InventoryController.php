@@ -15,6 +15,7 @@ use App\Modules\Inventory\Services\StockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 
 class InventoryController extends Controller
 {
@@ -26,10 +27,36 @@ class InventoryController extends Controller
     // GET /api/inventory/stock
     public function index(Request $request): JsonResponse
     {
-        $stocks = Stock::where('tenant_id', $request->user()->tenant_id)
-            ->with(['product', 'variant'])
-            ->orderBy('created_at')
-            ->paginate(50);
+        $query = Stock::where('stocks.tenant_id', $request->user()->tenant_id)
+            ->with(['product.category', 'variant', 'warehouse:id,name,code,type']);
+
+        // Filter by warehouse
+        if ($warehouseId = $request->query('warehouse_id')) {
+            \App\Modules\Inventory\Models\Warehouse::where('tenant_id', $request->user()->tenant_id)
+                ->where('id', $warehouseId)->firstOrFail();
+            $query->where('stocks.warehouse_id', $warehouseId);
+        }
+
+        // Search by product name or SKU
+        if ($search = $request->query('search')) {
+            $query->whereHas('product', fn ($q) => $q
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('sku',  'like', "%{$search}%")
+            );
+        }
+
+        // Filter by category (including sub-categories)
+        if ($categoryId = $request->query('category_id')) {
+            $query->whereHas('product', fn ($q) => $q->where('category_id', $categoryId));
+        }
+
+        // Filter low stock
+        if ($request->boolean('low_stock')) {
+            $query->where('low_stock_threshold', '>', 0)
+                  ->whereRaw('(quantity - reserved_quantity) <= low_stock_threshold');
+        }
+
+        $stocks = $query->latest('stocks.updated_at')->paginate(50);
 
         return response()->json($stocks);
     }
@@ -39,6 +66,10 @@ class InventoryController extends Controller
     {
         $variantId = $request->query('variant_id');
         $tenantId  = $request->user()->tenant_id;
+
+        // Sprint 11: verify product belongs to tenant before accessing its stock
+        $product = \App\Modules\Catalog\Models\Product::where('tenant_id', $tenantId)
+            ->where('id', $productId)->firstOrFail();
 
         $stock = $this->stockService->findOrCreate($tenantId, $productId, $variantId);
         $stock->load(['product', 'variant']);
@@ -55,6 +86,9 @@ class InventoryController extends Controller
     {
         $variantId = $request->query('variant_id');
         $tenantId  = $request->user()->tenant_id;
+
+        $product = \App\Modules\Catalog\Models\Product::where('tenant_id', $tenantId)
+            ->where('id', $productId)->firstOrFail();
 
         $stock     = $this->stockService->findOrCreate($tenantId, $productId, $variantId);
         $paginator = $this->inventoryService->movementHistory($stock, (int) $request->query('per_page', 20));
@@ -205,5 +239,42 @@ class InventoryController extends Controller
         $items = $this->stockService->lowStockItems($request->user()->tenant_id);
 
         return response()->json($items);
+    }
+
+    /**
+     * GET /api/inventory/warehouses/{id}/summary
+     * Returns KPI aggregates for a specific warehouse:
+     *   sku_count, total_qty, available_qty, low_stock_count, total_value_cents
+     */
+    public function warehouseSummary(Request $request, string $id): JsonResponse
+    {
+        $tenantId = $request->user()->tenant_id;
+
+        // Sprint 11: verify warehouse belongs to tenant (prevents UUID oracle)
+        \App\Modules\Inventory\Models\Warehouse::where('tenant_id', $tenantId)
+            ->where('id', $id)->firstOrFail();
+
+        $row = DB::table('stocks')
+            ->where('tenant_id',   $tenantId)
+            ->where('warehouse_id', $id)
+            ->selectRaw('
+                COUNT(*) as sku_count,
+                COALESCE(SUM(quantity), 0) as total_qty,
+                COALESCE(SUM(quantity - reserved_quantity), 0) as available_qty,
+                COALESCE(SUM(CASE WHEN quantity <= low_stock_threshold AND low_stock_threshold > 0 THEN 1 ELSE 0 END), 0) as low_stock_count,
+                COALESCE(SUM(total_value_cents), 0) as total_value_cents
+            ')
+            ->first();
+
+        return response()->json([
+            'data' => [
+                'warehouse_id'      => $id,
+                'sku_count'         => (int) ($row->sku_count         ?? 0),
+                'total_qty'         => (int) ($row->total_qty          ?? 0),
+                'available_qty'     => (int) ($row->available_qty      ?? 0),
+                'low_stock_count'   => (int) ($row->low_stock_count    ?? 0),
+                'total_value_cents' => (int) ($row->total_value_cents  ?? 0),
+            ],
+        ]);
     }
 }

@@ -5,7 +5,7 @@
     <div class="auth-panel">
       <!-- Logo -->
       <RouterLink to="/" class="auth-logo-link">
-        <NexoraLogo variant="light" />
+        <FrynovLogo variant="light" />
       </RouterLink>
 
       <!-- Card -->
@@ -15,7 +15,7 @@
 
       <!-- Footer -->
       <p class="auth-footer">
-        &copy; {{ year }} Nexora ERP &mdash; Smart business. Real growth.
+        &copy; {{ year }} Frynov ERP &mdash; Smart business. Real growth.
       </p>
     </div>
   </div>
@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import NexoraLogo from '@/shared/components/NexoraLogo.vue'
+import FrynovLogo from '@/shared/components/FrynovLogo.vue'
 
 const year = new Date().getFullYear()
 </script>

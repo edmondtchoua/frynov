@@ -16,6 +16,26 @@
 
 ---
 
+## Gate sécurité audit — à faire passer par l’agent de remédiation
+
+> Ajout 2026-06-06 : l’audit sécurité est désormais traduit en tests d’acceptation exécutables. Toute implémentation/refactorisation de sécurité doit faire passer ces tests avant validation. Voir `docs/security/security-remediation-tests.md`.
+
+Suites prioritaires :
+
+- Backend : `php artisan test --filter=SecurityRemediationTest`
+- Backend : `php artisan test --filter=ModuleGatingTest`
+- Frontend : `npm run test:unit -- src/security/__tests__/frontendSecurity.spec.ts src/stores/__tests__/auth.spec.ts`
+
+Exigences bloquantes :
+
+- modules métier fail-closed côté serveur ;
+- permissions métier appliquées côté serveur ;
+- aucune relation cross-tenant via IDs front ;
+- preuves de paiement privées ;
+- audit trail vérifiable ;
+- plus de token Bearer persistant dans `localStorage`/`sessionStorage` ;
+- plus de `v-html` sur SVG/HTML venant de données modules.
+
 ## État global
 
 | Indicateur | Valeur |

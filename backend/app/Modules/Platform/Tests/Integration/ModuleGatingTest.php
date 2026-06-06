@@ -44,10 +44,10 @@ class ModuleGatingTest extends TestCase
     }
 
     #[Test]
-    public function an_unprovisioned_tenant_is_not_gated(): void
+    public function an_unprovisioned_tenant_is_fail_closed(): void
     {
-        // No tenant_modules rows at all → fail-open (keeps non-provisioning tests green).
-        $this->getReports()->assertOk();
+        // Security remediation: missing tenant_modules rows must never unlock paid modules.
+        $this->getReports()->assertStatus(403)->assertJsonPath('module', 'reports');
     }
 
     #[Test]

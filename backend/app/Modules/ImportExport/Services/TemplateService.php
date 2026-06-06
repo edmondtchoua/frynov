@@ -3,6 +3,7 @@
 namespace App\Modules\ImportExport\Services;
 
 use App\Modules\Catalog\Models\Category;
+use App\Modules\Suppliers\Models\Supplier;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -73,23 +74,7 @@ class TemplateService
         $tpl = self::$templates[$entityType]
             ?? throw new \InvalidArgumentException("Type inconnu: {$entityType}");
 
-        // For products, offer the tenant's existing categories as an Excel dropdown
-        // on the "Catégorie" column. It stays free-text (a new name creates the
-        // category at import), so the dropdown is a convenience, not a hard limit.
-        $dropdowns = [];
-        if ($entityType === 'products' && $tenantId) {
-            $categories = Category::where('tenant_id', $tenantId)
-                ->orderBy('name')
-                ->pluck('name')
-                ->filter()
-                ->values()
-                ->all();
-            if ($categories !== []) {
-                $dropdowns['Catégorie'] = $categories;
-            }
-        }
-
-        $spreadsheet = $this->build($tpl, $dropdowns);
+        $spreadsheet = $this->build($tpl, $this->resolveDropdowns($entityType, $tenantId));
         $filename    = $tpl['filename'];
 
         return new StreamedResponse(function () use ($spreadsheet) {
@@ -100,6 +85,43 @@ class TemplateService
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
             'Cache-Control'       => 'max-age=0',
         ]);
+    }
+
+    /**
+     * Build the dropdown map (header → allowed values) for a template:
+     * - tenant-data lists (categories, suppliers) resolved from the DB, scoped to
+     *   the tenant — the user picks what already exists (still free-text: a new name
+     *   is created at import);
+     * - fixed enum lists (status) always offered.
+     *
+     * @return array<string, list<string>>
+     */
+    private function resolveDropdowns(string $entityType, ?string $tenantId): array
+    {
+        // Fixed enum lists (independent of tenant data).
+        $static = [
+            'products'  => ['Statut' => ['active', 'draft']],
+            'suppliers' => ['Statut' => ['active', 'inactive']],
+        ];
+        $dropdowns = $static[$entityType] ?? [];
+
+        if (! $tenantId) {
+            return $dropdowns;
+        }
+
+        // Tenant-data lists — only the columns the template actually has.
+        if ($entityType === 'products') {
+            $categories = Category::where('tenant_id', $tenantId)->orderBy('name')->pluck('name')->filter()->values()->all();
+            if ($categories !== []) {
+                $dropdowns['Catégorie'] = $categories;
+            }
+            $suppliers = Supplier::where('tenant_id', $tenantId)->orderBy('name')->pluck('name')->filter()->values()->all();
+            if ($suppliers !== []) {
+                $dropdowns['Fournisseur'] = $suppliers;
+            }
+        }
+
+        return $dropdowns;
     }
 
     private function build(array $tpl, array $dropdowns = []): Spreadsheet

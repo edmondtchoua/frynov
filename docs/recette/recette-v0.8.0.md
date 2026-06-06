@@ -131,6 +131,7 @@ npm install && npm run dev
 - [ ] **Fournisseurs** : CRUD, code auto
 - [ ] **Import** : session d'import terminée visible ; pipeline upload → mapping → approuver → exécuter (réservé `manager|admin`)
 - [ ] 🐛 **Régression corrigée** : **Modèles** (Produits/Clients/Fournisseurs) se **téléchargent** depuis l'écran Import/Export
+- [ ] **Modèle Produits — listes déroulantes** : ouvrir `template_produits.xlsx` → les colonnes **Catégorie** et **Fournisseur** proposent les valeurs **du tenant connecté** en liste déroulante, **Statut** propose `active`/`draft` ; une valeur hors liste reste acceptée (créée à l'import)
 - [ ] 🐛 **Régression corrigée** : **Export** (Produits/Clients/Fournisseurs xlsx) et **Rapport PDF** d'import se téléchargent (fichier reçu, **plus d'erreur « Route [login] not defined »**)
 - [ ] **Rapports** : ventes & valeur de stock (réservé `manager+`)
 - [ ] **Dashboard** : KPIs réels (CA, commandes, stock, clients), graphe

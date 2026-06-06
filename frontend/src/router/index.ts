@@ -131,6 +131,11 @@ const router = createRouter({
           component: () => import('@/modules/inventory/views/StockTransferView.vue'),
         },
         {
+          path: 'adjustments',
+          name: 'inventory.adjustments',
+          component: () => import('@/modules/inventory/views/StockAdjustmentView.vue'),
+        },
+        {
           path: 'fiscal-periods',
           name: 'inventory.fiscal-periods',
           component: () => import('@/modules/inventory/views/FiscalPeriodView.vue'),

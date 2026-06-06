@@ -32,8 +32,8 @@ promotions, manual-payments, country-rules, audit-logs), `public/{geo,pricing}`.
 
 | Route(s) backend | Constat | Recommandation |
 |---|---|---|
-| `GET/POST api/inventory/adjustments` (+ `/history`, `/{id}/approve`, `/{id}/reject`) | **Module Ajustement de stock** (workflow d'approbation) : backend complet + seedé, **0 appel frontend** | Câbler une vue Ajustements (Stock → Ajustements) — sinon le flux n'est pas utilisable par l'UI. **À planifier v1.0.x.** |
-| `PATCH api/admin/plans/{plan}` (+ `GET …/{plan}`) | Édition des **limites de plan** (super-admin) : API testée (P1), **pas câblée** dans `PlanListView` (lecture seule) | Ajouter le formulaire d'édition, ou assumer « édition via API/seed » pour v1. |
+| ~~`GET/POST api/inventory/adjustments` (+ `/history`, `/{id}/approve`, `/{id}/reject`)~~ | **Module Ajustement de stock** — ✅ **CÂBLÉ (v1.0.0-rc)** : onglet **Stock → Ajustements** (file d'attente + approuver/rejeter + nouvelle demande + historique). | Résolu. |
+| ~~`PATCH api/admin/plans/{plan}` (+ `GET …/{plan}`)~~ | Édition des **limites de plan** (super-admin) — ✅ **CÂBLÉ (v1.0.0-rc)** : bouton « Éditer les limites » + modale (`plan_limits`) dans `PlanListView`. | Résolu. |
 | `POST api/admin/audit-logs/verify-chain` | **Vérification d'intégrité** de la chaîne d'audit (HMAC) : pas de bouton UI | Ajouter un bouton « Vérifier la chaîne » dans `AuditLogView`. |
 | `POST api/inventory/count` | **Comptage d'inventaire** physique (batch) | UI d'inventaire tournant à câbler (présent mais non exposé). |
 | `PATCH api/inventory/stock/{stockId}/threshold` | Édition dédiée du **seuil d'alerte** | Câbler (aujourd'hui le seuil se définit à la création/réception). |
@@ -60,9 +60,9 @@ promotions, manual-payments, country-rules, audit-logs), `public/{geo,pricing}`.
 ## C. Synthèse & actions
 
 - **Liens frontend** : 100 % valides (aucun 404 potentiel par référence cassée). ✅
-- **Dette d'exposition** (présent mais non câblé) : surtout **Ajustements de stock** et
-  **édition des limites de plan** — backend testé, UI absente. À acter : câbler en v1.0.x
-  ou documenter comme « API-only » pour v1.0.0.
+- **Dette d'exposition** (présent mais non câblé) : ✅ **résorbée** pour les deux gaps
+  prioritaires — **Ajustements de stock** (onglet Stock → Ajustements) et **édition des limites
+  de plan** (modale `PlanListView`) sont désormais câblés (v1.0.0-rc, frontend 179).
 - **Futur** : QR codes, stats variantes, refresh token — endpoints prêts, à activer quand le besoin se confirme.
 - **Ops** : routes Horizon à laisser au dashboard d'exploitation, pas au SPA.
 

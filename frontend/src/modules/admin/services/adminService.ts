@@ -35,6 +35,17 @@ export interface AdminModule {
   total_activations: number
 }
 
+export interface AdminPlanLimits {
+  max_products: number | null
+  max_monthly_orders: number | null
+  max_customers: number | null
+  max_branches: number | null
+  max_warehouses: number | null
+  max_imports_per_month: number | null
+  max_api_calls_per_month: number | null
+  storage_mb: number | null
+}
+
 export interface AdminPlan {
   id: string
   code: string
@@ -50,6 +61,7 @@ export interface AdminPlan {
   features: string[]
   is_active: boolean
   is_public: boolean
+  limits?: AdminPlanLimits | null
 }
 
 export interface AdminManualPayment {
@@ -160,6 +172,11 @@ export const adminService = {
 
   async getPlans() {
     const { data } = await client.get<AdminPlan[]>('/api/admin/plans')
+    return data
+  },
+
+  async updatePlan(id: string, payload: Partial<AdminPlan> & { limits?: Partial<AdminPlanLimits> }) {
+    const { data } = await client.patch<AdminPlan>(`/api/admin/plans/${id}`, payload)
     return data
   },
 

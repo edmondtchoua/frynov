@@ -2,11 +2,13 @@
 
 namespace App\Modules\ImportExport\Services;
 
+use App\Modules\Catalog\Models\Category;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -66,12 +68,28 @@ class TemplateService
         ],
     ];
 
-    public function download(string $entityType): StreamedResponse
+    public function download(string $entityType, ?string $tenantId = null): StreamedResponse
     {
         $tpl = self::$templates[$entityType]
             ?? throw new \InvalidArgumentException("Type inconnu: {$entityType}");
 
-        $spreadsheet = $this->build($tpl);
+        // For products, offer the tenant's existing categories as an Excel dropdown
+        // on the "Catégorie" column. It stays free-text (a new name creates the
+        // category at import), so the dropdown is a convenience, not a hard limit.
+        $dropdowns = [];
+        if ($entityType === 'products' && $tenantId) {
+            $categories = Category::where('tenant_id', $tenantId)
+                ->orderBy('name')
+                ->pluck('name')
+                ->filter()
+                ->values()
+                ->all();
+            if ($categories !== []) {
+                $dropdowns['Catégorie'] = $categories;
+            }
+        }
+
+        $spreadsheet = $this->build($tpl, $dropdowns);
         $filename    = $tpl['filename'];
 
         return new StreamedResponse(function () use ($spreadsheet) {
@@ -84,7 +102,7 @@ class TemplateService
         ]);
     }
 
-    private function build(array $tpl): Spreadsheet
+    private function build(array $tpl, array $dropdowns = []): Spreadsheet
     {
         $spreadsheet = new Spreadsheet();
         $sheet       = $spreadsheet->getActiveSheet();
@@ -134,6 +152,11 @@ class TemplateService
         ]);
         $sheet->mergeCells('A' . $legendRow . ':' . chr(64 + $colCount) . $legendRow);
 
+        // ── Dropdowns (data-validation lists) on selected columns ─────────────
+        if ($dropdowns !== []) {
+            $this->applyDropdowns($spreadsheet, $sheet, $headers, $dropdowns);
+        }
+
         // Freeze header row
         $sheet->freezePane('A2');
 
@@ -142,5 +165,59 @@ class TemplateService
             ->setTitle($tpl['title']);
 
         return $spreadsheet;
+    }
+
+    /**
+     * Add Excel data-validation dropdowns. Values live on a hidden "Listes" sheet
+     * (referenced by range, so any number of entries works — unlike the 255-char
+     * inline-list limit). INFORMATION style keeps it non-blocking: a value outside
+     * the list is allowed (and created at import).
+     *
+     * @param  array<string, list<string>>  $dropdowns  header name → allowed values
+     */
+    private function applyDropdowns(Spreadsheet $spreadsheet, $sheet, array $headers, array $dropdowns): void
+    {
+        $listSheet = null;
+        $listColIdx = 0;
+
+        foreach ($dropdowns as $headerName => $values) {
+            $colIdx = array_search($headerName, $headers, true);
+            if ($colIdx === false || $values === []) {
+                continue;
+            }
+
+            if ($listSheet === null) {
+                $listSheet = $spreadsheet->createSheet();
+                $listSheet->setTitle('Listes');
+                $listSheet->setSheetState(Worksheet::SHEETSTATE_HIDDEN);
+            }
+
+            $listColLetter = chr(65 + $listColIdx);
+            foreach ($values as $i => $name) {
+                $listSheet->setCellValue($listColLetter . ($i + 1), $name);
+            }
+            $rangeRef = "Listes!\${$listColLetter}\$1:\${$listColLetter}\$" . count($values);
+
+            $dataColLetter = chr(65 + $colIdx);
+            $validation = new DataValidation();
+            $validation->setType(DataValidation::TYPE_LIST);
+            $validation->setErrorStyle(DataValidation::STYLE_INFORMATION);
+            $validation->setAllowBlank(true);
+            $validation->setShowDropDown(true);
+            $validation->setShowInputMessage(true);
+            $validation->setShowErrorMessage(true);
+            $validation->setPromptTitle($headerName);
+            $validation->setPrompt('Choisissez dans la liste ou saisissez un nouveau nom (créé à l’import).');
+            $validation->setErrorTitle('Hors liste');
+            $validation->setError('Cette valeur n’est pas dans la liste — elle sera créée à l’import.');
+            $validation->setFormula1($rangeRef);
+
+            $sheet->setDataValidation("{$dataColLetter}2:{$dataColLetter}500", $validation);
+
+            // Use a real value in the example row for coherence.
+            $sheet->setCellValue($dataColLetter . '2', $values[0]);
+
+            $listColIdx++;
+        }
     }
 }

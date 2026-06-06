@@ -23,7 +23,7 @@ Le socle ERP est **exploitable en production contrôlée** : modules métier cou
 | Dimension | Résultat | Détail |
 |---|---|---|
 | **Backend (unit + intégration)** | ✅ **597** (595 passés, **2 skipped**, 0 fatal, 0 incomplete) | Skips = contraintes `CHECK` **MySQL-only** (`StockIntegrityTest`), non exécutables sous SQLite, validées en prod. |
-| **Frontend (Vitest)** | ✅ **175** (31 fichiers) | Composants critiques, services, money, géo/pricing, multi-sites. |
+| **Frontend (Vitest)** | ✅ **179** (33 fichiers) | Composants critiques, services, money, géo/pricing, multi-sites, ajustements de stock, édition de plan. |
 | **Type-check** | ✅ `vue-tsc --noEmit` propre | — |
 | **Build prod** | ✅ `vite build` produit `dist/` | ⚠️ le script `npm run build` enchaîne `vue-tsc` : exécuter en CI après `npm ci` (vue-tsc est en devDependency). |
 
@@ -46,6 +46,8 @@ Le socle ERP est **exploitable en production contrôlée** : modules métier cou
 | **Multi-sites (Sprint 20)** : filtre entrepôt (listes + rapports) | ✅ | `docs/user/inventory.md` |
 | **Accès membre→sites (Sprint 20)** : modale « Sites » (Paramètres → Équipe) | ✅ | ce doc §5 |
 | **Admin Règles pays (Sprint 21)** : CRUD super-admin | ✅ | `docs/user/navigation.md` |
+| **Ajustements de stock** (Stock → Ajustements) : demande + validation manager + historique | ✅ câblé v1.0.0-rc | `route-audit-v1.0.0.md` |
+| **Édition des limites de plan** (super-admin, `PlanListView`) | ✅ câblé v1.0.0-rc | `route-audit-v1.0.0.md` |
 | Responsive (sidebar drawer, tableaux scrollables) | ✅ | recette v0.8.0 §13 |
 
 > Recommandé avant GO ferme : repasser la **recette v0.8.0** + les 5 nouveaux parcours ci-dessus sur un `migrate:fresh --seed`.

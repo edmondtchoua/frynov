@@ -82,7 +82,7 @@ Le socle ERP est **exploitable en production contrôlée** : modules métier cou
 
 | Limitation | Risque | Décision attendue |
 |---|---|---|
-| **Scoping d'accès = listes uniquement** | Un opérateur restreint connaissant l'UUID d'une ressource d'une autre agence peut l'ouvrir via `GET /orders/{id}`, `/payments/{id}`… (reste **tenant**-scopé, pas warehouse-scopé) | Accepter pour v1.0.0 (besoin de connaître l'UUID) **ou** durcir les GET ressource-unique avant prod. |
+| **Scoping d'accès = listes uniquement** | Un opérateur restreint connaissant l'UUID d'une ressource d'une autre agence peut l'ouvrir via `GET /orders/{id}`, `/payments/{id}`… (reste **tenant**-scopé, pas warehouse-scopé) | ✅ **Risque accepté pour le lancement v1.0.0** (2026-06-06) — exige de connaître un UUID v7 d'une autre agence du même tenant. À durcir en post-1.0 (durcissement des GET ressource-unique + tests). |
 | **Multi-sites** | Page « Agences » dédiée + métadonnées agence sur `Warehouse` non livrées (CRUD entrepôts + assignation membre→sites OK) | Post-1.0. |
 | **POS offline** | Non livré (Phase 2) | Hors scope v1.0.0. |
 

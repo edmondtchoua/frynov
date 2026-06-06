@@ -552,6 +552,58 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 
 ---
 
+## Architecture v2 — Multi-clusters par pays & souveraineté des données
+
+> Vision post-v1.0 : pour respecter la **souveraineté/résidence des données** (chaque pays
+> impose que les données de ses entreprises restent sur son sol), passer d'un déploiement
+> mono-cluster (v1, cf. [`docs/guides/deployment-vps.md`](guides/deployment-vps.md)) à
+> **un cluster + une base de données par pays**.
+
+### Cible
+
+```
+                    ┌────────────────────────────────────────────────┐
+   Visiteur/SPA ──▶ │  Résolveur de région (edge/DNS + /api/public/geo)│
+                    └───────────────┬───────────────┬────────────────┘
+                          country=SN │      country=CM │   country=FR …
+                    ┌───────────────▼──┐  ┌──────────▼──────┐  ┌────────▼────┐
+                    │ Cluster UEMOA    │  │ Cluster CEMAC   │  │ Cluster EU  │
+                    │ API + MySQL + Redis│ API + MySQL + Redis│ API + MySQL │  …un par zone/pays
+                    │ (données SN/CI/…) │  │ (données CM/…)  │  │ (données FR)│
+                    └──────────────────┘  └─────────────────┘  └─────────────┘
+```
+
+- **1 base par pays/zone** : les données tenant (catalogue, ventes, clients) **ne quittent pas**
+  leur juridiction. Mapping **tenant → cluster** figé à l'inscription (selon le pays).
+- **Plan de contrôle** (super-admin, facturation, plans, `CountryRule`) : soit central « fédéré »
+  (agrège les clusters en lecture), soit répliqué par cluster — à arbitrer (les données de
+  facturation peuvent être centralisées si la loi locale le permet, les données *opérationnelles* non).
+- **Auth** : tokens Sanctum **émis par le cluster** du tenant (pas de SSO cross-cluster en v2.0 ;
+  envisageable plus tard via un IdP central qui ne stocke pas les données métier).
+
+### Ce que la **v1 frontend** prépare déjà (pour ne pas re-développer en v2)
+
+- ✅ **SPA découplée** : artefact statique, l'URL d'API vient de `VITE_API_BASE_URL` (build-time) →
+  le **même** code se déploie vers n'importe quel cluster pays sans modification.
+- ✅ **Détection de marché/pays** déjà en place : `useGeoContent` + `GET /api/public/geo`
+  (pays via headers edge/CDN, RGPD-safe) + sélecteur manuel → brique réutilisable pour le
+  **résolveur de région** (country → base d'API du bon cluster).
+- ✅ **Pricing/contenu par marché** déjà branchés sur le backend (`/api/public/pricing`) → cohérents
+  par cluster.
+- 🔲 **À ajouter en v2 (côté frontend)** : une étape de **résolution de cluster** (country → `apiBaseUrl`)
+  avant login — soit via un petit endpoint « directory » public central (`/clusters?country=XX`),
+  soit via DNS géo (`api.<pays>.<domaine>`). Tant que c'est non livré, garder `VITE_API_BASE_URL`
+  mono-cluster ; le code n'a pas à changer, seule la **résolution** de l'URL devient dynamique.
+
+### Chantiers backend v2 (hors v1.0)
+
+- Connexions DB par pays (ou déploiements isolés) + provisioning tenant ciblant le bon cluster.
+- Service « directory » des clusters (public : country → endpoint ; privé : santé, capacité).
+- Back-office super-admin **fédéré** (vue multi-clusters) ou par-cluster.
+- Réplication/agrégation **uniquement** des données autorisées hors-sol (facturation/usage), jamais des données opérationnelles tenant.
+
+---
+
 ## Critères Go/No-Go beta (mise à jour)
 
 | Critère | Statut |

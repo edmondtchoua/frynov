@@ -1,6 +1,17 @@
 # Facturation et abonnement
 
-> **Dernière mise à jour :** 2026-06-04 — replanification pricing localisé.
+> **Dernière mise à jour :** 2026-06-06 — P4 : la page tarifs publique consomme la source backend.
+
+## Tarifs localisés sur la page publique (P4 — livré)
+
+La page d'accueil publique (`/`) affiche désormais les tarifs **dans la devise de votre pays**, et ces montants proviennent **du backend** (`GET /api/public/pricing`), jamais de valeurs codées en dur :
+
+- Le pays est déduit du réseau (couche CDN/edge, sans appel tiers) puis, à défaut, de la langue du navigateur.
+- Un **sélecteur « Tarifs pour »** permet de corriger manuellement le pays/la devise (utile derrière un VPN). Les prix se mettent à jour immédiatement.
+- Exemples : un visiteur au **Canada** voit des prix en **CAD**, en **France** en **EUR**, au **Sénégal** en **XOF**, au **Cameroun** en **XAF** — jamais un XOF par défaut hors zone FCFA.
+- Si l'API est momentanément injoignable, un repli local (déjà adapté à la devise) garde la page fonctionnelle.
+
+> Les prix affichés restent indicatifs tant que le checkout local par marché (P6) n'est pas livré ; la finalisation contractuelle se fait à la souscription.
 
 ## Principe de tarification cible
 

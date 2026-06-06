@@ -20,8 +20,8 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **573 ✅** (571 passed, 2 skipped, **0 incomplete**) — +recette v0.8.0 (auth login team-scope, import templates déroulantes) |
-| Tests Vitest frontend | **159 / 159 ✅** (+téléchargements authentifiés import/export) — couverture ~38 % |
+| Tests backend | **574 ✅** (572 passed, 2 skipped, **0 incomplete**) — +recette v0.8.0, +P4 landing géo (pricing par pays) |
+| Tests Vitest frontend | **163 / 163 ✅** (+downloads import/export, +P4 publicPricingService) — couverture ~38 % |
 | Branche | `release/v0.8.0` — **recette en cours** (= `develop` + 8 correctifs recette) |
 | Dernière tag | `v0.7.0` (Sprint 7A) — **`release/v0.8.0` en recette** (Sprints 8→19 + audit pré-release + recette) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
@@ -486,14 +486,15 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 - 🟡 Reste : ajouter prix annuels et méthodes de paiement disponibles lorsque le checkout local P6 est cadré.
 - DoD : le backend devient la source de vérité publique des prix.
 
-#### Sprint P4 — Landing géographique
+#### Sprint P4 — Landing géographique — ✅ livré (2026-06-06)
 
 **Objectif** : adapter la landing à la zone sans dupliquer la source pricing.
 
-- Frontend : `useGeoContent` détecte pays/marché, sélecteur manuel, fallback global.
-- Frontend : Landing consomme l'API pricing ; contenu hero/FAQ/moyens de paiement par marché.
-- Tests : Vitest landing + geo, scénario CA→CAD, FR→EUR, SN→XOF, CM→XAF.
-- DoD : aucun XOF par défaut pour Canada/France ; correction manuelle possible.
+- ✅ Frontend : `useGeoContent` détecte pays/marché (via `/api/public/geo` + fallback locale), **sélecteur manuel** (`setMarketOverride`), fallback global.
+- ✅ Frontend : **la landing consomme `/api/public/pricing`** (nouveau `services/publicPricingService.ts`) — les prix/devises/périodes viennent du **backend** (source de vérité), plus de prix contractuels en dur. `pricingAmounts` conservé **uniquement** comme repli hors-ligne si l'API est injoignable. Re-fetch au changement de marché dans le sélecteur. Montants en centimes (÷100) formatés selon la devise (XOF/XAF sans décimales).
+- ✅ Tests : backend `PublicPricingApiTest::each_target_country_resolves_its_local_market_and_currency` (SN→XOF, CM→XAF, FR→EUR, CA→CAD au niveau source) ; frontend `publicPricingService.spec.ts` (3) + assertions de consommation API dans `LandingView.spec.ts`.
+- ✅ DoD : **aucun XOF par défaut pour Canada/France** (la devise suit le pays résolu) ; **correction manuelle** possible via le sélecteur.
+- 🟡 Reste (P5) : brancher `/billing/upgrade` (espace authentifié) sur la même source.
 
 #### Sprint P5 — Upgrade/Billing localisé
 

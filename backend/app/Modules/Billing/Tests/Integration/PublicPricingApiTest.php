@@ -61,6 +61,30 @@ class PublicPricingApiTest extends TestCase
     }
 
     #[Test]
+    public function each_target_country_resolves_its_local_market_and_currency(): void
+    {
+        $this->seed(PlansSeeder::class);
+
+        // Localized-landing DoD: the visitor's country drives the currency —
+        // never a default XOF for Canada/France.
+        $cases = [
+            ['SN', 'waemu', 'XOF'],
+            ['CM', 'cemac', 'XAF'],
+            ['FR', 'europe', 'EUR'],
+            ['CA', 'canada', 'CAD'],
+        ];
+
+        foreach ($cases as [$country, $market, $currency]) {
+            $this->getJson("/api/public/pricing?country={$country}")
+                ->assertOk()
+                ->assertJsonPath('market.code', $market)
+                ->assertJsonPath('market.currency', $currency)
+                ->assertJsonPath('market.source', 'country')
+                ->assertJsonPath('data.1.price.currency', $currency);
+        }
+    }
+
+    #[Test]
     public function unsupported_interval_falls_back_to_monthly_prices(): void
     {
         $this->seed(PlansSeeder::class);

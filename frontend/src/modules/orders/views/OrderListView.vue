@@ -24,6 +24,13 @@
       </div>
       <input v-model="dateFrom" type="date" class="form-input date-input" @change="load" title="Depuis" />
       <input v-model="dateTo"   type="date" class="form-input date-input" @change="load" title="Jusqu'au" />
+      <!-- Site / entrepôt filter (Sprint 20 multi-sites) -->
+      <select v-model="warehouseId" class="form-input date-input" title="Entrepôt" aria-label="Filtrer par entrepôt">
+        <option value="">Tous les entrepôts</option>
+        <option v-for="w in warehouses" :key="w.id" :value="w.id">
+          {{ w.is_default ? '⭐ ' : '' }}{{ w.name }}
+        </option>
+      </select>
     </div>
 
     <!-- Status tabs -->
@@ -114,6 +121,7 @@ import { RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
 import SalesTabNav from '../components/SalesTabNav.vue'
 import { orderService } from '../services/orderService'
+import { useWarehouses } from '@/composables/useWarehouses'
 import type { Order } from '../types'
 
 const tabs = [
@@ -133,18 +141,21 @@ const meta      = ref<any>(null)
 const page      = ref(1)
 const loading   = ref(false)
 const error     = ref<string | null>(null)
+const { warehouses, loadWarehouses } = useWarehouses()
+const warehouseId = ref('')
 
 async function load() {
   loading.value = true
   error.value   = null
   try {
     const res = await orderService.list({
-      status:    activeTab.value || undefined,
-      search:    search.value    || undefined,
-      from_date: dateFrom.value  || undefined,
-      to_date:   dateTo.value    || undefined,
-      page:      page.value,
-      per_page:  20,
+      status:       activeTab.value || undefined,
+      search:       search.value    || undefined,
+      from_date:    dateFrom.value  || undefined,
+      to_date:      dateTo.value    || undefined,
+      warehouse_id: warehouseId.value || undefined,
+      page:         page.value,
+      per_page:     20,
     })
     orders.value = res.data
     meta.value   = res.meta
@@ -161,8 +172,8 @@ function debouncedLoad() {
   _searchTimer = setTimeout(() => load(), 280)
 }
 
-watch([activeTab, page], () => load())
-onMounted(() => load())
+watch([activeTab, warehouseId, page], () => load())
+onMounted(() => { loadWarehouses(); load() })
 
 function statusLabel(s: string) {
   return { draft: 'Brouillon', confirmed: 'Confirmée', fulfilled: 'Livrée', cancelled: 'Annulée' }[s] ?? s

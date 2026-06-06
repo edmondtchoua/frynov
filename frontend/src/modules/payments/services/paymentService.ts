@@ -8,7 +8,7 @@ interface PaginatedPayments {
 
 export const paymentService = {
   // ── List all payments ──────────────────────────────────────────────────────
-  list(params?: { page?: number; per_page?: number; method?: string; order_id?: string }): Promise<PaginatedPayments> {
+  list(params?: { page?: number; per_page?: number; method?: string; order_id?: string; warehouse_id?: string }): Promise<PaginatedPayments> {
     return client.get('/api/payments', { params }).then(r => r.data)
   },
 

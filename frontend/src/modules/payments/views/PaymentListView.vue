@@ -24,6 +24,13 @@
         <option value="transfer">Virement</option>
         <option value="cheque">Chèque</option>
       </select>
+      <!-- Site / entrepôt filter (Sprint 20 multi-sites) -->
+      <select v-model="filters.warehouse_id" class="form-input filter-select" @change="load" aria-label="Filtrer par entrepôt">
+        <option value="">Tous les entrepôts</option>
+        <option v-for="w in warehouses" :key="w.id" :value="w.id">
+          {{ w.is_default ? '⭐ ' : '' }}{{ w.name }}
+        </option>
+      </select>
     </div>
 
     <!-- Loading -->
@@ -200,12 +207,14 @@ import { formatDate } from '@/shared/utils/date'
 import { RouterLink } from 'vue-router'
 import SalesTabNav from '../../orders/components/SalesTabNav.vue'
 import { paymentService } from '../services/paymentService'
+import { useWarehouses } from '@/composables/useWarehouses'
 import type { Payment, PaymentMethod } from '../types'
 
 const payments = ref<Payment[]>([])
 const loading  = ref(false)
 const meta     = reactive({ current_page: 1, last_page: 1, per_page: 20, total: 0 })
-const filters  = reactive({ method: '', page: 1 })
+const filters  = reactive({ method: '', warehouse_id: '', page: 1 })
+const { warehouses, loadWarehouses } = useWarehouses()
 
 const pageTotal = computed(() => payments.value.reduce((s, p) => s + p.amount_cents, 0))
 
@@ -219,6 +228,7 @@ async function load() {
   try {
     const params: Record<string, string | number> = { page: filters.page, per_page: meta.per_page }
     if (filters.method) params.method = filters.method
+    if (filters.warehouse_id) params.warehouse_id = filters.warehouse_id
     const res = await paymentService.list(params as any)
     payments.value = res.data
     Object.assign(meta, res.meta)
@@ -304,5 +314,5 @@ function fmtAmount(cents: number, currency: string): string {
 
 const fmtDate = formatDate
 
-onMounted(load)
+onMounted(() => { loadWarehouses(); load() })
 </script>

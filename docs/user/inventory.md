@@ -1,6 +1,18 @@
 # Guide utilisateur — Stock & Inventaire
 
-> **Dernière mise à jour :** 2026-06-01
+> **Dernière mise à jour :** 2026-06-06 — filtre multi-sites sur les listes.
+
+---
+
+## Filtrer par entrepôt / site (multi-sites)
+
+Si votre entreprise gère plusieurs entrepôts ou boutiques, un sélecteur **« Tous les entrepôts »** est disponible en haut des listes pour n'afficher que les données d'un site :
+
+- **Stock & Inventaire** (onglet Stock) — quantités par entrepôt + résumé KPI du site sélectionné ;
+- **Ventes → Commandes** — les commandes rattachées à l'entrepôt choisi ;
+- **Ventes → Paiements** — les encaissements du site choisi.
+
+Laisser le sélecteur sur « Tous les entrepôts » affiche l'activité consolidée. La liste des entrepôts se gère dans **Stock & Inventaire → Entrepôts**.
 
 ---
 

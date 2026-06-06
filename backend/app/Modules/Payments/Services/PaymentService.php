@@ -108,6 +108,9 @@ class PaymentService
         if (! empty($filters['method'])) {
             $query->where('method', $filters['method']);
         }
+        if (! empty($filters['warehouse_id'])) {
+            $query->where('warehouse_id', $filters['warehouse_id']);
+        }
         if (! empty($filters['from'])) {
             $query->whereDate('paid_at', '>=', $filters['from']);
         }

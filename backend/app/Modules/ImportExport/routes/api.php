@@ -3,7 +3,7 @@
 use App\Modules\ImportExport\Http\Controllers\ImportExportController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum'])->group(function () {
+Route::middleware(['auth:sanctum', 'module:import_export'])->group(function () {
 
     // ── Import ────────────────────────────────────────────────────────────────
     // Note: /history and /template/{type} must come before /{id} to avoid conflict

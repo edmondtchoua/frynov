@@ -65,13 +65,18 @@
 
 ---
 
-## 4. Recommandation de scope v1.0.0
+## 4. Décisions actées (fondateur, 2026-06-06)
 
-| Phase | Sécurité | Effort | Reco v1.0.0 |
-|---|---|---|---|
-| **A — Gating module** | 🔴 Haut (ferme un trou réel) | Moyen | **À faire avant GO ferme.** |
-| **B — Permissions/rôles fins** | 🟠 Moyen | Élevé (B2) | B1 en v1.0.0 si voulu ; B2 envisageable post-1.0. |
-| **C — Accès temporaires** | 🟢 Fonctionnel | Moyen | v1.0.0 si requis par le métier, sinon v1.0.x. |
+**Scope v1.0.0 : A + B2 + C** (tout avant GO ferme), livré **phase par phase** (chacune testée).
 
-> Les permissions existent déjà côté données ; l'effort porte sur **l'application** (middleware),
-> **l'exposition** (UI rôles/permissions) et **le temporel** (nouvelle table + job).
+| Phase | Décision | État |
+|---|---|---|
+| **A — Gating module** | ✅ Retenu | ✅ **Livré** : middleware data-driven `module:<code>` (fail-open pour tenants non provisionnés), gate sur `reports` · `suppliers` · `import_export` · `delivery` ; retrait d'un module ⇒ **403 pour tous, admins inclus** ; `ModuleGatingTest`. |
+| **B — Rôles/permissions fins** | ✅ Retenu — **B2 (rôles custom par tenant)** | 🔲 À venir : création de rôles tenant + attribution de permissions **bornée par le plan/modules actifs** + migration des routes sensibles `role:`→`permission:`. |
+| **C — Accès temporaires** | ✅ Retenu | 🔲 À venir : table `temporary_access_grants` + expiration auto (check runtime **+** job planifié) + UI. |
+
+### Contraintes additionnelles actées
+- **Modules dynamiques** : ajouter/enrichir un module **ne doit pas** imposer de refonte → **respecté** (gating data-driven : un nouveau module = 1 ligne `module:<code>` + 1 row `erp_modules`, zéro logique hardcodée).
+- **À mettre en perspective (planifié — sprint sécurité dédié)** :
+  - **Invitations par email** : aujourd'hui l'invitation crée l'utilisateur + renvoie un mot de passe temporaire ; cible = **email d'invitation** (lien d'activation / définition du mot de passe). Nécessite un mailer configuré.
+  - **Login 2 niveaux (2FA email)** : mot de passe **puis code de validation par email**. Nécessite : mailer, table/colonnes OTP (hash + expiration), étape de *challenge* à la connexion, flag par tenant/utilisateur. À cadrer en sprint dédié.

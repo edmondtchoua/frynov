@@ -25,6 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission'=> \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             // S1: alias for EnsureUserBelongsToTenant (shorter form used in route files)
             'tenant'            => \App\Modules\Auth\Http\Middleware\EnsureUserBelongsToTenant::class,
+            // RBAC Phase A: gate a route group behind a tenant module (e.g. module:reports)
+            'module'            => \App\Modules\Platform\Http\Middleware\EnsureTenantHasModule::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

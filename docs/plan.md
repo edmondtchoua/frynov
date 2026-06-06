@@ -20,7 +20,7 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **597 ✅** (595 passed, 2 skipped, **0 incomplete**) — +Sprint 21 CountryRules, +Sprint 20 scoping d'accès par agence (isolation) |
+| Tests backend | **601 ✅** (599 passed, 2 skipped, **0 incomplete**) — +Sprint 20/21, +RBAC Phase A (gating module dynamique) |
 | Tests Vitest frontend | **179 / 179 ✅** (+Sprint 21 CountryRules, +Sprint 20 accès membre→sites, +ajustements stock, +édition plan) — couverture ~38 % |
 | Branche | `release/v1.0.0` — **RC `v1.0.0-rc.1`** (figée depuis `develop`) ; `develop` = intégration |
 | Dernière tag | `v0.8.0` (publiée sur `main`) → **`v1.0.0-rc.1`** candidat prod (cf. [Go/No-Go v1.0.0](recette/go-no-go-v1.0.0.md)) |

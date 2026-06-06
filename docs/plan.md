@@ -20,8 +20,8 @@
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **575 ✅** (573 passed, 2 skipped, **0 incomplete**) — +recette v0.8.0, +P4 landing géo (pricing par pays) |
-| Tests Vitest frontend | **163 / 163 ✅** (+downloads import/export, +P4 publicPricingService) — couverture ~38 % |
+| Tests backend | **577 ✅** (575 passed, 2 skipped, **0 incomplete**) — +recette v0.8.0, +P4 landing géo, +Sprint 20 filtres multi-sites |
+| Tests Vitest frontend | **165 / 165 ✅** (+P4 publicPricingService, +Sprint 20 useWarehouses) — couverture ~38 % |
 | Branche | `release/v0.8.0` — **recette en cours** (= `develop` + 8 correctifs recette) |
 | Dernière tag | `v0.7.0` (Sprint 7A) — **`release/v0.8.0` en recette** (Sprints 8→19 + audit pré-release + recette) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
@@ -126,7 +126,7 @@ Les modules ou fonctions sensibles peuvent rester limités par **rôle**, **perm
 | Security module | ✅ | 21 | RBAC sur 11 modules, CatalogSecurityTest, PaymentSecurityTest, MultiTenantIsolationTest, AuditTrailTest |
 | Marketplace | ✅ | — | Facebook/WhatsApp/WooCommerce adapters, sync alerts |
 | CountryRules | ✅ | 5 | Migration + Model + RegistrationRuleService + 30 pays seedés |
-| Multi-sites | ⚠️ Fondation | — | Migrations `warehouse_id` orders/payments + `user_warehouses` pivot (pas encore de UI) |
+| Multi-sites | 🔄 Filtres livrés | — | `warehouse_id` orders/payments/stock + **filtres liste par site** (Sprint 20) ; reste : `Branch` metadata, scoping accès, filtres rapports |
 | Sync | 🧪 Scaffold testé — **masqué (feature flag)** | 33 | Scaffold CRUD (HasTenant, `/api`, `tenant`, `role:manager\|admin`) + 33 tests. **Routes derrière `config('frynov.modules.sync')` = `FEATURE_SYNC` (off par défaut)** → invisible en prod, activé en test. Domaine métier : Phase 3 |
 
 **Total tests backend : 568 (2 skipped, 0 incomplete)**
@@ -517,16 +517,17 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 
 ---
 
-### Sprint 20 — Multi-sites complet + Agents
+### Sprint 20 — Multi-sites : filtres par site — 🔄 en cours (filtres livrés 2026-06-06)
 
-**Backend**
-- `Branch` model (alias Warehouse avec metadata agence)
-- `user_warehouses` — scoping accès par agence
-- Filtres rapports par warehouse/branche
+**Livré — filtrage par entrepôt/site**
+- ✅ Backend : `GET /api/orders?warehouse_id=` (`OrderService::paginate`) et `GET /api/payments?warehouse_id=` (`PaymentService::list`) filtrent par site ; le stock (`GET /api/inventory?warehouse_id=`) le faisait déjà.
+- ✅ Frontend : sélecteur **« Tous les entrepôts »** sur **OrderListView** et **PaymentListView** (StockListView l'avait déjà), via le composable partagé `useWarehouses` (fail-soft : liste vide si l'API échoue → « tous les sites »).
+- ✅ Tests : `OrderServiceTest::paginate_filters_orders_by_warehouse`, `PaymentServiceTest::list_filters_payments_by_warehouse`, `useWarehouses.spec.ts` (charge + fail-soft).
 
-**Frontend**
-- Filtre entrepôt/branche sur OrderListView, PaymentListView, StockListView
-- Page Agences/Branches dans Settings > Entreprise
+**Reste Sprint 20**
+- `Branch` model (alias Warehouse avec métadonnées agence) + `user_warehouses` — **scoping d'accès** par agence (sensible sécurité → à faire avec soin et tests RBAC).
+- Filtres rapports (ventes / valeur stock) par warehouse/branche.
+- Page Agences/Branches dans Paramètres > Entreprise (l'onglet **Entrepôts** existe déjà sous Stock).
 
 ---
 

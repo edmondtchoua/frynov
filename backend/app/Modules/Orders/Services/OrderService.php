@@ -39,10 +39,11 @@ class OrderService
         return $order;
     }
 
-    public function paginate(string $tenantId, int $perPage = 20, ?string $status = null): LengthAwarePaginator
+    public function paginate(string $tenantId, int $perPage = 20, ?string $status = null, ?string $warehouseId = null): LengthAwarePaginator
     {
         return Order::where('tenant_id', $tenantId)
             ->when($status, fn($q) => $q->where('status', $status))
+            ->when($warehouseId, fn($q) => $q->where('warehouse_id', $warehouseId))
             ->with('lines')
             ->latest()
             ->paginate($perPage);

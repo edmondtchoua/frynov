@@ -4,6 +4,7 @@ namespace App\Modules\Payments\Tests\Unit;
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Services\StockService;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Services\OrderService;
@@ -149,5 +150,26 @@ class PaymentServiceTest extends TestCase
 
         $this->assertNull($payment->order_id);
         $this->assertEquals(5000, $payment->amount_cents);
+    }
+
+    #[Test]
+    public function list_filters_payments_by_warehouse(): void
+    {
+        // Sprint 20 multi-sites: list payments scoped to a single site/warehouse.
+        $whA = Warehouse::create(['tenant_id' => $this->tenant->id, 'name' => 'Dépôt A', 'code' => 'WH-A', 'is_default' => true]);
+        $whB = Warehouse::create(['tenant_id' => $this->tenant->id, 'name' => 'Dépôt B', 'code' => 'WH-B', 'is_default' => false]);
+
+        $payA = $this->service->record(['order_id' => $this->order->id, 'amount_cents' => 10000, 'currency' => 'EUR', 'method' => 'cash'], $this->tenant->id, $this->user->id);
+        $payA->warehouse_id = $whA->id;
+        $payA->save();
+
+        $payB = $this->service->record(['order_id' => $this->order->id, 'amount_cents' => 10000, 'currency' => 'EUR', 'method' => 'cash'], $this->tenant->id, $this->user->id);
+        $payB->warehouse_id = $whB->id;
+        $payB->save();
+
+        $onlyA = $this->service->list($this->tenant->id, ['warehouse_id' => $whA->id]);
+        $this->assertSame([$payA->id], collect($onlyA->items())->pluck('id')->all());
+
+        $this->assertCount(2, $this->service->list($this->tenant->id, [])->items());
     }
 }

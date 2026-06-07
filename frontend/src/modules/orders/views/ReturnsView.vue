@@ -19,8 +19,9 @@
       </select>
     </div>
 
-    <div class="card">
-      <div v-if="loading" class="loading-center"><div class="spinner-sm"></div></div>
+    <div class="card table-scroll">
+      <StateBlock v-if="loading" variant="loading" />
+      <StateBlock v-else-if="returns.length === 0" variant="empty" title="Aucun retour trouvé" />
       <table v-else class="data-table">
         <thead>
           <tr>
@@ -52,9 +53,6 @@
                 Refuser
               </button>
             </td>
-          </tr>
-          <tr v-if="returns.length === 0 && !loading">
-            <td colspan="7" class="empty-state">Aucun retour trouvé</td>
           </tr>
         </tbody>
       </table>
@@ -88,6 +86,7 @@
 import { ref, onMounted } from 'vue'
 import { formatDate } from '@/shared/utils/date'
 import api from '@/services/api'
+import StateBlock from '@/shared/ui/StateBlock.vue'
 import SalesTabNav from '../components/SalesTabNav.vue'
 
 interface OrderReturn {

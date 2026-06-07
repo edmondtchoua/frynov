@@ -34,6 +34,27 @@ let   _ready = false
 const POLL_MS      = 30_000  // 30 seconds
 const TOAST_TTL_MS = 7_000   // auto-dismiss toasts
 
+let _toastSeq = 0
+
+/**
+ * Push a transient client-side toast (auto-dismissed). Used for immediate feedback
+ * on actions — e.g. a 403 from the API — so failures are never silent (audit UX-10).
+ */
+function pushToast(message: string, severity: AppNotification['severity'] = 'error'): void {
+  const toast: AppNotification = {
+    id: `local-${++_toastSeq}`,
+    type: 'client',
+    severity,
+    message,
+    context: null,
+    is_read: true,
+    requires_action: false,
+    created_at: new Date().toISOString(),
+  }
+  _toasts.value = [..._toasts.value, toast]
+  setTimeout(() => { _toasts.value = _toasts.value.filter(t => t.id !== toast.id) }, TOAST_TTL_MS)
+}
+
 async function poll(): Promise<void> {
   try {
     const auth = useAuthStore()
@@ -79,6 +100,13 @@ export function useNotifications() {
       if (isAuth) startPolling()
       else stopPolling()
     })
+
+    // Surface API 403s (the client dispatches `api:forbidden`) so a blocked action
+    // gives immediate feedback instead of failing silently (UX-10).
+    window.addEventListener('api:forbidden', (e: Event) => {
+      const message = (e as CustomEvent<{ message?: string }>).detail?.message
+      pushToast(message ?? 'Action non autorisée.', 'error')
+    })
   }
 
   async function markRead(id: string): Promise<void> {
@@ -110,6 +138,7 @@ export function useNotifications() {
     markRead,
     markAllRead,
     dismissToast,
+    pushToast,
     refresh,
   }
 }

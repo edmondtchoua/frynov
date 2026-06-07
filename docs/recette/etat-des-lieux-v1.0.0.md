@@ -1,9 +1,12 @@
 # État des lieux v1.0.0 — polish UX restant + suite de la recette finale
 
-> Mise à jour : 2026-06-07. Branche `release/v1.0.0` à **`v1.0.0-rc.13`**.
+> Mise à jour : 2026-06-07. Branche `release/v1.0.0` à **`v1.0.0-rc.16`** (cette session → `rc.17`).
 > Complète (et actualise) `go-no-go-v1.0.0.md` (figé à rc.1). Depuis rc.1 ont été livrés :
-> RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13).
-> Tests : **backend 638** (636 ✅ / 2 skipped) · **frontend 207** · `vue-tsc` propre ·
+> RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13),
+> polish UX P1 — garde « modifications non enregistrées » sur la création de commande +
+> récap onboarding (rc.14→rc.15), **backfill `tenant_modules`** (rc.16),
+> feedback action 403 + page 404 design-system (rc.17).
+> Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 211** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 
 ---
@@ -17,14 +20,15 @@
 
 | # | Élément | Priorité | Effort | Détail |
 |---|---|---|---|---|
-| 1 | **UX-07 — étendre la garde formulaire** | P1 | S | Câbler `useUnsavedChanges` + `FormField` dans **création de commande** et **onboarding** (ProductForm déjà fait). |
-| 2 | **UX-08 — panneau récap onboarding** | P1 | M | Panneau persistant « Ce qui sera configuré » (modules, devise, entrepôt, équipe) + sauvegarde de progression. La **checklist de fin** est déjà livrée. |
-| 3 | **UX-06 — cartes mobiles** | P2 | M | Les tableaux scrollent horizontalement (`.table-scroll`) ; option « cartes empilées » sur très petits écrans pour les listes denses. |
-| 4 | **UX-03 — adoption `BaseModal`** | P2 | M | Les modales clés ont `v-focus-trap` ; migrer les modales ad-hoc restantes vers `<BaseModal>` (cohérence). |
-| 5 | **UX-10/11/12/13/14** (P2) | P2 | L | Feedback actions, industrialisation icônes, recherche/filtres avancés, i18n complète, pages 404/402 dédiées (la page « accès indisponible » existe déjà). |
+| 1 | ~~**UX-07 — étendre la garde formulaire**~~ | P1 | S | ✅ **Livré** (rc.14) — `useUnsavedChanges` câblé dans la **création de commande** (ProductForm déjà fait). Reste l'onboarding (faible enjeu : pas de perte de saisie longue). |
+| 2 | ~~**UX-08 — panneau récap onboarding**~~ | P1 | M | ✅ **Livré** (rc.15) — récap « Ce qui sera configuré » (étape 5) + checklist de fin. Sauvegarde de progression = post-1.0. |
+| 3 | ~~**UX-10 — feedback action (403)**~~ | P2 | S | ✅ **Livré** (rc.17) — les 403 de l'API (`api:forbidden`) remontent en **toast** d'erreur (`useNotifications.pushToast`) ; plus d'échec silencieux. |
+| 4 | ~~**UX-14 — page 404 dédiée**~~ | P2 | S | ✅ **Livré** (rc.17) — `NotFoundView` migrée sur `StateBlock` + `BaseButton` (cohérence design system). Page 402 = `/unavailable` (déjà livrée). |
+| 5 | **UX-06 — cartes mobiles** | P2 | M | Les tableaux scrollent horizontalement (`.table-scroll`) ; option « cartes empilées » sur très petits écrans pour les listes denses. |
+| 6 | **UX-03 — adoption `BaseModal`** | P2 | M | Les modales clés ont `v-focus-trap` ; migrer les modales ad-hoc restantes vers `<BaseModal>` (cohérence). |
+| 7 | **UX-11/12/13** (P2) | P2 | L | Industrialisation icônes, recherche/filtres avancés, i18n complète. |
 
-**Verdict UX** : aucun item bloquant pour le GO. Items 1–2 recommandés avant prod (qualité
-saisie), 3–5 = post-1.0.
+**Verdict UX** : aucun item bloquant pour le GO. Items 1–4 **livrés** ; 5–7 = post-1.0.
 
 ---
 
@@ -65,10 +69,12 @@ Tests : `BackfillTenantModulesTest` (4).
 3. **Sécurité (rc.5)** : module désactivé ⇒ 403 (y compris admin) ; `viewer` ne peut pas créer
    client/paiement/commande ; un `manager` ne peut pas inviter/élever un `manager` ; preuve de
    paiement non accessible en URL publique (admin via URL signée) ; `verify-chain` = `ok`.
-4. **UX (rc.6→rc.13)** : sidebar (module inactif **verrouillé** + lien upgrade) ; navigation
+4. **UX (rc.6→rc.17)** : sidebar (module inactif **verrouillé** + lien upgrade) ; navigation
    clavier (focus visible, focus-trap modales, Échap) ; états `StateBlock` (vide/chargement/erreur)
    sur toutes les listes ; page `/unavailable` ; modale d'upgrade aux **prix backend** ;
-   garde « modifications non enregistrées » sur la fiche produit.
+   garde « modifications non enregistrées » sur la fiche produit **et la création de commande** ;
+   une action refusée (403) affiche un **toast d'erreur** (jamais d'échec silencieux) ;
+   une URL inconnue affiche la **page 404** design-system avec retour au tableau de bord.
 5. **Régression mobile** : listes scrollables ; sidebar drawer.
 
 ### B.4 Zones floues / d'ombre — état actualisé

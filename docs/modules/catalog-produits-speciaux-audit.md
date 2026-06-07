@@ -321,7 +321,7 @@ Le service commande doit appliquer une stratégie selon `stock_tracking` et `ful
 
 ## 7. UX/UI cible
 
-### 7.1 Formulaire produit
+### 7.1 Formulaire produit et duplication assistée
 
 Ajouter un assistant de création avec questions métier :
 
@@ -330,6 +330,21 @@ Ajouter un assistant de création avec questions métier :
 3. “Faut-il un identifiant unique ?” : aucun, IMEI, VIN/châssis, numéro de série, personnalisé ;
 4. “Y a-t-il une garantie ?” : aucune, garantie standard, extension possible ;
 5. “Comment se fait la livraison ?” : expédition, retrait, téléchargement, licence, rendez-vous.
+
+Pour la gestion quotidienne, ajouter aussi une action **“Dupliquer ce produit”** depuis la liste et la fiche produit. Le principe UX attendu : copier tout ce qui accélère la saisie, mais vider ou régénérer tout ce qui doit rester unique. La duplication doit donc préremplir : nom avec suffixe explicite, description, type, catégorie, fournisseur, prix, taxes, unité, dimensions, poids, attributs, variantes, politiques de stock, politiques de garantie, caractéristiques spéciales applicables, tags et médias si autorisés.
+
+Les champs uniques ou à risque doivent rester vides, être régénérés ou passer par une étape du wizard :
+
+- `sku` : vide ou préfixe proposé, jamais copié tel quel ;
+- `barcode`, `internal_barcode`, `gtin` : vides ou régénérés selon stratégie serveur ;
+- valeurs de caractéristiques spéciales `is_unique=true` : vides, par exemple IMEI, VIN, numéro moteur, licence ;
+- stock initial, quantités réservées, unités sérialisées et lots : jamais copiés ;
+- historiques, mouvements, commandes, garanties déjà vendues, audit trail : jamais copiés ;
+- fichiers digitaux/licences : copiables uniquement si la règle métier l'autorise ; les clés de licence individuelles doivent rester vides.
+
+Le wizard doit afficher une étape “Champs à compléter” qui liste uniquement les champs obligatoires laissés vides, avec validation serveur avant création. L'utilisateur doit comprendre que la copie est un **brouillon de nouveau produit**, pas un clone opérationnel avec les mêmes identifiants.
+
+La même logique doit être prévue pour les autres référentiels du catalogue, notamment les catégories : dupliquer libellé, parent, description, règles d'attributs et configuration d'affichage, mais vider ou recalculer les champs uniques comme code/slug/chemin matérialisé si ces champs doivent rester uniques.
 
 ### 7.2 Fiche produit
 
@@ -419,6 +434,17 @@ Pour un produit digital :
 - Valoriser les produits sérialisés par unité et non uniquement par quantité agrégée.
 - Conserver les rapports agrégés pour les produits `stock_tracking=aggregate`.
 
+### 8.7 Duplication produit et wizard de complétion
+
+- Dupliquer un produit simple copie les champs non uniques et laisse `sku`, `barcode`, `internal_barcode`, `gtin` vides ou régénérés côté serveur selon configuration.
+- Dupliquer un produit à variantes copie les axes/variantes mais régénère ou vide tous les SKU/codes-barres uniques des variantes.
+- Dupliquer un produit sérialisé copie les définitions de caractéristiques spéciales, mais ne copie aucune valeur `is_unique=true` ni aucune unité de stock.
+- Dupliquer un produit avec garantie copie la politique de garantie, mais ne copie aucun contrat de garantie déjà émis.
+- Dupliquer un produit digital copie la configuration digitale autorisée, mais ne copie jamais les clés de licence individuelles déjà attribuées.
+- Le wizard affiche une étape “Champs à compléter” pour chaque champ obligatoire vidé pendant la duplication.
+- La création finale échoue côté serveur si un champ unique est réutilisé ou si un champ obligatoire vidé n'a pas été complété.
+- Dupliquer une catégorie copie la structure descriptive, mais régénère ou vide code/slug/chemin unique.
+
 ## 9. Priorisation de remédiation
 
 | Priorité | Chantier | Pourquoi |
@@ -430,6 +456,7 @@ Pour un produit digital :
 | P1 | Contraintes d'unicité et isolation tenant sur identifiants unitaires | Évite doublons, IDOR et fuites inter-tenant. |
 | P1 | Lien commande ⇄ unité sérialisée ⇄ client | Base de la traçabilité vente/SAV. |
 | P1 | Garanties politiques + contrats | Nécessaire pour produits à garantie commerciale/légale. |
+| P1 | Duplication sûre des produits et wizard de complétion | Accélère la saisie quotidienne sans dupliquer les champs uniques ni les données opérationnelles. |
 | P2 | Produits digitaux + entitlements + fichiers privés | Nécessaire pour logiciels, ebooks, licences et accès client. |
 | P2 | UX de création par assistant métier | Réduit les erreurs opérateur et rend la fonctionnalité exploitable. |
 | P3 | Reporting avancé par unité, lot, garantie et statut | Améliore pilotage et conformité après stabilisation métier. |
@@ -440,7 +467,7 @@ Pour un produit digital :
 
 - `backend/app/Modules/Catalog/Models/Product.php` : ajouter les politiques explicites de produit et de stock.
 - `backend/app/Modules/Catalog/Http/Controllers/CatalogController.php` : valider les nouveaux champs et les invariants métier.
-- `backend/app/Modules/Catalog/Services/CatalogService.php` : normaliser création/update selon le type.
+- `backend/app/Modules/Catalog/Services/CatalogService.php` : normaliser création/update selon le type et exposer une duplication sûre qui exclut champs uniques/données opérationnelles.
 - `backend/app/Modules/Inventory/Services/StockService.php` : refuser stock sur `stock_tracking=none`, supporter `serialized`.
 - `backend/app/Modules/Inventory/Http/Controllers/InventoryController.php` : ajouter réception/recherche/vente d'unités sérialisées.
 - `backend/app/Modules/Orders/Services/OrderService.php` : appliquer la stratégie de réservation/fulfillment selon la politique produit.
@@ -450,8 +477,8 @@ Pour un produit digital :
 
 ### Front-end
 
-- `frontend/src/modules/catalog/views/ProductFormView.vue` : exposer type, tracking stock, sérialisation, digital, garantie et caractéristiques spéciales configurables.
-- `frontend/src/modules/catalog/views/ProductShowPage.vue` : ajouter onglets unités/lots/assets/garanties.
+- `frontend/src/modules/catalog/views/ProductFormView.vue` : exposer type, tracking stock, sérialisation, digital, garantie, caractéristiques spéciales configurables et wizard de complétion après duplication.
+- `frontend/src/modules/catalog/views/ProductShowPage.vue` : ajouter onglets unités/lots/assets/garanties et action “Dupliquer ce produit”.
 - `frontend/src/modules/catalog/types.ts` : typer les nouvelles politiques.
 - `frontend/src/modules/inventory/views/*` : ajouter réception et recherche d'unités par IMEI/VIN.
 - `frontend/src/modules/orders/*` ou vues POS concernées : permettre sélection/scan d'une unité sérialisée.
@@ -467,7 +494,8 @@ Pour un produit digital :
 - [ ] Une garantie est créée automatiquement à la vente selon une politique produit.
 - [ ] Une réclamation SAV peut retrouver la vente, le client, l'unité et la période de garantie.
 - [ ] Les rapports de stock excluent services/digitaux et valorisent correctement les unités physiques.
-- [ ] Les tests API couvrent définitions dynamiques, concurrence, unicité, IDOR et changements de statut.
+- [ ] La duplication produit copie les champs utiles mais vide/régénère SKU, codes-barres, GTIN, valeurs uniques, stock, garanties émises et licences individuelles.
+- [ ] Les tests API couvrent définitions dynamiques, duplication sûre, concurrence, unicité, IDOR et changements de statut.
 
 ## 12. Conclusion
 

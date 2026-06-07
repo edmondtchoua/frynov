@@ -56,6 +56,7 @@ Axes bloquants :
 - Priorité P0 : introduire une politique serveur de stock/livraison (`stock_tracking`, `fulfillment_type`) et corriger le flux commande pour que les services n'utilisent jamais de faux stock.
 - Priorité P1 : ajouter des caractéristiques spéciales dynamiques (ex. IMEI, VIN, numéro moteur, licence) avec flags `is_unique`, `is_filterable`, `is_searchable`, puis des unités sérialisées avec unicité tenant, allocation commande, isolation multitenant et garanties.
 - Priorité P2 : ajouter les produits digitaux avec assets privés, licences/entitlements et contrôles d'accès serveur.
+- Productivité quotidienne : ajouter une duplication produit/catégorie sûre avec wizard de complétion, en copiant les champs non uniques et en vidant/régénérant SKU, codes-barres, GTIN, valeurs uniques, stock, garanties émises et licences individuelles.
 - L'agent de code doit traiter le document d'audit catalogue comme cahier d'acceptation fonctionnel et sécurité avant toute refactorisation large.
 
 ## État global

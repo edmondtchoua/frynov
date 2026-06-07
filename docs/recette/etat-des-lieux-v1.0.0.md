@@ -1,0 +1,101 @@
+# État des lieux v1.0.0 — polish UX restant + suite de la recette finale
+
+> Mise à jour : 2026-06-07. Branche `release/v1.0.0` à **`v1.0.0-rc.13`**.
+> Complète (et actualise) `go-no-go-v1.0.0.md` (figé à rc.1). Depuis rc.1 ont été livrés :
+> RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13).
+> Tests : **backend 638** (636 ✅ / 2 skipped) · **frontend 207** · `vue-tsc` propre ·
+> `composer audit` / `npm audit` 0 vulnérabilité.
+
+---
+
+## A. Polish UX restant (audit `ux-ui/audit-ux-ui-approfondi.md`)
+
+> Le **gros de l'audit est livré** : UX-01 (nav modules+permissions), UX-02 (admin/tenant),
+> UX-04 (a11y), UX-05 (états + page `/unavailable`), UX-09 (pricing backend), UX-03 design
+> system + **adoption sur TOUTES les listes** (tenant + admin + import), UX-06 (`.table-scroll`),
+> UX-07 (FormField + useUnsavedChanges, câblé dans ProductForm). Reste, par priorité :
+
+| # | Élément | Priorité | Effort | Détail |
+|---|---|---|---|---|
+| 1 | **UX-07 — étendre la garde formulaire** | P1 | S | Câbler `useUnsavedChanges` + `FormField` dans **création de commande** et **onboarding** (ProductForm déjà fait). |
+| 2 | **UX-08 — panneau récap onboarding** | P1 | M | Panneau persistant « Ce qui sera configuré » (modules, devise, entrepôt, équipe) + sauvegarde de progression. La **checklist de fin** est déjà livrée. |
+| 3 | **UX-06 — cartes mobiles** | P2 | M | Les tableaux scrollent horizontalement (`.table-scroll`) ; option « cartes empilées » sur très petits écrans pour les listes denses. |
+| 4 | **UX-03 — adoption `BaseModal`** | P2 | M | Les modales clés ont `v-focus-trap` ; migrer les modales ad-hoc restantes vers `<BaseModal>` (cohérence). |
+| 5 | **UX-10/11/12/13/14** (P2) | P2 | L | Feedback actions, industrialisation icônes, recherche/filtres avancés, i18n complète, pages 404/402 dédiées (la page « accès indisponible » existe déjà). |
+
+**Verdict UX** : aucun item bloquant pour le GO. Items 1–2 recommandés avant prod (qualité
+saisie), 3–5 = post-1.0.
+
+---
+
+## B. Suite de la recette finale v1.0.0
+
+### B.1 Conditions du GO ferme (de `go-no-go` §Décision) — état actualisé
+
+| Cond. | Sujet | État 2026-06-07 |
+|---|---|---|
+| **C1** | Recette finale signée | 🔲 **À faire** — périmètre élargi (voir B.3) |
+| **C2** | Décision P6 actée | 🟡 Note `docs/decisions/p6-checkout-approach.md` écrite, **approche A recommandée** ; manque la **signature** fondateur. Aucun code bloquant (ManualPayment + upgrade backend livrés). |
+| **C3** | CI build sur install propre | ✅ **Satisfait** — `ci-develop.yml` / `ci-feature.yml` font `npm ci` + `npm run build` + `php artisan test`. |
+| **C4** | Zones d'ombre acceptées/durcies | 🟡 Voir B.4 (certaines **résolues** par la remédiation sécurité). |
+
+### B.2 ⚠️ Nouveau prérequis de déploiement — CRITIQUE (régression possible)
+
+La remédiation sécurité (rc.5) a rendu le **gating module `fail-closed`** : un tenant **sans
+ligne `tenant_modules`** est désormais **refusé sur tous les modules métier** (catalog,
+inventory, orders, customers, payments, delivery, suppliers, import_export, reports).
+
+- ✅ Les **nouveaux** tenants sont provisionnés (`SubscriptionService::activatePlanModules` à la
+  souscription).
+- ❌ **Aucun backfill** n'existe pour les **tenants existants** non provisionnés → ils seraient
+  **verrouillés** après déploiement.
+
+**Action obligatoire avant prod** : écrire et exécuter une **migration/commande de backfill**
+qui active les modules du plan pour chaque tenant existant (`activatePlanModules` en boucle),
+puis vérifier en staging sur copie de prod. *(Sinon, NO-GO.)*
+
+### B.3 Recette fonctionnelle — périmètre à repasser (sur `migrate:fresh --seed`)
+
+1. **Socle rc.1** : recette v0.8.0 + 5 parcours rc.1 (cf. `go-no-go` §2) — toujours valides.
+2. **RBAC B2 (rc.4)** : Paramètres → **Rôles** (créer/éditer/supprimer un rôle custom,
+   permissions groupées par module) ; assigner un rôle custom à un membre (onglet Équipe) ;
+   vérifier qu'un rôle custom porteur d'une perme d'écriture peut agir, et qu'un `member` ne peut pas.
+3. **Sécurité (rc.5)** : module désactivé ⇒ 403 (y compris admin) ; `viewer` ne peut pas créer
+   client/paiement/commande ; un `manager` ne peut pas inviter/élever un `manager` ; preuve de
+   paiement non accessible en URL publique (admin via URL signée) ; `verify-chain` = `ok`.
+4. **UX (rc.6→rc.13)** : sidebar (module inactif **verrouillé** + lien upgrade) ; navigation
+   clavier (focus visible, focus-trap modales, Échap) ; états `StateBlock` (vide/chargement/erreur)
+   sur toutes les listes ; page `/unavailable` ; modale d'upgrade aux **prix backend** ;
+   garde « modifications non enregistrées » sur la fiche produit.
+5. **Régression mobile** : listes scrollables ; sidebar drawer.
+
+### B.4 Zones floues / d'ombre — état actualisé
+
+| Sujet | État |
+|---|---|
+| Scoping d'accès = listes uniquement (GET ressource-unique tenant-scopé, pas warehouse) | 🟡 Risque toujours accepté pour v1.0.0 (post-1.0 : durcir les GET unitaires). |
+| TVA / remises au niveau commande | 🔲 Backlog (à spécifier si besoin métier). |
+| Onboarding `nb_branches` → entrepôts secondaires | 🔲 Post-1.0 (page Agences). |
+| Branche par défaut GitHub | ❌ **Toujours `master`** (origin/HEAD) — basculer sur `main`. |
+
+### B.5 Checklist finale v1.0.0 (actualisée)
+
+- [ ] **Backfill `tenant_modules`** pour tenants existants (B.2) + vérif staging — *bloquant*.
+- [ ] Recette finale signée (périmètre B.3).
+- [ ] Décision P6 signée (approche A).
+- [ ] Zones d'ombre B.4 acceptées **ou** durcies.
+- [x] CI : `npm ci && npm run build` + `php artisan test` (ci-develop/feature). *(rappel : faire tourner la CI sur `release/v1.0.0`.)*
+- [ ] Mettre à jour `go-no-go` / `CHANGELOG` pour le tag final `v1.0.0` (récap rc.4→rc.13).
+- [ ] GitFlow : `release/v1.0.0` → `main` + tag **`v1.0.0`** + back-merge `develop`.
+- [ ] Branche par défaut GitHub = `main`.
+- [ ] `migrate:fresh --seed` validé sur l'environnement de prod cible.
+- [ ] *(En perspective, post-1.0)* invitations par email + login 2FA email.
+
+---
+
+## C. Recommandation
+
+**Aucun bloquant côté code** hormis le **backfill `tenant_modules`** (B.2), qui est impératif
+vu le passage en fail-closed. Séquence recommandée : (1) backfill + vérif staging → (2) finir le
+polish UX P1 items 1–2 si souhaité → (3) recette fonctionnelle B.3 → (4) signer P6 → (5) bascule
+GitFlow `main` + tag `v1.0.0`.

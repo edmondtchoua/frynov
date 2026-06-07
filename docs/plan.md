@@ -56,11 +56,17 @@ Axes bloquants :
   (directive globale **`v-focus-trap`** : piège Tab + restauration du focus + Échap,
   appliquée aux modales Paramètres/Rôles) ; toggles (`role=switch`). Suivi rapide :
   généraliser `v-focus-trap` aux modales admin/modules restantes (1 attribut chacune) ;
-- 🔲 (P1) design system partagé pour boutons, cards, tables, états et modales ;
-- 🔲 (P1) états loading/empty/error/forbidden standardisés ;
-- 🔲 (P1) formulaires critiques avec erreurs liées, confirmation et protection contre perte de données ;
-- 🔲 (P1) responsive mobile réel pour listes produits, commandes, paiements, stock et admin ;
-- 🔲 (P1) pricing/upgrade basé sur prix backend confirmé.
+- 🟡 (P1, **UX-03**) design system partagé — **fondation livrée** (`shared/ui/` :
+  `BaseButton`, `BaseCard`, `BaseModal`, `StateBlock`, `FormField` ; `docs/modules/ux-design-system.md`).
+  Reste : **migrer les vues** vers ces primitives (≈ 36 `empty-state` + boutons/modales locaux) ;
+- ✅ (P1, **UX-05**) états loading/empty/error/forbidden standardisés — `StateBlock` +
+  page `/unavailable` (module désactivé / permission / quota) ;
+- 🟡 (P1, **UX-07**) formulaires critiques — **utilitaires livrés** (`FormField` erreurs liées
+  `aria-describedby` ; `useUnsavedChanges` anti-perte de données). Reste : câbler dans
+  ProductForm / création commande / onboarding ;
+- 🔲 (P1, **UX-06**) responsive mobile réel pour listes produits/commandes/paiements/stock/admin ;
+- 🔲 (P1, **UX-09**) pricing/upgrade basé sur prix backend confirmé ;
+- 🔲 (P1, **UX-02**) cohérence admin/tenant · 🔲 (P1, **UX-08**) onboarding orienté résultat.
 
 ## Gate catalogue produits spéciaux — services, digital, garanties, IMEI/VIN
 

@@ -117,7 +117,7 @@ class CustomerImportParser
             'name'    => $name ?: null,
             'email'   => $email ?: null,
             'phone'   => $phone ?: null,
-            'address' => trim($mapped['address'] ?? '') ?: null,
+            'address' => $this->parseAddress($mapped['address'] ?? null),
             'notes'   => trim($mapped['notes'] ?? '') ?: null,
         ];
 
@@ -134,6 +134,17 @@ class CustomerImportParser
     public function registerEmail(string $email, string $id): void
     {
         $this->emailIndex[strtolower($email)] = $id;
+    }
+
+    private function parseAddress(mixed $address): ?array
+    {
+        $street = trim((string) ($address ?? ''));
+
+        if ($street === '') {
+            return null;
+        }
+
+        return ['street' => $street];
     }
 
     private function normalizePhone(string $phone): string

@@ -152,7 +152,7 @@ import { customerService } from '../services/customerService'
 import { formatCustomerAddress } from '../address'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
-import type { Customer } from '../types'
+import type { Customer, CustomerAddress } from '../types'
 
 const customers = ref<Customer[]>([])
 const loading   = ref(false)
@@ -189,6 +189,12 @@ function goToPage(p: number) { page.value = p; load() }
 
 function initials(name: string): string {
   return name.split(' ').slice(0, 2).map(n => n[0]?.toUpperCase() ?? '').join('')
+}
+
+function formatAddress(addr: CustomerAddress | null | undefined): string {
+  if (!addr) return ''
+  if (typeof addr === 'string') return addr
+  return [addr.street, addr.zip, addr.city, addr.country].filter(Boolean).join(', ')
 }
 
 function openCreate() {

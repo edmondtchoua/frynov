@@ -50,6 +50,14 @@ const router = createRouter({
       meta: { layout: 'app' },
     },
 
+    // Contextual "access unavailable" page (module disabled / permission / quota)
+    {
+      path: '/unavailable',
+      name: 'access-unavailable',
+      component: () => import('@/pages/AccessUnavailableView.vue'),
+      meta: { layout: 'app' },
+    },
+
     // ── Catalog ───────────────────────────────────────────────────────────
     {
       path: '/catalog',

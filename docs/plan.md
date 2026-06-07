@@ -58,14 +58,17 @@ Axes bloquants :
   généraliser `v-focus-trap` aux modales admin/modules restantes (1 attribut chacune) ;
 - 🟡 (P1, **UX-03**) design system partagé — **fondation livrée** (`shared/ui/` :
   `BaseButton`, `BaseCard`, `BaseModal`, `StateBlock`, `FormField` ; `docs/modules/ux-design-system.md`).
-  Reste : **migrer les vues** vers ces primitives (≈ 36 `empty-state` + boutons/modales locaux) ;
+  **Adoption en cours** : ProductListView + CustomerListView migrés (`StateBlock` + `.table-scroll`).
+  Reste : les ~7 autres listes (commandes, stock, paiements, fournisseurs, admin…) ;
 - ✅ (P1, **UX-05**) états loading/empty/error/forbidden standardisés — `StateBlock` +
   page `/unavailable` (module désactivé / permission / quota) ;
+- 🟡 (P1, **UX-06**) responsive — utilitaire `.table-scroll` + appliqué aux listes migrées ;
+  reste : généraliser aux autres listes (idéalement cartes empilées sur mobile) ;
 - 🟡 (P1, **UX-07**) formulaires critiques — **utilitaires livrés** (`FormField` erreurs liées
   `aria-describedby` ; `useUnsavedChanges` anti-perte de données). Reste : câbler dans
   ProductForm / création commande / onboarding ;
-- 🔲 (P1, **UX-06**) responsive mobile réel pour listes produits/commandes/paiements/stock/admin ;
-- 🔲 (P1, **UX-09**) pricing/upgrade basé sur prix backend confirmé ;
+- ✅ (P1, **UX-09**) pricing/upgrade basé sur prix backend — modale d'upgrade (Paramètres)
+  alimentée par `publicPricingService` (plans + prix confirmés, montant pré-rempli) ;
 - 🔲 (P1, **UX-02**) cohérence admin/tenant · 🔲 (P1, **UX-08**) onboarding orienté résultat.
 
 ## Gate catalogue produits spéciaux — services, digital, garanties, IMEI/VIN

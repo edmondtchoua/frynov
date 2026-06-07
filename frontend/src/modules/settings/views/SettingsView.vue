@@ -364,7 +364,7 @@
 
           <!-- Upgrade CTA -->
           <div class="upgrade-cta">
-            <button class="btn btn-primary upgrade-btn" @click="upgradeModal.open = true">
+            <button class="btn btn-primary upgrade-btn" @click="openUpgrade">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M8 2v12M3 7l5-5 5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
@@ -551,10 +551,11 @@
           </p>
           <div class="form-row">
             <label>Plan souhaité *</label>
-            <select v-model="upgradeForm.plan_code" class="form-select">
+            <select v-model="upgradeForm.plan_code" class="form-select" @change="onUpgradePlanChange">
               <option value="">— Sélectionner —</option>
-              <option value="pro">Pro</option>
-              <option value="enterprise">Enterprise</option>
+              <option v-for="p in upgradePlans" :key="p.code" :value="p.code">
+                {{ p.name }}<template v-if="p.price"> — {{ formatPlanPrice(p) }}</template>
+              </option>
             </select>
           </div>
           <div class="form-row">
@@ -569,8 +570,11 @@
             </select>
           </div>
           <div class="form-row">
-            <label>Montant payé (FCFA) *</label>
+            <label>Montant à payer ({{ upgradeCurrency }}) *</label>
             <input v-model.number="upgradeForm.amount_fcfa" type="number" min="1" class="form-input" placeholder="ex. 15000" />
+            <span v-if="selectedUpgradePlan?.price" class="input-hint-text">
+              Prix confirmé du plan {{ selectedUpgradePlan.name }} : {{ formatPlanPrice(selectedUpgradePlan) }}.
+            </span>
           </div>
           <div class="form-row">
             <label>Preuve de paiement <span class="hint">(photo ou PDF, 5 Mo max)</span></label>
@@ -610,6 +614,7 @@ import { ref, computed, reactive, watch, defineComponent, h } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { authService } from '@/modules/auth/services/authService'
 import { roleService, type TenantRole } from '@/modules/settings/services/roleService'
+import { fetchPublicPricing, type PublicPlan } from '@/services/publicPricingService'
 import RolesPanel from '@/modules/settings/components/RolesPanel.vue'
 import { useWarehouses } from '@/composables/useWarehouses'
 import type { WorkspaceUser } from '@/modules/auth/types'
@@ -930,6 +935,37 @@ const upgradeForm = reactive({
   notes:          '',
   proofFile:      null as File | null,
 })
+
+// UX-09 — upgrade prices come from the backend (single source of truth), not hardcoded.
+const upgradePlans   = ref<PublicPlan[]>([])
+const upgradeCurrency = ref('XOF')
+const selectedUpgradePlan = computed(() => upgradePlans.value.find(p => p.code === upgradeForm.plan_code) ?? null)
+
+function formatPlanPrice(p: PublicPlan): string {
+  if (!p.price) return ''
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: p.price.currency, maximumFractionDigits: 0 })
+    .format(p.price.base_amount_minor / 100)
+}
+
+function onUpgradePlanChange() {
+  // Prefill the amount with the plan's confirmed backend price (still editable for promos).
+  const p = selectedUpgradePlan.value
+  if (p?.price) upgradeForm.amount_fcfa = Math.round(p.price.base_amount_minor / 100)
+}
+
+async function openUpgrade() {
+  upgradeModal.open = true
+  upgradeModal.error = ''
+  upgradeModal.success = ''
+  try {
+    const country = String(auth.user?.tenant?.settings?.country ?? companyForm.country ?? '').trim()
+    const res = await fetchPublicPricing(country ? { country } : {})
+    upgradeCurrency.value = res.market?.currency ?? 'XOF'
+    upgradePlans.value = res.data.filter(p => p.price).sort((a, b) => a.sort_order - b.sort_order)
+  } catch {
+    upgradePlans.value = [] // degrade gracefully — the form still works with manual amount
+  }
+}
 
 function onProofFileChange(e: Event) {
   const input = e.target as HTMLInputElement

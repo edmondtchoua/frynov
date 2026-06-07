@@ -28,7 +28,7 @@
     </div>
 
     <!-- Table -->
-    <div class="table-wrap">
+    <div class="table-wrap table-scroll">
       <table class="admin-table" v-if="!loading && payments.length">
         <thead>
           <tr>
@@ -74,8 +74,8 @@
           </tr>
         </tbody>
       </table>
-      <div v-else-if="loading" class="state-msg">Chargement…</div>
-      <div v-else class="state-msg">Aucun paiement {{ statusFilter ? 'avec ce statut' : '' }}.</div>
+      <StateBlock v-else-if="loading" variant="loading" />
+      <StateBlock v-else variant="empty" :title="statusFilter ? 'Aucun paiement avec ce statut' : 'Aucun paiement'" />
     </div>
 
     <!-- Pagination -->
@@ -119,6 +119,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { formatDate } from '@/shared/utils/date'
 import { RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
+import StateBlock from '@/shared/ui/StateBlock.vue'
 import { adminService, type AdminManualPayment } from '../services/adminService'
 
 // ── State ─────────────────────────────────────────────────────────────────────

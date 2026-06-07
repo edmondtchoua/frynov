@@ -1,12 +1,13 @@
 # État des lieux v1.0.0 — polish UX restant + suite de la recette finale
 
-> Mise à jour : 2026-06-07. Branche `release/v1.0.0` à **`v1.0.0-rc.17`** (cette session → `rc.18`).
+> Mise à jour : 2026-06-07. Branche `release/v1.0.0` à **`v1.0.0-rc.18`** (cette session → `rc.19`).
 > Complète (et actualise) `go-no-go-v1.0.0.md` (figé à rc.1). Depuis rc.1 ont été livrés :
 > RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13),
 > polish UX P1 — garde « modifications non enregistrées » sur la création de commande +
 > récap onboarding (rc.14→rc.15), **backfill `tenant_modules`** (rc.16),
-> feedback action 403 + page 404 design-system (rc.17), cartes mobiles (rc.18).
-> Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 212** · `vue-tsc` propre ·
+> feedback action 403 + page 404 design-system (rc.17), cartes mobiles (rc.18),
+> migration `BaseModal` — 1ʳᵉ vague (rc.19).
+> Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 213** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 
 ---
@@ -25,11 +26,11 @@
 | 3 | ~~**UX-10 — feedback action (403)**~~ | P2 | S | ✅ **Livré** (rc.17) — les 403 de l'API (`api:forbidden`) remontent en **toast** d'erreur (`useNotifications.pushToast`) ; plus d'échec silencieux. |
 | 4 | ~~**UX-14 — page 404 dédiée**~~ | P2 | S | ✅ **Livré** (rc.17) — `NotFoundView` migrée sur `StateBlock` + `BaseButton` (cohérence design system). Page 402 = `/unavailable` (déjà livrée). |
 | 5 | ~~**UX-06 — cartes mobiles**~~ | P2 | M | ✅ **Pattern livré** (rc.18) — `.data-table--cards` (cartes empilées ≤640px, `data-label` par cellule) adopté sur **Commandes / Clients / Paiements**. Reste l'adoption incrémentale (Produits, Stock, Livraisons, Fournisseurs, Retours, admin). |
-| 6 | **UX-03 — adoption `BaseModal`** | P2 | M | Les modales clés ont `v-focus-trap` ; migrer les modales ad-hoc restantes vers `<BaseModal>` (cohérence). Candidats repérés : `PaymentListView`, `CustomerListView`. |
+| 6 | ~~**UX-03 — adoption `BaseModal`**~~ | P2 | M | ✅ **1ʳᵉ vague** (rc.19) — `CustomerListView` + `PaymentListView` migrées vers `<BaseModal>` (pattern documenté + testé). Reste l'adoption incrémentale (~22 vues : Stock, Livraisons, Fournisseurs, Retours, Promotions, ManualPayment, RolesPanel…). |
 | 7 | **UX-11/12/13** (P2) | P2 | L | Industrialisation icônes, recherche/filtres avancés, i18n complète. |
 
-**Verdict UX** : aucun item bloquant pour le GO. Items 1–4 **livrés**, 5 **livré** (pattern + 3 listes
-phares ; reste l'adoption incrémentale) ; 6–7 = post-1.0.
+**Verdict UX** : aucun item bloquant pour le GO. Items 1–4 **livrés**, 5–6 **amorcés** (pattern +
+vues phares ; reste l'adoption incrémentale) ; 7 = post-1.0 (dont **UX-13 i18n** = chantier dédié).
 
 ---
 

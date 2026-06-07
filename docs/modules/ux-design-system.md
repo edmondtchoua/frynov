@@ -16,6 +16,25 @@ Page transverse : `pages/AccessUnavailableView.vue` (route `/unavailable`) — p
 « accès indisponible » contextualisée (module désactivé / permission manquante / quota),
 construite avec `StateBlock` (forbidden) + `BaseButton`. Query : `?reason=module|permission|quota&module=<label>`.
 
+### Migration des modales vers `BaseModal` (UX-03)
+Pattern pour remplacer une modale ad-hoc (`.modal-overlay`/`.modal-backdrop` + chrome manuel) :
+```vue
+<BaseModal
+  :model-value="open"
+  :title="…"
+  @update:model-value="(v) => { if (!v) onClose() }"  <!-- préserve les effets de fermeture (reset form) -->
+>
+  …champs (slot par défaut = corps)…
+  <template #footer>…boutons…</template>
+</BaseModal>
+```
+`BaseModal` apporte overlay, `Teleport`, focus-trap, Échap, clic-extérieur, bouton de fermeture
+et en-tête — supprimer le chrome local et les styles `.modal-*` dupliqués. Lier la fermeture via
+`@update:model-value` (et non `v-model`) quand `onClose()` a des effets de bord (réinitialisation).
+**Adopté** : `CustomerListView`, `PaymentListView`. Reste (incrémental, ~22 vues) : Stock, Livraisons,
+Fournisseurs, Retours, Promotions, ManualPayment, RolesPanel, etc. Contrat testé
+(`PaymentListView.spec.ts` → ouverture d'un `role="dialog"` `aria-modal`).
+
 ## Accessibilité (UX-04, livré en P0)
 - `.sr-only` + `:focus-visible` globaux (`main.css`).
 - Directive globale **`v-focus-trap`** (`src/directives/focusTrap.ts`) — à poser sur tout

@@ -52,6 +52,8 @@
           <tr>
             <th>Client</th>
             <th class="hide-mobile">Téléphone</th>
+            <th class="hide-mobile">Adresse</th>
+            <th class="hide-mobile">Notes</th>
             <th class="hide-mobile">Commandes</th>
             <th style="text-align: right;">Actions</th>
           </tr>
@@ -69,6 +71,14 @@
             </td>
             <td class="hide-mobile" data-label="Téléphone">
               <span v-if="customer.phone" class="customer-phone">{{ customer.phone }}</span>
+              <span v-else class="text-muted">—</span>
+            </td>
+            <td class="hide-mobile" data-label="Adresse">
+              <span v-if="formatCustomerAddress(customer.address)" class="customer-address">{{ formatCustomerAddress(customer.address) }}</span>
+              <span v-else class="text-muted">—</span>
+            </td>
+            <td class="hide-mobile" data-label="Notes">
+              <span v-if="customer.notes" class="customer-notes">{{ customer.notes }}</span>
               <span v-else class="text-muted">—</span>
             </td>
             <td class="hide-mobile" data-label="Commandes">
@@ -139,6 +149,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { customerService } from '../services/customerService'
+import { formatCustomerAddress } from '../address'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import type { Customer } from '../types'
@@ -242,7 +253,8 @@ onMounted(load)
 }
 .customer-name  { font-weight: 500; color: var(--gray-900); font-size: var(--text-sm); }
 .customer-email { font-size: var(--text-xs); color: var(--gray-400); margin-top: 1px; }
-.customer-phone { font-size: var(--text-sm); color: var(--gray-600); }
+.customer-phone, .customer-address, .customer-notes { font-size: var(--text-sm); color: var(--gray-600); }
+.customer-address, .customer-notes { display: inline-block; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
 
 .pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.5rem; }
 .page-info  { font-size: var(--text-sm); color: var(--gray-500); }

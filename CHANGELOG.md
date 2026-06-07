@@ -3,6 +3,39 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Remédiation audit sécurité (2026-06-07)
+
+Implémente l'intégralité des gates de l'audit sécurité (branche
+`feature/security-audit-remediation`). Voir `docs/security/security-remediation-tests.md`,
+`docs/modules/rbac.md`.
+
+### Sécurité
+- **Gating module fail-closed** — `module:<code>` étendu à **tous** les modules métier
+  (catalog, inventory, orders, customers, payments + delivery/suppliers/import_export/
+  reports) ; un tenant sans le module (ou sans aucune ligne `tenant_modules`) est **refusé**
+  (un menu masqué n'est pas un contrôle d'accès). `dashboard` (cœur) reste actif.
+- **Permissions métier sur les créations** — `POST` clients/paiements/commandes gardés par
+  `role_or_permission:manager|admin|<module>.create` → un `viewer` ne peut plus créer.
+- **Hiérarchie des rôles** — autorité centrale `RoleHierarchy` : un `manager` ne peut plus
+  inviter, attribuer ni accorder temporairement le rôle `manager` (anti-escalade latérale).
+- **Isolation multitenant** — le `parent_id` d'une catégorie doit appartenir au tenant courant.
+- **Preuves de paiement privées** — stockées sur le disque privé (plus le disque public) ;
+  payload tenant sans `proof_url` ; téléchargement admin via **URL signée courte**.
+- **Chaîne d'audit vérifiable** — empreinte d'intégrité calculée via un payload canonique
+  **partagé** entre création et vérification (`created_at` épinglé, `ts` unix s) →
+  `verify-chain` valide réellement une chaîne propre.
+- **Frontend** — token Bearer **en mémoire seule** (plus de `localStorage`/`sessionStorage`,
+  legacy purgé) ; `v-html` sur les SVG de modules remplacé par un composant `ModuleIcon`
+  (whitelist statique). Dépendances : `composer audit` / `npm audit` = 0 vulnérabilité.
+
+### Tests
+- Backend **638** (636 passés, 2 skipped) — `SecurityRemediationTest` (16) + `ModuleGatingTest`
+  durci verts. Frontend **191** (gates `frontendSecurity` + `auth` verts) · `vue-tsc` propre.
+
+### En attente
+- Audit UX/UI (`docs/ux-ui/audit-ux-ui-approfondi.md`, P0/P1) et cahiers catalogue
+  (produits spéciaux + duplication) — sessions dédiées, arbitrage produit requis.
+
 ## [1.0.0-rc.4] — 2026-06-06 (RBAC Phase B2 — rôles custom + permissions fines)
 
 Achève le programme RBAC **A + B2 + C**. La Phase **B2** ajoute des rôles configurables

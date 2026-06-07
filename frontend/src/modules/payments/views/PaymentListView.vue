@@ -188,8 +188,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { formatDate } from '@/shared/utils/date'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import { RouterLink } from 'vue-router'
 import SalesTabNav from '../../orders/components/SalesTabNav.vue'
 import { paymentService } from '../services/paymentService'
@@ -203,6 +204,9 @@ const loading  = ref(false)
 const meta     = reactive({ current_page: 1, last_page: 1, per_page: 20, total: 0 })
 const filters  = reactive({ method: '', warehouse_id: '', page: 1 })
 const { warehouses, loadWarehouses } = useWarehouses()
+
+// Keep filters in the URL (refresh / back / shareable links) — UX-12
+const { hydrate: hydrateFilters, push: pushFilters } = useUrlFilters(filters, { defaults: { page: 1 } })
 
 const pageTotal = computed(() => payments.value.reduce((s, p) => s + p.amount_cents, 0))
 
@@ -302,5 +306,10 @@ function fmtAmount(cents: number, currency: string): string {
 
 const fmtDate = formatDate
 
-onMounted(() => { loadWarehouses(); load() })
+onMounted(() => {
+  hydrateFilters()                                   // restore filters from the URL…
+  watch(filters, pushFilters, { deep: true })        // …then mirror changes back to it
+  loadWarehouses()
+  load()
+})
 </script>

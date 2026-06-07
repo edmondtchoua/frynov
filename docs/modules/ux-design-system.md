@@ -77,6 +77,20 @@ Deux niveaux, cumulables, pour `.data-table` (cf. `assets/main.css`) :
 Adopté : `OrderListView`, `CustomerListView`, `PaymentListView`. Reste (incrémental) :
 Produits, Stock, Livraisons, Fournisseurs, Retours + listes admin.
 
+## Filtres de liste persistés (UX-12)
+Composable `composables/useUrlFilters.ts` — synchronise un objet de filtres réactif avec la
+**query string** : les filtres survivent au rafraîchissement, au bouton Précédent et sont
+**partageables par URL**. Le caller garde la main sur le chargement :
+```ts
+const filters = reactive({ search: '', status: '', page: 1 })
+const { hydrate, push } = useUrlFilters(filters, { defaults: { page: 1 } })
+onMounted(() => { hydrate(); watch(filters, push, { deep: true }); load() })
+```
+Valeurs vides ou égales au défaut omises (URL propre) ; types coercés (les nombres restent
+nombres) ; `router.replace` (pas de pollution de l'historique). **Adopté** : `ProductListView`,
+`PaymentListView`. Reste (incrémental) : Commandes, Stock, Clients, etc. Testé
+(`useUrlFilters.spec.ts` — hydratation + miroir + clés inconnues ignorées).
+
 ## Adoption
 Les composants sont disponibles immédiatement. La **migration des vues existantes**
 (≈ 36 `empty-state` ad hoc, boutons et modales locaux) vers ces primitives est

@@ -10,6 +10,7 @@
 
     <!-- ── Sidebar ─────────────────────────────────────── -->
     <aside
+      id="app-sidebar"
       class="sidebar"
       :class="{
         'sidebar--collapsed': sidebarCollapsed,
@@ -40,7 +41,10 @@
         <!-- Desktop collapse button -->
         <button
           class="collapse-btn hide-mobile"
-          :title="sidebarCollapsed ? 'Expand' : 'Collapse'"
+          :title="sidebarCollapsed ? 'Déplier' : 'Replier'"
+          :aria-label="sidebarCollapsed ? 'Déplier la barre latérale' : 'Replier la barre latérale'"
+          :aria-expanded="!sidebarCollapsed"
+          aria-controls="app-sidebar"
           @click="sidebarCollapsed = !sidebarCollapsed"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -55,7 +59,7 @@
         </button>
 
         <!-- Mobile close button -->
-        <button class="collapse-btn show-mobile-only" @click="mobileMenuOpen = false">
+        <button class="collapse-btn show-mobile-only" aria-label="Fermer le menu" @click="mobileMenuOpen = false">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
@@ -63,12 +67,13 @@
       </div>
 
       <!-- Nav items -->
-      <nav class="sidebar-nav">
+      <nav class="sidebar-nav" aria-label="Navigation principale">
         <div class="nav-section-label" v-if="!sidebarCollapsed">Principal</div>
 
         <template v-for="item in mainNavItems" :key="item.name">
-          <!-- All items are flat links — no groups with children -->
+          <!-- Active module → working link -->
           <RouterLink
+            v-if="!item.locked"
             :to="item.to"
             class="nav-item"
             active-class="nav-item--active"
@@ -81,6 +86,22 @@
               {{ marketplaceAlertCount }}
             </span>
           </RouterLink>
+          <!-- Inactive module → kept visible but locked, routes to the upgrade screen -->
+          <button
+            v-else
+            type="button"
+            class="nav-item nav-item--locked"
+            :title="sidebarCollapsed ? item.label + ' — module non activé' : 'Module non activé — voir Abonnement'"
+            :aria-label="item.label + ' — module non activé, voir Abonnement'"
+            @click="goToUpgrade"
+          >
+            <span class="nav-icon" v-html="item.icon"></span>
+            <span v-if="!sidebarCollapsed" class="nav-label">{{ item.label }}</span>
+            <svg v-if="!sidebarCollapsed" class="nav-lock" width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.4"/>
+            </svg>
+          </button>
         </template>
 
         <div v-if="!sidebarCollapsed" class="nav-section-label" style="margin-top: 0.75rem;">Configuration</div>
@@ -137,7 +158,7 @@
           <span class="nav-label">Mon profil</span>
         </RouterLink>
 
-        <button class="logout-btn" :title="sidebarCollapsed ? 'Déconnexion' : ''" @click="handleLogout">
+        <button class="logout-btn" :title="sidebarCollapsed ? 'Déconnexion' : ''" aria-label="Déconnexion" @click="handleLogout">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M6 14H3a1 1 0 01-1-1V3a1 1 0 011-1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -150,7 +171,7 @@
     <div class="main-wrapper">
       <header class="topbar">
         <!-- Mobile hamburger -->
-        <button class="hamburger show-mobile-only" @click="mobileMenuOpen = true" aria-label="Open menu">
+        <button class="hamburger show-mobile-only" @click="mobileMenuOpen = true" aria-label="Ouvrir le menu" :aria-expanded="mobileMenuOpen" aria-controls="app-sidebar">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
           </svg>
@@ -223,14 +244,17 @@ function syncOpenGroups(): void {
 
 // We call syncOpenGroups after mainNavItems is defined (below)
 
-// All nav items with RBAC metadata
-// `managerOnly: true` → hidden for agent/cashier/commercial/delivery roles
-const _allNavItems = [
+// All nav items with RBAC + module metadata (UX-01 — single source of truth).
+//   managerOnly: true → hidden for agent/cashier/commercial/delivery roles
+//   module: backend ErpModule code that gates the route (null = no module gate,
+//           e.g. POS / Marketplace which have no erp_modules row)
+const _allNavItems: Array<{ name: string; to: string; label: string; managerOnly: boolean; module: string | null; icon: string }> = [
   {
     name: 'dashboard',
     to: '/dashboard',
     label: 'Tableau de bord',
     managerOnly: false,
+    module: 'dashboard',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>',
   },
   {
@@ -238,6 +262,7 @@ const _allNavItems = [
     to: '/catalog',
     label: 'Catalogue',
     managerOnly: false,
+    module: 'catalog',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
   },
   {
@@ -245,6 +270,7 @@ const _allNavItems = [
     to: '/inventory',
     label: 'Stock & Inventaire',
     managerOnly: false,
+    module: 'inventory',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 5l6-3 6 3v6l-6 3-6-3V5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M8 2v12M2 5l6 3 6-3" stroke="currentColor" stroke-width="1.4"/></svg>',
   },
   {
@@ -252,6 +278,7 @@ const _allNavItems = [
     to: '/orders',
     label: 'Ventes',
     managerOnly: false,
+    module: 'orders',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="13" r="1.5" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="13" r="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 1h2l2 7h7l1.5-5H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   },
   {
@@ -259,6 +286,7 @@ const _allNavItems = [
     to: '/pos',
     label: 'Caisse',
     managerOnly: false, // cashiers must see it; the backend gates the actual till operations
+    module: null,       // POS has no erp_modules gate
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M1.5 6.5h13" stroke="currentColor" stroke-width="1.4"/><circle cx="4.5" cy="10" r="1" fill="currentColor"/></svg>',
   },
   {
@@ -266,6 +294,7 @@ const _allNavItems = [
     to: '/customers',
     label: 'Clients',
     managerOnly: false,
+    module: 'customers',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M1 14c0-3.3 2.2-5 5-5s5 1.7 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M12 7a2 2 0 010-4M15 14c0-2.2-1.3-3.5-3-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
   },
   {
@@ -273,6 +302,7 @@ const _allNavItems = [
     to: '/suppliers',
     label: 'Fournisseurs',
     managerOnly: true, // agents don't manage suppliers
+    module: 'suppliers',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 12V5l5-3 5 3v7" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 16v-4h4v4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M11 12h4V7l-4-2" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
   },
   {
@@ -280,6 +310,7 @@ const _allNavItems = [
     to: '/reports/sales',
     label: 'Rapports',
     managerOnly: true,
+    module: 'reports',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12V9l3-3 3 3 4-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 15h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
   },
   {
@@ -287,6 +318,7 @@ const _allNavItems = [
     to: '/import/history',
     label: 'Import / Export',
     managerOnly: true,
+    module: 'import_export',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
   },
   {
@@ -294,14 +326,35 @@ const _allNavItems = [
     to: '/marketplace',
     label: 'Marketplace',
     managerOnly: true,
+    module: null,       // Marketplace has no erp_modules gate
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M2 8h12M8 2c-1.5 2-2 4-2 6s.5 4 2 6M8 2c1.5 2 2 4 2 6s-.5 4-2 6" stroke="currentColor" stroke-width="1.4"/></svg>',
   },
 ]
 
-// Computed: filter sidebar items based on user role (RBAC guard)
+// Active module codes for the tenant (from /me). Module locking is only enforced
+// when we actually know them — otherwise we show everything (a menu is never the
+// security control; the backend gates the routes regardless).
+const activeModules   = computed<string[]>(() => auth.user?.active_modules ?? [])
+const moduleInfoKnown = computed(() => activeModules.value.length > 0)
+
+function isModuleActive(mod: string | null): boolean {
+  if (!mod || !moduleInfoKnown.value) return true
+  return activeModules.value.includes(mod)
+}
+
+// UX-01: nav driven by role (RBAC hides disallowed entries) + active modules
+// (inactive modules stay VISIBLE but locked, with an upgrade hint — never hidden
+// silently; cf. docs/plan.md product strategy).
 const mainNavItems = computed(() =>
-  _allNavItems.filter(item => !item.managerOnly || isManagerOrAbove.value || isSuperAdmin.value)
+  _allNavItems
+    .filter(item => !item.managerOnly || isManagerOrAbove.value || isSuperAdmin.value)
+    .map(item => ({ ...item, locked: !isModuleActive(item.module) }))
 )
+
+function goToUpgrade(): void {
+  mobileMenuOpen.value = false
+  router.push('/settings')
+}
 
 const pageTitles: Record<string, string> = {
   dashboard:                 'Tableau de bord',
@@ -447,6 +500,19 @@ syncOpenGroups()
   color: #6ee7b7;
 }
 .nav-item--active:hover { background: rgba(16,185,129,0.2); }
+
+/* Locked entry (module not active) — visible but dimmed, routes to upgrade. */
+.nav-item--locked {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: rgba(255,255,255,0.38);
+}
+.nav-item--locked:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.6); }
+.nav-lock { margin-left: auto; flex-shrink: 0; opacity: 0.7; }
 
 /* ── Collapsible nav groups ──────────────────────────────────────── */
 .nav-group-toggle {

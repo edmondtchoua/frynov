@@ -632,3 +632,28 @@ textarea.form-input {
   padding: 0.75rem 1.25rem 1.25rem;
   border-top: 1px solid var(--gray-100, #f1f5f9);
 }
+
+/* ── Accessibility (UX audit P0 / UX-04) ─────────────────────────────────────
+   Visually-hidden text for screen readers, and a visible keyboard-focus ring
+   for keyboard users only (mouse clicks don't show the ring). */
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-primary, #10b981);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm, 4px);
+}
+/* Remove the legacy non-:focus-visible outline so only keyboard focus shows it. */
+:focus:not(:focus-visible) {
+  outline: none;
+}

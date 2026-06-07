@@ -16,6 +16,98 @@
 
 ---
 
+## Gate sécurité audit — à faire passer par l’agent de remédiation
+
+> Ajout 2026-06-06 : l’audit sécurité est désormais traduit en tests d’acceptation exécutables. Toute implémentation/refactorisation de sécurité doit faire passer ces tests avant validation. Voir `docs/security/security-remediation-tests.md`.
+
+Suites prioritaires :
+
+- Backend : `php artisan test --filter=SecurityRemediationTest`
+- Backend : `php artisan test --filter=ModuleGatingTest`
+- Frontend : `npm run test:unit -- src/security/__tests__/frontendSecurity.spec.ts src/stores/__tests__/auth.spec.ts`
+
+Exigences bloquantes :
+
+- modules métier fail-closed côté serveur ;
+- permissions métier appliquées côté serveur ;
+- aucune relation cross-tenant via IDs front ;
+- preuves de paiement privées ;
+- audit trail vérifiable ;
+- plus de token Bearer persistant dans `localStorage`/`sessionStorage` ;
+- plus de `v-html` sur SVG/HTML venant de données modules.
+
+## Gate UX/UI audit — expérience produit et accessibilité
+
+> Ajout 2026-06-06 : un audit UX/UI approfondi est disponible dans `docs/ux-ui/audit-ux-ui-approfondi.md`. Les refontes front doivent désormais traiter les priorités P0/P1 avant toute validation production.
+
+Axes bloquants :
+
+- navigation alignée modules actifs + permissions ;
+- accessibilité clavier/ARIA sur sidebar, tabs, modales, toggles ;
+- design system partagé pour boutons, cards, tables, états et modales ;
+- états loading/empty/error/forbidden standardisés ;
+- formulaires critiques avec erreurs liées, confirmation et protection contre perte de données ;
+- responsive mobile réel pour listes produits, commandes, paiements, stock et admin ;
+- pricing/upgrade basé sur prix backend confirmé.
+
+## Gate catalogue produits spéciaux — services, digital, garanties, IMEI/VIN
+
+- Ne pas annoncer le catalogue comme compatible téléphones sérialisés, véhicules/VIN, produits digitaux ou garanties tant que les tests d'acceptation du document `docs/modules/catalog-produits-speciaux-audit.md` ne passent pas.
+- Priorité P0 : introduire une politique serveur de stock/livraison (`stock_tracking`, `fulfillment_type`) et corriger le flux commande pour que les services n'utilisent jamais de faux stock.
+- Priorité P1 : ajouter des caractéristiques spéciales dynamiques (ex. IMEI, VIN, numéro moteur, licence) avec flags `is_unique`, `is_filterable`, `is_searchable`, puis des unités sérialisées avec unicité tenant, allocation commande, isolation multitenant et garanties.
+- Priorité P2 : ajouter les produits digitaux avec assets privés, licences/entitlements et contrôles d'accès serveur.
+- Productivité quotidienne : ajouter une duplication produit/catégorie sûre avec wizard de complétion, en copiant les champs non uniques et en vidant/régénérant SKU, codes-barres, GTIN, valeurs uniques, stock, garanties émises et licences individuelles. Audit préalable : `docs/modules/catalog-duplication-audit.md`.
+- L'agent de code doit traiter le document d'audit catalogue comme cahier d'acceptation fonctionnel et sécurité avant toute refactorisation large.
+
+### Audit consolidé P1 — duplication assistée sécurisée catalogue
+
+> Audit source : `docs/modules/catalog-duplication-audit.md`. Verdict : **duplication produit/catégorie absente**, **refonte partielle ciblée recommandée**, **validation produit requise avant implémentation**. Ne pas lancer de refonte complète sans arbitrage explicite.
+
+État actuel consolidé :
+
+- ✅ Création produit existante via `POST /api/catalog/products`, avec génération SKU/code-barres interne et validation GTIN côté serveur.
+- ✅ Édition/affichage produit existants via `ProductFormView` et `ProductShowPage`.
+- ✅ Création/édition catégorie existantes via `CategoryController` et génération automatique de slug.
+- ⚠️ Le formulaire produit est réutilisable partiellement, mais trop dense pour y intégrer tout le wizard sans composant dédié.
+- ❌ Aucun endpoint, service, action UI, wizard ou test de duplication produit/catégorie n'existe aujourd'hui.
+
+Risques bloquants à couvrir côté serveur :
+
+- duplication de `sku`, `barcode`, `internal_barcode`, `gtin`, SKU/code-barres variantes ;
+- duplication de stock réel, quantités réservées, lots, batch numbers, séries, IMEI/VIN, licences individuelles ;
+- duplication de garanties émises, mouvements d'inventaire, commandes/factures, logs, audit trail ou relations transactionnelles ;
+- contournement par payload frontend manipulé ;
+- création partielle produit/variantes sans transaction ;
+- relations cross-tenant sur produit source, catégorie, fournisseur, variantes, attributs ou médias.
+
+Architecture validable avant code :
+
+1. `ProductDuplicationService` dédié avec allowlist de champs copiables et blocklist stricte de champs interdits.
+2. `CategoryDuplicationService` ou extension contrôlée de `CatalogService` pour catégories.
+3. Endpoints sous `auth:sanctum` + `EnsureUserBelongsToTenant` + `role:manager|admin` :
+   - `GET /api/catalog/products/{id}/duplicate/preview` ;
+   - `POST /api/catalog/products/{id}/duplicate` ;
+   - `GET /api/catalog/categories/{id}/duplicate/preview` ;
+   - `POST /api/catalog/categories/{id}/duplicate`.
+4. Preview serveur unique consommée par le wizard : champs copiés, à compléter, régénérés, exclus, warnings.
+5. Création finale transactionnelle, avec rechargement source côté serveur, validation tenant/permissions, rejet/ignore des champs interdits et audit `product.duplicated`.
+6. `ProductDuplicationWizard.vue` dédié : type de duplication, informations générales, variantes/attributs, exclusions stock/sérialisation/garantie/digital, champs à compléter, résumé.
+
+Critères d'acceptation à transformer en tests avant merge :
+
+- produit simple dupliqué sans copier SKU/code-barres/GTIN/stock ;
+- produit à variantes dupliqué avec structure/attributs, sans SKU/code-barres/stock variantes ;
+- produit sérialisé dupliqué sans unités, IMEI, VIN, serials, batches ni stock ;
+- produit avec garantie dupliqué sans garanties émises ;
+- produit digital dupliqué sans clés/licences/entitlements individuels ;
+- catégorie dupliquée sans réutiliser slug/path/statistiques/historiques ;
+- permissions manager/admin, rejet viewer/cashier ;
+- rejet cross-tenant ;
+- rollback transactionnel si une variante échoue ;
+- wizard frontend : bouton visible selon permission, étape “Champs à compléter” obligatoire, résumé copié/vidé/régénéré/exclu.
+
+Arbitrages à valider avant implémentation : libellé du bouton, convention de nom brouillon, génération automatique ou manuelle du SKU, règle `internal_barcode`, règle `barcode`/`gtin`, copie des médias, SKU variantes, catégories enfants, statut `draft` ou statut source, sévérité audit.
+
 ## État global
 
 | Indicateur | Valeur |

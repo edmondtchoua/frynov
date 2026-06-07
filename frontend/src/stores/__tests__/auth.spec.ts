@@ -46,10 +46,11 @@ describe('useAuthStore', () => {
     expect(store.isAuthenticated).toBe(false)
   })
 
-  it('setToken stores token in localStorage', () => {
+  it('setToken keeps the token in reactive memory only', () => {
     const store = useAuthStore()
     store.setToken('tok123')
-    expect(localStorage.getItem('auth_token')).toBe('tok123')
+    expect(store.token).toBe('tok123')
+    expect(localStorage.getItem('auth_token')).toBeNull()
   })
 
   it('setUser makes isAuthenticated true', () => {
@@ -81,10 +82,10 @@ describe('useAuthStore', () => {
     expect(localStorage.getItem('auth_token')).toBeNull()
   })
 
-  it('token from localStorage initialises store', () => {
+  it('ignores any legacy token that may still exist in localStorage', () => {
     localStorage.setItem('auth_token', 'persisted')
     const store = useAuthStore()
-    expect(store.token).toBe('persisted')
+    expect(store.token).toBeNull()
   })
 
   // Regression: /login is public (no tenant middleware) → empty team-scoped roles

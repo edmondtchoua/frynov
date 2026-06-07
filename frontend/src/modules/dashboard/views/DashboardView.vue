@@ -123,7 +123,7 @@
           <RouterLink
             v-for="mod in modulesList"
             :key="mod.code"
-            :to="mod.tenant_active && mod.route_prefix ? '/' + mod.route_prefix : '#'"
+            :to="moduleRouteTarget(mod)"
             class="module-dash-card"
             :class="{
               'module-dash--active':   mod.tenant_active,
@@ -206,6 +206,7 @@ import { ref, computed, onMounted, defineComponent, h } from 'vue'
 import { RouterLink } from 'vue-router'
 import { reportService, formatMoneyCompact, shortDate, type DashboardData } from '@/modules/reports/services/reportService'
 import { authService } from '@/modules/auth/services/authService'
+import { moduleRouteTarget } from '@/modules/dashboard/route'
 import { useAuthStore } from '@/stores/auth'
 import ModuleIcon from '@/shared/components/ModuleIcon.vue'
 import type { ErpModule } from '@/modules/auth/types'

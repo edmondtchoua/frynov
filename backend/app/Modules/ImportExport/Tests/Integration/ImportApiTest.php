@@ -89,6 +89,31 @@ class ImportApiTest extends TestCase
     }
 
     #[Test]
+    public function it_analyzes_rows_with_more_cells_than_headers(): void
+    {
+        $file = $this->makeXlsxFile([
+            ['SKU', 'Nom Produit', 'Prix'],
+            ['P-001', 'T-Shirt', '15000', 'cellule sans en-tête'],
+            ['P-002', 'Pantalon', '25000'],
+        ]);
+
+        $response = $this->actingAs($this->user)
+            ->postJson('/api/import/upload', [
+                'file' => $file,
+                'type' => 'products',
+                'mode' => 'create_update',
+            ]);
+
+        $response->assertStatus(201);
+        $data = $response->json('data') ?? $response->json();
+
+        $this->assertNotSame(ImportSession::STATUS_FAILED, $data['status']);
+        $this->assertNull($data['error_message']);
+        $this->assertEquals(2, $data['total_rows']);
+        $this->assertDatabaseCount('import_rows', 2);
+    }
+
+    #[Test]
     public function it_rejects_invalid_file_type(): void
     {
         $file = UploadedFile::fake()->create('malware.exe', 100, 'application/x-msdownload');

@@ -196,6 +196,32 @@ class ImportModuleTest extends TestCase
     }
 
     #[Test]
+    public function customer_import_stores_address_string_and_notes(): void
+    {
+        $file = $this->makeXlsxUpload([
+            ['Nom', 'Email', 'Téléphone', 'Adresse', 'Notes'],
+            ['Edmond Kombi', 'edmond@example.com', '237678905667', 'Rue Lotin Same, AKWA', 'Client importé'],
+        ]);
+
+        $session = $this->service->upload($file, 'customers', 'create_update', $this->tenant->id, $this->user->id);
+        $session = $this->service->analyze($session);
+
+        if ($session->status === ImportSession::STATUS_ANALYZED) {
+            $session->update(['status' => ImportSession::STATUS_AWAITING_APPROVAL]);
+            $session->refresh();
+        }
+
+        $this->service->execute($session);
+
+        $customer = Customer::where('tenant_id', $this->tenant->id)
+            ->where('email', 'edmond@example.com')
+            ->firstOrFail();
+
+        $this->assertSame('Rue Lotin Same, AKWA', $customer->address);
+        $this->assertSame('Client importé', $customer->notes);
+    }
+
+    #[Test]
     public function cancel_deletes_file_and_marks_session(): void
     {
         $file = $this->makeXlsxUpload([

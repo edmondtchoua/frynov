@@ -112,7 +112,7 @@ class ImportService
 
                 foreach ($rows as $idx => $rawRow) {
                     $rowNum  = $idx + 1;
-                    $rawAssoc = array_combine(array_keys($finalMapping), array_pad(array_values($rawRow), count($finalMapping), null));
+                    $rawAssoc = $this->associateRowWithMappingHeaders($rawRow, $finalMapping);
                     $mapped  = ColumnMapper::applyMapping($rawAssoc, $finalMapping);
                     $result  = $parser->parseRow($mapped, $rowNum);
 
@@ -363,6 +363,25 @@ class ImportService
         }
 
         return $rows;
+    }
+
+    /**
+     * Associate spreadsheet row values with the headers used by the mapping.
+     *
+     * PhpSpreadsheet can return more cells for a data row than the header row
+     * contains (for example when a pasted row has trailing values). Passing those
+     * uneven arrays directly to array_combine() fails the whole import analysis.
+     * Extra cells are intentionally ignored because they have no mapped header;
+     * missing cells are padded with null so validation can report field-level
+     * errors instead of a generic technical failure.
+     */
+    private function associateRowWithMappingHeaders(array $rawRow, array $mapping): array
+    {
+        $headers = array_keys($mapping);
+        $values = array_slice(array_values($rawRow), 0, count($headers));
+        $values = array_pad($values, count($headers), null);
+
+        return array_combine($headers, $values) ?: [];
     }
 
     private function makeParser(ImportSession $session): ProductImportParser|CustomerImportParser|SupplierImportParser

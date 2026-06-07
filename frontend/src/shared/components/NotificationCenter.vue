@@ -114,6 +114,7 @@ function emoji(s: string): string {
 }
 
 function ctxPlatform(n: any): string {
+  if (n.type === 'client') return n.severity === 'error' ? 'Accès refusé' : 'Système'
   const p = (n.context?.platform ?? '') as string
   const map: Record<string, string> = {
     facebook: 'Facebook Marketplace',

@@ -25,6 +25,22 @@ construite avec `StateBlock` (forbidden) + `BaseButton`. Query : `?reason=module
   onglets-liens — `role=tab` est réservé aux widgets à panneaux internes).
 - Toggles : `role="switch"` sur les interrupteurs.
 
+## Feedback action & notifications (UX-10)
+- **Toasts** : pile fixe (bas-droite) rendue par `shared/components/NotificationCenter.vue`,
+  alimentée par le singleton `composables/useNotifications.ts`.
+- **`pushToast(message, severity?)`** (par défaut `severity = 'error'`) — pousse un toast
+  client transitoire (auto-fermé après `TOAST_TTL_MS`). À utiliser pour tout retour d'action
+  immédiat ; les toasts client portent `type: 'client'` (libellé « Accès refusé » / « Système »).
+- **403 jamais silencieux** : le client API (`api/client.ts`) émet `window` `api:forbidden`
+  avec le message du backend ; `useNotifications` l'écoute (une fois, au montage) et appelle
+  `pushToast`. Une action refusée par rôle/permission/module affiche donc un toast d'erreur
+  (et non un échec muet). *(Pendant `auth:expired` (401) → redirection login via `router/guards.ts`.)*
+
+## Pages transverses
+- `pages/AccessUnavailableView.vue` (`/unavailable`) — « accès indisponible » (quota/permission/module).
+- `shared/views/NotFoundView.vue` (catch-all `/:pathMatch(.*)*`) — **404** construite sur
+  `StateBlock` (`empty`) + `BaseButton` (retour tableau de bord), cohérente avec le design system.
+
 ## Adoption
 Les composants sont disponibles immédiatement. La **migration des vues existantes**
 (≈ 36 `empty-state` ad hoc, boutons et modales locaux) vers ces primitives est
@@ -34,3 +50,5 @@ incrémentale — à faire vue par vue lors des prochains passages.
 - `shared/ui/__tests__/ui.spec.ts` — StateBlock (loading/forbidden + action), BaseButton
   (variant/loading/disabled/aria), BaseModal (dialog + close).
 - `directives/__tests__/focusTrap.spec.ts` — Échap + focus-trap.
+- `composables/__tests__/useNotifications.spec.ts` — `pushToast` (toast transitoire + auto-fermeture)
+  et remontée d'un événement `api:forbidden` en toast d'erreur (avec fallback de message).

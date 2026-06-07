@@ -3,6 +3,24 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : feedback action (403) + page 404 (2026-06-07)
+
+Branche `feature/ux-action-feedback` (release `v1.0.0` → `rc.17`).
+Voir `docs/modules/ux-design-system.md`, `docs/recette/etat-des-lieux-v1.0.0.md`.
+
+### UX
+- **403 jamais silencieux (UX-10)** — le client API émet `api:forbidden` (message du backend) ;
+  `useNotifications` l'écoute (une fois, au montage) et le remonte en **toast d'erreur** via la
+  nouvelle fonction `pushToast(message, severity = 'error')`. Une action refusée par
+  rôle / permission / module est désormais visible (auparavant : échec muet). Les toasts client
+  portent `type: 'client'` (libellé « Accès refusé »).
+- **Page 404 design-system (UX-14)** — `NotFoundView` (catch-all) reconstruite sur `StateBlock`
+  (`empty`) + `BaseButton` (retour tableau de bord), cohérente avec `/unavailable` (402).
+
+### Tests
+- Frontend **211** (+4 : `composables/__tests__/useNotifications.spec.ts`) · `vue-tsc` propre ·
+  `npm audit` 0 vulnérabilité.
+
 ## [Non publié] — Remédiation audit sécurité (2026-06-07)
 
 Implémente l'intégralité des gates de l'audit sécurité (branche

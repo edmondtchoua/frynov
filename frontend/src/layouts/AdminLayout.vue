@@ -15,7 +15,7 @@
         </div>
       </div>
 
-      <nav class="admin-nav">
+      <nav class="admin-nav" aria-label="Navigation back-office">
         <RouterLink
           v-for="item in navItems"
           :key="item.to"
@@ -29,14 +29,8 @@
       </nav>
 
       <div class="admin-sidebar__footer">
-        <RouterLink to="/dashboard" class="admin-nav__item admin-nav__item--subtle">
-          <span class="admin-nav__icon">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </span>
-          <span class="admin-nav__label">Retour à l'app</span>
-        </RouterLink>
+        <!-- "Retour à l'app" retiré : le back-office est réservé aux super-admins
+             (sans tenant) — le lien menait vers /dashboard qui les redirige (UX-02). -->
         <button class="admin-nav__item admin-nav__item--subtle" @click="handleLogout">
           <span class="admin-nav__icon">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -83,7 +77,7 @@ const navItems = [
   },
   {
     to: '/admin/tenants',
-    label: 'Tenants',
+    label: 'Espaces clients',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 14v-1.5A3.5 3.5 0 015.5 9h5A3.5 3.5 0 0114 12.5V14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="5" r="3" stroke="currentColor" stroke-width="1.4"/></svg>',
   },
   {
@@ -120,8 +114,8 @@ const navItems = [
 
 const pageTitles: Record<string, string> = {
   'admin.dashboard':       'Tableau de bord',
-  'admin.tenants':         'Gestion des tenants',
-  'admin.tenants.detail':  'Détail tenant',
+  'admin.tenants':         'Espaces clients',
+  'admin.tenants.detail':  'Détail espace client',
   'admin.modules':         'Modules ERP',
   'admin.plans':           'Plans & Tarifs',
   'admin.manual-payments': 'Paiements manuels',

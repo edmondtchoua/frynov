@@ -8,9 +8,7 @@
       </div>
       <div class="header-actions">
         <RouterLink to="/catalog/products/create" class="btn btn-primary">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-          </svg>
+          <Icon name="plus" :size="14" />
           Nouveau produit
         </RouterLink>
       </div>
@@ -19,10 +17,7 @@
     <!-- Filters -->
     <div class="filter-bar">
       <div class="search-wrap">
-        <svg class="search-icon" width="15" height="15" viewBox="0 0 16 16" fill="none">
-          <circle cx="7" cy="7" r="4.5" stroke="var(--gray-400)" stroke-width="1.4"/>
-          <path d="M10.5 10.5l2.5 2.5" stroke="var(--gray-400)" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
+        <Icon name="search" class="search-icon" :size="15" />
         <input v-model="filters.search" type="text" class="form-input search-input"
                placeholder="     Nom, SKU, code-barres…" @input="debouncedLoad" />
       </div>
@@ -161,6 +156,7 @@ import { productService } from '../services/productService'
 import { getAuthToken } from '@/api/authToken'
 import { useUrlFilters } from '@/composables/useUrlFilters'
 import StateBlock from '@/shared/ui/StateBlock.vue'
+import Icon from '@/shared/ui/Icon.vue'
 import type { Category, Product, ProductStatus } from '../types'
 
 const products   = ref<Product[]>([])
@@ -266,7 +262,7 @@ onMounted(() => {
 
 .filter-bar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .search-wrap { position: relative; flex: 1; min-width: 200px; }
-.search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.search-icon { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--gray-400); }
 .search-input { padding-left: 2.25rem !important; }
 .filter-sel { width: 180px; }
 

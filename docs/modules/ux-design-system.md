@@ -11,6 +11,7 @@
 | `StateBlock.vue` | États **loading / empty / error / forbidden** standardisés | `variant`, `title`, `message`, slot `#action` ; `role="status"`, `aria-busy` en loading ; respecte `prefers-reduced-motion` |
 | `BaseButton.vue` | Bouton primitif | `variant` (primary/secondary/danger/ghost), `size` (sm/md), `loading` (spinner + `aria-busy`), `block` ; anneau focus clavier global |
 | `BaseModal.vue` | Dialogue | `v-model`, `title`, `size` ; `role="dialog"` + `aria-modal` + **`v-focus-trap`** (piège Tab, Échap, restauration focus) ; slots défaut + `#footer` ; `Teleport` vers `body` |
+| `Icon.vue` | Icône ligne | `<Icon name="plus" :size="14" />` — registre statique de primitives SVG (whitelist, **pas de `v-html`**), grille 16×16, `currentColor` ; décoratif par défaut (`aria-hidden`), `title` → `role="img"`. Noms : plus, search, view, edit, close, trash, check, download, filter, chevron-left/right |
 
 Page transverse : `pages/AccessUnavailableView.vue` (route `/unavailable`) — page
 « accès indisponible » contextualisée (module désactivé / permission manquante / quota),
@@ -99,6 +100,8 @@ incrémentale — à faire vue par vue lors des prochains passages.
 ## Tests
 - `shared/ui/__tests__/ui.spec.ts` — StateBlock (loading/forbidden + action), BaseButton
   (variant/loading/disabled/aria), BaseModal (dialog + close).
+- `shared/ui/__tests__/Icon.spec.ts` — primitives par nom (path/circle), décoratif vs `title`
+  (a11y), taille, nom inconnu = aucune forme.
 - `directives/__tests__/focusTrap.spec.ts` — Échap + focus-trap.
 - `composables/__tests__/useNotifications.spec.ts` — `pushToast` (toast transitoire + auto-fermeture)
   et remontée d'un événement `api:forbidden` en toast d'erreur (avec fallback de message).

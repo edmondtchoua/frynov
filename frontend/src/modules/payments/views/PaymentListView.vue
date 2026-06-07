@@ -7,9 +7,7 @@
         <p class="page-subtitle">{{ meta.total ?? '—' }} enregistrement{{ meta.total !== 1 ? 's' : '' }}</p>
       </div>
       <button class="btn btn-primary" @click="openCreate">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
+        <Icon name="plus" :size="16" />
         Nouveau paiement
       </button>
     </div>
@@ -197,6 +195,7 @@ import { paymentService } from '../services/paymentService'
 import { useWarehouses } from '@/composables/useWarehouses'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import Icon from '@/shared/ui/Icon.vue'
 import type { Payment, PaymentMethod } from '../types'
 
 const payments = ref<Payment[]>([])

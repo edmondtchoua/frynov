@@ -3,6 +3,23 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : composant Icon (UX-11) (2026-06-07)
+
+Branche `feature/ux-icon-component` (release `v1.0.0` → `rc.21`).
+Voir `docs/modules/ux-design-system.md` (§ Composants).
+
+### UX
+- **Composant `Icon` (UX-11)** — `shared/ui/Icon.vue` centralise les petites icônes ligne
+  redessinées à la main un peu partout : `<Icon name="plus" :size="14" />`. Registre **statique**
+  de primitives SVG (whitelist, **pas de `v-html`**), grille 16×16, `currentColor` ; décoratif par
+  défaut (`aria-hidden`), `title` → `role="img"`. Noms : plus, search, view, edit, close, trash,
+  check, download, filter, chevron-left/right. Adopté sur **Produits** (bouton + recherche) et
+  **Paiements** ; industrialisation incrémentale du reste des SVG inline.
+
+### Tests
+- Frontend **221** (+5 : `Icon.spec.ts` — primitives par nom, a11y décoratif/`title`, taille) ·
+  `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : filtres persistés dans l'URL (UX-12) (2026-06-07)
 
 Branche `feature/ux-url-filters` (release `v1.0.0` → `rc.20`).

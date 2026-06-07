@@ -32,9 +32,12 @@ Pattern pour remplacer une modale ad-hoc (`.modal-overlay`/`.modal-backdrop` + c
 `BaseModal` apporte overlay, `Teleport`, focus-trap, Échap, clic-extérieur, bouton de fermeture
 et en-tête — supprimer le chrome local et les styles `.modal-*` dupliqués. Lier la fermeture via
 `@update:model-value` (et non `v-model`) quand `onClose()` a des effets de bord (réinitialisation).
-**Adopté** : `CustomerListView`, `PaymentListView`. Reste (incrémental, ~22 vues) : Stock, Livraisons,
-Fournisseurs, Retours, Promotions, ManualPayment, RolesPanel, etc. Contrat testé
-(`PaymentListView.spec.ts` → ouverture d'un `role="dialog"` `aria-modal`).
+**Adopté** : `CustomerListView`, `PaymentListView`, `SupplierListView`, `CategoryListView`.
+Reste (incrémental, ~20 vues) : Stock, Livraisons, Retours, Promotions, ManualPayment, RolesPanel,
+WarehouseView, etc. Contrat testé (`PaymentListView.spec.ts`, `SupplierListView.spec.ts` →
+ouverture d'un `role="dialog"` `aria-modal`).
+Astuce pour un formulaire avec `<form>` : garder le `<form id="…">` dans le slot par défaut et lier
+le bouton du `#footer` via l'attribut `form="…"` (préserve la validation native + la touche Entrée).
 
 ## Accessibilité (UX-04, livré en P0)
 - `.sr-only` + `:focus-visible` globaux (`main.css`).

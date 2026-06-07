@@ -100,61 +100,57 @@
       </div>
     </div>
 
-    <!-- ── Create / Edit Modal ────────────────────────────────────────────── -->
-    <Teleport to="body">
-      <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-        <div class="modal-card">
-          <div class="modal-header">
-            <h2>{{ editingId ? 'Modifier le fournisseur' : 'Nouveau fournisseur' }}</h2>
-            <button class="modal-close" @click="closeModal">✕</button>
+    <!-- ── Create / Edit Modal (shared BaseModal — UX-03) ──────────────────── -->
+    <BaseModal
+      v-model="showModal"
+      size="lg"
+      :title="editingId ? 'Modifier le fournisseur' : 'Nouveau fournisseur'"
+    >
+      <form id="supplier-form" @submit.prevent="submitModal">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nom <span class="required">*</span></label>
+            <input v-model="form.name" required class="form-input" placeholder="Raison sociale" />
           </div>
-          <form class="modal-form" @submit.prevent="submitModal">
-            <div class="form-grid">
-              <div class="form-group">
-                <label>Nom <span class="required">*</span></label>
-                <input v-model="form.name" required class="form-input" placeholder="Raison sociale" />
-              </div>
-              <div class="form-group">
-                <label>Email</label>
-                <input v-model="form.email" type="email" class="form-input" placeholder="contact@fournisseur.com" />
-              </div>
-              <div class="form-group">
-                <label>Téléphone</label>
-                <input v-model="form.phone" class="form-input" placeholder="+225 07 00 00 00" />
-              </div>
-              <div class="form-group">
-                <label>Contact principal</label>
-                <input v-model="form.contact_name" class="form-input" placeholder="M. Dupont" />
-              </div>
-              <div class="form-group full-width">
-                <label>Conditions de paiement</label>
-                <input v-model="form.payment_terms" class="form-input" placeholder="Ex: Net 30, Net 60" />
-              </div>
-              <div class="form-group">
-                <label>Statut</label>
-                <select v-model="form.status" class="form-input">
-                  <option value="active">Actif</option>
-                  <option value="inactive">Inactif</option>
-                </select>
-              </div>
-              <div class="form-group full-width">
-                <label>Notes</label>
-                <textarea v-model="form.notes" class="form-input form-textarea" rows="3" placeholder="Commentaires internes…"></textarea>
-              </div>
-            </div>
-
-            <div v-if="formError" class="form-error">{{ formError }}</div>
-
-            <div class="modal-footer">
-              <button type="button" class="btn btn-ghost" @click="closeModal">Annuler</button>
-              <button type="submit" class="btn btn-primary" :disabled="submitting">
-                {{ submitting ? 'Enregistrement…' : (editingId ? 'Enregistrer' : 'Créer') }}
-              </button>
-            </div>
-          </form>
+          <div class="form-group">
+            <label>Email</label>
+            <input v-model="form.email" type="email" class="form-input" placeholder="contact@fournisseur.com" />
+          </div>
+          <div class="form-group">
+            <label>Téléphone</label>
+            <input v-model="form.phone" class="form-input" placeholder="+225 07 00 00 00" />
+          </div>
+          <div class="form-group">
+            <label>Contact principal</label>
+            <input v-model="form.contact_name" class="form-input" placeholder="M. Dupont" />
+          </div>
+          <div class="form-group full-width">
+            <label>Conditions de paiement</label>
+            <input v-model="form.payment_terms" class="form-input" placeholder="Ex: Net 30, Net 60" />
+          </div>
+          <div class="form-group">
+            <label>Statut</label>
+            <select v-model="form.status" class="form-input">
+              <option value="active">Actif</option>
+              <option value="inactive">Inactif</option>
+            </select>
+          </div>
+          <div class="form-group full-width">
+            <label>Notes</label>
+            <textarea v-model="form.notes" class="form-input form-textarea" rows="3" placeholder="Commentaires internes…"></textarea>
+          </div>
         </div>
-      </div>
-    </Teleport>
+
+        <div v-if="formError" class="form-error">{{ formError }}</div>
+      </form>
+
+      <template #footer>
+        <button type="button" class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button type="submit" form="supplier-form" class="btn btn-primary" :disabled="submitting">
+          {{ submitting ? 'Enregistrement…' : (editingId ? 'Enregistrer' : 'Créer') }}
+        </button>
+      </template>
+    </BaseModal>
 
   </div>
 </template>
@@ -164,6 +160,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { supplierService } from '../services/supplierService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import type { Supplier } from '../types'
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -301,14 +298,7 @@ async function confirmDelete(s: Supplier) {
 .spinner { width: 20px; height: 20px; border: 2px solid var(--gray-200); border-top-color: var(--brand-primary, #0d9488); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Modal */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-.modal-card    { background: white; border-radius: 16px; width: 100%; max-width: 600px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
-.modal-header  { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--gray-200); }
-.modal-header h2 { font-size: 18px; font-weight: 700; color: var(--gray-900); }
-.modal-close   { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--gray-400); padding: 4px; }
-.modal-form    { padding: 24px; }
-
+/* Modal chrome now provided by the shared <BaseModal> (UX-03). */
 .form-grid    { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .form-group   { display: flex; flex-direction: column; gap: 6px; }
 .full-width   { grid-column: 1 / -1; }
@@ -318,8 +308,6 @@ async function confirmDelete(s: Supplier) {
 .form-input:focus { border-color: var(--brand-primary, #0d9488); }
 .form-textarea { resize: vertical; min-height: 80px; }
 .form-error   { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 12px; }
-
-.modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--gray-100); }
 
 /* Buttons */
 .btn         { padding: 9px 18px; border-radius: 9px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }

@@ -3,6 +3,23 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 2ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave2` (release `v1.0.0` → `rc.23`).
+Voir `docs/modules/ux-design-system.md` (§ Migration des modales).
+
+### UX
+- **Modales unifiées (UX-03, 2ᵉ vague)** — `SupplierListView` (création/édition fournisseur) et
+  `CategoryListView` (création/édition catégorie) migrées de leur modale ad-hoc vers `<BaseModal>`
+  (overlay, `Teleport`, focus-trap, Échap, clic-extérieur, en-tête/fermeture cohérents ; styles
+  `.modal-*` dupliqués supprimés). Pour le formulaire fournisseur (vrai `<form>`), le `<form id>`
+  reste dans le slot par défaut et le bouton du `#footer` y est lié par l'attribut `form="…"`
+  (validation native + Entrée préservées). 4 modales migrées au total (2 vagues).
+
+### Tests
+- Frontend **230** (+2 : `SupplierListView.spec.ts` — liste + ouverture d'un `role="dialog"`
+  `aria-modal` avec bouton `form="supplier-form"`) · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : fondation i18n FR + EN (UX-13) (2026-06-07)
 
 Branche `feature/ux-i18n-foundation` (release `v1.0.0` → `rc.22`).

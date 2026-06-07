@@ -146,8 +146,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import { formatMoney } from '@/shared/utils/money'
 import { orderService } from '../services/orderService'
 import { productService } from '@/modules/catalog/services/productService'
@@ -184,6 +185,12 @@ function blankItem(): LineItem {
 
 const items   = ref<LineItem[]>([blankItem()])
 const note    = ref('')
+
+// UX-07 — warn before losing an in-progress order. Registered after the initial blank
+// line/note so the empty defaults don't count as a change.
+const dirty = ref(false)
+useUnsavedChanges(dirty)
+watch([items, note], () => { dirty.value = true }, { deep: true })
 const loading = ref(false)
 const error   = ref<string | null>(null)
 
@@ -342,6 +349,7 @@ async function submit() {
           quantity:   it.quantity,
         })),
     })
+    dirty.value = false // saved → no unsaved-changes prompt on the redirect
     router.push(`/orders/${order.id}`)
   } catch (e: any) {
     error.value = e?.response?.data?.message ?? 'Erreur lors de la création de la commande.'

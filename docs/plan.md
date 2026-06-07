@@ -66,8 +66,8 @@ Axes bloquants :
 - 🟡 (P1, **UX-06**) responsive — utilitaire `.table-scroll` + appliqué aux listes migrées ;
   reste : généraliser aux autres listes (idéalement cartes empilées sur mobile) ;
 - 🟡 (P1, **UX-07**) formulaires critiques — utilitaires (`FormField`, `useUnsavedChanges`)
-  + **câblés dans ProductFormView** (garde anti-perte). Reste : étendre aux autres gros
-  formulaires (création commande, onboarding) ;
+  + **garde anti-perte câblée dans ProductFormView ET OrderCreateView**. Reste (mineur) :
+  onboarding ;
 - ✅ (P1, **UX-09**) pricing/upgrade basé sur prix backend — modale d'upgrade (Paramètres)
   alimentée par `publicPricingService` (plans + prix confirmés, montant pré-rempli) ;
 - ✅ (P1, **UX-02**) cohérence admin/tenant — AdminLayout : libellés FR (« Espaces clients »),

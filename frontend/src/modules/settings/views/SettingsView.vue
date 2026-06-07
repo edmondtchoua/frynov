@@ -401,7 +401,7 @@
 
     <!-- ── Invite team member modal ──────────────────────────────────────── -->
     <div v-if="inviteModal.open" class="modal-overlay" @click.self="closeInvite">
-      <div class="modal">
+      <div class="modal" role="dialog" aria-modal="true" v-focus-trap>
         <div class="modal-header">
           <h3>Inviter un membre</h3>
           <button class="modal-close" @click="closeInvite">✕</button>
@@ -468,7 +468,7 @@
 
     <!-- ── Member site/warehouse access modal (multi-sites) ───────────────── -->
     <div v-if="whModal.open" class="modal-overlay" @click.self="whModal.open = false">
-      <div class="modal">
+      <div class="modal" role="dialog" aria-modal="true" v-focus-trap>
         <div class="modal-header">
           <h3>Accès aux entrepôts — {{ whModal.userName }}</h3>
           <button class="modal-close" @click="whModal.open = false">✕</button>
@@ -496,7 +496,7 @@
 
     <!-- ── Member temporary access modal (auto-expiring role) ─────────────── -->
     <div v-if="tempModal.open" class="modal-overlay" @click.self="tempModal.open = false">
-      <div class="modal">
+      <div class="modal" role="dialog" aria-modal="true" v-focus-trap>
         <div class="modal-header">
           <h3>Accès temporaire — {{ tempModal.userName }}</h3>
           <button class="modal-close" @click="tempModal.open = false">✕</button>
@@ -540,7 +540,7 @@
 
     <!-- ── Upgrade / payment proof modal (teleported to root level) ───────── -->
     <div v-if="upgradeModal.open" class="modal-overlay" @click.self="upgradeModal.open = false">
-      <div class="modal">
+      <div class="modal" role="dialog" aria-modal="true" v-focus-trap>
         <div class="modal-header">
           <h3>Demande de mise à niveau</h3>
           <button class="modal-close" @click="upgradeModal.open = false">✕</button>

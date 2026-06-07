@@ -43,16 +43,24 @@ Exigences bloquantes — état :
 ## Gate UX/UI audit — expérience produit et accessibilité
 
 > Ajout 2026-06-06 : un audit UX/UI approfondi est disponible dans `docs/ux-ui/audit-ux-ui-approfondi.md`. Les refontes front doivent désormais traiter les priorités P0/P1 avant toute validation production.
+> **2026-06-07 — P0 entamé** (branche `feature/ux-ui-audit-p0`) : UX-01 + UX-04 livrés.
 
 Axes bloquants :
 
-- navigation alignée modules actifs + permissions ;
-- accessibilité clavier/ARIA sur sidebar, tabs, modales, toggles ;
-- design system partagé pour boutons, cards, tables, états et modales ;
-- états loading/empty/error/forbidden standardisés ;
-- formulaires critiques avec erreurs liées, confirmation et protection contre perte de données ;
-- responsive mobile réel pour listes produits, commandes, paiements, stock et admin ;
-- pricing/upgrade basé sur prix backend confirmé.
+- ✅ **UX-01 (P0)** navigation alignée modules actifs + permissions — sidebar pilotée
+  par `active_modules` + rôle ; modules inactifs **visibles mais verrouillés** (lien
+  upgrade), entrées hors-rôle masquées (`AppLayout.spec.ts`) ;
+- ✅ **UX-04 (P0)** accessibilité clavier/ARIA — sidebar + global (`.sr-only`,
+  `:focus-visible`, `aria-expanded/controls/label`, landmark nav) ; tabs (`<nav aria-label>`
+  + `aria-current` — pattern correct pour des onglets-liens, pas `role=tab`) ; modales
+  (directive globale **`v-focus-trap`** : piège Tab + restauration du focus + Échap,
+  appliquée aux modales Paramètres/Rôles) ; toggles (`role=switch`). Suivi rapide :
+  généraliser `v-focus-trap` aux modales admin/modules restantes (1 attribut chacune) ;
+- 🔲 (P1) design system partagé pour boutons, cards, tables, états et modales ;
+- 🔲 (P1) états loading/empty/error/forbidden standardisés ;
+- 🔲 (P1) formulaires critiques avec erreurs liées, confirmation et protection contre perte de données ;
+- 🔲 (P1) responsive mobile réel pour listes produits, commandes, paiements, stock et admin ;
+- 🔲 (P1) pricing/upgrade basé sur prix backend confirmé.
 
 ## Gate catalogue produits spéciaux — services, digital, garanties, IMEI/VIN
 

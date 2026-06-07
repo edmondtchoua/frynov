@@ -123,12 +123,12 @@
             </div>
             <div class="form-switches">
               <label class="switch-row">
-                <input v-model="form.is_active" type="checkbox" class="switch-input" />
+                <input v-model="form.is_active" type="checkbox" role="switch" class="switch-input" />
                 <span class="switch-track"><span class="switch-thumb"></span></span>
                 <span class="switch-label">Emplacement actif</span>
               </label>
               <label class="switch-row">
-                <input v-model="form.sells_online" type="checkbox" class="switch-input" />
+                <input v-model="form.sells_online" type="checkbox" role="switch" class="switch-input" />
                 <span class="switch-track"><span class="switch-thumb"></span></span>
                 <span class="switch-label">Expose le stock en ligne</span>
               </label>

@@ -54,7 +54,7 @@
 
     <!-- ── Create / edit modal ──────────────────────────────────────────── -->
     <div v-if="modal.open" class="modal-overlay" @click.self="closeModal">
-      <div class="modal modal--wide">
+      <div class="modal modal--wide" role="dialog" aria-modal="true" v-focus-trap="closeModal">
         <div class="modal-header">
           <h3>{{ modal.editing ? 'Modifier le rôle' : 'Nouveau rôle personnalisé' }}</h3>
           <button class="modal-close" @click="closeModal">✕</button>

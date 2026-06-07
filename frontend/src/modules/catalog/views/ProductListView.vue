@@ -61,21 +61,20 @@
       </div>
     </Transition>
 
-    <div v-if="loading" class="loading-center" style="min-height: 260px;">
-      <span class="spinner-sm" style="width:28px;height:28px;border-width:3px"></span>
-    </div>
+    <StateBlock v-if="loading" variant="loading" />
 
-    <div v-else-if="products.length === 0" class="empty-state">
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-        <rect x="4" y="4" width="32" height="32" rx="8" fill="var(--brand-primary-bg)"/>
-        <path d="M10 20h20M20 10v20" stroke="var(--brand-primary)" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      <h3>Aucun produit</h3>
-      <p>{{ filters.search ? 'Aucun résultat pour cette recherche.' : 'Commencez par ajouter votre premier produit.' }}</p>
-      <RouterLink v-if="!filters.search" to="/catalog/products/create" class="btn btn-primary">Ajouter un produit</RouterLink>
-    </div>
+    <StateBlock
+      v-else-if="products.length === 0"
+      variant="empty"
+      title="Aucun produit"
+      :message="filters.search ? 'Aucun résultat pour cette recherche.' : 'Commencez par ajouter votre premier produit.'"
+    >
+      <template v-if="!filters.search" #action>
+        <RouterLink to="/catalog/products/create" class="btn btn-primary">Ajouter un produit</RouterLink>
+      </template>
+    </StateBlock>
 
-    <div v-else class="card" style="padding:0;overflow:hidden">
+    <div v-else class="card table-scroll" style="padding:0">
       <table class="data-table">
         <thead>
           <tr>
@@ -160,6 +159,7 @@ import { RouterLink } from 'vue-router'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
 import { productService } from '../services/productService'
 import { getAuthToken } from '@/api/authToken'
+import StateBlock from '@/shared/ui/StateBlock.vue'
 import type { Category, Product, ProductStatus } from '../types'
 
 const products   = ref<Product[]>([])

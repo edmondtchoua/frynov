@@ -657,3 +657,10 @@ textarea.form-input {
 :focus:not(:focus-visible) {
   outline: none;
 }
+
+/* Responsive wide tables (audit UX-06): keep the table usable on narrow screens by
+   letting it scroll horizontally inside its container instead of breaking the page. */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}

@@ -67,22 +67,18 @@
     </Transition>
 
     <!-- Loading -->
-    <div v-if="loading" class="loading-center" style="min-height: 300px;">
-      <span class="spinner-sm" style="width: 28px; height: 28px; border-width: 3px;"></span>
-    </div>
+    <StateBlock v-if="loading" variant="loading" />
 
     <!-- Empty -->
-    <div v-else-if="stocks.length === 0" class="empty-state">
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-        <rect x="4" y="4" width="32" height="32" rx="8" fill="var(--brand-primary-bg)"/>
-        <path d="M13 20h14M20 13v14" stroke="var(--brand-primary)" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      <h3>Aucun stock trouvé</h3>
-      <p>{{ filters.search ? 'Aucun résultat pour cette recherche.' : 'Les articles apparaîtront ici une fois synchronisés.' }}</p>
-    </div>
+    <StateBlock
+      v-else-if="stocks.length === 0"
+      variant="empty"
+      title="Aucun stock trouvé"
+      :message="filters.search ? 'Aucun résultat pour cette recherche.' : 'Les articles apparaîtront ici une fois synchronisés.'"
+    />
 
     <!-- Table -->
-    <div v-else class="card" style="padding: 0; overflow: hidden;">
+    <div v-else class="card table-scroll" style="padding: 0;">
       <table class="data-table">
         <thead>
           <tr>
@@ -272,6 +268,7 @@ import { formatMoney } from '@/shared/utils/money'
 import InventoryTabNav from "../components/InventoryTabNav.vue"
 import { inventoryService } from '../services/inventoryService'
 import { productService } from '@/modules/catalog/services/productService'
+import StateBlock from '@/shared/ui/StateBlock.vue'
 import client from '@/api/client'
 import type { Stock, MovementReason } from '../types'
 import type { Category } from '@/modules/catalog/types'

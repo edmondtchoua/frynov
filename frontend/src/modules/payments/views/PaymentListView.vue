@@ -34,23 +34,18 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="loading-center" style="min-height: 300px;">
-      <span class="spinner-sm" style="width: 28px; height: 28px; border-width: 3px;"></span>
-    </div>
+    <StateBlock v-if="loading" variant="loading" />
 
     <!-- Empty -->
-    <div v-else-if="payments.length === 0" class="empty-state">
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-        <rect x="4" y="4" width="32" height="32" rx="8" fill="var(--brand-primary-bg)"/>
-        <rect x="10" y="15" width="20" height="13" rx="2" stroke="var(--brand-primary)" stroke-width="2"/>
-        <path d="M10 20h20" stroke="var(--brand-primary)" stroke-width="2"/>
-      </svg>
-      <h3>Aucun paiement</h3>
-      <p>{{ filters.method ? 'Aucun paiement pour ce moyen de paiement.' : 'Les paiements enregistrés apparaîtront ici.' }}</p>
-    </div>
+    <StateBlock
+      v-else-if="payments.length === 0"
+      variant="empty"
+      title="Aucun paiement"
+      :message="filters.method ? 'Aucun paiement pour ce moyen de paiement.' : 'Les paiements enregistrés apparaîtront ici.'"
+    />
 
     <!-- Table -->
-    <div v-else class="card" style="padding: 0; overflow: hidden;">
+    <div v-else class="card table-scroll" style="padding: 0;">
       <table class="data-table">
         <thead>
           <tr>
@@ -208,6 +203,7 @@ import { RouterLink } from 'vue-router'
 import SalesTabNav from '../../orders/components/SalesTabNav.vue'
 import { paymentService } from '../services/paymentService'
 import { useWarehouses } from '@/composables/useWarehouses'
+import StateBlock from '@/shared/ui/StateBlock.vue'
 import type { Payment, PaymentMethod } from '../types'
 
 const payments = ref<Payment[]>([])

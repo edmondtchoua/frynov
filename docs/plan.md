@@ -58,8 +58,9 @@ Axes bloquants :
   généraliser `v-focus-trap` aux modales admin/modules restantes (1 attribut chacune) ;
 - 🟡 (P1, **UX-03**) design system partagé — **fondation livrée** (`shared/ui/` :
   `BaseButton`, `BaseCard`, `BaseModal`, `StateBlock`, `FormField` ; `docs/modules/ux-design-system.md`).
-  **Adoption en cours** : ProductListView + CustomerListView migrés (`StateBlock` + `.table-scroll`).
-  Reste : les ~7 autres listes (commandes, stock, paiements, fournisseurs, admin…) ;
+  **Adoption en cours** : listes Produits, Clients, Stock, Paiements migrées
+  (`StateBlock` + `.table-scroll`). Reste : Commandes (states wrappés dans la card),
+  Fournisseurs (states dans le tableau), livraisons/retours/import, et les vues admin ;
 - ✅ (P1, **UX-05**) états loading/empty/error/forbidden standardisés — `StateBlock` +
   page `/unavailable` (module désactivé / permission / quota) ;
 - 🟡 (P1, **UX-06**) responsive — utilitaire `.table-scroll` + appliqué aux listes migrées ;

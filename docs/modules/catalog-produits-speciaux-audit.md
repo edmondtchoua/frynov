@@ -177,7 +177,74 @@ Ajouter une politique explicite plutôt qu'un simple type :
 
 Cette séparation évite de mélanger la nature commerciale du produit, sa gestion de stock et son mode de livraison.
 
-### 6.2 Ajouter des unités sérialisées
+### 6.2 Ajouter des caractéristiques spéciales dynamiques
+
+Il ne faut **pas** hardcoder uniquement `imei` et `vin`. IMEI et VIN doivent être des **modèles prédéfinis** livrés par défaut, mais l'architecture doit permettre d'ajouter d'autres caractéristiques spéciales selon le métier : numéro de série constructeur, MAC address, numéro de plaque, numéro moteur, numéro de certificat, référence équipement médical, code licence, etc.
+
+Créer une couche de définition dynamique, par exemple `special_attribute_definitions` :
+
+- `id` ;
+- `tenant_id` nullable pour les définitions globales ou personnalisées par tenant ;
+- `code` : `imei`, `vin`, `serial_number`, `mac_address`, `engine_number`, `license_key`, etc. ;
+- `label` ;
+- `scope` : `product`, `variant`, `inventory_unit`, `order_line`, `customer_asset` ;
+- `data_type` : `string`, `number`, `date`, `boolean`, `enum`, `json` ;
+- `is_required_on_receipt` ;
+- `is_required_on_sale` ;
+- `is_unique` ;
+- `unique_scope` : `tenant`, `product`, `variant`, `global` ;
+- `is_filterable` ;
+- `is_searchable` ;
+- `is_scannable` ;
+- `is_sensitive` ;
+- `validation_regex` nullable ;
+- `normalization_strategy` : `uppercase`, `digits_only`, `trim`, `vin`, `imei`, `none` ;
+- `allowed_values` JSON nullable pour les enums ;
+- `help_text` ;
+- `sort_order` ;
+- `is_active`.
+
+Exemple de définition pour un téléphone :
+
+```json
+{
+  "code": "imei",
+  "label": "IMEI",
+  "scope": "inventory_unit",
+  "data_type": "string",
+  "is_required_on_receipt": true,
+  "is_required_on_sale": true,
+  "is_unique": true,
+  "unique_scope": "tenant",
+  "is_filterable": true,
+  "is_searchable": true,
+  "is_scannable": true,
+  "normalization_strategy": "imei"
+}
+```
+
+Exemple de définition pour une voiture :
+
+```json
+{
+  "code": "vin",
+  "label": "VIN / numéro de châssis",
+  "scope": "inventory_unit",
+  "data_type": "string",
+  "is_required_on_receipt": true,
+  "is_required_on_sale": true,
+  "is_unique": true,
+  "unique_scope": "tenant",
+  "is_filterable": true,
+  "is_searchable": true,
+  "is_scannable": true,
+  "normalization_strategy": "vin"
+}
+```
+
+Le produit ou la variante doit référencer les définitions applicables via une table pivot, par exemple `product_special_attributes`, afin de déclarer qu'un produit exige IMEI, VIN, numéro moteur ou tout autre attribut métier sans changement de code.
+
+### 6.3 Ajouter des unités sérialisées
 
 Créer une table dédiée, par exemple `inventory_units` ou `product_units` :
 
@@ -187,25 +254,32 @@ Créer une table dédiée, par exemple `inventory_units` ou `product_units` :
 - `variant_id` nullable ;
 - `warehouse_id` nullable ;
 - `batch_id` nullable ;
-- `serial_type` : `imei`, `vin`, `serial`, `chassis`, `custom` ;
-- `serial_number` normalisé ;
-- `secondary_identifiers` JSON ;
 - `condition` : `new`, `used`, `refurbished`, `damaged` ;
 - `status` : `in_stock`, `reserved`, `sold`, `returned`, `repair`, `quarantine`, `lost`, `scrapped` ;
 - `received_at`, `reserved_at`, `sold_at` ;
 - `order_id`, `order_line_id`, `customer_id` ;
 - `warranty_started_at`, `warranty_ends_at` ;
-- `metadata` ;
 - timestamps et soft deletes si nécessaire.
+
+Stocker les valeurs dynamiques dans une table normalisée, par exemple `inventory_unit_attribute_values` :
+
+- `id` ;
+- `tenant_id` ;
+- `inventory_unit_id` ;
+- `special_attribute_definition_id` ;
+- `value_string`, `value_number`, `value_date`, `value_boolean`, `value_json` selon `data_type` ;
+- `normalized_value` pour recherche, scan et unicité ;
+- `created_by`, `updated_by`.
 
 Contraintes minimales :
 
-- unicité par tenant sur `(serial_type, serial_number)` ;
+- unicité conditionnelle selon la définition : `(tenant_id, special_attribute_definition_id, normalized_value)` quand `is_unique=true` et `unique_scope=tenant` ;
 - index par tenant, produit, variante, statut ;
 - index par `order_line_id` et `customer_id` ;
-- normalisation serveur des IMEI/VIN avant validation.
+- index de recherche sur `normalized_value` seulement si `is_searchable` ou `is_filterable` ;
+- normalisation serveur selon la stratégie de la définition, pas selon une liste hardcodée.
 
-### 6.3 Ajouter les garanties
+### 6.4 Ajouter les garanties
 
 Créer :
 
@@ -219,7 +293,7 @@ Règles serveur :
 - une garantie sérialisée doit pointer vers l'unité vendue ;
 - une extension de garantie doit être auditable et facturable si nécessaire.
 
-### 6.4 Ajouter les produits digitaux
+### 6.5 Ajouter les produits digitaux
 
 Créer :
 
@@ -234,7 +308,7 @@ Règles serveur :
 - vérifier paiement, tenant, client, commande et entitlement ;
 - journaliser téléchargement, activation et révocation.
 
-### 6.5 Adapter les commandes et le fulfillment
+### 6.6 Adapter les commandes et le fulfillment
 
 Le service commande doit appliquer une stratégie selon `stock_tracking` et `fulfillment_type` :
 
@@ -319,7 +393,19 @@ Pour un produit digital :
 - Rechercher une unité par IMEI/VIN.
 - Masquer les unités d'un autre tenant.
 
-### 8.4 Garanties
+### 8.4 Caractéristiques spéciales dynamiques
+
+- Créer une définition `imei` avec `is_unique=true`, `is_filterable=true`, `is_searchable=true` et `scope=inventory_unit`.
+- Créer une définition métier personnalisée, par exemple `engine_number`, sans modifier le code applicatif.
+- Attacher ces définitions à une catégorie, un produit ou une variante.
+- Refuser la réception d'une unité si une caractéristique `is_required_on_receipt=true` est absente.
+- Refuser deux valeurs identiques quand `is_unique=true` selon le `unique_scope`.
+- Autoriser les doublons quand `is_unique=false`.
+- Normaliser la valeur côté serveur avant comparaison d'unicité et recherche.
+- Filtrer/rechercher uniquement sur les attributs `is_filterable` ou `is_searchable`.
+- Masquer ou restreindre les attributs `is_sensitive` selon permission serveur.
+
+### 8.5 Garanties
 
 - Créer une politique de garantie de 12 mois sur un produit.
 - Générer un contrat de garantie lors du fulfillment ou de la facturation.
@@ -327,7 +413,7 @@ Pour un produit digital :
 - Calculer correctement `warranty_ends_at`.
 - Refuser une réclamation SAV hors période sauf override autorisé et audité.
 
-### 8.5 Reporting
+### 8.6 Reporting
 
 - Exclure les services/digitaux des rapports de valorisation de stock.
 - Valoriser les produits sérialisés par unité et non uniquement par quantité agrégée.
@@ -339,7 +425,8 @@ Pour un produit digital :
 | --- | --- | --- |
 | P0 | Ajouter une politique serveur `stock_tracking` et corriger commandes/services | Évite faux stock, erreurs de vente et incohérences majeures. |
 | P0 | Tests d'acceptation services non stockables | Verrouille le comportement attendu avant refactorisation. |
-| P1 | Modèle `inventory_units` pour IMEI/VIN/séries | Nécessaire pour téléphones, voitures, équipements et garanties. |
+| P1 | Définitions dynamiques de caractéristiques spéciales | Évite de hardcoder IMEI/VIN et permet d'ajouter des identifiants métier configurables. |
+| P1 | Modèle `inventory_units` + valeurs d'attributs dynamiques pour IMEI/VIN/séries | Nécessaire pour téléphones, voitures, équipements et garanties. |
 | P1 | Contraintes d'unicité et isolation tenant sur identifiants unitaires | Évite doublons, IDOR et fuites inter-tenant. |
 | P1 | Lien commande ⇄ unité sérialisée ⇄ client | Base de la traçabilité vente/SAV. |
 | P1 | Garanties politiques + contrats | Nécessaire pour produits à garantie commerciale/légale. |
@@ -357,13 +444,13 @@ Pour un produit digital :
 - `backend/app/Modules/Inventory/Services/StockService.php` : refuser stock sur `stock_tracking=none`, supporter `serialized`.
 - `backend/app/Modules/Inventory/Http/Controllers/InventoryController.php` : ajouter réception/recherche/vente d'unités sérialisées.
 - `backend/app/Modules/Orders/Services/OrderService.php` : appliquer la stratégie de réservation/fulfillment selon la politique produit.
-- `backend/app/Modules/Inventory/database/migrations/*` : créer `inventory_units` et contraintes uniques.
+- `backend/app/Modules/Inventory/database/migrations/*` : créer `inventory_units`, `special_attribute_definitions`, `product_special_attributes`, `inventory_unit_attribute_values` et contraintes uniques dynamiques.
 - `backend/app/Modules/Catalog/database/migrations/*` : enrichir `products` ou créer tables de policies.
 - `backend/app/Modules/*/Tests/*` : ajouter les tests d'acceptation décrits ci-dessus.
 
 ### Front-end
 
-- `frontend/src/modules/catalog/views/ProductFormView.vue` : exposer type, tracking stock, sérialisation, digital, garantie.
+- `frontend/src/modules/catalog/views/ProductFormView.vue` : exposer type, tracking stock, sérialisation, digital, garantie et caractéristiques spéciales configurables.
 - `frontend/src/modules/catalog/views/ProductShowPage.vue` : ajouter onglets unités/lots/assets/garanties.
 - `frontend/src/modules/catalog/types.ts` : typer les nouvelles politiques.
 - `frontend/src/modules/inventory/views/*` : ajouter réception et recherche d'unités par IMEI/VIN.
@@ -373,17 +460,17 @@ Pour un produit digital :
 
 - [ ] Un service peut être créé, vendu et fulfilled sans stock.
 - [ ] Un produit digital peut être vendu avec entitlement serveur et accès fichier privé.
-- [ ] Un téléphone peut être reçu avec IMEI obligatoire et unique.
-- [ ] Une voiture peut être reçue avec VIN/numéro de châssis obligatoire et unique.
+- [ ] Un téléphone peut être reçu avec une définition dynamique IMEI obligatoire et unique.
+- [ ] Une voiture peut être reçue avec une définition dynamique VIN/numéro de châssis obligatoire et unique.
 - [ ] Une unité sérialisée peut être réservée puis vendue une seule fois.
 - [ ] Les unités d'un tenant sont invisibles depuis un autre tenant.
 - [ ] Une garantie est créée automatiquement à la vente selon une politique produit.
 - [ ] Une réclamation SAV peut retrouver la vente, le client, l'unité et la période de garantie.
 - [ ] Les rapports de stock excluent services/digitaux et valorisent correctement les unités physiques.
-- [ ] Les tests API couvrent concurrence, unicité, IDOR et changements de statut.
+- [ ] Les tests API couvrent définitions dynamiques, concurrence, unicité, IDOR et changements de statut.
 
 ## 12. Conclusion
 
-Le catalogue actuel est un bon début pour gérer des produits standards et des variantes commerciales, mais il ne doit pas être présenté comme compatible avec des produits complexes tels que téléphones à IMEI, véhicules à VIN, produits digitaux ou garanties. Pour ces usages, il faut ajouter une couche métier explicite : politiques produit, stock tracking, unités sérialisées, garanties, entitlements digitaux et stratégies de fulfillment côté serveur.
+Le catalogue actuel est un bon début pour gérer des produits standards et des variantes commerciales, mais il ne doit pas être présenté comme compatible avec des produits complexes tels que téléphones à IMEI, véhicules à VIN, produits digitaux ou garanties. Pour ces usages, il faut ajouter une couche métier explicite : politiques produit, stock tracking, définitions dynamiques de caractéristiques spéciales, unités sérialisées, garanties, entitlements digitaux et stratégies de fulfillment côté serveur.
 
 La priorité est de corriger l'écart entre “type de produit” et “comportement réel du système”. Tant que les commandes et l'inventaire ne respectent pas une politique serveur de stock/livraison, les services et produits spéciaux resteront incohérents malgré les champs de catalogue existants.

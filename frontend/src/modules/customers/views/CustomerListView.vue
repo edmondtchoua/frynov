@@ -31,24 +31,22 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="loading-center" style="min-height: 300px;">
-      <span class="spinner-sm" style="width: 28px; height: 28px; border-width: 3px;"></span>
-    </div>
+    <StateBlock v-if="loading" variant="loading" />
 
     <!-- Empty -->
-    <div v-else-if="customers.length === 0" class="empty-state">
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-        <rect x="4" y="4" width="32" height="32" rx="8" fill="var(--brand-primary-bg)"/>
-        <circle cx="20" cy="17" r="5" stroke="var(--brand-primary)" stroke-width="2"/>
-        <path d="M10 33c0-5.523 4.477-10 10-10s10 4.477 10 10" stroke="var(--brand-primary)" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      <h3>Aucun client</h3>
-      <p>{{ search ? 'Aucun résultat pour cette recherche.' : 'Ajoutez votre premier client.' }}</p>
-      <button v-if="!search" class="btn btn-primary" @click="openCreate">Ajouter un client</button>
-    </div>
+    <StateBlock
+      v-else-if="customers.length === 0"
+      variant="empty"
+      title="Aucun client"
+      :message="search ? 'Aucun résultat pour cette recherche.' : 'Ajoutez votre premier client.'"
+    >
+      <template v-if="!search" #action>
+        <button class="btn btn-primary" @click="openCreate">Ajouter un client</button>
+      </template>
+    </StateBlock>
 
     <!-- Table -->
-    <div v-else class="card" style="padding: 0; overflow: hidden;">
+    <div v-else class="card table-scroll" style="padding: 0;">
       <table class="data-table">
         <thead>
           <tr>
@@ -148,6 +146,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { customerService } from '../services/customerService'
+import StateBlock from '@/shared/ui/StateBlock.vue'
 import type { Customer } from '../types'
 
 const customers = ref<Customer[]>([])

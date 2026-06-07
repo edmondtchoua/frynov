@@ -10,7 +10,7 @@
     </div>
 
     <!-- Table -->
-    <div class="table-wrap">
+    <div class="table-wrap table-scroll">
       <table class="admin-table" v-if="!loading && promos.length">
         <thead>
           <tr>
@@ -67,8 +67,8 @@
           </tr>
         </tbody>
       </table>
-      <div v-else-if="loading" class="state-msg">Chargement…</div>
-      <div v-else class="state-msg">Aucune promotion créée.</div>
+      <StateBlock v-else-if="loading" variant="loading" />
+      <StateBlock v-else variant="empty" title="Aucune promotion créée" />
     </div>
 
     <!-- Pagination -->
@@ -161,6 +161,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { formatDate } from '@/shared/utils/date'
 import { adminService, type AdminPromotion } from '../services/adminService'
+import StateBlock from '@/shared/ui/StateBlock.vue'
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const promos  = ref<AdminPromotion[]>([])

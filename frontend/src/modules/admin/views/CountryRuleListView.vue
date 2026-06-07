@@ -8,17 +8,20 @@
       <button class="btn btn-primary" @click="openCreate">+ Nouvelle règle</button>
     </div>
 
-    <div v-if="loading" class="loading-center"><span class="spinner-sm"></span> Chargement…</div>
+    <StateBlock v-if="loading" variant="loading" />
 
-    <div v-else-if="error" class="empty-state">
-      <p>{{ error }}</p>
-      <button class="btn btn-secondary" @click="load">Réessayer</button>
-    </div>
+    <StateBlock v-else-if="error" variant="error" :message="error">
+      <template #action>
+        <button class="btn btn-secondary" @click="load">Réessayer</button>
+      </template>
+    </StateBlock>
 
-    <div v-else-if="!rules.length" class="empty-state">
-      <h3>Aucune règle pays</h3>
-      <p>Ajoutez une règle pour personnaliser l'inscription d'un pays.</p>
-    </div>
+    <StateBlock
+      v-else-if="!rules.length"
+      variant="empty"
+      title="Aucune règle pays"
+      message="Ajoutez une règle pour personnaliser l'inscription d'un pays."
+    />
 
     <div v-else class="card" style="padding:0; overflow:hidden;">
       <div class="table-scroll">
@@ -100,6 +103,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { adminService, type AdminCountryRule } from '../services/adminService'
+import StateBlock from '@/shared/ui/StateBlock.vue'
 
 const rules   = ref<AdminCountryRule[]>([])
 const loading = ref(true)

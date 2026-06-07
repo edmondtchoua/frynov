@@ -48,11 +48,18 @@
     </div>
 
     <!-- ── Table ─────────────────────────────────────────────────────────── -->
-    <div class="table-card">
-      <div v-if="loading" class="table-loading">
-        <div class="spinner"></div>
-        <span>Chargement…</span>
-      </div>
+    <div class="table-card table-scroll">
+      <StateBlock v-if="loading" variant="loading" />
+
+      <StateBlock
+        v-else-if="sessions.length === 0"
+        variant="empty"
+        title="Aucun import trouvé"
+      >
+        <template #action>
+          <button class="btn btn-primary btn-sm" @click="$router.push('/import/new')">Premier import</button>
+        </template>
+      </StateBlock>
 
       <table v-else class="data-table">
         <thead>
@@ -69,18 +76,6 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-if="sessions.length === 0">
-            <td colspan="9" class="empty-state">
-              <div class="empty-inner">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="40" height="40">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-                </svg>
-                <p>Aucun import trouvé</p>
-                <button class="btn btn-primary btn-sm" @click="$router.push('/import/new')">Premier import</button>
-              </div>
-            </td>
-          </tr>
-
           <tr v-for="s in sessions" :key="s.id" class="table-row" @click="openDetail(s)" style="cursor:pointer">
             <td>
               <span :class="['type-badge', `type-${s.type}`]">
@@ -190,6 +185,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { formatDateTime } from '@/shared/utils/date'
 import { useRouter } from 'vue-router'
 import { importExportService } from '../services/importExportService'
+import StateBlock from '@/shared/ui/StateBlock.vue'
 import type { ImportSession } from '../types'
 import { ENTITY_LABELS, MODE_LABELS, STATUS_LABELS } from '../types'
 
@@ -289,7 +285,7 @@ const fmtDate = formatDateTime
 .filters-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
 .filter-select { padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 14px; outline: none; background: white; cursor: pointer; }
 
-.table-card     { background: white; border-radius: 12px; border: 1px solid var(--gray-200); overflow: hidden; }
+.table-card     { background: white; border-radius: 12px; border: 1px solid var(--gray-200); overflow-x: auto; }
 .table-loading  { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 48px; color: var(--gray-500); }
 
 .data-table     { width: 100%; border-collapse: collapse; }

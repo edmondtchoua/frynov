@@ -465,13 +465,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { productService } from '../services/productService'
 import { getAuthToken } from '@/api/authToken'
 import client from '@/api/client'
 import type { Category, Product } from '../types'
 import { usePermission } from '@/composables/usePermission'
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 
 const route  = useRoute()
 const router = useRouter()
@@ -505,6 +506,12 @@ const form = reactive({
   weight_kg:      '' as number | '',
   has_variants:   false,
 })
+
+// ── Unsaved-changes guard (UX-07) ───────────────────────────────────────────
+const dirty      = ref(false)
+const trackDirty = ref(false) // enabled after the initial (edit-mode) load
+useUnsavedChanges(dirty)
+watch(form, () => { if (trackDirty.value) dirty.value = true }, { deep: true })
 
 // ── Stock initial (produits sans variantes) ────────────────────────────────
 const initialQty = ref(0)
@@ -896,6 +903,7 @@ async function handleSubmit() {
     }
 
     // After save: go to show page for new products, or stay on show page for edits
+    dirty.value = false // saved → allow navigation without the unsaved-changes prompt
     router.push(`/catalog/products/${savedProduct.id}`)
   } catch (err: any) {
     if (err?.response?.status === 422) {
@@ -945,6 +953,7 @@ async function loadProduct() {
 onMounted(async () => {
   categories.value = await productService.categories.list().catch(() => [])
   await loadProduct()
+  trackDirty.value = true // ignore the initial edit-mode population; track real edits only
 })
 </script>
 

@@ -176,17 +176,17 @@
             </div>
             <div class="form-switches">
               <label class="switch-row">
-                <input v-model="form.is_auto_close_enabled" type="checkbox" class="switch-input" />
+                <input v-model="form.is_auto_close_enabled" type="checkbox" role="switch" class="switch-input" />
                 <span class="switch-track"><span class="switch-thumb"></span></span>
                 <span class="switch-label">Fermeture automatique quand stock ≤ seuil</span>
               </label>
               <label class="switch-row">
-                <input v-model="form.is_auto_reopen_enabled" type="checkbox" class="switch-input" />
+                <input v-model="form.is_auto_reopen_enabled" type="checkbox" role="switch" class="switch-input" />
                 <span class="switch-track"><span class="switch-thumb"></span></span>
                 <span class="switch-label">Réouverture automatique après réapprovisionnement</span>
               </label>
               <label class="switch-row">
-                <input v-model="form.is_price_sync_enabled" type="checkbox" class="switch-input" />
+                <input v-model="form.is_price_sync_enabled" type="checkbox" role="switch" class="switch-input" />
                 <span class="switch-track"><span class="switch-thumb"></span></span>
                 <span class="switch-label">Synchroniser les prix automatiquement</span>
               </label>

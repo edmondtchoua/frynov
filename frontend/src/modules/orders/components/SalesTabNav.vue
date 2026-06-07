@@ -1,5 +1,5 @@
 <template>
-  <nav class="sales-tabs">
+  <nav class="sales-tabs" aria-label="Sections des ventes">
     <RouterLink
       v-for="tab in visibleTabs"
       :key="tab.to"

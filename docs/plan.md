@@ -50,9 +50,12 @@ Axes bloquants :
 - ✅ **UX-01 (P0)** navigation alignée modules actifs + permissions — sidebar pilotée
   par `active_modules` + rôle ; modules inactifs **visibles mais verrouillés** (lien
   upgrade), entrées hors-rôle masquées (`AppLayout.spec.ts`) ;
-- 🟡 **UX-04 (P0)** accessibilité clavier/ARIA — **sidebar + global** faits (`.sr-only`,
-  `:focus-visible`, `aria-expanded/controls/label`, landmark nav) ; **reste** : tabs
-  (`role=tablist`), modales (focus-trap), toggles (`role=switch`) ;
+- ✅ **UX-04 (P0)** accessibilité clavier/ARIA — sidebar + global (`.sr-only`,
+  `:focus-visible`, `aria-expanded/controls/label`, landmark nav) ; tabs (`<nav aria-label>`
+  + `aria-current` — pattern correct pour des onglets-liens, pas `role=tab`) ; modales
+  (directive globale **`v-focus-trap`** : piège Tab + restauration du focus + Échap,
+  appliquée aux modales Paramètres/Rôles) ; toggles (`role=switch`). Suivi rapide :
+  généraliser `v-focus-trap` aux modales admin/modules restantes (1 attribut chacune) ;
 - 🔲 (P1) design system partagé pour boutons, cards, tables, états et modales ;
 - 🔲 (P1) états loading/empty/error/forbidden standardisés ;
 - 🔲 (P1) formulaires critiques avec erreurs liées, confirmation et protection contre perte de données ;

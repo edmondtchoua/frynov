@@ -1,5 +1,5 @@
 <template>
-  <nav class="reports-tabs">
+  <nav class="reports-tabs" aria-label="Sections des rapports">
     <RouterLink
       v-for="tab in visibleTabs"
       :key="tab.to"

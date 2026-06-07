@@ -119,80 +119,71 @@
       <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goToPage(meta.current_page + 1)">Suivant →</button>
     </div>
 
-    <!-- Create payment modal -->
-    <Teleport to="body">
-      <div v-if="modal.open" class="modal-backdrop" @click.self="closeModal">
-        <div class="modal-box">
-          <div class="modal-header">
-            <h3 class="modal-title">Enregistrer un paiement</h3>
-            <button class="modal-close" @click="closeModal">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M4 4l10 10M14 4L4 14" stroke="var(--gray-500)" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </div>
-
-          <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
-            <div class="form-group">
-              <label class="form-label">Montant <span style="color:#dc2626;">*</span></label>
-              <div style="display: flex; gap: 8px;">
-                <input
-                  v-model.number="form.amount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  class="form-input"
-                  style="flex: 1;"
-                  placeholder="0.00"
-                />
-                <select v-model="form.currency" class="form-input" style="width: 100px;">
-                  <option>XOF</option>
-                  <option>XAF</option>
-                  <option>EUR</option>
-                  <option>USD</option>
-                  <option>MAD</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Moyen de paiement <span style="color:#dc2626;">*</span></label>
-              <select v-model="form.method" class="form-input">
-                <option value="cash">Espèces</option>
-                <option value="mobile_money">Mobile Money (Orange/Wave/MTN)</option>
-                <option value="card">Carte bancaire</option>
-                <option value="transfer">Virement</option>
-                <option value="cheque">Chèque</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Référence transaction</label>
-              <input v-model="form.reference" type="text" class="form-input" placeholder="N° reçu, TX ID…" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Note</label>
-              <textarea v-model="form.note" class="form-input" style="resize: vertical; min-height: 60px;" rows="2"></textarea>
-            </div>
-
-            <p v-if="modal.error" style="color: #dc2626; font-size: 0.875rem;">{{ modal.error }}</p>
-          </div>
-
-          <div class="modal-footer">
-            <button class="btn btn-ghost" @click="closeModal">Annuler</button>
-            <button
-              class="btn btn-primary"
-              :disabled="modal.saving || !form.amount || form.amount <= 0"
-              @click="submitPayment"
-            >
-              <span v-if="modal.saving" class="spinner-sm"></span>
-              Enregistrer
-            </button>
+    <!-- Create payment modal (shared BaseModal — UX-03) -->
+    <BaseModal
+      :model-value="modal.open"
+      title="Enregistrer un paiement"
+      @update:model-value="(v: boolean) => { if (!v) closeModal() }"
+    >
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="form-group">
+          <label class="form-label">Montant <span style="color:#dc2626;">*</span></label>
+          <div style="display: flex; gap: 8px;">
+            <input
+              v-model.number="form.amount"
+              type="number"
+              min="0"
+              step="0.01"
+              class="form-input"
+              style="flex: 1;"
+              placeholder="0.00"
+            />
+            <select v-model="form.currency" class="form-input" style="width: 100px;">
+              <option>XOF</option>
+              <option>XAF</option>
+              <option>EUR</option>
+              <option>USD</option>
+              <option>MAD</option>
+            </select>
           </div>
         </div>
+
+        <div class="form-group">
+          <label class="form-label">Moyen de paiement <span style="color:#dc2626;">*</span></label>
+          <select v-model="form.method" class="form-input">
+            <option value="cash">Espèces</option>
+            <option value="mobile_money">Mobile Money (Orange/Wave/MTN)</option>
+            <option value="card">Carte bancaire</option>
+            <option value="transfer">Virement</option>
+            <option value="cheque">Chèque</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Référence transaction</label>
+          <input v-model="form.reference" type="text" class="form-input" placeholder="N° reçu, TX ID…" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Note</label>
+          <textarea v-model="form.note" class="form-input" style="resize: vertical; min-height: 60px;" rows="2"></textarea>
+        </div>
+
+        <p v-if="modal.error" style="color: #dc2626; font-size: 0.875rem;">{{ modal.error }}</p>
       </div>
-    </Teleport>
+
+      <template #footer>
+        <button class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button
+          class="btn btn-primary"
+          :disabled="modal.saving || !form.amount || form.amount <= 0"
+          @click="submitPayment"
+        >
+          <span v-if="modal.saving" class="spinner-sm"></span>
+          Enregistrer
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -204,6 +195,7 @@ import SalesTabNav from '../../orders/components/SalesTabNav.vue'
 import { paymentService } from '../services/paymentService'
 import { useWarehouses } from '@/composables/useWarehouses'
 import StateBlock from '@/shared/ui/StateBlock.vue'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import type { Payment, PaymentMethod } from '../types'
 
 const payments = ref<Payment[]>([])

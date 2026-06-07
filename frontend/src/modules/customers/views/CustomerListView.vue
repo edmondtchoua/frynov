@@ -98,47 +98,40 @@
       </button>
     </div>
 
-    <!-- Create / Edit modal -->
-    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-box">
-        <div class="modal-header">
-          <h3>{{ editingCustomer ? 'Modifier le client' : 'Nouveau client' }}</h3>
-          <button class="modal-close" @click="closeModal">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </button>
+    <!-- Create / Edit modal (shared BaseModal — UX-03) -->
+    <BaseModal
+      :model-value="showModal"
+      :title="editingCustomer ? 'Modifier le client' : 'Nouveau client'"
+      @update:model-value="(v: boolean) => { if (!v) closeModal() }"
+    >
+      <div class="form-group">
+        <label class="form-label">Nom complet <span style="color: var(--color-error);">*</span></label>
+        <input v-model="form.name" type="text" class="form-input" :class="{ error: formErrors.name }" placeholder="Amina Diallo" @input="delete formErrors.name"/>
+        <span v-if="formErrors.name" class="form-error">{{ formErrors.name }}</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label">Email</label>
+          <input v-model="form.email" type="email" class="form-input" placeholder="amina@exemple.com"/>
         </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label class="form-label">Nom complet <span style="color: var(--color-error);">*</span></label>
-            <input v-model="form.name" type="text" class="form-input" :class="{ error: formErrors.name }" placeholder="Amina Diallo" @input="delete formErrors.name"/>
-            <span v-if="formErrors.name" class="form-error">{{ formErrors.name }}</span>
-          </div>
-          <div class="form-row">
-            <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label">Email</label>
-              <input v-model="form.email" type="email" class="form-input" placeholder="amina@exemple.com"/>
-            </div>
-            <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label">Téléphone</label>
-              <input v-model="form.phone" type="tel" class="form-input" placeholder="+221 77 000 00 00"/>
-            </div>
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label">Notes</label>
-            <textarea v-model="form.notes" class="form-input" rows="2" placeholder="Informations complémentaires…"></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-ghost" @click="closeModal">Annuler</button>
-          <button class="btn btn-primary" :disabled="saving" @click="saveCustomer">
-            <span v-if="saving" class="spinner-sm spinner-white"></span>
-            {{ saving ? 'Enregistrement…' : (editingCustomer ? 'Mettre à jour' : 'Créer') }}
-          </button>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label">Téléphone</label>
+          <input v-model="form.phone" type="tel" class="form-input" placeholder="+221 77 000 00 00"/>
         </div>
       </div>
-    </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label class="form-label">Notes</label>
+        <textarea v-model="form.notes" class="form-input" rows="2" placeholder="Informations complémentaires…"></textarea>
+      </div>
+
+      <template #footer>
+        <button class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button class="btn btn-primary" :disabled="saving" @click="saveCustomer">
+          <span v-if="saving" class="spinner-sm spinner-white"></span>
+          {{ saving ? 'Enregistrement…' : (editingCustomer ? 'Mettre à jour' : 'Créer') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -147,6 +140,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { customerService } from '../services/customerService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import type { Customer } from '../types'
 
 const customers = ref<Customer[]>([])
@@ -255,28 +249,5 @@ onMounted(load)
 
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
-
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px);
-  display: flex; align-items: center; justify-content: center; z-index: 200; padding: 1rem;
-}
-.modal-box {
-  background: white; border-radius: var(--radius-lg); width: 100%; max-width: 480px;
-  box-shadow: var(--shadow-xl); display: flex; flex-direction: column; max-height: 90vh; overflow: hidden;
-}
-.modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--gray-100);
-}
-.modal-header h3 { font-size: var(--text-lg); font-weight: 600; margin: 0; }
-.modal-close {
-  background: none; border: none; cursor: pointer; color: var(--gray-400);
-  padding: 0.25rem; border-radius: var(--radius-sm); display: flex;
-}
-.modal-close:hover { color: var(--gray-700); background: var(--gray-100); }
-.modal-body { padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.1rem; }
-.modal-footer {
-  display: flex; justify-content: flex-end; gap: 0.75rem;
-  padding: 1rem 1.5rem; border-top: 1px solid var(--gray-100);
-}
+/* Modal chrome now provided by the shared <BaseModal> (UX-03). */
 </style>

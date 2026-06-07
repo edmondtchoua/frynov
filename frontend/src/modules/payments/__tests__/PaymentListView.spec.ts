@@ -3,6 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import PaymentListView from '@/modules/payments/views/PaymentListView.vue'
 import { setupManagerAuth } from '@/test-utils/setupAuth'
+import { vFocusTrap } from '@/directives/focusTrap'
 import client from '@/api/client'
 
 const router = createRouter({
@@ -36,7 +37,13 @@ function mockApi(page = PAYMENTS) {
 
 async function mountView(page = PAYMENTS) {
   mockApi(page)
-  const w = mount(PaymentListView, { global: { plugins: [router, setupManagerAuth()] } })
+  const w = mount(PaymentListView, {
+    global: {
+      plugins: [router, setupManagerAuth()],
+      directives: { 'focus-trap': vFocusTrap },  // BaseModal uses v-focus-trap
+      stubs: { teleport: true },                 // render BaseModal's Teleport inline
+    },
+  })
   await flushPromises()
   return w
 }
@@ -93,5 +100,18 @@ describe('PaymentListView', () => {
       expect(labelled || structural).toBe(true)
     }
     expect(table.find('td.cell-actions').exists()).toBe(true)
+  })
+
+  it('opens the record-payment modal in a shared BaseModal dialog (UX-03)', async () => {
+    const w = await mountView()
+    expect(w.find('[role="dialog"]').exists()).toBe(false)
+
+    await w.findAll('button').find(b => b.text().includes('Nouveau paiement'))!.trigger('click')
+    await flushPromises()
+
+    const dialog = w.find('[role="dialog"]')
+    expect(dialog.exists()).toBe(true)
+    expect(dialog.attributes('aria-modal')).toBe('true')           // BaseModal a11y contract
+    expect(dialog.text()).toContain('Enregistrer un paiement')     // title rendered by BaseModal
   })
 })

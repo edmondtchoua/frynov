@@ -3,6 +3,23 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 1ʳᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-migration` (release `v1.0.0` → `rc.19`).
+Voir `docs/modules/ux-design-system.md` (§ Migration des modales).
+
+### UX
+- **Modales unifiées (UX-03)** — `CustomerListView` (création/édition client) et `PaymentListView`
+  (enregistrement de paiement) migrées de leur modale ad-hoc vers le composant partagé
+  `<BaseModal>` : overlay, `Teleport`, **focus-trap**, Échap, clic-extérieur, en-tête et bouton
+  de fermeture cohérents. Chrome local et styles `.modal-*` dupliqués supprimés. La fermeture est
+  liée via `@update:model-value` pour préserver les effets de bord (réinitialisation du formulaire).
+  Reste l'adoption incrémentale (~22 vues).
+
+### Tests
+- Frontend **213** (+1 : `PaymentListView.spec.ts` ouvre un `role="dialog"` `aria-modal`) ·
+  `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : cartes mobiles (UX-06) (2026-06-07)
 
 Branche `feature/ux-mobile-cards` (release `v1.0.0` → `rc.18`).

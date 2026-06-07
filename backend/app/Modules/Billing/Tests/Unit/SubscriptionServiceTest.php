@@ -17,6 +17,9 @@ class SubscriptionServiceTest extends TestCase
 {
     use RefreshDatabase;
 
+    // Creates its own ErpModule rows / drives plan-module activation → no auto-provision.
+    protected bool $autoProvisionModules = false;
+
     private SubscriptionService $service;
     private Tenant $tenant;
     private Plan $starterPlan;

@@ -30,6 +30,9 @@ class SecurityRemediationTest extends TestCase
 {
     use RefreshDatabase;
 
+    // This suite asserts the fail-closed / partial-provisioning posture itself.
+    protected bool $autoProvisionModules = false;
+
     private Tenant $tenant;
     private User $admin;
     private User $viewer;

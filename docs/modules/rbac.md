@@ -10,8 +10,12 @@ cet ordre par la pile de middleware :
 2. **Isolation tenant** — `EnsureUserBelongsToTenant` (alias `tenant`) : ancre le
    `tenant_id` sur l'utilisateur authentifié et **pose le team context Spatie**
    (`setPermissionsTeamId`). Toute résolution de rôle/permission est donc tenant-scopée.
-3. **Gating module** (Phase A) — `module:<code>` : si le tenant n'a pas le module actif,
-   **403 pour tous (admins inclus)**. Fail-open pour les tenants non provisionnés.
+3. **Gating module** (Phase A + durcissement audit) — `module:<code>` : si le tenant n'a
+   pas le module actif, **403 pour tous (admins inclus)**. **Fail-closed** : un tenant sans
+   ligne `tenant_modules` est refusé (un menu masqué n'est jamais un contrôle d'accès).
+   Appliqué à **tous** les modules métier : `catalog`, `inventory`, `orders`, `customers`,
+   `payments`, `delivery`, `suppliers`, `import_export`, `reports` (le module cœur
+   `dashboard` reste toujours actif).
 4. **Gating rôle/permission** (Phase B2) — `role:` ou `role_or_permission:` : autorise par
    rôle **ou** par permission granulaire.
 
@@ -130,9 +134,13 @@ correctement. On a donc ajouté **3 permissions** (admin/manager uniquement, acc
 
 ## 5. Phases A & C (rappel)
 
-- **A — Gating module** : `EnsureTenantHasModule` (alias `module:<code>`), data-driven
-  (`erp_modules` + `tenant_modules`). Modules gatés : `reports`, `suppliers`,
-  `import_export`, `delivery`. Voir `ModuleGatingTest`.
+- **A — Gating module** (durci par l'audit sécurité) : `EnsureTenantHasModule`
+  (alias `module:<code>`), data-driven (`erp_modules` + `tenant_modules`), **fail-closed**.
+  Gaté sur **tous** les modules métier : `catalog`, `inventory`, `orders`, `customers`,
+  `payments`, `delivery`, `suppliers`, `import_export`, `reports`. Voir `ModuleGatingTest`
+  + `SecurityRemediationTest`. (Tests : `Tests\TestCase` provisionne tous les modules par
+  défaut — `activateAllModules` ; les suites qui testent la posture non-provisionnée
+  désactivent `autoProvisionModules`.)
 - **C — Accès temporaires** : `temporary_access_grants` + `TemporaryAccessService` (rôle à
   échéance) + commande `access:revoke-expired` (chaque minute). Voir `TemporaryAccessTest`.
 

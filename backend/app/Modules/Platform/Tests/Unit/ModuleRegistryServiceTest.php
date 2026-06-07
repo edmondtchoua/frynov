@@ -15,6 +15,9 @@ class ModuleRegistryServiceTest extends TestCase
 {
     use RefreshDatabase;
 
+    // Unit-tests the registry's activation semantics → manages modules explicitly.
+    protected bool $autoProvisionModules = false;
+
     private ModuleRegistryService $service;
     private Tenant $tenant;
 

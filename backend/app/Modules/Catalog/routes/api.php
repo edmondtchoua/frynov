@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('catalog')->name('catalog.')->group(function () {
 
     // ── Authenticated routes ──────────────────────────────────────────
-    Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserBelongsToTenant::class])->group(function () {
+    Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserBelongsToTenant::class, 'module:catalog'])->group(function () {
 
         // ── READ routes (all authenticated roles) ─────────────────────
 

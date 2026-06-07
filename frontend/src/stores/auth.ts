@@ -1,11 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authService } from '@/modules/auth/services/authService'
+import { setAuthToken } from '@/api/authToken'
 import type { AuthUser, LoginCredentials } from '@/modules/auth/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const user  = ref<AuthUser | null>(null)
-  const token = ref<string | null>(localStorage.getItem('auth_token'))
+  // Security: the bearer token lives in memory only — never localStorage/sessionStorage.
+  // Any legacy token from a previous build is ignored (and cleared in $reset).
+  const token = ref<string | null>(null)
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
 
@@ -15,7 +18,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = response.token
     user.value  = response.user   // provisional
 
-    localStorage.setItem('auth_token',  response.token)
+    setAuthToken(response.token)   // in-memory only (API client reads it)
     localStorage.setItem('tenant_slug', response.user.tenant?.slug ?? '')
 
     // The /login endpoint is public (no tenant middleware), so its UserResource
@@ -43,7 +46,7 @@ export const useAuthStore = defineStore('auth', () => {
   /** Used after registration (or any flow that already has a token + user). */
   function setToken(t: string) {
     token.value = t
-    localStorage.setItem('auth_token', t)
+    setAuthToken(t)   // in-memory only — not persisted
   }
 
   function setUser(u: AuthUser) {
@@ -54,7 +57,8 @@ export const useAuthStore = defineStore('auth', () => {
   function $reset() {
     user.value  = null
     token.value = null
-    localStorage.removeItem('auth_token')
+    setAuthToken(null)
+    localStorage.removeItem('auth_token')   // purge any legacy persisted token
     localStorage.removeItem('tenant_slug')
   }
 

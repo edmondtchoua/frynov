@@ -3,7 +3,7 @@
     <div class="module-grid" v-if="modules.length">
       <div v-for="mod in modules" :key="mod.id" class="module-card">
         <div class="module-card__head">
-          <div class="module-icon" :style="{ background: lighten(mod.code) }" v-html="mod.icon_svg ?? ''"></div>
+          <div class="module-icon" :style="{ background: lighten(mod.code) }"><ModuleIcon :code="mod.code" /></div>
           <div>
             <div class="module-name">{{ mod.name }}</div>
             <div class="module-cat">{{ mod.category }}</div>
@@ -44,6 +44,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { adminService, type AdminModule } from '../services/adminService'
+import ModuleIcon from '@/shared/components/ModuleIcon.vue'
 
 const modules = ref<AdminModule[]>([])
 const loading = ref(true)

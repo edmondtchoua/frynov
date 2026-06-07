@@ -5,7 +5,6 @@ namespace App\Modules\Platform\Http\Middleware;
 use App\Modules\Platform\Services\ModuleRegistryService;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -17,10 +16,11 @@ use Symfony\Component\HttpFoundation\Response;
  * enriching a module requires no change here, only the `module:<code>` declaration
  * on the new route group + the module row in `erp_modules`.
  *
- * Fail-open for UNPROVISIONED tenants (zero `tenant_modules` rows): the gate is a
- * no-op until a tenant is provisioned. Real tenants are provisioned at registration
- * (plan modules activated), so the gate is active in production; bare test tenants
- * (no provisioning) are unaffected — which keeps the existing suite green.
+ * FAIL-CLOSED (security audit): a tenant without the module active — including a tenant
+ * with zero `tenant_modules` rows — is denied. Hidden menus are never a security control;
+ * the backend route is the authority. Core modules (e.g. dashboard) remain always-on via
+ * ModuleRegistryService::tenantHasModule(). Tests that exercise gated routes must provision
+ * the required modules (see Tests\TestCase::activateAllModules()).
  */
 class EnsureTenantHasModule
 {
@@ -37,11 +37,6 @@ class EnsureTenantHasModule
 
         $tenant = $user->tenant;
         if (! $tenant) {
-            return $next($request);
-        }
-
-        // Unprovisioned tenant (no module configuration at all) → gate inactive.
-        if (! DB::table('tenant_modules')->where('tenant_id', $tenant->id)->exists()) {
             return $next($request);
         }
 

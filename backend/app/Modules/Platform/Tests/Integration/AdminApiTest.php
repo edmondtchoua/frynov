@@ -16,6 +16,9 @@ class AdminApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    // Super-admin module-management suite (creates its own ErpModule rows) → no auto-provision.
+    protected bool $autoProvisionModules = false;
+
     private User $superAdmin;
     private User $regularUser;
     private string $adminToken;

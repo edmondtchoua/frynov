@@ -7,7 +7,7 @@ use App\Modules\Tenants\Models\Tenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use App\Shared\Traits\HasTenant;
 
 class ManualPayment extends Model
@@ -66,13 +66,23 @@ class ManualPayment extends Model
         return $this->status === self::STATUS_PENDING;
     }
 
+    public function hasProof(): bool
+    {
+        return (bool) $this->proof_path;
+    }
+
+    /**
+     * Short-lived SIGNED URL to the authenticated proof download (admin review).
+     * Never a public-disk URL — the proof lives on the private disk. Null if no proof.
+     */
     public function proofUrl(): ?string
     {
         return $this->proof_path
-            ? Storage::disk('public')->url($this->proof_path)
+            ? URL::temporarySignedRoute('admin.manual-payments.proof', now()->addMinutes(30), ['manualPayment' => $this->id])
             : null;
     }
 
+    /** Tenant-facing payload — deliberately omits any proof URL (private document). */
     public function toApiArray(): array
     {
         return [
@@ -84,7 +94,7 @@ class ManualPayment extends Model
             'amount_cents'           => $this->amount_cents,
             'currency'               => $this->currency,
             'payment_method'         => $this->payment_method,
-            'proof_url'              => $this->proofUrl(),
+            'has_proof'              => $this->hasProof(),
             'proof_original_filename' => $this->proof_original_filename,
             'notes'                  => $this->notes,
             'promo_code_used'        => $this->promo_code_used,
@@ -93,5 +103,13 @@ class ManualPayment extends Model
             'reviewed_at'            => $this->reviewed_at?->toISOString(),
             'created_at'             => $this->created_at?->toISOString(),
         ];
+    }
+
+    /** Admin-facing payload — adds the short-lived signed proof download URL. */
+    public function toAdminArray(): array
+    {
+        return array_merge($this->toApiArray(), [
+            'proof_url' => $this->proofUrl(),
+        ]);
     }
 }

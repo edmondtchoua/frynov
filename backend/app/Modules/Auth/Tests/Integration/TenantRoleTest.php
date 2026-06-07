@@ -21,6 +21,9 @@ class TenantRoleTest extends TestCase
 {
     use RefreshDatabase;
 
+    // Asserts plan/module-bounded grantable perms → drives module activation explicitly.
+    protected bool $autoProvisionModules = false;
+
     private Tenant $tenant;
     private User $member;
     private string $adminToken;

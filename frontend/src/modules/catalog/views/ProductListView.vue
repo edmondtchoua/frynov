@@ -159,6 +159,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
 import { productService } from '../services/productService'
+import { getAuthToken } from '@/api/authToken'
 import type { Category, Product, ProductStatus } from '../types'
 
 const products   = ref<Product[]>([])
@@ -207,7 +208,7 @@ async function printBatch(format: 'thermal' | 'a4sheet') {
 
 async function printOne(p: Product) {
   const url   = productService.getLabelUrl(p.id, { format: 'thermal', price: true, qr: true, copies: 1 })
-  const token = localStorage.getItem('auth_token') ?? ''
+  const token = getAuthToken() ?? ''
   const resp  = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
   const html  = await resp.text()
   const win   = window.open('', '_blank')

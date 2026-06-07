@@ -7,7 +7,7 @@ use App\Modules\Inventory\Http\Controllers\StockTransferController;
 use App\Modules\Inventory\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserBelongsToTenant::class])->prefix('api/inventory')->group(function () {
+Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserBelongsToTenant::class, 'module:inventory'])->prefix('api/inventory')->group(function () {
 
     // ── Stock consultation ─────────────────────────────────────────────
     Route::get('stock',                              [InventoryController::class, 'index']);

@@ -132,7 +132,7 @@
             }"
           >
             <div class="module-dash-icon" :style="{ background: mod.color + '18', border: '1.5px solid ' + mod.color + '30' }">
-              <span v-html="mod.icon_svg" :style="{ color: mod.color }"></span>
+              <span :style="{ color: mod.color }"><ModuleIcon :code="mod.code" /></span>
             </div>
             <div class="module-dash-info">
               <span class="module-dash-name">{{ mod.name }}</span>
@@ -207,6 +207,7 @@ import { RouterLink } from 'vue-router'
 import { reportService, formatMoneyCompact, shortDate, type DashboardData } from '@/modules/reports/services/reportService'
 import { authService } from '@/modules/auth/services/authService'
 import { useAuthStore } from '@/stores/auth'
+import ModuleIcon from '@/shared/components/ModuleIcon.vue'
 import type { ErpModule } from '@/modules/auth/types'
 
 // ── Icons ─────────────────────────────────────────────────────────────────────

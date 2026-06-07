@@ -56,20 +56,8 @@ class AdminAuditController extends Controller
         $broken = null;
 
         foreach ($entries as $entry) {
-            $payload = json_encode(array_filter([
-                'action'       => $entry->action,
-                'ip_address'   => $entry->ip_address,
-                'new_values'   => $entry->new_values,
-                'old_values'   => $entry->old_values,
-                'prev'         => $prev,
-                'subject_id'   => $entry->subject_id,
-                'subject_type' => $entry->subject_type,
-                'tenant_id'    => $entry->tenant_id,
-                'ts'           => $entry->created_at?->toISOString(),
-                'user_id'      => $entry->user_id,
-            ], fn ($v) => $v !== null), JSON_UNESCAPED_UNICODE);
-
-            $expected = hash_hmac('sha256', $payload, config('app.key'));
+            // Recompute with the SAME canonical payload the model used at creation.
+            $expected = AuditLog::integrityHashFor($entry->integrityFields(), $prev);
 
             if (!hash_equals($expected, (string) $entry->integrity_hash)) {
                 $broken = $entry->id;

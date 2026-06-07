@@ -38,29 +38,15 @@ class AuditLog extends Model
 
         // ── Compute integrity hash on creation (blockchain-lite chaining) ───
         static::creating(function (AuditLog $log) {
-            // Chain: each entry hashes its own content + the previous entry's hash
-            $prev  = static::latest('created_at')->value('integrity_hash') ?? 'GENESIS';
-            $data  = [
-                'action'       => $log->action,
-                'ip_address'   => $log->ip_address,
-                'new_values'   => $log->new_values,
-                'old_values'   => $log->old_values,
-                'prev'         => $prev,
-                'subject_id'   => $log->subject_id,
-                'subject_type' => $log->subject_type,
-                'tenant_id'    => $log->tenant_id,
-                'ts'           => now()->toISOString(),
-                'user_id'      => $log->user_id,
-            ];
-            // Keys already sorted alphabetically above — ensures deterministic hash
-            // (PHP has no JSON_SORT_KEYS constant; manual sort is equivalent)
-            $payload = json_encode($data, \JSON_UNESCAPED_UNICODE);
+            // Pin created_at NOW so the value used in the hash is exactly the one persisted
+            // (verify-chain recomputes from the stored created_at). Previously the hash used
+            // now()->toISOString() while the row stored a different created_at → the chain
+            // could never be verified as intact.
+            $log->created_at = $log->created_at ?? now();
 
-            $log->integrity_hash = hash_hmac(
-                'sha256',
-                $payload,
-                config('app.key', 'fallback-key'),
-            );
+            // Chain: each entry hashes its own content + the previous entry's hash.
+            $prev = static::latest('created_at')->value('integrity_hash') ?? 'GENESIS';
+            $log->integrity_hash = static::integrityHashFor($log->integrityFields(), $prev);
         });
 
         // ── Block any UPDATE on audit entries ─────────────────────────────
@@ -84,6 +70,45 @@ class AuditLog extends Model
             'old_values' => 'array',
             'new_values' => 'array',
         ];
+    }
+
+    // ── Integrity chain (shared by the creating hook AND verify-chain) ──────────
+
+    /** Hashable field set extracted from this row (excludes the chained prev hash). */
+    public function integrityFields(): array
+    {
+        return [
+            'action'       => $this->action,
+            'ip_address'   => $this->ip_address,
+            'new_values'   => $this->new_values,
+            'old_values'   => $this->old_values,
+            'subject_id'   => $this->subject_id,
+            'subject_type' => $this->subject_type,
+            'tenant_id'    => $this->tenant_id,
+            // Second-precision unix timestamp — round-trips identically through the DB
+            // (created_at is stored without microseconds), unlike an ISO string.
+            'ts'           => $this->created_at?->getTimestamp(),
+            'user_id'      => $this->user_id,
+        ];
+    }
+
+    /** Deterministic HMAC of a field set chained onto the previous entry's hash. */
+    public static function integrityHashFor(array $fields, string $prev): string
+    {
+        $payload = json_encode([
+            'action'       => $fields['action'] ?? null,
+            'ip_address'   => $fields['ip_address'] ?? null,
+            'new_values'   => $fields['new_values'] ?? null,
+            'old_values'   => $fields['old_values'] ?? null,
+            'prev'         => $prev,
+            'subject_id'   => $fields['subject_id'] ?? null,
+            'subject_type' => $fields['subject_type'] ?? null,
+            'tenant_id'    => $fields['tenant_id'] ?? null,
+            'ts'           => $fields['ts'] ?? null,
+            'user_id'      => $fields['user_id'] ?? null,
+        ], \JSON_UNESCAPED_UNICODE);
+
+        return hash_hmac('sha256', $payload, (string) config('app.key', 'fallback-key'));
     }
 
     // ── Relations ─────────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Auth\Http\Requests\UpdateUserRoleRequest;
 use App\Modules\Auth\Models\TemporaryAccessGrant;
 use App\Modules\Auth\Services\TemporaryAccessService;
+use App\Modules\Auth\Support\RoleHierarchy;
 use App\Modules\Tenants\Models\Tenant;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -58,6 +59,11 @@ class WorkspaceController extends Controller
             'email' => 'required|email|max:255|unique:users,email',
             'role'  => 'required|string|in:manager,member,viewer,agent,cashier,commercial,delivery',
         ]);
+
+        // Security: no lateral/upward escalation — a manager cannot invite another manager.
+        if (! RoleHierarchy::canGrant($request->user(), $request->input('role'))) {
+            return response()->json(['message' => 'Vous ne pouvez pas attribuer ce rôle.'], 403);
+        }
 
         $tenant      = $request->user()->tenant;
         $rawPassword = Str::random(10);
@@ -270,6 +276,11 @@ class WorkspaceController extends Controller
             'expires_at' => 'required|date|after:now',
             'note'       => 'nullable|string|max:255',
         ]);
+
+        // Security: no lateral/upward escalation — a manager cannot temporarily grant manager.
+        if (! RoleHierarchy::canGrant($request->user(), $data['role'])) {
+            return response()->json(['message' => 'Vous ne pouvez pas accorder ce rôle.'], 403);
+        }
 
         $tenant = $request->user()->tenant;
         $user   = User::where('tenant_id', $tenant->id)->findOrFail($userId);

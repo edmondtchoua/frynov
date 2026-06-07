@@ -16,25 +16,29 @@
 
 ---
 
-## Gate sécurité audit — à faire passer par l’agent de remédiation
+## Gate sécurité audit — ✅ REMÉDIÉ (2026-06-07)
 
-> Ajout 2026-06-06 : l’audit sécurité est désormais traduit en tests d’acceptation exécutables. Toute implémentation/refactorisation de sécurité doit faire passer ces tests avant validation. Voir `docs/security/security-remediation-tests.md`.
+> Ajout 2026-06-06 : l’audit sécurité traduit en tests d’acceptation exécutables.
+> **2026-06-07 : toutes les exigences sont implémentées et les gates passent** (branche
+> `feature/security-audit-remediation`). Voir `docs/security/security-remediation-tests.md`
+> et `docs/modules/rbac.md`.
 
-Suites prioritaires :
+Suites de validation (toutes vertes) :
 
-- Backend : `php artisan test --filter=SecurityRemediationTest`
-- Backend : `php artisan test --filter=ModuleGatingTest`
-- Frontend : `npm run test:unit -- src/security/__tests__/frontendSecurity.spec.ts src/stores/__tests__/auth.spec.ts`
+- Backend : `php artisan test --filter=SecurityRemediationTest` ✅ · `--filter=ModuleGatingTest` ✅
+- Frontend : `npm run test:unit -- src/security/__tests__/frontendSecurity.spec.ts src/stores/__tests__/auth.spec.ts` ✅
+- `composer audit --locked` ✅ · `npm audit --omit=dev` ✅ (0 vulnérabilité)
 
-Exigences bloquantes :
+Exigences bloquantes — état :
 
-- modules métier fail-closed côté serveur ;
-- permissions métier appliquées côté serveur ;
-- aucune relation cross-tenant via IDs front ;
-- preuves de paiement privées ;
-- audit trail vérifiable ;
-- plus de token Bearer persistant dans `localStorage`/`sessionStorage` ;
-- plus de `v-html` sur SVG/HTML venant de données modules.
+- ✅ modules métier **fail-closed** côté serveur (`module:` sur les 9 modules métier) ;
+- ✅ permissions métier appliquées côté serveur (créations gated, `viewer` bloqué) ;
+- ✅ aucune relation cross-tenant via IDs front (parent catégorie tenant-scopé) ;
+- ✅ preuves de paiement **privées** (disque local + URL signée courte) ;
+- ✅ audit trail **vérifiable** (hash canonique partagé création/vérification) ;
+- ✅ token Bearer **en mémoire** (plus de `localStorage`/`sessionStorage`) ;
+- ✅ plus de `v-html` sur SVG/HTML de données modules (`ModuleIcon`) ;
+- ✅ hiérarchie des rôles (`manager` ne peut pas créer/élever un `manager`).
 
 ## Gate UX/UI audit — expérience produit et accessibilité
 
@@ -112,8 +116,8 @@ Arbitrages à valider avant implémentation : libellé du bouton, convention de 
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **622 ✅** (620 passed, 2 skipped, **0 incomplete**) — +RBAC Phase A (gating module) + Phase C (accès temporaires) + **Phase B2 (rôles custom + enforcement permissions)** |
-| Tests Vitest frontend | **189 / 189 ✅** (+RBAC rôles UI : `roleService` + `RolesPanel`) — couverture ~38 % |
+| Tests backend | **638 ✅** (636 passed, 2 skipped, **0 incomplete**) — +RBAC A/B2/C + **remédiation audit sécurité (modules fail-closed, RBAC créations, hiérarchie rôles, isolation, preuves privées, chaîne d'audit)** |
+| Tests Vitest frontend | **191 / 191 ✅** (+gates sécurité : token mémoire, `ModuleIcon` anti-`v-html`) — couverture ~38 % |
 | Branche | `release/v1.0.0` — **RC `v1.0.0-rc.1`** (figée depuis `develop`) ; `develop` = intégration |
 | Dernière tag | `v0.8.0` (publiée sur `main`) → **`v1.0.0-rc.1`** candidat prod (cf. [Go/No-Go v1.0.0](recette/go-no-go-v1.0.0.md)) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |

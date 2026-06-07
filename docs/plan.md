@@ -73,9 +73,9 @@ Axes bloquants :
 - ✅ (P1, **UX-02**) cohérence admin/tenant — AdminLayout : libellés FR (« Espaces clients »),
   lien « Retour à l'app » retiré (route interdite aux super-admins), landmark nav `aria-label`
   (`AdminLayout.spec.ts`) ;
-- 🟡 (P1, **UX-08**) onboarding orienté résultat — **checklist « Prochaines étapes »** en fin
-  d'onboarding (ajouter produit / importer / commande / inviter). Reste : panneau récap
-  persistant « Ce qui sera configuré » + sauvegarde de progression.
+- ✅ (P1, **UX-08**) onboarding orienté résultat — récap **« Ce qui sera configuré »**
+  (modules/devise/pays/fuseau) avant provisionnement + **checklist « Prochaines étapes »**
+  en fin. Reste (mineur, post-1.0) : sauvegarde de progression entre sessions.
 
 ## Gate catalogue produits spéciaux — services, digital, garanties, IMEI/VIN
 

@@ -285,6 +285,22 @@
                 <option v-for="tz in timezones" :key="tz.value" :value="tz.value">{{ tz.label }}</option>
               </select>
             </div>
+
+            <!-- UX-08 — "Ce qui sera configuré" : récap avant le provisionnement -->
+            <div class="onboard-recap" aria-label="Ce qui sera configuré">
+              <p class="onboard-recap__title">Ce qui sera configuré</p>
+              <ul class="onboard-recap__list">
+                <li><span>Entreprise</span><strong>{{ answers.company || '—' }}</strong></li>
+                <li><span>Devise</span><strong>{{ answers.currency }}</strong></li>
+                <li><span>Pays · fuseau</span><strong>{{ answers.country }} · {{ answers.timezone }}</strong></li>
+                <li><span>Modules</span><strong>{{ answers.modules.length }} activé{{ answers.modules.length > 1 ? 's' : '' }}</strong></li>
+              </ul>
+              <div v-if="answers.modules.length" class="onboard-recap__chips">
+                <span v-for="mid in answers.modules" :key="mid" class="summary-chip">
+                  {{ allModules.find(m => m.id === mid)?.label }}
+                </span>
+              </div>
+            </div>
           </div>
         </Transition>
 
@@ -1116,6 +1132,27 @@ function onCountryChange() {
   transition: border-color 0.15s, background 0.15s;
 }
 .next-step:hover { border-color: var(--brand-primary); background: var(--brand-primary-bg); }
+
+/* "Ce qui sera configuré" recap (UX-08) */
+.onboard-recap {
+  margin-top: 1.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md, 8px);
+  background: var(--gray-50);
+}
+.onboard-recap__title {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gray-400);
+  margin: 0 0 0.6rem;
+}
+.onboard-recap__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.onboard-recap__list li { display: flex; justify-content: space-between; gap: 1rem; font-size: var(--text-sm); color: var(--gray-600); }
+.onboard-recap__list strong { color: var(--gray-900); font-weight: 600; }
+.onboard-recap__chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.7rem; }
 
 /* Navigation */
 .step-nav {

@@ -196,7 +196,7 @@ class ImportModuleTest extends TestCase
     }
 
     #[Test]
-    public function customer_import_stores_address_as_structured_json(): void
+    public function customer_import_stores_address_string_and_notes(): void
     {
         $file = $this->makeXlsxUpload([
             ['Nom', 'Email', 'Téléphone', 'Adresse', 'Notes'],
@@ -217,7 +217,7 @@ class ImportModuleTest extends TestCase
             ->where('email', 'edmond@example.com')
             ->firstOrFail();
 
-        $this->assertSame('Rue Lotin Same, AKWA', $customer->address['street'] ?? null);
+        $this->assertSame('Rue Lotin Same, AKWA', $customer->address);
         $this->assertSame('Client importé', $customer->notes);
     }
 

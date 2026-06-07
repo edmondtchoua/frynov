@@ -49,6 +49,17 @@ describe('CustomerDetailView', () => {
     expect(w.text()).toContain('Cliente importée')
   })
 
+  it('loads a string API address into the street edit field', async () => {
+    const w = await mountView()
+    const editButton = w.findAll('button').find(button => button.text() === 'Modifier')
+
+    expect(editButton).toBeTruthy()
+    await editButton!.trigger('click')
+
+    const street = w.get('[data-testid="customer-address-street"]')
+    expect((street.element as HTMLInputElement).value).toBe('Rue Lotin Same, AKWA')
+  })
+
   it('shows the order count from loadCount', async () => {
     const w = await mountView()
     expect(w.text()).toContain('2')   // orders_count

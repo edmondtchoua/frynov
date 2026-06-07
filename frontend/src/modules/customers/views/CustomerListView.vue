@@ -74,7 +74,7 @@
               <span v-else class="text-muted">—</span>
             </td>
             <td class="hide-mobile" data-label="Adresse">
-              <span v-if="formatAddress(customer.address)" class="customer-address">{{ formatAddress(customer.address) }}</span>
+              <span v-if="formatCustomerAddress(customer.address)" class="customer-address">{{ formatCustomerAddress(customer.address) }}</span>
               <span v-else class="text-muted">—</span>
             </td>
             <td class="hide-mobile" data-label="Notes">
@@ -149,6 +149,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { customerService } from '../services/customerService'
+import { formatCustomerAddress } from '../address'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import type { Customer, CustomerAddress } from '../types'

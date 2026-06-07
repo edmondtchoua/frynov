@@ -57,7 +57,7 @@
               </div>
               <div v-if="customer.address" class="info-item info-item--full">
                 <span class="info-label">Adresse</span>
-                <span class="info-value">{{ formatAddress(customer.address) }}</span>
+                <span class="info-value">{{ formatCustomerAddress(customer.address) }}</span>
               </div>
               <div v-if="customer.notes" class="info-item info-item--full">
                 <span class="info-label">Notes</span>
@@ -89,7 +89,7 @@
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Rue</label>
-                <input v-model="form.address.street" type="text" class="form-input"/>
+                <input v-model="form.address.street" data-testid="customer-address-street" type="text" class="form-input"/>
               </div>
               <div class="form-group">
                 <label class="form-label">Ville</label>
@@ -205,7 +205,8 @@ import { formatDate } from '@/shared/utils/date'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
 import { customerService } from '../services/customerService'
-import type { Customer, CustomerAddress } from '../types'
+import { formatCustomerAddress, normalizeCustomerAddress } from '../address'
+import type { Customer } from '../types'
 
 const route    = useRoute()
 const router   = useRouter()
@@ -231,12 +232,6 @@ function initials(name: string): string {
 }
 
 
-function formatAddress(addr: CustomerAddress | null | undefined): string {
-  if (!addr) return ''
-  if (typeof addr === 'string') return addr
-  return [addr.street, addr.zip, addr.city, addr.country].filter(Boolean).join(', ')
-}
-
 const formatAmount = (cents: number, currency: string) => formatMoney(cents, currency)
 
 function orderStatusBadge(status: string): string {
@@ -257,17 +252,7 @@ function populateForm(c: Customer) {
   form.email   = c.email ?? ''
   form.phone   = c.phone ?? ''
   form.notes   = c.notes ?? ''
-  if (typeof c.address === 'string') {
-    form.address.street  = c.address
-    form.address.city    = ''
-    form.address.zip     = ''
-    form.address.country = ''
-  } else {
-    form.address.street  = c.address?.street  ?? ''
-    form.address.city    = c.address?.city    ?? ''
-    form.address.zip     = c.address?.zip     ?? ''
-    form.address.country = c.address?.country ?? ''
-  }
+  Object.assign(form.address, normalizeCustomerAddress(c.address))
 }
 
 function cancelEdit() {

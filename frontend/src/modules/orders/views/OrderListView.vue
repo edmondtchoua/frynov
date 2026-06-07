@@ -46,27 +46,21 @@
       </button>
     </div>
 
-    <div class="card" style="margin-top: 1rem; padding: 0; overflow: hidden;">
-      <!-- Loading -->
-      <div v-if="loading" class="loading-center">
-        <span class="spinner-sm"></span>
-        Chargement…
-      </div>
+    <div class="card table-scroll" style="margin-top: 1rem; padding: 0;">
+      <StateBlock v-if="loading" variant="loading" />
 
-      <!-- Error -->
-      <div v-else-if="error" class="empty-state">
-        <div class="empty-state-icon">⚠️</div>
-        <h3>Erreur de chargement</h3>
-        <p>{{ error }}</p>
-        <button class="btn btn-secondary" style="margin-top:1rem" @click="load">Réessayer</button>
-      </div>
+      <StateBlock v-else-if="error" variant="error" title="Erreur de chargement" :message="error">
+        <template #action>
+          <button class="btn btn-secondary" @click="load">Réessayer</button>
+        </template>
+      </StateBlock>
 
-      <!-- Empty -->
-      <div v-else-if="orders.length === 0" class="empty-state">
-        <div class="empty-state-icon">📋</div>
-        <h3>Aucune commande</h3>
-        <p>Les commandes apparaîtront ici.</p>
-      </div>
+      <StateBlock
+        v-else-if="orders.length === 0"
+        variant="empty"
+        title="Aucune commande"
+        message="Les commandes apparaîtront ici."
+      />
 
       <!-- Table -->
       <table v-else class="data-table">
@@ -122,6 +116,7 @@ import { formatMoney } from '@/shared/utils/money'
 import SalesTabNav from '../components/SalesTabNav.vue'
 import { orderService } from '../services/orderService'
 import { useWarehouses } from '@/composables/useWarehouses'
+import StateBlock from '@/shared/ui/StateBlock.vue'
 import type { Order } from '../types'
 
 const tabs = [

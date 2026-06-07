@@ -468,6 +468,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { productService } from '../services/productService'
+import { getAuthToken } from '@/api/authToken'
 import client from '@/api/client'
 import type { Category, Product } from '../types'
 import { usePermission } from '@/composables/usePermission'
@@ -701,7 +702,7 @@ async function generateVariantsNow() {
 async function printLabel(format: 'thermal' | 'a4sheet') {
   if (!product.value) return
   const url = productService.getLabelUrl(product.value.id, { format, price: true, qr: true })
-  const token = localStorage.getItem('auth_token') ?? ''
+  const token = getAuthToken() ?? ''
   const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
   const html  = await resp.text()
   const win   = window.open('', '_blank')

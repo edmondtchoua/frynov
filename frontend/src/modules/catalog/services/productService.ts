@@ -122,7 +122,6 @@ export const productService = {
     if (options.qr !== undefined)    params.set('qr', options.qr ? '1' : '0')
 
     const base = import.meta.env.VITE_API_BASE_URL ?? ''
-    const token = localStorage.getItem('auth_token') ?? ''
 
     if (options.variantId) {
       return `${base}/api/catalog/products/${productId}/variants/${options.variantId}/label?${params}`
@@ -131,7 +130,6 @@ export const productService = {
   },
 
   async printBatch(payload: LabelBatchPayload): Promise<void> {
-    const token = localStorage.getItem('auth_token') ?? ''
     const resp = await client.post('/api/catalog/products/labels/batch', payload, {
       responseType: 'text',
     })

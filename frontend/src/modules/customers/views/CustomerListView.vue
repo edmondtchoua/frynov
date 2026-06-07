@@ -47,7 +47,7 @@
 
     <!-- Table -->
     <div v-else class="card table-scroll" style="padding: 0;">
-      <table class="data-table">
+      <table class="data-table data-table--cards">
         <thead>
           <tr>
             <th>Client</th>
@@ -58,7 +58,7 @@
         </thead>
         <tbody>
           <tr v-for="customer in customers" :key="customer.id">
-            <td>
+            <td class="cell-primary">
               <div class="customer-cell">
                 <div class="customer-avatar">{{ initials(customer.name) }}</div>
                 <div>
@@ -67,14 +67,14 @@
                 </div>
               </div>
             </td>
-            <td class="hide-mobile">
+            <td class="hide-mobile" data-label="Téléphone">
               <span v-if="customer.phone" class="customer-phone">{{ customer.phone }}</span>
               <span v-else class="text-muted">—</span>
             </td>
-            <td class="hide-mobile">
+            <td class="hide-mobile" data-label="Commandes">
               <span class="badge badge-gray">{{ customer.orders_count ?? 0 }}</span>
             </td>
-            <td style="text-align: right;">
+            <td class="cell-actions" style="text-align: right;">
               <div class="row-actions">
                 <RouterLink :to="`/customers/${customer.id}`" class="btn btn-ghost btn-sm">
                   Voir

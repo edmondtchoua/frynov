@@ -46,7 +46,7 @@
 
     <!-- Table -->
     <div v-else class="card table-scroll" style="padding: 0;">
-      <table class="data-table">
+      <table class="data-table data-table--cards">
         <thead>
           <tr>
             <th>Date</th>
@@ -59,10 +59,10 @@
         </thead>
         <tbody>
           <tr v-for="p in payments" :key="p.id">
-            <td style="white-space: nowrap; font-size: 0.85rem; color: var(--gray-600);">
+            <td data-label="Date" style="white-space: nowrap; font-size: 0.85rem; color: var(--gray-600);">
               {{ fmtDate(p.paid_at) }}
             </td>
-            <td class="hide-mobile">
+            <td class="hide-mobile" data-label="Commande">
               <RouterLink
                 v-if="p.order_id"
                 :to="`/orders/${p.order_id}`"
@@ -72,17 +72,17 @@
               </RouterLink>
               <span v-else class="text-muted">—</span>
             </td>
-            <td>
+            <td data-label="Moyen">
               <span :class="`badge ${methodBadge(p.method)}`">{{ methodLabel(p.method) }}</span>
             </td>
-            <td class="hide-mobile">
+            <td class="hide-mobile" data-label="Référence">
               <span v-if="p.reference" style="font-family: monospace; font-size: 0.82rem;">{{ p.reference }}</span>
               <span v-else class="text-muted">—</span>
             </td>
-            <td style="text-align: right; font-weight: 600; font-variant-numeric: tabular-nums;">
+            <td data-label="Montant" style="text-align: right; font-weight: 600; font-variant-numeric: tabular-nums;">
               {{ fmtAmount(p.amount_cents, p.currency) }}
             </td>
-            <td style="text-align: right;">
+            <td class="cell-actions" style="text-align: right;">
               <button
                 class="btn btn-ghost btn-sm"
                 style="color: #dc2626;"

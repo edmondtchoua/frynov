@@ -62,8 +62,8 @@
         message="Les commandes apparaîtront ici."
       />
 
-      <!-- Table -->
-      <table v-else class="data-table">
+      <!-- Table (card-stacking on very small screens — UX-06) -->
+      <table v-else class="data-table data-table--cards">
         <thead>
           <tr>
             <th>N°</th>
@@ -76,20 +76,20 @@
         </thead>
         <tbody>
           <tr v-for="order in orders" :key="order.id">
-            <td>
+            <td class="cell-primary">
               <RouterLink :to="`/orders/${order.id}`" style="font-weight:600; color:#059669;">
                 {{ order.number }}
               </RouterLink>
             </td>
-            <td>
+            <td data-label="Statut">
               <span class="badge" :class="statusBadge(order.status)">
                 {{ statusLabel(order.status) }}
               </span>
             </td>
-            <td>{{ order.lines.length }} article{{ order.lines.length > 1 ? 's' : '' }}</td>
-            <td>{{ formatMoney(order.total_amount) }}</td>
-            <td>{{ formatDate(order.created_at) }}</td>
-            <td>
+            <td data-label="Articles">{{ order.lines.length }} article{{ order.lines.length > 1 ? 's' : '' }}</td>
+            <td data-label="Total">{{ formatMoney(order.total_amount) }}</td>
+            <td data-label="Date">{{ formatDate(order.created_at) }}</td>
+            <td class="cell-actions">
               <RouterLink :to="`/orders/${order.id}`" class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.8rem;">
                 Voir
               </RouterLink>

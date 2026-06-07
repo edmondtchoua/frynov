@@ -3,6 +3,24 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : cartes mobiles (UX-06) (2026-06-07)
+
+Branche `feature/ux-mobile-cards` (release `v1.0.0` → `rc.18`).
+Voir `docs/modules/ux-design-system.md` (§ Tableaux responsives).
+
+### UX
+- **Cartes empilées sur mobile (UX-06)** — nouveau pattern CSS-only `.data-table--cards` :
+  sous **640px**, chaque ligne de tableau devient une **carte** ; chaque cellule porte
+  `data-label="<colonne>"` (libellé affiché via `::before`), l'identité prend `.cell-primary`
+  (titre pleine largeur) et les actions `.cell-actions`. Comme une carte a de la place
+  verticale, les colonnes masquées par `.hide-mobile` y **réapparaissent** en lignes libellées.
+  Le défilement horizontal reste le comportement par défaut. Adopté sur **Commandes, Clients,
+  Paiements** ; adoption incrémentale du reste des listes (contrat documenté + testé).
+
+### Tests
+- Frontend **212** (+1 : contrat « card-stacking » dans `PaymentListView.spec.ts`) ·
+  `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : feedback action (403) + page 404 (2026-06-07)
 
 Branche `feature/ux-action-feedback` (release `v1.0.0` → `rc.17`).

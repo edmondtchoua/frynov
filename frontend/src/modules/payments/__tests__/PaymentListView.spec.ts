@@ -77,4 +77,21 @@ describe('PaymentListView', () => {
     const w = await mountView({ data: [], meta: { current_page: 1, last_page: 1, per_page: 20, total: 0 } })
     expect(w.text()).toContain('Les paiements enregistrés apparaîtront ici')
   })
+
+  it('exposes the mobile card-stacking contract (UX-06)', async () => {
+    const w = await mountView()
+    const table = w.find('table.data-table')
+    expect(table.classes()).toContain('data-table--cards')
+
+    // Every body cell must be labelled (data-label → shown as the column header on mobile)
+    // or be a structural identity/actions cell — otherwise it would render unlabelled in a card.
+    const cells = table.findAll('tbody td')
+    expect(cells.length).toBeGreaterThan(0)
+    for (const td of cells) {
+      const labelled   = td.attributes('data-label') !== undefined
+      const structural = td.classes().includes('cell-primary') || td.classes().includes('cell-actions')
+      expect(labelled || structural).toBe(true)
+    }
+    expect(table.find('td.cell-actions').exists()).toBe(true)
+  })
 })

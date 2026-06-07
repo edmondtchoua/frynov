@@ -41,6 +41,23 @@ construite avec `StateBlock` (forbidden) + `BaseButton`. Query : `?reason=module
 - `shared/views/NotFoundView.vue` (catch-all `/:pathMatch(.*)*`) — **404** construite sur
   `StateBlock` (`empty`) + `BaseButton` (retour tableau de bord), cohérente avec le design system.
 
+## Tableaux responsives (UX-06)
+Deux niveaux, cumulables, pour `.data-table` (cf. `assets/main.css`) :
+1. **Défilement horizontal** (par défaut, ≤768px) — la table devient un bloc scrollable ;
+   colonnes secondaires masquées via `.hide-mobile`. Acquis sur toutes les listes.
+2. **Cartes empilées** (opt-in, ≤640px) — ajouter `data-table--cards` à la table : chaque
+   ligne devient une **carte**, chaque `<td>` portant `data-label="<colonne>"` affiche son
+   libellé (via `::before`). La cellule d'identité prend `.cell-primary` (titre pleine largeur,
+   sans libellé) et la cellule d'actions `.cell-actions`. Une carte ayant de la place verticale,
+   les colonnes `.hide-mobile` y **réapparaissent** en lignes libellées.
+
+> **Contrat d'adoption** : table = `data-table data-table--cards` ; chaque `<td>` de données a
+> un `data-label` ; identité = `cell-primary` ; actions = `cell-actions`. Vérifié en test
+> (`PaymentListView.spec.ts` → « mobile card-stacking contract »).
+
+Adopté : `OrderListView`, `CustomerListView`, `PaymentListView`. Reste (incrémental) :
+Produits, Stock, Livraisons, Fournisseurs, Retours + listes admin.
+
 ## Adoption
 Les composants sont disponibles immédiatement. La **migration des vues existantes**
 (≈ 36 `empty-state` ad hoc, boutons et modales locaux) vers ces primitives est

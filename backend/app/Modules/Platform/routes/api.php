@@ -71,3 +71,10 @@ Route::middleware(['auth:sanctum', RequireAdmin::class])
         Route::get('audit-logs',              [AdminAuditController::class, 'index'])->name('audit-logs.index');
         Route::post('audit-logs/verify-chain', [AdminAuditController::class, 'verifyChain'])->name('audit-logs.verify-chain');
     });
+
+// Private payment-proof download — authorized by a short-lived SIGNED URL (no bearer
+// token, so it works in an <img>/<a>). The signature IS the authorization; the file
+// lives on the private disk and is never publicly listable.
+Route::middleware('signed')
+    ->get('admin/manual-payments/{manualPayment}/proof', [AdminManualPaymentController::class, 'proof'])
+    ->name('admin.manual-payments.proof');

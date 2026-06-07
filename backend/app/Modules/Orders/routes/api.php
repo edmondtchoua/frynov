@@ -18,7 +18,7 @@ Route::middleware(['auth:sanctum', 'tenant'])
 
         // ── Orders CRUD
         Route::get('/',              [OrderController::class, 'index']);
-        Route::post('/',             [OrderController::class, 'store'])->middleware('quota:orders');
+        Route::post('/',             [OrderController::class, 'store'])->middleware(['role_or_permission:manager|admin|orders.create', 'quota:orders']);
         Route::get('/{id}',          [OrderController::class, 'show']);
         Route::middleware('role_or_permission:manager|admin|orders.manage')->group(function () {
             Route::post('/{id}/confirm', [OrderController::class, 'confirm']);

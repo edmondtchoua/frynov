@@ -2,31 +2,19 @@
 
 namespace App\Modules\Auth\Http\Requests;
 
+use App\Modules\Auth\Support\RoleHierarchy;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 /**
  * Validates a user role/name update with role hierarchy enforcement.
  *
- * Security: prevents privilege escalation — a manager cannot promote
- * someone to admin, and a member/viewer cannot change any roles.
- *
- * Role hierarchy:
- *   admin   → can assign: admin, manager, member, viewer
- *   manager → can assign: manager, member, viewer  (NOT admin)
- *   member  → cannot assign any role
- *   viewer  → cannot assign any role
+ * Security: prevents privilege escalation. Assignable roles come from the central
+ * RoleHierarchy authority — admin may assign admin/manager/operational; a manager
+ * may assign operational roles only (NOT manager, NOT admin); member/viewer none.
  */
 class UpdateUserRoleRequest extends FormRequest
 {
-    private const ROLE_HIERARCHY = [
-        'admin'       => ['admin', 'manager', 'member', 'viewer', 'agent', 'cashier', 'commercial', 'delivery'],
-        'manager'     => ['manager', 'member', 'viewer', 'agent', 'cashier', 'commercial', 'delivery'],
-        'member'      => [],
-        'viewer'      => [],
-        'super-admin' => ['admin', 'manager', 'member', 'viewer', 'agent', 'cashier', 'commercial', 'delivery'],
-    ];
-
     public function authorize(): bool
     {
         $user     = $this->user();
@@ -45,8 +33,8 @@ class UpdateUserRoleRequest extends FormRequest
     public function rules(): array
     {
         $caller       = $this->user();
-        $callerRole   = $caller->getRoleNames()->first() ?? 'viewer';
-        $allowedRoles = self::ROLE_HIERARCHY[$callerRole] ?? [];
+        // Security: no lateral/upward escalation (manager → manager is forbidden).
+        $allowedRoles = RoleHierarchy::assignableBaseRoles($caller);
 
         // RBAC B2: custom tenant roles are assignable by admin/manager. They carry
         // only plan-bounded, non-escalating permissions (no admin.*, no role/billing

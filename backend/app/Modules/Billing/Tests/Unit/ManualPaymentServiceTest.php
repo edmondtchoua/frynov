@@ -27,7 +27,7 @@ class ManualPaymentServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Storage::fake('public');
+        Storage::fake('local'); // proofs are stored privately (security audit)
         Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
 
         $this->svc  = app(ManualPaymentService::class);
@@ -61,7 +61,8 @@ class ManualPaymentServiceTest extends TestCase
 
         $this->assertSame(ManualPayment::STATUS_PENDING, $mp->status);
         $this->assertNotNull($mp->proof_path);
-        Storage::disk('public')->assertExists($mp->proof_path);
+        Storage::disk('local')->assertExists($mp->proof_path);
+        Storage::disk('public')->assertMissing($mp->proof_path);
     }
 
     #[Test]

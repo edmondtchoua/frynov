@@ -34,7 +34,9 @@ class ManualPaymentService
 
         if ($proof) {
             $proofOriginalFilename = $proof->getClientOriginalName();
-            $proofPath             = $proof->store("payment-proofs/{$tenant->id}", 'public');
+            // Security: payment proofs are PRIVATE — stored on the local disk, never the
+            // public disk. They are retrieved only via a short-lived signed URL (admin).
+            $proofPath             = $proof->store("payment-proofs/{$tenant->id}", 'local');
         }
 
         return ManualPayment::create([

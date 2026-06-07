@@ -8,6 +8,8 @@ use App\Modules\Platform\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdminManualPaymentController extends Controller
 {
@@ -25,7 +27,7 @@ class AdminManualPaymentController extends Controller
         );
 
         return response()->json([
-            'data' => collect($paginator->items())->map(fn ($p) => $p->toApiArray())->all(),
+            'data' => collect($paginator->items())->map(fn ($p) => $p->toAdminArray())->all(),
             'meta' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page'    => $paginator->lastPage(),
@@ -39,7 +41,23 @@ class AdminManualPaymentController extends Controller
     {
         $manualPayment->load(['tenant', 'plan', 'reviewer']);
 
-        return response()->json($manualPayment->toApiArray());
+        return response()->json($manualPayment->toAdminArray());
+    }
+
+    /**
+     * GET /api/admin/manual-payments/{id}/proof
+     * Streams the PRIVATE proof file. Authorized by a short-lived signed URL (so it
+     * works in an <img> tag) — see ManualPayment::proofUrl(). Never publicly listable.
+     */
+    public function proof(string $manualPayment): StreamedResponse
+    {
+        $payment = ManualPayment::withoutTenantScope()->findOrFail($manualPayment);
+        abort_unless($payment->proof_path, 404);
+
+        $disk = Storage::disk('local');
+        abort_unless($disk->exists($payment->proof_path), 404);
+
+        return $disk->download($payment->proof_path, $payment->proof_original_filename ?: 'justificatif');
     }
 
     /** POST /api/admin/manual-payments/:id/approve */
@@ -62,7 +80,7 @@ class AdminManualPaymentController extends Controller
 
         return response()->json([
             'message' => 'Paiement approuvé, abonnement activé.',
-            'data'    => $approved->toApiArray(),
+            'data'    => $approved->toAdminArray(),
         ]);
     }
 
@@ -90,7 +108,7 @@ class AdminManualPaymentController extends Controller
 
         return response()->json([
             'message' => 'Paiement rejeté.',
-            'data'    => $rejected->toApiArray(),
+            'data'    => $rejected->toAdminArray(),
         ]);
     }
 }

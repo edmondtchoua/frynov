@@ -8,6 +8,7 @@ use App\Modules\Catalog\Services\CatalogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
@@ -23,16 +24,18 @@ class CategoryController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $tenantId = $request->user()->tenant_id;
+
         $data = $request->validate([
             'name'        => ['required', 'string', 'max:255'],
             'slug'        => ['nullable', 'string', 'max:255'],
-            'parent_id'   => ['nullable', 'uuid'],
+            // Security: a parent category must belong to the SAME tenant (no cross-tenant linking).
+            'parent_id'   => ['nullable', 'uuid', Rule::exists('categories', 'id')->where('tenant_id', $tenantId)],
             'description' => ['nullable', 'string'],
             'sort_order'  => ['nullable', 'integer', 'min:0'],
             'is_active'   => ['nullable', 'boolean'],
         ]);
 
-        $tenantId = $request->user()->tenant_id;
         $category = $this->catalog->createCategory($tenantId, $data);
 
         return response()->json(['data' => new CategoryResource($category)], 201);
@@ -49,7 +52,8 @@ class CategoryController extends Controller
 
         $data = $request->validate([
             'name'        => ['sometimes', 'string', 'max:255'],
-            'parent_id'   => ['nullable', 'uuid'],
+            // Security: a parent category must belong to the SAME tenant (no cross-tenant linking).
+            'parent_id'   => ['nullable', 'uuid', Rule::exists('categories', 'id')->where('tenant_id', $tenantId)],
             'description' => ['nullable', 'string'],
             'sort_order'  => ['nullable', 'integer', 'min:0'],
             'is_active'   => ['nullable', 'boolean'],

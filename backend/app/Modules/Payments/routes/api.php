@@ -8,7 +8,7 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
     // Standalone payments
     Route::prefix('api/payments')->group(function () {
         Route::get('/',        [PaymentController::class, 'index']);
-        Route::post('/',       [PaymentController::class, 'store']);
+        Route::post('/',       [PaymentController::class, 'store'])->middleware('role_or_permission:manager|admin|payments.create');
         Route::get('/{id}',    [PaymentController::class, 'show']);
         Route::delete('/{id}', [PaymentController::class, 'destroy']);
     });

@@ -1,7 +1,7 @@
 <template>
-  <StateBlock variant="empty" title="Page introuvable" message="La page que vous cherchez n'existe pas ou a été déplacée.">
+  <StateBlock variant="empty" :title="$t('notFound.title')" :message="$t('notFound.message')">
     <template #action>
-      <BaseButton variant="primary" @click="router.push('/dashboard')">Retour au tableau de bord</BaseButton>
+      <BaseButton variant="primary" @click="router.push('/dashboard')">{{ $t('notFound.back') }}</BaseButton>
     </template>
   </StateBlock>
 </template>

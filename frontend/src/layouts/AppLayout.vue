@@ -183,6 +183,8 @@
         <!-- Topbar right -->
         <div class="topbar-right">
           <span class="tenant-chip hide-mobile">{{ tenantName }}</span>
+          <!-- Language selector (i18n — UX-13) -->
+          <LanguageSwitcher class="hide-mobile" />
           <!-- Notification bell with toasts -->
           <NotificationCenter />
           <div class="user-avatar-top" :title="auth.user?.name" style="cursor:pointer" @click="router.push('/profile')">{{ userInitials }}</div>
@@ -203,6 +205,7 @@ import { useAuthStore } from '@/stores/auth'
 import { usePermission } from '@/composables/usePermission'
 import FrynovLogo from '@/shared/components/FrynovLogo.vue'
 import NotificationCenter from '@/shared/components/NotificationCenter.vue'
+import LanguageSwitcher from '@/shared/components/LanguageSwitcher.vue'
 
 const route  = useRoute()
 const router = useRouter()

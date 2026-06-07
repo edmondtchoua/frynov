@@ -92,6 +92,11 @@ nombres) ; `router.replace` (pas de pollution de l'historique). **Adopté** : `P
 `PaymentListView`. Reste (incrémental) : Commandes, Stock, Clients, etc. Testé
 (`useUrlFilters.spec.ts` — hydratation + miroir + clés inconnues ignorées).
 
+## Internationalisation (UX-13)
+Fondation i18n légère (FR + EN) + sélecteur de langue (`shared/components/LanguageSwitcher.vue`,
+dans la barre supérieure). API `$t('section.cle')` en template / `useI18n()` en script. Détails,
+ajout de clés/langues et limites : **`docs/modules/i18n.md`**. Migration des chaînes incrémentale.
+
 ## Adoption
 Les composants sont disponibles immédiatement. La **migration des vues existantes**
 (≈ 36 `empty-state` ad hoc, boutons et modales locaux) vers ces primitives est

@@ -3,6 +3,24 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : fondation i18n FR + EN (UX-13) (2026-06-07)
+
+Branche `feature/ux-i18n-foundation` (release `v1.0.0` → `rc.22`).
+Voir `docs/modules/i18n.md`.
+
+### UX
+- **Fondation i18n (UX-13)** — noyau d'internationalisation **léger et sans dépendance**
+  (`src/i18n/index.ts`) qui imite l'API `t()` de vue-i18n (migration future facilitée) :
+  langues **FR + EN**, clés en chemin pointé + interpolation `{param}`, fallback FR puis clé brute.
+  `$t` exposé globalement (typé pour `vue-tsc`), composable `useI18n()`. **Sélecteur de langue**
+  (`LanguageSwitcher`, barre supérieure) avec **persistance** (`localStorage` — non sensible,
+  contrairement au token d'auth) et mise à jour de `<html lang>`. Pilote : `NotFoundView` migrée.
+  La migration des chaînes du reste de l'app est incrémentale (français = source de vérité).
+
+### Tests
+- Frontend **227** (+6 : `i18n.spec.ts` — traduction/interpolation/fallback/persistance +
+  `LanguageSwitcher`) · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : composant Icon (UX-11) (2026-06-07)
 
 Branche `feature/ux-icon-component` (release `v1.0.0` → `rc.21`).

@@ -3,6 +3,22 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : filtres persistés dans l'URL (UX-12) (2026-06-07)
+
+Branche `feature/ux-url-filters` (release `v1.0.0` → `rc.20`).
+Voir `docs/modules/ux-design-system.md` (§ Filtres de liste persistés).
+
+### UX
+- **Filtres dans l'URL (UX-12)** — nouveau composable `useUrlFilters` : un objet de filtres
+  réactif est synchronisé avec la query string. Les filtres **survivent au rafraîchissement et
+  au bouton Précédent**, et une liste filtrée devient **partageable par URL**. Valeurs vides /
+  par défaut omises (URL propre), types coercés, `router.replace` (pas de pollution d'historique).
+  Adopté sur **Produits** et **Paiements** ; adoption incrémentale du reste.
+
+### Tests
+- Frontend **216** (+3 : `useUrlFilters.spec.ts` — hydratation, miroir, clés inconnues) ·
+  `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 1ʳᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-migration` (release `v1.0.0` → `rc.19`).

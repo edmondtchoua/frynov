@@ -1,13 +1,13 @@
 # État des lieux v1.0.0 — polish UX restant + suite de la recette finale
 
-> Mise à jour : 2026-06-07. Branche `release/v1.0.0` à **`v1.0.0-rc.18`** (cette session → `rc.19`).
+> Mise à jour : 2026-06-07. Branche `release/v1.0.0` à **`v1.0.0-rc.19`** (cette session → `rc.20`).
 > Complète (et actualise) `go-no-go-v1.0.0.md` (figé à rc.1). Depuis rc.1 ont été livrés :
 > RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13),
 > polish UX P1 — garde « modifications non enregistrées » sur la création de commande +
 > récap onboarding (rc.14→rc.15), **backfill `tenant_modules`** (rc.16),
 > feedback action 403 + page 404 design-system (rc.17), cartes mobiles (rc.18),
-> migration `BaseModal` — 1ʳᵉ vague (rc.19).
-> Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 213** · `vue-tsc` propre ·
+> migration `BaseModal` — 1ʳᵉ vague (rc.19), filtres persistés dans l'URL (rc.20).
+> Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 216** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 
 ---
@@ -27,10 +27,11 @@
 | 4 | ~~**UX-14 — page 404 dédiée**~~ | P2 | S | ✅ **Livré** (rc.17) — `NotFoundView` migrée sur `StateBlock` + `BaseButton` (cohérence design system). Page 402 = `/unavailable` (déjà livrée). |
 | 5 | ~~**UX-06 — cartes mobiles**~~ | P2 | M | ✅ **Pattern livré** (rc.18) — `.data-table--cards` (cartes empilées ≤640px, `data-label` par cellule) adopté sur **Commandes / Clients / Paiements**. Reste l'adoption incrémentale (Produits, Stock, Livraisons, Fournisseurs, Retours, admin). |
 | 6 | ~~**UX-03 — adoption `BaseModal`**~~ | P2 | M | ✅ **1ʳᵉ vague** (rc.19) — `CustomerListView` + `PaymentListView` migrées vers `<BaseModal>` (pattern documenté + testé). Reste l'adoption incrémentale (~22 vues : Stock, Livraisons, Fournisseurs, Retours, Promotions, ManualPayment, RolesPanel…). |
-| 7 | **UX-11/12/13** (P2) | P2 | L | Industrialisation icônes, recherche/filtres avancés, i18n complète. |
+| 7 | ~~**UX-12 — filtres persistés**~~ | P2 | M | ✅ **Pattern livré** (rc.20) — composable `useUrlFilters` (filtres dans l'URL : refresh / back / liens partageables) sur **Produits + Paiements**. Reste l'adoption incrémentale (Commandes, Stock, Clients…). |
+| 8 | **UX-11 / UX-13** (P2) | P2 | L | Industrialisation icônes ; **i18n complète** (chantier dédié — décision langues requise). |
 
-**Verdict UX** : aucun item bloquant pour le GO. Items 1–4 **livrés**, 5–6 **amorcés** (pattern +
-vues phares ; reste l'adoption incrémentale) ; 7 = post-1.0 (dont **UX-13 i18n** = chantier dédié).
+**Verdict UX** : aucun item bloquant pour le GO. Items 1–4 **livrés**, 5–7 **amorcés** (pattern +
+vues phares ; reste l'adoption incrémentale) ; 8 = post-1.0 (dont **UX-13 i18n** = chantier dédié).
 
 ---
 

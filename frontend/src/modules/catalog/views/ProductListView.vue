@@ -154,11 +154,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
 import { productService } from '../services/productService'
 import { getAuthToken } from '@/api/authToken'
+import { useUrlFilters } from '@/composables/useUrlFilters'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import type { Category, Product, ProductStatus } from '../types'
 
@@ -168,6 +169,9 @@ const loading    = ref(false)
 const printing   = ref(false)
 const meta       = reactive({ current_page: 1, last_page: 1, per_page: 20, total: 0 })
 const filters    = reactive({ search: '', status: '', category_id: '', page: 1 })
+
+// Keep filters in the URL (refresh / back / shareable links) — UX-12
+const { hydrate: hydrateFilters, push: pushFilters } = useUrlFilters(filters, { defaults: { page: 1 } })
 
 // ── Selection ──────────────────────────────────────────────────────────────
 const selected    = ref<Set<string>>(new Set())
@@ -248,6 +252,8 @@ function statusLbl(s: ProductStatus) {
 }
 
 onMounted(() => {
+  hydrateFilters()                                   // restore filters from the URL…
+  watch(filters, pushFilters, { deep: true })        // …then mirror changes back to it
   load()
   productService.categories.list().then(c => { categories.value = c }).catch(() => {})
 })

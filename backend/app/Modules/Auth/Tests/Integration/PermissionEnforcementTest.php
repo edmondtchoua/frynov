@@ -48,6 +48,7 @@ class PermissionEnforcementTest extends TestCase
         Plan::firstOrCreate(['code' => 'starter'], ['name' => 'Starter', 'price_monthly_cents' => 0, 'price_yearly_cents' => 0, 'currency' => 'XOF', 'trial_days' => 14, 'is_active' => true, 'is_public' => true, 'sort_order' => 1]);
 
         $this->tenant = Tenant::create(['name' => 'T', 'slug' => 'perm-enf', 'plan' => 'starter', 'status' => 'active', 'settings' => []]);
+        // Modules auto-provisioned by Tests\TestCase (module gating is fail-closed).
 
         app(PermissionRegistrar::class)->setPermissionsTeamId($this->tenant->id);
     }

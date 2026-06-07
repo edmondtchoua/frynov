@@ -4,7 +4,7 @@ use App\Modules\Orders\Http\Controllers\OrderController;
 use App\Modules\Orders\Http\Controllers\OrderReturnController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'tenant'])
+Route::middleware(['auth:sanctum', 'tenant', 'module:orders'])
     ->prefix('api/orders')
     ->group(function () {
         // ── Returns / RMA (Sprint 10) — MUST be before /{id} to avoid route shadowing

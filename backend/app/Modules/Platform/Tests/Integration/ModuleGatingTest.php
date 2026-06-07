@@ -20,6 +20,9 @@ class ModuleGatingTest extends TestCase
 {
     use RefreshDatabase;
 
+    // This suite drives module provisioning explicitly to assert the gate.
+    protected bool $autoProvisionModules = false;
+
     private Tenant $tenant;
     private string $token;
     private ModuleRegistryService $registry;

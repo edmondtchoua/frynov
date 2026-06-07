@@ -3,7 +3,7 @@
 use App\Modules\Payments\Http\Controllers\PaymentController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserBelongsToTenant::class])->group(function () {
+Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserBelongsToTenant::class, 'module:payments'])->group(function () {
 
     // Standalone payments
     Route::prefix('api/payments')->group(function () {

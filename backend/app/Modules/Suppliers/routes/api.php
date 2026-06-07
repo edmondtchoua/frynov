@@ -10,7 +10,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'module:suppliers'])->prefix('api/s
     Route::get('/{id}',     [SupplierController::class, 'show']);
     Route::put('/{id}',     [SupplierController::class, 'update']);
 
-    Route::middleware(['role:manager|admin'])->group(function () {
+    Route::middleware(['role_or_permission:manager|admin|suppliers.delete'])->group(function () {
         Route::delete('/{id}',  [SupplierController::class, 'destroy']);
     });
 });

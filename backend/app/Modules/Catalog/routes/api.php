@@ -47,8 +47,9 @@ Route::prefix('catalog')->name('catalog.')->group(function () {
         // Product attributes — read
         Route::get('products/{productId}/attributes', [ProductAttributeController::class, 'index'])->name('attributes.index');
 
-        // ── WRITE routes (manager and admin only) ─────────────────────
-        Route::middleware('role:manager|admin')->group(function () {
+        // ── WRITE routes (manager/admin, or a custom role with a granular
+        //    catalog-write permission — RBAC B2.2) ──────────────────────
+        Route::middleware('role_or_permission:manager|admin|products.create|products.update|products.delete|products.archive')->group(function () {
 
             // Products — write
             Route::post('products',                    [CatalogController::class, 'store'])->name('products.store')->middleware('quota:products');

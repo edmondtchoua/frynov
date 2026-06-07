@@ -16,7 +16,7 @@ Route::middleware(['auth:sanctum', 'module:import_export'])->group(function () {
     Route::delete('import/{id}',              [ImportExportController::class, 'cancel']);
     Route::get('import/{id}/report',          [ImportExportController::class, 'downloadReport']);
 
-    Route::middleware(['role:manager|admin'])->group(function () {
+    Route::middleware(['role_or_permission:manager|admin|import_export.create|import_export.update'])->group(function () {
         Route::post('import/{id}/approve',    [ImportExportController::class, 'approve']);
         Route::post('import/{id}/execute',    [ImportExportController::class, 'execute']);
     });

@@ -10,7 +10,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'module:delivery'])->group(function
         Route::post('/',              [DeliveryController::class, 'store']);
         Route::get('/{id}',           [DeliveryController::class, 'show']);
 
-        Route::middleware(['role:manager|admin'])->group(function () {
+        Route::middleware(['role_or_permission:manager|admin|delivery.manage'])->group(function () {
             Route::post('/{id}/dispatch', [DeliveryController::class, 'dispatch']);
             Route::post('/{id}/deliver',  [DeliveryController::class, 'deliver']);
             Route::post('/{id}/fail',     [DeliveryController::class, 'fail']);

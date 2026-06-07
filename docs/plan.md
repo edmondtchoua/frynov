@@ -112,8 +112,8 @@ Arbitrages à valider avant implémentation : libellé du bouton, convention de 
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **607 ✅** (605 passed, 2 skipped, **0 incomplete**) — +RBAC Phase A (gating module) + Phase C (accès temporaires auto-expirants) |
-| Tests Vitest frontend | **181 / 181 ✅** (+RBAC accès temporaires UI) — couverture ~38 % |
+| Tests backend | **622 ✅** (620 passed, 2 skipped, **0 incomplete**) — +RBAC Phase A (gating module) + Phase C (accès temporaires) + **Phase B2 (rôles custom + enforcement permissions)** |
+| Tests Vitest frontend | **189 / 189 ✅** (+RBAC rôles UI : `roleService` + `RolesPanel`) — couverture ~38 % |
 | Branche | `release/v1.0.0` — **RC `v1.0.0-rc.1`** (figée depuis `develop`) ; `develop` = intégration |
 | Dernière tag | `v0.8.0` (publiée sur `main`) → **`v1.0.0-rc.1`** candidat prod (cf. [Go/No-Go v1.0.0](recette/go-no-go-v1.0.0.md)) |
 | Dernière PR | #2 `feature/sprint-13` → `main` |
@@ -707,6 +707,7 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 | ✅ Dashboard opérationnel | Livré |
 | ✅ Navigation claire 1 niveau + onglets | Livré Sprint 14 |
 | ✅ Sécurité RBAC backend complète | Livré |
+| ✅ RBAC rôles custom + permissions fines (Phase B2) | rc.4 livré — `docs/modules/rbac.md` |
 | ✅ Audit trail ~85% | Livré |
 | ✅ RBAC sidebar/onglets frontend | Sprint 15 livré |
 | ✅ Filtres commandes (date, texte, client) | Sprint 15 livré |

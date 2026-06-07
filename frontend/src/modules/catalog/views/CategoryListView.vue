@@ -77,90 +77,81 @@
       </table>
     </div>
 
-    <!-- Create / Edit modal -->
-    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-box">
-        <div class="modal-header">
-          <h3>{{ editingId ? 'Modifier la catégorie' : 'Nouvelle catégorie' }}</h3>
-          <button class="modal-close" @click="closeModal">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </button>
+    <!-- Create / Edit modal (shared BaseModal — UX-03) -->
+    <BaseModal
+      :model-value="showModal"
+      :title="editingId ? 'Modifier la catégorie' : 'Nouvelle catégorie'"
+      @update:model-value="(v: boolean) => { if (!v) closeModal() }"
+    >
+      <div class="form-group">
+        <label class="form-label" for="cat-name">Nom <span style="color: var(--color-error);">*</span></label>
+        <input
+          id="cat-name"
+          v-model="catForm.name"
+          type="text"
+          class="form-input"
+          :class="{ error: catErrors.name }"
+          placeholder="Ex : Vêtements"
+          @input="delete catErrors.name"
+        />
+        <span v-if="catErrors.name" class="form-error">{{ catErrors.name }}</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="cat-parent">Catégorie parente</label>
+        <select id="cat-parent" v-model="catForm.parent_id" class="form-input">
+          <option value="">Aucune (catégorie racine)</option>
+          <option
+            v-for="cat in rootCategories"
+            :key="cat.id"
+            :value="cat.id"
+            :disabled="cat.id === editingId"
+          >{{ cat.name }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="cat-description">Description</label>
+        <input
+          id="cat-description"
+          v-model="catForm.description"
+          type="text"
+          class="form-input"
+          placeholder="Description courte…"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="cat-order">Ordre d'affichage</label>
+          <input
+            id="cat-order"
+            v-model.number="catForm.sort_order"
+            type="number"
+            min="0"
+            class="form-input"
+          />
         </div>
-
-        <div class="modal-body">
-          <div class="form-group">
-            <label class="form-label" for="cat-name">Nom <span style="color: var(--color-error);">*</span></label>
-            <input
-              id="cat-name"
-              v-model="catForm.name"
-              type="text"
-              class="form-input"
-              :class="{ error: catErrors.name }"
-              placeholder="Ex : Vêtements"
-              @input="delete catErrors.name"
-            />
-            <span v-if="catErrors.name" class="form-error">{{ catErrors.name }}</span>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="cat-parent">Catégorie parente</label>
-            <select id="cat-parent" v-model="catForm.parent_id" class="form-input">
-              <option value="">Aucune (catégorie racine)</option>
-              <option
-                v-for="cat in rootCategories"
-                :key="cat.id"
-                :value="cat.id"
-                :disabled="cat.id === editingId"
-              >{{ cat.name }}</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="cat-description">Description</label>
-            <input
-              id="cat-description"
-              v-model="catForm.description"
-              type="text"
-              class="form-input"
-              placeholder="Description courte…"
-            />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label" for="cat-order">Ordre d'affichage</label>
-              <input
-                id="cat-order"
-                v-model.number="catForm.sort_order"
-                type="number"
-                min="0"
-                class="form-input"
-              />
-            </div>
-            <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label">Statut</label>
-              <label class="toggle-wrap">
-                <input v-model="catForm.is_active" type="checkbox" class="toggle-input" />
-                <span class="toggle-track">
-                  <span class="toggle-thumb"></span>
-                </span>
-                <span class="toggle-label">{{ catForm.is_active ? 'Active' : 'Inactive' }}</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn btn-ghost" @click="closeModal">Annuler</button>
-          <button class="btn btn-primary" :disabled="saving" @click="saveCategory">
-            <span v-if="saving" class="spinner-sm spinner-white"></span>
-            {{ saving ? 'Enregistrement…' : (editingId ? 'Mettre à jour' : 'Créer') }}
-          </button>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label">Statut</label>
+          <label class="toggle-wrap">
+            <input v-model="catForm.is_active" type="checkbox" class="toggle-input" />
+            <span class="toggle-track">
+              <span class="toggle-thumb"></span>
+            </span>
+            <span class="toggle-label">{{ catForm.is_active ? 'Active' : 'Inactive' }}</span>
+          </label>
         </div>
       </div>
-    </div>
+
+      <template #footer>
+        <button class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button class="btn btn-primary" :disabled="saving" @click="saveCategory">
+          <span v-if="saving" class="spinner-sm spinner-white"></span>
+          {{ saving ? 'Enregistrement…' : (editingId ? 'Mettre à jour' : 'Créer') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -168,6 +159,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
 import { productService } from '../services/productService'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import type { Category } from '../types'
 
 const categories = ref<Category[]>([])
@@ -283,55 +275,7 @@ onMounted(load)
   gap: 1rem;
 }
 
-/* ── Modal ───────────────────────────────────────────────────────────────── */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(2px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  padding: 1rem;
-}
-.modal-box {
-  background: white;
-  border-radius: var(--radius-lg);
-  width: 100%;
-  max-width: 480px;
-  box-shadow: var(--shadow-xl);
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-  overflow: hidden;
-}
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--gray-100);
-}
-.modal-header h3 { font-size: var(--text-lg); font-weight: 600; margin: 0; }
-.modal-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--gray-400);
-  padding: 0.25rem;
-  border-radius: var(--radius-sm);
-  display: flex;
-}
-.modal-close:hover { color: var(--gray-700); background: var(--gray-100); }
-.modal-body   { padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.1rem; }
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--gray-100);
-}
+/* Modal chrome now provided by the shared <BaseModal> (UX-03). */
 
 /* ── Toggle ──────────────────────────────────────────────────────────────── */
 .toggle-wrap {

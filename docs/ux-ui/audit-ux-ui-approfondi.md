@@ -246,8 +246,10 @@ Standardiser 4 états :
 
 ## UX-06 — Tableaux métier peu adaptés aux écrans mobiles et gros volumes
 
-**Criticité : Haute**  
-**Priorité : P1**  
+**Criticité : Haute**
+
+**Priorité : P1**
+
 **Zone : produits, clients, commandes, paiements, stock, admin**
 
 ### Constat
@@ -276,8 +278,10 @@ Standardiser 4 états :
 
 ## UX-07 — Formulaires longs sans prévention suffisante d'erreurs
 
-**Criticité : Haute**  
-**Priorité : P1**  
+**Criticité : Haute**
+
+**Priorité : P1**
+
 **Zone : ProductForm, OrderCreate, Settings, Onboarding, imports**
 
 ### Constat
@@ -308,8 +312,10 @@ Les formulaires contiennent beaucoup de champs, avec validations locales partiel
 
 ## UX-08 — Onboarding trop déclaratif, pas assez orienté résultat
 
-**Criticité : Haute**  
-**Priorité : P1**  
+**Criticité : Haute**
+
+**Priorité : P1**
+
 **Zone : OnboardingView, activation, provisioning**
 
 ### Constat
@@ -515,6 +521,43 @@ Créer des pages/états :
 
 ---
 
+## UX-15 — Création catalogue trop lente sans duplication sûre ni wizard de complétion
+
+**Criticité : Haute**
+
+**Priorité : P1**
+
+**Zone : ProductFormView, ProductListView, ProductShowPage, CategoryListView**
+
+### Constat
+
+Dans une gestion quotidienne, créer un produit proche d'un produit existant ne doit pas obliger l'utilisateur à ressaisir toutes les informations. Le besoin métier est de pouvoir dupliquer un produit “en tout point” tout en excluant automatiquement les champs uniques ou dangereux : SKU, codes-barres, GTIN, valeurs IMEI/VIN/licence uniques, stock, lots, unités sérialisées, garanties déjà émises, historiques et liens commande.
+
+### Impact UX
+
+- Saisie lente et répétitive pour les catalogues avec nombreuses variantes proches.
+- Risque d'erreurs si l'utilisateur copie manuellement un produit et oublie de modifier SKU/code-barres/GTIN.
+- Risque métier majeur si des identifiants unitaires, licences ou garanties émises sont clonés.
+- Les catégories et référentiels associés peuvent aussi nécessiter une duplication guidée, mais avec code/slug/chemin unique recalculé.
+
+### Recommandation
+
+- Ajouter une action “Dupliquer” sur liste produit, fiche produit et éventuellement catégorie.
+- Créer un wizard multi-étapes : aperçu de la source, choix des éléments à copier, champs uniques vidés/régénérés, champs obligatoires à compléter, récapitulatif final.
+- Afficher clairement les champs qui ne seront jamais copiés : stock, mouvements, unités, IMEI/VIN/licences, garanties émises, audit, commandes.
+- Laisser le serveur appliquer la politique de duplication, jamais uniquement le front.
+- Proposer une duplication de catégorie qui copie parent/description/règles d'attributs mais vide ou régénère code/slug/chemin matérialisé.
+
+### Tests UX à ajouter
+
+- Dupliquer un produit affiche un brouillon avec champs non uniques préremplis.
+- Les champs uniques sont vides ou marqués “à régénérer”.
+- Le wizard bloque la validation tant que les champs obligatoires vidés ne sont pas complétés.
+- Un utilisateur clavier peut compléter toutes les étapes et revenir sans perte de données.
+- Dupliquer une catégorie ne réutilise pas le même slug/code unique.
+
+---
+
 ## 5. Audit par parcours
 
 ### 5.1 Landing → register
@@ -592,6 +635,7 @@ Créer des pages/états :
 1. Champ recherche avec icône positionnée CSS, sans espaces dans placeholder.
 2. Cards mobiles.
 3. Confirmation/descriptions pour impression batch massive.
+4. Action “Dupliquer” avec wizard qui copie les champs utiles mais vide/régénère les champs uniques.
 
 ### 5.5 Commandes / POS / Paiements
 
@@ -735,6 +779,7 @@ Créer des pages/états :
 - `AdminLayout.accessibility.spec.ts`
 - `OnboardingView.ux.spec.ts`
 - `ProductFormView.validation.spec.ts`
+- `ProductDuplicationWizard.spec.ts`
 - `OrderCreateView.workflow.spec.ts`
 - `SettingsTeam.roles.spec.ts`
 - `ForbiddenStates.spec.ts`

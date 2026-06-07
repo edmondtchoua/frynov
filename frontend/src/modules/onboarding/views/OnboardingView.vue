@@ -335,6 +335,17 @@
                   {{ allModules.find(m => m.id === mid)?.icon }} {{ allModules.find(m => m.id === mid)?.label }}
                 </span>
               </div>
+
+              <!-- UX-08: concrete next actions instead of a dead-end success screen. -->
+              <div class="next-steps">
+                <p class="next-steps__title">Prochaines étapes</p>
+                <div class="next-steps__grid">
+                  <RouterLink to="/catalog/products/create" class="next-step"><span aria-hidden="true">➕</span> Ajouter un produit</RouterLink>
+                  <RouterLink to="/import/history" class="next-step"><span aria-hidden="true">📥</span> Importer vos données</RouterLink>
+                  <RouterLink to="/orders" class="next-step"><span aria-hidden="true">🧾</span> Créer une commande</RouterLink>
+                  <RouterLink to="/settings" class="next-step"><span aria-hidden="true">👥</span> Inviter votre équipe</RouterLink>
+                </div>
+              </div>
             </template>
           </div>
         </Transition>
@@ -1074,6 +1085,37 @@ function onCountryChange() {
   padding: 0.3rem 0.75rem;
   border-radius: 20px;
 }
+
+/* Next-steps checklist (UX-08) */
+.next-steps { margin-top: 1.5rem; width: 100%; }
+.next-steps__title {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gray-400);
+  margin: 0 0 0.6rem;
+}
+.next-steps__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.5rem;
+}
+.next-step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--gray-700);
+  text-decoration: none;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition: border-color 0.15s, background 0.15s;
+}
+.next-step:hover { border-color: var(--brand-primary); background: var(--brand-primary-bg); }
 
 /* Navigation */
 .step-nav {

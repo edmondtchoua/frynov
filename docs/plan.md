@@ -70,7 +70,12 @@ Axes bloquants :
   ProductForm / création commande / onboarding ;
 - ✅ (P1, **UX-09**) pricing/upgrade basé sur prix backend — modale d'upgrade (Paramètres)
   alimentée par `publicPricingService` (plans + prix confirmés, montant pré-rempli) ;
-- 🔲 (P1, **UX-02**) cohérence admin/tenant · 🔲 (P1, **UX-08**) onboarding orienté résultat.
+- ✅ (P1, **UX-02**) cohérence admin/tenant — AdminLayout : libellés FR (« Espaces clients »),
+  lien « Retour à l'app » retiré (route interdite aux super-admins), landmark nav `aria-label`
+  (`AdminLayout.spec.ts`) ;
+- 🟡 (P1, **UX-08**) onboarding orienté résultat — **checklist « Prochaines étapes »** en fin
+  d'onboarding (ajouter produit / importer / commande / inviter). Reste : panneau récap
+  persistant « Ce qui sera configuré » + sauvegarde de progression.
 
 ## Gate catalogue produits spéciaux — services, digital, garanties, IMEI/VIN
 

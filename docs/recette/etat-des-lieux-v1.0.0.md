@@ -50,9 +50,11 @@ inventory, orders, customers, payments, delivery, suppliers, import_export, repo
 - ❌ **Aucun backfill** n'existe pour les **tenants existants** non provisionnés → ils seraient
   **verrouillés** après déploiement.
 
-**Action obligatoire avant prod** : écrire et exécuter une **migration/commande de backfill**
-qui active les modules du plan pour chaque tenant existant (`activatePlanModules` en boucle),
-puis vérifier en staging sur copie de prod. *(Sinon, NO-GO.)*
+**Action obligatoire avant prod** : exécuter la commande de backfill livrée
+**`php artisan tenants:backfill-modules`** (idempotente ; option `--dry-run` pour prévisualiser)
+qui active les modules du plan pour chaque tenant existant (fallback : tous les modules si le
+plan n'est pas résolu), puis vérifier en staging sur copie de prod. *(Sinon, NO-GO.)*
+Tests : `BackfillTenantModulesTest` (4).
 
 ### B.3 Recette fonctionnelle — périmètre à repasser (sur `migrate:fresh --seed`)
 
@@ -80,7 +82,7 @@ puis vérifier en staging sur copie de prod. *(Sinon, NO-GO.)*
 
 ### B.5 Checklist finale v1.0.0 (actualisée)
 
-- [ ] **Backfill `tenant_modules`** pour tenants existants (B.2) + vérif staging — *bloquant*.
+- [ ] **Backfill `tenant_modules`** : exécuter `php artisan tenants:backfill-modules` sur la prod (B.2) + vérif staging — *bloquant* (commande ✅ livrée + testée).
 - [ ] Recette finale signée (périmètre B.3).
 - [ ] Décision P6 signée (approche A).
 - [ ] Zones d'ombre B.4 acceptées **ou** durcies.

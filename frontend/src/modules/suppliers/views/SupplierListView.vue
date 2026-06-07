@@ -30,11 +30,18 @@
     </div>
 
     <!-- ── Table ─────────────────────────────────────────────────────────── -->
-    <div class="table-card">
-      <div v-if="loading" class="table-loading">
-        <div class="spinner"></div>
-        <span>Chargement…</span>
-      </div>
+    <div class="table-card table-scroll">
+      <StateBlock v-if="loading" variant="loading" />
+
+      <StateBlock
+        v-else-if="suppliers.length === 0"
+        variant="empty"
+        title="Aucun fournisseur trouvé"
+      >
+        <template #action>
+          <button class="btn btn-primary btn-sm" @click="openCreate">Ajouter le premier</button>
+        </template>
+      </StateBlock>
 
       <table v-else class="data-table">
         <thead>
@@ -50,18 +57,6 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-if="suppliers.length === 0">
-            <td colspan="8" class="empty-state">
-              <div class="empty-inner">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="40" height="40">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                </svg>
-                <p>Aucun fournisseur trouvé</p>
-                <button class="btn btn-primary btn-sm" @click="openCreate">Ajouter le premier</button>
-              </div>
-            </td>
-          </tr>
-
           <tr v-for="s in suppliers" :key="s.id" class="table-row">
             <td>
               <span class="code-badge">{{ s.code ?? '—' }}</span>
@@ -168,6 +163,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { supplierService } from '../services/supplierService'
+import StateBlock from '@/shared/ui/StateBlock.vue'
 import type { Supplier } from '../types'
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -268,7 +264,7 @@ async function confirmDelete(s: Supplier) {
 .search-input:focus { border-color: var(--brand-primary, #0d9488); }
 .filter-select  { padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 14px; outline: none; background: white; cursor: pointer; }
 
-.table-card     { background: white; border-radius: 12px; border: 1px solid var(--gray-200); overflow: hidden; }
+.table-card     { background: white; border-radius: 12px; border: 1px solid var(--gray-200); overflow-x: auto; }
 .table-loading  { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 48px; color: var(--gray-500); }
 
 .data-table         { width: 100%; border-collapse: collapse; }

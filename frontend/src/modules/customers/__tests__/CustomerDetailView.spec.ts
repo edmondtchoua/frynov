@@ -17,7 +17,7 @@ const router = createRouter({
 
 const CUSTOMER = {
   id: 'cust-1', name: 'Aminata Diallo', email: 'aminata@mail.sn', phone: '+221 77 000 00 00',
-  orders_count: 2, address: null, notes: null,
+  orders_count: 2, address: 'Rue Lotin Same, AKWA', notes: 'Cliente importée',
 }
 const ORDERS = [
   { id: 'o1', number: 'ORD-00001', status: 'fulfilled', total_amount: 3800000, currency: 'XOF', created_at: '2026-05-10T10:00:00Z' },
@@ -41,10 +41,12 @@ async function mountView() {
 describe('CustomerDetailView', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('renders the customer name and contact', async () => {
+  it('renders the customer name, contact, imported address and notes', async () => {
     const w = await mountView()
     expect(w.text()).toContain('Aminata Diallo')
     expect(w.text()).toContain('aminata@mail.sn')
+    expect(w.text()).toContain('Rue Lotin Same, AKWA')
+    expect(w.text()).toContain('Cliente importée')
   })
 
   it('shows the order count from loadCount', async () => {

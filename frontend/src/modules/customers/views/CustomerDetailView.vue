@@ -205,7 +205,7 @@ import { formatDate } from '@/shared/utils/date'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
 import { customerService } from '../services/customerService'
-import type { Customer } from '../types'
+import type { Customer, CustomerAddress } from '../types'
 
 const route    = useRoute()
 const router   = useRouter()
@@ -231,7 +231,9 @@ function initials(name: string): string {
 }
 
 
-function formatAddress(addr: any): string {
+function formatAddress(addr: CustomerAddress | null | undefined): string {
+  if (!addr) return ''
+  if (typeof addr === 'string') return addr
   return [addr.street, addr.zip, addr.city, addr.country].filter(Boolean).join(', ')
 }
 
@@ -255,10 +257,17 @@ function populateForm(c: Customer) {
   form.email   = c.email ?? ''
   form.phone   = c.phone ?? ''
   form.notes   = c.notes ?? ''
-  form.address.street  = c.address?.street  ?? ''
-  form.address.city    = c.address?.city    ?? ''
-  form.address.zip     = c.address?.zip     ?? ''
-  form.address.country = c.address?.country ?? ''
+  if (typeof c.address === 'string') {
+    form.address.street  = c.address
+    form.address.city    = ''
+    form.address.zip     = ''
+    form.address.country = ''
+  } else {
+    form.address.street  = c.address?.street  ?? ''
+    form.address.city    = c.address?.city    ?? ''
+    form.address.zip     = c.address?.zip     ?? ''
+    form.address.country = c.address?.country ?? ''
+  }
 }
 
 function cancelEdit() {

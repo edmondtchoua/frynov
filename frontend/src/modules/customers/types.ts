@@ -1,9 +1,11 @@
-export interface CustomerAddress {
+export interface CustomerAddressFields {
   street?: string
   city?: string
   zip?: string
   country?: string
 }
+
+export type CustomerAddress = CustomerAddressFields | string
 
 export interface Customer {
   id: string
@@ -21,6 +23,6 @@ export interface CreateCustomerPayload {
   name: string
   email?: string
   phone?: string
-  address?: CustomerAddress
+  address?: CustomerAddressFields
   notes?: string
 }

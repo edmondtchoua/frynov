@@ -27,24 +27,18 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="loading-center" style="min-height: 300px;">
-      <span class="spinner-sm" style="width: 28px; height: 28px; border-width: 3px;"></span>
-    </div>
+    <StateBlock v-if="loading" variant="loading" />
 
     <!-- Empty -->
-    <div v-else-if="deliveries.length === 0" class="empty-state">
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-        <rect x="4" y="4" width="32" height="32" rx="8" fill="var(--brand-primary-bg)"/>
-        <path d="M8 22l4-8h12l4 8v4H8v-4Z" stroke="var(--brand-primary)" stroke-width="2" stroke-linejoin="round"/>
-        <circle cx="14" cy="27" r="2" fill="var(--brand-primary)"/>
-        <circle cx="26" cy="27" r="2" fill="var(--brand-primary)"/>
-      </svg>
-      <h3>Aucune livraison</h3>
-      <p>{{ filters.status ? 'Aucune livraison avec ce statut.' : 'Les livraisons apparaîtront ici.' }}</p>
-    </div>
+    <StateBlock
+      v-else-if="deliveries.length === 0"
+      variant="empty"
+      title="Aucune livraison"
+      :message="filters.status ? 'Aucune livraison avec ce statut.' : 'Les livraisons apparaîtront ici.'"
+    />
 
     <!-- Table -->
-    <div v-else class="card" style="padding: 0; overflow: hidden;">
+    <div v-else class="card table-scroll" style="padding: 0;">
       <table class="data-table">
         <thead>
           <tr>
@@ -209,6 +203,7 @@ import { formatDateShort } from '@/shared/utils/date'
 import { RouterLink } from 'vue-router'
 import SalesTabNav from '../../orders/components/SalesTabNav.vue'
 import { deliveryService } from '../services/deliveryService'
+import StateBlock from '@/shared/ui/StateBlock.vue'
 import type { Delivery, DeliveryStatus } from '../types'
 
 const deliveries = ref<Delivery[]>([])

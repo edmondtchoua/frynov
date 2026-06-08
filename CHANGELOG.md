@@ -3,6 +3,20 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 6ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave6` (release `v1.0.0` → `rc.31`).
+
+### UX
+- **Modales unifiées (UX-03, 6ᵉ vague)** — `FiscalPeriodView` (**2 modales** : création + verrouillage
+  irréversible) et `SupplierDetailView` (confirmation de suppression) migrées vers `<BaseModal>`
+  (styles `.modal-*` dupliqués retirés). Le module Fournisseurs est désormais **100 % BaseModal**.
+  **16 modales / 13 vues migrées au total.**
+
+### Tests
+- `SupplierDetailView.spec` adapté (teleport stub + `v-focus-trap`) pour la modale BaseModal.
+  Frontend **241** au vert · `vue-tsc` propre.
+
 ## [Non publié] — i18n : module Rapports traduit FR/EN (UX-13) (2026-06-07)
 
 Branche `feature/ux-i18n-reports` (release `v1.0.0` → `rc.30`).

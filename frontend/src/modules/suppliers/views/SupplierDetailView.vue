@@ -136,19 +136,22 @@
       </div>
     </template>
 
-    <!-- Delete confirm modal -->
-    <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="showDeleteConfirm = false">
-      <div class="modal-box">
-        <h3 class="modal-title">{{ $t('suppliers.deleteConfirmTitle') }}</h3>
-        <p class="modal-desc">{{ $t('suppliers.deleteConfirmDesc', { name: supplier?.name ?? '' }) }}</p>
-        <div class="modal-actions">
-          <button class="btn btn-danger" @click="doDelete" :disabled="deleting">
-            {{ deleting ? $t('suppliers.deleting') : $t('common.delete') }}
-          </button>
-          <button class="btn btn-ghost" @click="showDeleteConfirm = false">{{ $t('common.cancel') }}</button>
-        </div>
-      </div>
-    </div>
+    <!-- Delete confirm modal (shared BaseModal — UX-03) -->
+    <BaseModal
+      :model-value="showDeleteConfirm"
+      size="sm"
+      :title="$t('suppliers.deleteConfirmTitle')"
+      @update:model-value="(v: boolean) => { if (!v) showDeleteConfirm = false }"
+    >
+      <p class="modal-desc">{{ $t('suppliers.deleteConfirmDesc', { name: supplier?.name ?? '' }) }}</p>
+
+      <template #footer>
+        <button class="btn btn-ghost" @click="showDeleteConfirm = false">{{ $t('common.cancel') }}</button>
+        <button class="btn btn-danger" @click="doDelete" :disabled="deleting">
+          {{ deleting ? $t('suppliers.deleting') : $t('common.delete') }}
+        </button>
+      </template>
+    </BaseModal>
 
   </div>
 </template>
@@ -160,6 +163,7 @@ import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { supplierService } from '../services/supplierService'
 import { usePermission } from '@/composables/usePermission'
 import { t } from '@/i18n'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import type { Supplier, UpdateSupplierPayload } from '../types'
 
 const route  = useRoute()
@@ -361,12 +365,8 @@ textarea.form-input { resize: vertical; }
 .loading-center { display: flex; align-items: center; gap: 0.5rem; padding: 3rem; justify-content: center; color: var(--gray-500); }
 .error-state    { padding: 2rem; text-align: center; color: var(--gray-600); }
 
-/* Modal */
-.modal-overlay  { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 999; }
-.modal-box      { background: white; border-radius: var(--radius-lg); padding: 1.5rem; max-width: 420px; width: 90%; box-shadow: var(--shadow-lg); }
-.modal-title    { margin: 0 0 0.75rem; font-size: 1.1rem; font-weight: 700; color: var(--gray-900); }
-.modal-desc     { margin: 0 0 1.5rem; font-size: 0.875rem; color: var(--gray-600); }
-.modal-actions  { display: flex; gap: 0.75rem; }
+/* Modal chrome now provided by the shared <BaseModal> (UX-03). */
+.modal-desc     { margin: 0; font-size: 0.875rem; color: var(--gray-600); }
 .btn-danger     { background: #ef4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: var(--radius-sm); cursor: pointer; font-weight: 600; }
 .btn-danger:hover { background: #dc2626; }
 .btn-danger:disabled { opacity: 0.6; cursor: not-allowed; }

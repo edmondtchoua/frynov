@@ -271,6 +271,7 @@ import { orderService } from '../services/orderService'
 import { paymentService } from '@/modules/payments/services/paymentService'
 import { deliveryService } from '@/modules/deliveries/services/deliveryService'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { useConfirm } from '@/composables/useConfirm'
 import type { Order } from '../types'
 import type { Payment, PaymentMethod } from '@/modules/payments/types'
 import type { Delivery, DeliveryStatus } from '@/modules/deliveries/types'
@@ -383,8 +384,14 @@ async function submitPayment() {
   }
 }
 
+const { confirm } = useConfirm()
+
 async function voidPayment(paymentId: string) {
-  if (!confirm('Annuler ce paiement ?')) return
+  if (!(await confirm({
+    title: 'Annuler le paiement',
+    message: 'Voulez-vous annuler ce paiement ?',
+    danger: true,
+  }))) return
   payActionError.value = null
   try {
     await paymentService.void(paymentId)

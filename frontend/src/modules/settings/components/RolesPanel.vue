@@ -101,6 +101,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { roleService, type TenantRole } from '../services/roleService'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { useConfirm } from '@/composables/useConfirm'
 
 const roles = ref<TenantRole[]>([])
 const grantable = ref<string[]>([])
@@ -199,8 +200,15 @@ async function save() {
   }
 }
 
+const { confirm } = useConfirm()
+
 async function confirmDelete(role: TenantRole) {
-  if (!confirm(`Supprimer le rôle « ${role.name} » ? Les membres concernés perdront ces permissions.`)) return
+  if (!(await confirm({
+    title: 'Supprimer le rôle',
+    message: `Supprimer le rôle « ${role.name} » ? Les membres concernés perdront ces permissions.`,
+    confirmLabel: 'Supprimer',
+    danger: true,
+  }))) return
   try {
     await roleService.remove(role.id)
     await load()

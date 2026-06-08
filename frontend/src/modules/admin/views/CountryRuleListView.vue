@@ -101,6 +101,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { adminService, type AdminCountryRule } from '../services/adminService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { useConfirm } from '@/composables/useConfirm'
 
 const rules   = ref<AdminCountryRule[]>([])
 const loading = ref(true)
@@ -197,8 +198,15 @@ async function save() {
   }
 }
 
+const { confirm } = useConfirm()
+
 async function remove(r: AdminCountryRule) {
-  if (!window.confirm(`Supprimer la règle pour ${r.country_code} ?`)) return
+  if (!(await confirm({
+    title: 'Supprimer',
+    message: `Supprimer la règle pour ${r.country_code} ?`,
+    confirmLabel: 'Supprimer',
+    danger: true,
+  }))) return
   try {
     await adminService.deleteCountryRule(r.id)
     await load()

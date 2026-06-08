@@ -17,6 +17,9 @@ describe('i18n core', () => {
     setLocale('en')
     expect(t('common.save')).toBe('Save')
     expect(t('notFound.title')).toBe('Page not found')
+    // Garde-fou : ces clés doivent exister en EN (pas de retour au fallback FR).
+    expect(t('common.update')).toBe('Update')
+    expect(t('common.confirm')).toBe('Confirm')
   })
 
   it('interpolates {params}', () => {

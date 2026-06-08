@@ -3,6 +3,21 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : module Rapports traduit FR/EN (UX-13) (2026-06-07)
+
+Branche `feature/ux-i18n-reports` (release `v1.0.0` → `rc.30`).
+Voir `docs/modules/i18n.md`.
+
+### UX
+- **Module Rapports (`SalesReportView` + `StockReportView`)** — 4ᵉ module entièrement
+  internationalisé : titres, KPI, périodes (court + long), graphiques, tableaux, listes de moyens
+  de paiement / mouvements, messages d'erreur. Nouveau namespace `reports.*` (avec sous-tables
+  `period`/`periodLong`/`movement`) ; réutilise `payments.method.*` et `common.*` (allWarehouses,
+  product, quantity). Bascule FR ↔ EN en direct.
+
+### Tests
+- Frontend **241** (+1 : namespace `reports` dans `i18n.spec`) · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 5ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave5` (release `v1.0.0` → `rc.29`).

@@ -5,24 +5,24 @@
 
     <div class="page-header">
       <div>
-        <h2>Rapport des ventes</h2>
-        <p class="page-subtitle">Chiffre d'affaires, top produits et méthodes de paiement</p>
+        <h2>{{ $t('reports.salesTitle') }}</h2>
+        <p class="page-subtitle">{{ $t('reports.salesSubtitle') }}</p>
       </div>
       <div class="header-actions">
-        <select v-model="warehouseId" class="form-input" style="max-width: 190px" aria-label="Filtrer par entrepôt">
-          <option value="">Tous les entrepôts</option>
+        <select v-model="warehouseId" class="form-input" style="max-width: 190px" :aria-label="$t('common.allWarehouses')">
+          <option value="">{{ $t('common.allWarehouses') }}</option>
           <option v-for="w in warehouses" :key="w.id" :value="w.id">
             {{ w.is_default ? '⭐ ' : '' }}{{ w.name }}
           </option>
         </select>
         <button
           v-for="p in PERIODS"
-          :key="p.value"
+          :key="p"
           class="btn btn-sm"
-          :class="period === p.value ? 'btn-primary' : 'btn-secondary'"
-          @click="changePeriod(p.value)"
+          :class="period === p ? 'btn-primary' : 'btn-secondary'"
+          @click="changePeriod(p)"
         >
-          {{ p.label }}
+          {{ $t('reports.period.' + p) }}
         </button>
       </div>
     </div>
@@ -45,7 +45,7 @@
           </div>
           <div class="kpi-body">
             <div class="kpi-value">{{ formatMoneyCompact(data.total_revenue) }}</div>
-            <div class="kpi-label">CA total — {{ periodLabel }}</div>
+            <div class="kpi-label">{{ $t('reports.kpiRevenue', { period: periodLabel }) }}</div>
           </div>
         </div>
 
@@ -58,7 +58,7 @@
           </div>
           <div class="kpi-body">
             <div class="kpi-value">{{ data.total_orders }}</div>
-            <div class="kpi-label">Paiements enregistrés</div>
+            <div class="kpi-label">{{ $t('reports.kpiPayments') }}</div>
           </div>
         </div>
 
@@ -70,7 +70,7 @@
           </div>
           <div class="kpi-body">
             <div class="kpi-value">{{ avgOrder }}</div>
-            <div class="kpi-label">Panier moyen</div>
+            <div class="kpi-label">{{ $t('reports.kpiAvgBasket') }}</div>
           </div>
         </div>
 
@@ -84,7 +84,7 @@
           </div>
           <div class="kpi-body">
             <div class="kpi-value">{{ topMethodLabel }}</div>
-            <div class="kpi-label">Méthode principale</div>
+            <div class="kpi-label">{{ $t('reports.kpiTopMethod') }}</div>
           </div>
         </div>
       </div>
@@ -92,7 +92,7 @@
       <!-- Revenue chart -->
       <div class="card" style="margin-top:1.25rem">
         <div class="chart-card-header">
-          <h3>Évolution du CA</h3>
+          <h3>{{ $t('reports.revenueChartTitle') }}</h3>
           <span class="badge badge-gray">{{ periodLabel }}</span>
         </div>
         <RevenueChart :points="data.revenue_chart" />
@@ -103,16 +103,16 @@
 
         <!-- Top products -->
         <div class="card">
-          <h3 class="section-title">Top produits</h3>
-          <div v-if="!data.top_products.length" class="empty-state">Aucune vente sur la période.</div>
+          <h3 class="section-title">{{ $t('reports.topProducts') }}</h3>
+          <div v-if="!data.top_products.length" class="empty-state">{{ $t('reports.noSales') }}</div>
           <table v-else class="data-table">
             <thead>
               <tr>
                 <th>#</th>
-                <th>Produit</th>
+                <th>{{ $t('common.product') }}</th>
                 <th>SKU</th>
-                <th style="text-align:right">Qté</th>
-                <th style="text-align:right">CA</th>
+                <th style="text-align:right">{{ $t('common.quantity') }}</th>
+                <th style="text-align:right">{{ $t('reports.colRevenue') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -129,13 +129,13 @@
 
         <!-- Payment methods -->
         <div class="card">
-          <h3 class="section-title">Répartition par moyen de paiement</h3>
-          <div v-if="!data.by_method.length" class="empty-state">Aucun paiement sur la période.</div>
+          <h3 class="section-title">{{ $t('reports.byMethodTitle') }}</h3>
+          <div v-if="!data.by_method.length" class="empty-state">{{ $t('reports.noPayments') }}</div>
           <div v-else class="methods-list">
             <div v-for="m in data.by_method" :key="m.method" class="method-row">
               <div class="method-info">
                 <span class="method-name">{{ methodLabel(m.method) }}</span>
-                <span class="method-count text-muted">{{ m.count }} paiement{{ m.count > 1 ? 's' : '' }}</span>
+                <span class="method-count text-muted">{{ m.count }} {{ m.count > 1 ? $t('reports.paymentsWord') : $t('reports.paymentWord') }}</span>
               </div>
               <div class="method-bar-wrap">
                 <div
@@ -154,7 +154,7 @@
 
     <!-- Error -->
     <div v-else class="alert alert-error" style="margin-top:1.5rem">
-      Erreur de chargement des données.
+      {{ $t('reports.loadError') }}
     </div>
 
   </div>
@@ -165,15 +165,11 @@ import { ref, computed, onMounted, defineComponent, h, watch } from 'vue'
 import ReportsTabNav from '../components/ReportsTabNav.vue'
 import { reportService, formatMoneyCompact, shortDate, type SalesData, type SalesPeriod } from '../services/reportService'
 import { useWarehouses } from '@/composables/useWarehouses'
+import { t } from '@/i18n'
 
 // ── Period selector ───────────────────────────────────────────────────────────
 
-const PERIODS: { value: SalesPeriod; label: string }[] = [
-  { value: '7d',  label: '7J' },
-  { value: '30d', label: '30J' },
-  { value: '90d', label: '90J' },
-  { value: '1y',  label: '1 an' },
-]
+const PERIODS: SalesPeriod[] = ['7d', '30d', '90d', '1y']
 
 const period  = ref<SalesPeriod>('30d')
 const { warehouses, loadWarehouses } = useWarehouses()
@@ -199,10 +195,7 @@ function changePeriod(p: SalesPeriod) { period.value = p }
 
 // ── Computed ──────────────────────────────────────────────────────────────────
 
-const periodLabel = computed(() => {
-  const m: Record<SalesPeriod, string> = { '7d': '7 derniers jours', '30d': '30 derniers jours', '90d': '90 derniers jours', '1y': 'Dernière année' }
-  return m[period.value]
-})
+const periodLabel = computed(() => t('reports.periodLong.' + period.value))
 
 const avgOrder = computed(() => {
   if (!data.value || data.value.total_orders === 0) return '—'
@@ -220,14 +213,7 @@ const maxMethodAmount = computed(() => {
 })
 
 function methodLabel(m: string): string {
-  const map: Record<string, string> = {
-    cash:         'Espèces',
-    mobile_money: 'Mobile Money',
-    card:         'Carte bancaire',
-    transfer:     'Virement',
-    cheque:       'Chèque',
-  }
-  return map[m] ?? m
+  return t('payments.method.' + m)
 }
 
 // ── Revenue chart (SVG bars) ──────────────────────────────────────────────────
@@ -239,7 +225,7 @@ const RevenueChart = defineComponent({
       const max = Math.max(...props.points.map(p => p.amount), 1)
 
       if (!props.points.length) {
-        return h('div', { class: 'chart-empty' }, 'Aucune donnée.')
+        return h('div', { class: 'chart-empty' }, t('reports.chartEmpty'))
       }
 
       const barW    = period.value === '1y' ? 6 : (period.value === '90d' ? 8 : (period.value === '30d' ? 14 : 28))

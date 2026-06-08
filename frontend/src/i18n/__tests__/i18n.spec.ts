@@ -39,6 +39,16 @@ describe('i18n core', () => {
     expect(t('suppliers.confirmDelete', { name: 'ACME' })).toBe('Delete supplier "ACME"?')
   })
 
+  it('translates the reports module namespace (nested keys + interpolation)', () => {
+    setLocale('fr')
+    expect(t('reports.salesTitle')).toBe('Rapport des ventes')
+    expect(t('reports.kpiRevenue', { period: '30 derniers jours' })).toBe('CA total — 30 derniers jours')
+    expect(t('reports.movement.in')).toBe('Entrées')
+    setLocale('en')
+    expect(t('reports.salesTitle')).toBe('Sales report')
+    expect(t('reports.movement.in')).toBe('Inflows')
+  })
+
   it('persists the chosen locale to localStorage', () => {
     setLocale('en')
     expect(localStorage.getItem('frynov.locale')).toBe('en')

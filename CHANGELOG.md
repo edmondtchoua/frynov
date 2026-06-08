@@ -3,6 +3,18 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 16ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave16` (release `v1.0.0` → `rc.42`).
+
+### UX
+- **Modales unifiées (UX-03, 16ᵉ vague)** — `PosView` (**2 modales** : choix de déclinaison +
+  clôture de caisse) migrées vers `<BaseModal>` ; chrome `.pos-modal-*` retiré (les contrôles tactiles
+  `pos-btn`/`pos-input` et les `data-test` sont conservés). **29 modales / 23 vues migrées au total**
+  (ne reste que `SettingsView`). 
+### Tests
+- `PosView.spec` adapté (teleport stub + `v-focus-trap`). Frontend **242** au vert · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 15ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave15` (release `v1.0.0` → `rc.41`).

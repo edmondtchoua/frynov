@@ -92,9 +92,11 @@ class="form-input"/><span class="input-affix__suffix">XAF</span></div>`), bloc d
   = entité ». *(Les volets de création « Nouveau X » restent sans sous-titre — pas d'entité existante.)*
 
 Patterns réutilisables introduits : **`.input-affix`** (suffixe fixe unité/devise/%) et **`.input-group`**
-(champ + sélecteur accolés). **Phase 3 quasi terminée** : les volets monétaires/contextuels des modules
-phares sont polis ; le reliquat (Marketplace, Import, formulaire Produit — qui est une *page* et non un
-volet) est soit déjà conforme via la fondation rc.46, soit hors périmètre « volet ».
+(champ + sélecteur accolés). **Phase 3 terminée (rc.49→rc.54)** : tous les volets monétaires/contextuels sont polis ;
+`MarketplaceListingsView` a reçu son sous-titre (rc.54) et les **7 `alert()` natifs** restants ont été
+remplacés par des **toasts** non bloquants (`pushToast`, cf. `useNotifications` — sévérité `error`).
+**Plus aucun `confirm()`/`alert()` bloquant** dans l'application : la refonte « Side-Drawer » est
+**100 % livrée** (fondation rc.46 · confirmations rc.47-48 · polish modules rc.49-53 · reliquat rc.54).
 Le chrome est défini **une seule fois** dans `main.css` (`.modal-overlay(--drawer|--center)`,
 `.modal--drawer|--center` × `--sm|md|lg`) — `BaseModal` reste un primitif mince. Au passage,
 `.modal-overlay`/`.modal`, jusque-là **non définis** (volets sans voile ni positionnement), sont

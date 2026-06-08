@@ -134,7 +134,7 @@
     </div>
 
     <!-- Create/Edit modal (shared BaseModal — UX-03) -->
-    <BaseModal v-model="modal.open" :title="modal.editing ? 'Modifier la connexion' : 'Nouvelle connexion marketplace'">
+    <BaseModal v-model="modal.open" :title="modal.editing ? 'Modifier la connexion' : 'Nouvelle connexion marketplace'" :subtitle="modal.editing ? (form.platform + ' · ' + form.external_product_id) : ''">
       <div class="mp-modal-body">
             <div v-if="!modal.editing">
               <div class="form-group">

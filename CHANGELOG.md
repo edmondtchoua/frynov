@@ -3,6 +3,29 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Refonte UI : reliquat (Marketplace + alert() → toasts) + docs (2026-06-08)
+
+Branche `feature/ux-reliquat-docs` (release `v1.0.0` → `rc.54`).
+
+### UX — fin de la refonte
+- **`MarketplaceListingsView`** : sous-titre = « plateforme · ID externe » à l'édition (dernier volet
+  sans contexte d'en-tête).
+- **`alert()` natifs supprimés** (7 occurrences / 6 vues) → **toasts** non bloquants via `pushToast`
+  (`useNotifications`, sévérité `error`) : `SupplierListView` (suppression échouée), `ProductShowPage`
+  (impression), `SettingsView` (×2 : rôle / activation membre), `LabelPrintView` (génération),
+  `ImportWizardView` & `ImportHistoryView` (annulation). `pushToast` est désormais exporté directement.
+- **🎯 Refonte « Side-Drawer » 100 % terminée** : volets latéraux (rc.46), confirmations centrées
+  (rc.47-48), polish par module (rc.49-53), reliquat (rc.54). **Plus aucun `confirm()`/`alert()`
+  bloquant** côté vues.
+
+### Docs
+- **`go-no-go-v1.0.0.md` actualisé** (gelé rc.1 → **rc.54**) : compteurs de tests, section UX (design
+  system, Side-Drawer, i18n, confirmations/toasts), zones, checklist. + `etat-des-lieux`,
+  `ux-design-system`, CHANGELOG.
+
+### Tests
+- Frontend **252** inchangé · `vue-tsc` propre · `pushToast` déjà couvert (`useNotifications.spec`).
+
 ## [Non publié] — Refonte UI : polish des volets — Inventaire (Transfert & Période) (Phase 3) (2026-06-08)
 
 Branche `feature/ux-drawer-inventory` (release `v1.0.0` → `rc.53`).

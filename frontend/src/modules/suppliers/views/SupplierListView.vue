@@ -163,6 +163,7 @@ import { supplierService } from '../services/supplierService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
+import { pushToast } from '@/composables/useNotifications'
 import { t } from '@/i18n'
 import type { Supplier } from '../types'
 
@@ -250,7 +251,7 @@ async function confirmDelete(s: Supplier) {
     await supplierService.delete(s.id)
     await load(meta.current_page)
   } catch (e: any) {
-    alert(e?.response?.data?.message ?? t('suppliers.deleteFailed'))
+    pushToast(e?.response?.data?.message ?? t('suppliers.deleteFailed'))
   }
 }
 </script>

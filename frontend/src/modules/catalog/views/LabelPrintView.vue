@@ -140,6 +140,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { pushToast } from '@/composables/useNotifications'
 import { RouterLink } from 'vue-router'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
 import { productService } from '../services/productService'
@@ -200,7 +201,7 @@ async function doPrint() {
       show_qr:    config.show_qr,
     })
   } catch (e: any) {
-    alert(e?.response?.data?.message ?? 'Erreur lors de la génération.')
+    pushToast(e?.response?.data?.message ?? 'Erreur lors de la génération.')
   } finally {
     printing.value = false
   }

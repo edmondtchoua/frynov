@@ -184,6 +184,7 @@ import { importExportService } from '../services/importExportService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
+import { pushToast } from '@/composables/useNotifications'
 import type { ImportSession } from '../types'
 import { ENTITY_LABELS, MODE_LABELS, STATUS_LABELS } from '../types'
 
@@ -244,7 +245,7 @@ async function cancelSession(s: ImportSession) {
     await importExportService.cancel(s.id)
     await load(meta.current_page)
   } catch (e: any) {
-    alert(e?.response?.data?.message ?? 'Annulation impossible.')
+    pushToast(e?.response?.data?.message ?? 'Annulation impossible.')
   }
 }
 

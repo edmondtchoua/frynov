@@ -323,6 +323,7 @@
 <script setup lang="ts">
 import { ref, computed, reactive, watch, onUnmounted } from 'vue'
 import { useConfirm } from '@/composables/useConfirm'
+import { pushToast } from '@/composables/useNotifications'
 import { useRouter } from 'vue-router'
 import { importExportService } from '../services/importExportService'
 import type { ImportEntityType, ImportMode, ImportSession, ImportRow, ImportStatus, RowAction, RowStatus } from '../types'
@@ -549,7 +550,7 @@ async function cancelSession() {
     await importExportService.cancel(session.value.id)
     router.push('/import/history')
   } catch (e: any) {
-    alert(e?.response?.data?.message ?? 'Annulation impossible.')
+    pushToast(e?.response?.data?.message ?? 'Annulation impossible.')
   }
 }
 

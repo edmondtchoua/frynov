@@ -3,6 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import SupplierDetailView from '@/modules/suppliers/views/SupplierDetailView.vue'
 import { setupManagerAuth } from '@/test-utils/setupAuth'
+import { vFocusTrap } from '@/directives/focusTrap'
 import { setLocale } from '@/i18n'
 import client from '@/api/client'
 
@@ -25,7 +26,13 @@ async function mountView() {
   await router.push('/suppliers/sup-1')
   // supplierService.get → r.data === { data: supplier }
   vi.mocked(client.get).mockResolvedValue({ data: { data: SUPPLIER } })
-  const w = mount(SupplierDetailView, { global: { plugins: [router, setupManagerAuth()] } })
+  const w = mount(SupplierDetailView, {
+    global: {
+      plugins: [router, setupManagerAuth()],
+      directives: { 'focus-trap': vFocusTrap },  // delete modal now uses BaseModal (v-focus-trap)
+      stubs: { teleport: true },                 // render BaseModal's Teleport inline
+    },
+  })
   await flushPromises()
   return w
 }

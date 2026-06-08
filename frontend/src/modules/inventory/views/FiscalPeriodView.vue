@@ -63,45 +63,46 @@
       </div>
     </div>
 
-    <!-- Create Modal -->
-    <div v-if="showCreate" class="modal-overlay" @click.self="showCreate = false">
-      <div class="modal-card">
-        <h2 class="modal-title">Nouvelle période fiscale</h2>
+    <!-- Create Modal (shared BaseModal — UX-03) -->
+    <BaseModal v-model="showCreate" size="lg" title="Nouvelle période fiscale">
+      <div class="form-group">
+        <label class="form-label">Nom *</label>
+        <input v-model="form.name" class="form-input" placeholder="Ex: Exercice 2025" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type *</label>
+        <select v-model="form.type" class="form-input">
+          <option value="annual">Annuel</option>
+          <option value="quarterly">Trimestriel</option>
+          <option value="monthly">Mensuel</option>
+        </select>
+      </div>
+      <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Nom *</label>
-          <input v-model="form.name" class="form-input" placeholder="Ex: Exercice 2025" />
+          <label class="form-label">Début *</label>
+          <input v-model="form.starts_at" type="date" class="form-input" />
         </div>
         <div class="form-group">
-          <label class="form-label">Type *</label>
-          <select v-model="form.type" class="form-input">
-            <option value="annual">Annuel</option>
-            <option value="quarterly">Trimestriel</option>
-            <option value="monthly">Mensuel</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Début *</label>
-            <input v-model="form.starts_at" type="date" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Fin *</label>
-            <input v-model="form.ends_at" type="date" class="form-input" />
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" @click="showCreate = false">Annuler</button>
-          <button class="btn btn-primary" :disabled="saving || !form.name || !form.starts_at || !form.ends_at" @click="createPeriod">
-            {{ saving ? 'Création...' : 'Créer' }}
-          </button>
+          <label class="form-label">Fin *</label>
+          <input v-model="form.ends_at" type="date" class="form-input" />
         </div>
       </div>
-    </div>
 
-    <!-- Lock Confirmation Modal -->
-    <div v-if="lockTarget" class="modal-overlay" @click.self="lockTarget = null">
-      <div class="modal-card modal-danger">
-        <h2 class="modal-title">⚠️ Verrouillage irréversible</h2>
+      <template #footer>
+        <button class="btn btn-secondary" @click="showCreate = false">Annuler</button>
+        <button class="btn btn-primary" :disabled="saving || !form.name || !form.starts_at || !form.ends_at" @click="createPeriod">
+          {{ saving ? 'Création...' : 'Créer' }}
+        </button>
+      </template>
+    </BaseModal>
+
+    <!-- Lock Confirmation Modal (shared BaseModal — UX-03) -->
+    <BaseModal
+      :model-value="!!lockTarget"
+      title="⚠️ Verrouillage irréversible"
+      @update:model-value="(v: boolean) => { if (!v) lockTarget = null }"
+    >
+      <template v-if="lockTarget">
         <div class="warning-box">
           Cette action est <strong>définitive et irréversible</strong>. Une fois verrouillée,
           aucune écriture de stock ne pourra être effectuée sur la période
@@ -116,18 +117,19 @@
             placeholder="Ex: Clôture exercice 2025 approuvée en conseil de direction"
           />
         </div>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" @click="lockTarget = null">Annuler</button>
-          <button
-            class="btn btn-danger"
-            :disabled="!lockReason || locking"
-            @click="confirmLock"
-          >
-            {{ locking ? 'Verrouillage...' : '🔒 Confirmer le verrouillage' }}
-          </button>
-        </div>
-      </div>
-    </div>
+      </template>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="lockTarget = null">Annuler</button>
+        <button
+          class="btn btn-danger"
+          :disabled="!lockReason || locking"
+          @click="confirmLock"
+        >
+          {{ locking ? 'Verrouillage...' : '🔒 Confirmer le verrouillage' }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -135,6 +137,7 @@
 import { ref, onMounted } from 'vue'
 import { formatDate } from '@/shared/utils/date'
 import InventoryTabNav from "../components/InventoryTabNav.vue"
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import api from '@/services/api'
 
 interface FiscalPeriod {
@@ -229,11 +232,7 @@ onMounted(load)
 .period-dates    { font-size: 0.875rem; color: #475569; margin-bottom: 12px; }
 .lock-info       { font-size: 0.8rem; color: #64748b; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 12px; }
 .period-actions  { display: flex; gap: 8px; }
-.modal-overlay   { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
-.modal-card      { background: white; border-radius: 12px; padding: 28px; width: 520px; max-width: 95vw; }
-.modal-danger    { border: 2px solid #fca5a5; }
-.modal-title     { font-size: 1.125rem; font-weight: 600; margin: 0 0 16px; }
-.modal-actions   { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+/* Modal chrome now provided by the shared <BaseModal> (UX-03). */
 .warning-box     { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px; color: #b91c1c; font-size: 0.875rem; line-height: 1.5; margin-bottom: 16px; }
 .form-row        { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 </style>

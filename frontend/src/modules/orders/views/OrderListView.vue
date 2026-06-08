@@ -2,9 +2,9 @@
   <div>
     <SalesTabNav />
     <div class="page-header">
-      <h2>Commandes</h2>
+      <h2>{{ $t('orders.title') }}</h2>
       <RouterLink to="/orders/new" class="btn btn-primary">
-        + Nouvelle commande
+        + {{ $t('orders.new') }}
       </RouterLink>
     </div>
 
@@ -18,15 +18,15 @@
           v-model="search"
           type="text"
           class="form-input search-input"
-          placeholder="N° commande, client..."
+          :placeholder="$t('orders.searchPlaceholder')"
           @input="debouncedLoad"
         />
       </div>
-      <input v-model="dateFrom" type="date" class="form-input date-input" @change="load" title="Depuis" />
-      <input v-model="dateTo"   type="date" class="form-input date-input" @change="load" title="Jusqu'au" />
+      <input v-model="dateFrom" type="date" class="form-input date-input" @change="load" :title="$t('orders.dateFrom')" />
+      <input v-model="dateTo"   type="date" class="form-input date-input" @change="load" :title="$t('orders.dateTo')" />
       <!-- Site / entrepôt filter (Sprint 20 multi-sites) -->
-      <select v-model="warehouseId" class="form-input date-input" title="Entrepôt" aria-label="Filtrer par entrepôt">
-        <option value="">Tous les entrepôts</option>
+      <select v-model="warehouseId" class="form-input date-input" :aria-label="$t('common.allWarehouses')">
+        <option value="">{{ $t('common.allWarehouses') }}</option>
         <option v-for="w in warehouses" :key="w.id" :value="w.id">
           {{ w.is_default ? '⭐ ' : '' }}{{ w.name }}
         </option>
@@ -37,40 +37,40 @@
     <div class="status-tabs">
       <button
         v-for="tab in tabs"
-        :key="tab.value"
+        :key="tab"
         class="tab-btn"
-        :class="{ active: activeTab === tab.value }"
-        @click="activeTab = tab.value"
+        :class="{ active: activeTab === tab }"
+        @click="activeTab = tab"
       >
-        {{ tab.label }}
+        {{ $t('orders.tab.' + (tab || 'all')) }}
       </button>
     </div>
 
     <div class="card table-scroll" style="margin-top: 1rem; padding: 0;">
       <StateBlock v-if="loading" variant="loading" />
 
-      <StateBlock v-else-if="error" variant="error" title="Erreur de chargement" :message="error">
+      <StateBlock v-else-if="error" variant="error" :title="$t('orders.loadErrorTitle')" :message="error">
         <template #action>
-          <button class="btn btn-secondary" @click="load">Réessayer</button>
+          <button class="btn btn-secondary" @click="load">{{ $t('common.retry') }}</button>
         </template>
       </StateBlock>
 
       <StateBlock
         v-else-if="orders.length === 0"
         variant="empty"
-        title="Aucune commande"
-        message="Les commandes apparaîtront ici."
+        :title="$t('orders.empty')"
+        :message="$t('orders.emptyHint')"
       />
 
       <!-- Table (card-stacking on very small screens — UX-06) -->
       <table v-else class="data-table data-table--cards">
         <thead>
           <tr>
-            <th>N°</th>
-            <th>Statut</th>
-            <th>Articles</th>
-            <th>Total</th>
-            <th>Date</th>
+            <th>{{ $t('orders.colNumber') }}</th>
+            <th>{{ $t('common.status') }}</th>
+            <th>{{ $t('orders.colItems') }}</th>
+            <th>{{ $t('orders.colTotal') }}</th>
+            <th>{{ $t('common.date') }}</th>
             <th></th>
           </tr>
         </thead>
@@ -81,17 +81,17 @@
                 {{ order.number }}
               </RouterLink>
             </td>
-            <td data-label="Statut">
+            <td :data-label="$t('common.status')">
               <span class="badge" :class="statusBadge(order.status)">
                 {{ statusLabel(order.status) }}
               </span>
             </td>
-            <td data-label="Articles">{{ order.lines.length }} article{{ order.lines.length > 1 ? 's' : '' }}</td>
-            <td data-label="Total">{{ formatMoney(order.total_amount) }}</td>
-            <td data-label="Date">{{ formatDate(order.created_at) }}</td>
+            <td :data-label="$t('orders.colItems')">{{ order.lines.length }} {{ order.lines.length > 1 ? $t('orders.articlesWord') : $t('orders.articleWord') }}</td>
+            <td :data-label="$t('orders.colTotal')">{{ formatMoney(order.total_amount) }}</td>
+            <td :data-label="$t('common.date')">{{ formatDate(order.created_at) }}</td>
             <td class="cell-actions">
               <RouterLink :to="`/orders/${order.id}`" class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.8rem;">
-                Voir
+                {{ $t('common.view') }}
               </RouterLink>
             </td>
           </tr>
@@ -101,9 +101,9 @@
 
     <!-- Pagination -->
     <div v-if="meta && meta.last_page > 1" class="pagination">
-      <button class="btn btn-secondary" :disabled="page === 1" @click="page--">‹ Préc.</button>
+      <button class="btn btn-secondary" :disabled="page === 1" @click="page--">‹ {{ $t('common.previous') }}</button>
       <span>Page {{ meta.current_page }} / {{ meta.last_page }}</span>
-      <button class="btn btn-secondary" :disabled="page >= meta.last_page" @click="page++">Suiv. ›</button>
+      <button class="btn btn-secondary" :disabled="page >= meta.last_page" @click="page++">{{ $t('common.next') }} ›</button>
     </div>
   </div>
 </template>
@@ -117,15 +117,10 @@ import SalesTabNav from '../components/SalesTabNav.vue'
 import { orderService } from '../services/orderService'
 import { useWarehouses } from '@/composables/useWarehouses'
 import StateBlock from '@/shared/ui/StateBlock.vue'
+import { t } from '@/i18n'
 import type { Order } from '../types'
 
-const tabs = [
-  { label: 'Toutes',     value: '' },
-  { label: 'Brouillons', value: 'draft' },
-  { label: 'Confirmées', value: 'confirmed' },
-  { label: 'Livrées',    value: 'fulfilled' },
-  { label: 'Annulées',   value: 'cancelled' },
-]
+const tabs = ['', 'draft', 'confirmed', 'fulfilled', 'cancelled']
 
 const activeTab = ref('')
 const search    = ref('')
@@ -155,7 +150,7 @@ async function load() {
     orders.value = res.data
     meta.value   = res.meta
   } catch {
-    error.value = 'Impossible de charger les commandes.'
+    error.value = t('orders.loadError')
   } finally {
     loading.value = false
   }
@@ -171,7 +166,7 @@ watch([activeTab, warehouseId, page], () => load())
 onMounted(() => { loadWarehouses(); load() })
 
 function statusLabel(s: string) {
-  return { draft: 'Brouillon', confirmed: 'Confirmée', fulfilled: 'Livrée', cancelled: 'Annulée' }[s] ?? s
+  return t('orders.status.' + s)
 }
 
 function statusBadge(s: string) {

@@ -3,6 +3,19 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 14ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave14` (release `v1.0.0` → `rc.40`).
+
+### UX
+- **Modale unifiée (UX-03, 14ᵉ vague)** — `StockListView` (entrée / sortie / ajustement de stock)
+  migrée vers `<BaseModal>` ; sous-titre (produit · SKU) déplacé dans le corps. **26 modales /
+  21 vues migrées au total.**
+
+### Tests
+- `StockListView.spec` adapté (BaseModal `role="dialog"` + `v-focus-trap`). Frontend **242** au vert ·
+  `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 13ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave13` (release `v1.0.0` → `rc.39`).

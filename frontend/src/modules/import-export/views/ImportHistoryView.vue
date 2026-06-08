@@ -120,19 +120,15 @@
       </div>
     </div>
 
-    <!-- ── Session Detail Modal ───────────────────────────────────────────── -->
-    <Teleport to="body">
-      <div v-if="detailSession" class="modal-overlay" @click.self="detailSession = null">
-        <div class="modal-card">
-          <div class="modal-header">
-            <div>
-              <h2>Détail de l'import</h2>
-              <p class="modal-sub">{{ detailSession.original_filename }}</p>
-            </div>
-            <button class="modal-close" @click="detailSession = null">✕</button>
-          </div>
-
-          <div class="modal-body">
+    <!-- ── Session Detail Modal (shared BaseModal — UX-03) ────────────────── -->
+    <BaseModal
+      :model-value="!!detailSession"
+      size="lg"
+      title="Détail de l'import"
+      @update:model-value="(v: boolean) => { if (!v) detailSession = null }"
+    >
+      <div v-if="detailSession" class="import-detail-body">
+            <p class="modal-sub">{{ detailSession.original_filename }}</p>
             <!-- Summary stats -->
             <div class="detail-stats">
               <div class="detail-stat"><span class="ds-value">{{ detailSession.total_rows }}</span><span class="ds-label">Total</span></div>
@@ -162,20 +158,20 @@
               <div class="meta-item"><span>Créé le</span><strong>{{ fmtDate(detailSession.created_at) }}</strong></div>
               <div v-if="detailSession.completed_at" class="meta-item"><span>Terminé le</span><strong>{{ fmtDate(detailSession.completed_at) }}</strong></div>
             </div>
-          </div>
-
-          <div class="modal-footer">
-            <button v-if="['completed','partial'].includes(detailSession.status)" class="btn btn-outline" @click="doReport(detailSession.id)">
-              📄 Rapport PDF
-            </button>
-            <button v-if="detailSession.status === 'awaiting_approval'" class="btn btn-primary" @click="continueSession(detailSession)">
-              ▶ Continuer l'import
-            </button>
-            <button class="btn btn-ghost" @click="detailSession = null">Fermer</button>
-          </div>
-        </div>
       </div>
-    </Teleport>
+
+      <template #footer>
+        <template v-if="detailSession">
+          <button v-if="['completed','partial'].includes(detailSession.status)" class="btn btn-outline" @click="doReport(detailSession.id)">
+            📄 Rapport PDF
+          </button>
+          <button v-if="detailSession.status === 'awaiting_approval'" class="btn btn-primary" @click="continueSession(detailSession)">
+            ▶ Continuer l'import
+          </button>
+          <button class="btn btn-ghost" @click="detailSession = null">Fermer</button>
+        </template>
+      </template>
+    </BaseModal>
 
   </div>
 </template>
@@ -186,6 +182,7 @@ import { formatDateTime } from '@/shared/utils/date'
 import { useRouter } from 'vue-router'
 import { importExportService } from '../services/importExportService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import type { ImportSession } from '../types'
 import { ENTITY_LABELS, MODE_LABELS, STATUS_LABELS } from '../types'
 
@@ -332,14 +329,9 @@ const fmtDate = formatDateTime
 .spinner { width: 20px; height: 20px; border: 2px solid var(--gray-200); border-top-color: var(--brand-primary, #0d9488); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Modal */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-.modal-card    { background: white; border-radius: 16px; width: 100%; max-width: 560px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
-.modal-header  { display: flex; align-items: flex-start; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--gray-200); }
-.modal-header h2 { font-size: 18px; font-weight: 700; color: var(--gray-900); }
-.modal-sub     { font-size: 13px; color: var(--gray-500); margin-top: 3px; font-family: monospace; }
-.modal-close   { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--gray-400); }
-.modal-body    { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+/* Modal — chrome provided by the shared <BaseModal> (UX-03); body via .import-detail-body. */
+.import-detail-body { display: flex; flex-direction: column; gap: 20px; }
+.modal-sub     { font-size: 13px; color: var(--gray-500); margin: 0; font-family: monospace; }
 
 .detail-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .detail-stat  { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 12px; text-align: center; }

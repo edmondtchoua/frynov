@@ -3,6 +3,18 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 10ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-importhistory` (release `v1.0.0` → `rc.36`).
+
+### UX
+- **Modale unifiée (UX-03, 10ᵉ vague)** — `ImportHistoryView` (détail d'une session d'import)
+  migrée vers `<BaseModal>` ; styles `.modal-*` dupliqués retirés (corps via `.import-detail-body`,
+  sous-titre déplacé dans le corps). **22 modales / 17 vues migrées au total.**
+
+### Tests
+- Frontend **242** au vert · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 9ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave9` (release `v1.0.0` → `rc.35`).

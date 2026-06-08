@@ -102,7 +102,8 @@
     <!-- Receive Modal (shared BaseModal — UX-03) -->
     <BaseModal
       :model-value="showReceive"
-      :title="selectedTransfer ? `Réceptionner ${selectedTransfer.number}` : ''"
+      title="Réceptionner le transfert"
+      :subtitle="selectedTransfer?.number"
       @update:model-value="(v: boolean) => { if (!v) showReceive = false }"
     >
       <template v-if="selectedTransfer">
@@ -130,7 +131,8 @@
     <!-- Resolve Modal (shared BaseModal — UX-03) -->
     <BaseModal
       :model-value="showResolve"
-      :title="selectedTransfer ? `Résoudre litige — ${selectedTransfer.number}` : ''"
+      title="Résoudre le litige"
+      :subtitle="selectedTransfer?.number"
       @update:model-value="(v: boolean) => { if (!v) showResolve = false }"
     >
       <div class="form-group">

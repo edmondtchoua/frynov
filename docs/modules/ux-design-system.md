@@ -86,9 +86,15 @@ class="form-input"/><span class="input-affix__suffix">XAF</span></div>`), bloc d
   *(NB : `PosView` était déjà conforme — devise affichée en suffixe via `.pos-amount-input`/
   `.pos-currency` sur le fond de caisse et la clôture ; précurseur de `.input-affix`.)*
 
+- **Inventaire — Transfert & Période (rc.53)** : `StockTransferView` (réception, résolution de litige)
+  et `FiscalPeriodView` (verrouillage) — numéro de transfert / nom de période déplacés du titre vers
+  le **sous-titre** (titre = action seule), pour s'aligner sur le pattern « titre = action, sous-titre
+  = entité ». *(Les volets de création « Nouveau X » restent sans sous-titre — pas d'entité existante.)*
+
 Patterns réutilisables introduits : **`.input-affix`** (suffixe fixe unité/devise/%) et **`.input-group`**
-(champ + sélecteur accolés). Reste (modules suivants) : Catalogue (ProductForm), Transfert/Période
-de stock, Marketplace, Import — au cas par cas (beaucoup de volets sont déjà conformes).
+(champ + sélecteur accolés). **Phase 3 quasi terminée** : les volets monétaires/contextuels des modules
+phares sont polis ; le reliquat (Marketplace, Import, formulaire Produit — qui est une *page* et non un
+volet) est soit déjà conforme via la fondation rc.46, soit hors périmètre « volet ».
 Le chrome est défini **une seule fois** dans `main.css` (`.modal-overlay(--drawer|--center)`,
 `.modal--drawer|--center` × `--sm|md|lg`) — `BaseModal` reste un primitif mince. Au passage,
 `.modal-overlay`/`.modal`, jusque-là **non définis** (volets sans voile ni positionnement), sont

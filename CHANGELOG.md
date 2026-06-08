@@ -3,6 +3,25 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Refonte UI : polish des volets — Inventaire (Transfert & Période) (Phase 3) (2026-06-08)
+
+Branche `feature/ux-drawer-inventory` (release `v1.0.0` → `rc.53`).
+
+### UX — polish volets (Phase 3)
+- **`StockTransferView`** (réception, résolution de litige) et **`FiscalPeriodView`** (verrouillage) :
+  numéro de transfert / nom de période déplacés du **titre** vers le **sous-titre** (titre = action
+  seule), pour s'aligner sur le pattern « titre = action, sous-titre = entité » des autres volets.
+- *(Volets de création « Nouveau transfert / Nouvelle période » : pas de sous-titre — aucune entité
+  existante. `StockAdjustmentView` : création OK ; rejet laissé tel quel — pas de champ article fiable
+  pour un sous-titre.)*
+
+### Tests
+- Frontend **252** inchangé (polish visuel) · `vue-tsc` propre · specs vertes.
+
+> **Phase 3 quasi terminée** — modules phares polis (Stock, Paiements, Admin, Fournisseurs, Entrepôts,
+> Livraisons, Inventaire) ; POS déjà conforme. Reliquat (Marketplace, Import, page Produit) déjà
+> conforme via la fondation rc.46 ou hors périmètre « volet ».
+
 ## [Non publié] — Refonte UI : polish des volets — Entrepôts & Livraisons (Phase 3) (2026-06-08)
 
 Branche `feature/ux-drawer-pos` (release `v1.0.0` → `rc.52`).

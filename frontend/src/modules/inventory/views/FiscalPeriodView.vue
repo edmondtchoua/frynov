@@ -100,6 +100,7 @@
     <BaseModal
       :model-value="!!lockTarget"
       title="⚠️ Verrouillage irréversible"
+      :subtitle="lockTarget?.name"
       @update:model-value="(v: boolean) => { if (!v) lockTarget = null }"
     >
       <template v-if="lockTarget">

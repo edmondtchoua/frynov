@@ -85,31 +85,24 @@
       <button :disabled="page === meta.last_page" @click="page++; load()">Suivant →</button>
     </div>
 
-    <!-- Reject modal -->
-    <div v-if="rejectModal.open" class="modal-overlay" @click.self="rejectModal.open = false">
-      <div class="modal">
-        <div class="modal-header">
-          <h3>Rejeter le paiement</h3>
-          <button class="modal-close" @click="rejectModal.open = false">✕</button>
-        </div>
-        <div class="modal-body">
-          <p class="modal-desc">Indiquez la raison du rejet pour <strong>{{ rejectModal.payment?.tenant_name }}</strong>.</p>
-          <textarea
-            v-model="rejectModal.reason"
-            class="form-textarea"
-            placeholder="Ex: Montant incorrect, preuve illisible, etc."
-            rows="3"
-          ></textarea>
-          <div v-if="rejectModal.error" class="form-error">{{ rejectModal.error }}</div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel" @click="rejectModal.open = false">Annuler</button>
-          <button class="btn-reject" :disabled="rejectModal.saving || !rejectModal.reason" @click="confirmReject">
-            {{ rejectModal.saving ? '…' : 'Confirmer le rejet' }}
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- Reject modal (shared BaseModal — UX-03) -->
+    <BaseModal v-model="rejectModal.open" size="sm" title="Rejeter le paiement">
+      <p class="modal-desc">Indiquez la raison du rejet pour <strong>{{ rejectModal.payment?.tenant_name }}</strong>.</p>
+      <textarea
+        v-model="rejectModal.reason"
+        class="form-textarea"
+        placeholder="Ex: Montant incorrect, preuve illisible, etc."
+        rows="3"
+      ></textarea>
+      <div v-if="rejectModal.error" class="form-error">{{ rejectModal.error }}</div>
+
+      <template #footer>
+        <button class="btn-cancel" @click="rejectModal.open = false">Annuler</button>
+        <button class="btn-reject" :disabled="rejectModal.saving || !rejectModal.reason" @click="confirmReject">
+          {{ rejectModal.saving ? '…' : 'Confirmer le rejet' }}
+        </button>
+      </template>
+    </BaseModal>
 
   </div>
 </template>
@@ -120,6 +113,7 @@ import { formatDate } from '@/shared/utils/date'
 import { RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
 import StateBlock from '@/shared/ui/StateBlock.vue'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import { adminService, type AdminManualPayment } from '../services/adminService'
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -366,15 +360,8 @@ onMounted(() => Promise.all([load(), loadPendingCount()]))
 .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Modal ───────────────────────────────────────────────────────────────── */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
-.modal { background: white; border-radius: 12px; width: 100%; max-width: 440px; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
-.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; }
-.modal-header h3 { font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0; }
-.modal-close { background: none; border: none; font-size: 1.125rem; color: #94a3b8; cursor: pointer; }
-.modal-close:hover { color: #334155; }
-.modal-body { padding: 1.25rem 1.5rem; }
+/* Modal chrome now provided by the shared <BaseModal> (UX-03). */
 .modal-desc { font-size: 0.875rem; color: #475569; margin: 0 0 0.75rem; }
-.modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid #f1f5f9; }
 
 .form-textarea { width: 100%; border: 1px solid #e2e8f0; border-radius: 7px; padding: 0.5rem 0.75rem; font-size: 0.875rem; color: #0f172a; outline: none; resize: vertical; box-sizing: border-box; }
 .form-textarea:focus { border-color: #94a3b8; }

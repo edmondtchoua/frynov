@@ -3,6 +3,17 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 7ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave7` (release `v1.0.0` → `rc.32`).
+
+### UX
+- **Modale unifiée (UX-03, 7ᵉ vague)** — `ManualPaymentView` (rejet de paiement manuel, admin)
+  migrée vers `<BaseModal>` ; styles `.modal-*` dupliqués retirés. **17 modales / 14 vues migrées.**
+
+### Tests
+- Frontend **241** au vert · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 6ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave6` (release `v1.0.0` → `rc.31`).

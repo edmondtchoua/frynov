@@ -7,17 +7,17 @@
         v-model="search"
         type="search"
         class="filter-input"
-        placeholder="Rechercher un tenant…"
+        :placeholder="$t('admin.searchTenant')"
         @input="debouncedLoad"
       />
       <select v-model="statusFilter" class="filter-select" @change="load">
-        <option value="">Tous les statuts</option>
-        <option value="active">Actif</option>
-        <option value="suspended">Suspendu</option>
-        <option value="cancelled">Annulé</option>
+        <option value="">{{ $t('common.allStatuses') }}</option>
+        <option value="active">{{ $t('admin.tenantStatus.active') }}</option>
+        <option value="suspended">{{ $t('admin.tenantStatus.suspended') }}</option>
+        <option value="cancelled">{{ $t('admin.tenantStatus.cancelled') }}</option>
       </select>
       <select v-model="planFilter" class="filter-select" @change="load">
-        <option value="">Tous les plans</option>
+        <option value="">{{ $t('admin.allPlans') }}</option>
         <option value="starter">Starter</option>
         <option value="pro">Pro</option>
         <option value="enterprise">Enterprise</option>
@@ -29,12 +29,12 @@
       <table class="admin-table" v-if="!loading && tenants.length">
         <thead>
           <tr>
-            <th>Tenant</th>
-            <th>Plan</th>
-            <th>Abonnement</th>
-            <th>Statut</th>
-            <th>Créé le</th>
-            <th>Actions</th>
+            <th>{{ $t('admin.colTenant') }}</th>
+            <th>{{ $t('admin.colPlan') }}</th>
+            <th>{{ $t('admin.colSubscription') }}</th>
+            <th>{{ $t('common.status') }}</th>
+            <th>{{ $t('common.createdAt') }}</th>
+            <th>{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -51,22 +51,22 @@
             </td>
             <td>
               <span class="status-dot" :class="`status-dot--${t.status}`"></span>
-              {{ t.status }}
+              {{ statusLabel(t.status) }}
             </td>
             <td>{{ formatDate(t.created_at) }}</td>
             <td>
               <div class="action-group">
-                <RouterLink :to="`/admin/tenants/${t.id}`" class="btn-sm">Détails</RouterLink>
+                <RouterLink :to="`/admin/tenants/${t.id}`" class="btn-sm">{{ $t('admin.details') }}</RouterLink>
                 <button
                   v-if="t.status === 'active'"
                   class="btn-sm btn-sm--warn"
                   @click="suspend(t)"
-                >Suspendre</button>
+                >{{ $t('admin.suspend') }}</button>
                 <button
                   v-else-if="t.status === 'suspended'"
                   class="btn-sm btn-sm--ok"
                   @click="reactivate(t)"
-                >Réactiver</button>
+                >{{ $t('admin.reactivate') }}</button>
               </div>
             </td>
           </tr>
@@ -74,14 +74,14 @@
       </table>
 
       <StateBlock v-else-if="loading" variant="loading" />
-      <StateBlock v-else variant="empty" title="Aucun espace client trouvé" />
+      <StateBlock v-else variant="empty" :title="$t('admin.noTenants')" />
     </div>
 
     <!-- Pagination -->
     <div class="pagination" v-if="meta && meta.last_page > 1">
-      <button :disabled="page === 1" @click="page--; load()">← Précédent</button>
+      <button :disabled="page === 1" @click="page--; load()">← {{ $t('common.previous') }}</button>
       <span>Page {{ meta.current_page }} / {{ meta.last_page }}</span>
-      <button :disabled="page === meta.last_page" @click="page++; load()">Suivant →</button>
+      <button :disabled="page === meta.last_page" @click="page++; load()">{{ $t('common.next') }} →</button>
     </div>
 
   </div>
@@ -90,6 +90,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useConfirm } from '@/composables/useConfirm'
+import { t } from '@/i18n'
 import { formatDate } from '@/shared/utils/date'
 import { RouterLink } from 'vue-router'
 import { adminService, type AdminTenant } from '../services/adminService'
@@ -130,9 +131,9 @@ const { confirm } = useConfirm()
 
 async function suspend(tenant: AdminTenant) {
   if (!(await confirm({
-    title: 'Suspendre',
-    message: `Suspendre "${tenant.name}" ?`,
-    confirmLabel: 'Suspendre',
+    title: t('admin.suspend'),
+    message: t('admin.suspendConfirm', { name: tenant.name }),
+    confirmLabel: t('admin.suspend'),
     danger: true,
   }))) return
   await adminService.suspendTenant(tenant.id)
@@ -144,6 +145,10 @@ async function reactivate(tenant: AdminTenant) {
   load()
 }
 
+
+function statusLabel(s: string): string {
+  return t(`admin.tenantStatus.${s}`)
+}
 
 onMounted(load)
 </script>

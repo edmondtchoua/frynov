@@ -133,15 +133,9 @@
       </div>
     </div>
 
-    <!-- Create/Edit modal -->
-    <Teleport to="body">
-      <div v-if="modal.open" class="modal-overlay" @click.self="closeModal">
-        <div class="modal">
-          <div class="modal-header">
-            <h3>{{ modal.editing ? 'Modifier la connexion' : 'Nouvelle connexion marketplace' }}</h3>
-            <button class="modal-close" @click="closeModal">✕</button>
-          </div>
-          <div class="modal-body">
+    <!-- Create/Edit modal (shared BaseModal — UX-03) -->
+    <BaseModal v-model="modal.open" :title="modal.editing ? 'Modifier la connexion' : 'Nouvelle connexion marketplace'">
+      <div class="mp-modal-body">
             <div v-if="!modal.editing">
               <div class="form-group">
                 <label class="form-label">Plateforme <span class="req">*</span></label>
@@ -192,17 +186,16 @@
               </label>
             </div>
             <div v-if="modal.error" class="form-error">{{ modal.error }}</div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-ghost" @click="closeModal">Annuler</button>
-            <button class="btn btn-primary" :disabled="modal.saving" @click="save">
-              <span v-if="modal.saving" class="spinner-sm spinner-white"></span>
-              {{ modal.saving ? '…' : (modal.editing ? 'Mettre à jour' : 'Connecter') }}
-            </button>
-          </div>
-        </div>
       </div>
-    </Teleport>
+
+      <template #footer>
+        <button class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button class="btn btn-primary" :disabled="modal.saving" @click="save">
+          <span v-if="modal.saving" class="spinner-sm spinner-white"></span>
+          {{ modal.saving ? '…' : (modal.editing ? 'Mettre à jour' : 'Connecter') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -210,6 +203,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { formatDateTime } from '@/shared/utils/date'
 import client from '@/api/client'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 
 const activeTab      = ref<'listings'|'alerts'>('listings')
 const listings       = ref<any[]>([])
@@ -373,13 +367,8 @@ onMounted(() => { loadListings(); loadAlerts(); loadPlatforms() })
 .switch-label { font-size:var(--text-sm); color:var(--gray-700); }
 
 /* Modal */
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:2000; padding:1rem; }
-.modal { background:white; border-radius:var(--radius-lg); width:100%; max-width:520px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2); }
-.modal-header { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 1.5rem; border-bottom:1px solid var(--gray-100); }
-.modal-header h3 { font-size:var(--text-base); font-weight:700; margin:0; }
-.modal-close { background:none; border:none; font-size:1.125rem; color:var(--gray-400); cursor:pointer; }
-.modal-body { padding:1.25rem 1.5rem; display:flex; flex-direction:column; gap:1rem; }
-.modal-footer { display:flex; justify-content:flex-end; gap:.75rem; padding:1rem 1.5rem; border-top:1px solid var(--gray-100); }
+/* Modal chrome via shared <BaseModal> (UX-03); body via .mp-modal-body. */
+.mp-modal-body { display:flex; flex-direction:column; gap:1rem; }
 
 .row-actions { display:flex; gap:.375rem; justify-content:flex-end; }
 .text-danger { color:var(--color-error); }

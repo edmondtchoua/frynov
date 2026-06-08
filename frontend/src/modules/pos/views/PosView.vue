@@ -109,54 +109,50 @@
       </div>
     </div>
 
-    <!-- Variant picker -->
-    <div v-if="picker.open" class="pos-modal-backdrop" @click.self="picker.open = false">
-      <div class="pos-modal">
-        <h3>Choisir une déclinaison — {{ picker.productName }}</h3>
-        <div v-if="picker.loading" class="pos-hint">Chargement…</div>
-        <ul v-else class="pos-variant-list">
-          <li v-for="v in picker.variants" :key="v.id" class="pos-variant" :data-test="`variant-${v.sku}`" @click="pickVariant(v)">
-            <span>{{ v.label }} · {{ v.sku }}</span>
-            <strong>{{ fmt(v.price_cents) }}</strong>
-          </li>
-        </ul>
+    <!-- Variant picker (shared BaseModal — UX-03) -->
+    <BaseModal v-model="picker.open" :title="`Choisir une déclinaison — ${picker.productName}`">
+      <div v-if="picker.loading" class="pos-hint">Chargement…</div>
+      <ul v-else class="pos-variant-list">
+        <li v-for="v in picker.variants" :key="v.id" class="pos-variant" :data-test="`variant-${v.sku}`" @click="pickVariant(v)">
+          <span>{{ v.label }} · {{ v.sku }}</span>
+          <strong>{{ fmt(v.price_cents) }}</strong>
+        </li>
+      </ul>
+      <template #footer>
         <button class="pos-btn pos-btn--ghost" @click="picker.open = false">Annuler</button>
+      </template>
+    </BaseModal>
+
+    <!-- Close session modal (shared BaseModal — UX-03) -->
+    <BaseModal v-model="closeModal.open" title="Clôture de caisse">
+      <div class="pos-recon">
+        <div class="pos-recon-row"><span>Fond de caisse</span><strong>{{ fmt(session?.opening_float_cents) }}</strong></div>
+        <div class="pos-recon-row"><span>Ventes espèces</span><strong>{{ fmt(session?.cash_sales_cents) }}</strong></div>
+        <div class="pos-recon-row pos-recon-row--accent"><span>Espèces attendues</span><strong>{{ fmt(session?.expected_cash_cents) }}</strong></div>
       </div>
-    </div>
 
-    <!-- Close session modal -->
-    <div v-if="closeModal.open" class="pos-modal-backdrop" @click.self="closeModal.open = false">
-      <div class="pos-modal">
-        <h3>Clôture de caisse</h3>
-        <div class="pos-recon">
-          <div class="pos-recon-row"><span>Fond de caisse</span><strong>{{ fmt(session?.opening_float_cents) }}</strong></div>
-          <div class="pos-recon-row"><span>Ventes espèces</span><strong>{{ fmt(session?.cash_sales_cents) }}</strong></div>
-          <div class="pos-recon-row pos-recon-row--accent"><span>Espèces attendues</span><strong>{{ fmt(session?.expected_cash_cents) }}</strong></div>
+      <label class="pos-field">
+        <span>Espèces comptées dans le tiroir</span>
+        <div class="pos-amount-input">
+          <input v-model.number="closeModal.counted" type="number" min="0" step="any" class="pos-input" data-test="counted-cash" />
+          <span class="pos-currency">{{ currency }}</span>
         </div>
+      </label>
 
-        <label class="pos-field">
-          <span>Espèces comptées dans le tiroir</span>
-          <div class="pos-amount-input">
-            <input v-model.number="closeModal.counted" type="number" min="0" step="any" class="pos-input" data-test="counted-cash" />
-            <span class="pos-currency">{{ currency }}</span>
-          </div>
-        </label>
-
-        <div class="pos-diff" :class="diffClass" data-test="difference">
-          Écart : {{ fmt(differenceCents) }}
-          <span v-if="differenceCents === 0"> ✓ caisse juste</span>
-          <span v-else-if="differenceCents > 0"> (surplus)</span>
-          <span v-else> (manquant)</span>
-        </div>
-
-        <div class="pos-modal-actions">
-          <button class="pos-btn pos-btn--ghost" @click="closeModal.open = false">Annuler</button>
-          <button class="pos-btn pos-btn--primary" :disabled="closeModal.submitting" data-test="confirm-close" @click="confirmClose">
-            {{ closeModal.submitting ? 'Clôture…' : 'Clôturer' }}
-          </button>
-        </div>
+      <div class="pos-diff" :class="diffClass" data-test="difference">
+        Écart : {{ fmt(differenceCents) }}
+        <span v-if="differenceCents === 0"> ✓ caisse juste</span>
+        <span v-else-if="differenceCents > 0"> (surplus)</span>
+        <span v-else> (manquant)</span>
       </div>
-    </div>
+
+      <template #footer>
+        <button class="pos-btn pos-btn--ghost" @click="closeModal.open = false">Annuler</button>
+        <button class="pos-btn pos-btn--primary" :disabled="closeModal.submitting" data-test="confirm-close" @click="confirmClose">
+          {{ closeModal.submitting ? 'Clôture…' : 'Clôturer' }}
+        </button>
+      </template>
+    </BaseModal>
 
     <!-- Toast -->
     <transition name="pos-toast">
@@ -171,6 +167,7 @@ import { formatMoney, toCents, fromCents } from '@/shared/utils/money'
 import { useAuthStore } from '@/stores/auth'
 import { productService } from '@/modules/catalog/services/productService'
 import { posService } from '../services/posService'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import type { CashRegisterSession, PosCartItem, PosPaymentMethod } from '../types'
 
 const auth = useAuthStore()
@@ -421,10 +418,7 @@ onMounted(loadSession)
 
 .pos-error { color: #dc2626; font-size: .82rem; margin: .5rem 0; }
 
-/* Modals */
-.pos-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
-.pos-modal { background: #fff; border-radius: 14px; padding: 1.5rem; width: 100%; max-width: 420px; }
-.pos-modal h3 { margin: 0 0 1rem; font-size: 1.1rem; }
+/* Modals — chrome via shared <BaseModal> (UX-03). */
 .pos-variant-list { list-style: none; margin: 0 0 1rem; padding: 0; max-height: 50vh; overflow-y: auto; }
 .pos-variant { display: flex; justify-content: space-between; padding: .6rem; border: 1px solid var(--gray-200, #e5e7eb); border-radius: 8px; margin-bottom: .4rem; cursor: pointer; }
 .pos-variant:hover { border-color: var(--brand-primary, #4f46e5); }
@@ -435,7 +429,6 @@ onMounted(loadSession)
 .pos-diff--ok { background: #dcfce7; color: #166534; }
 .pos-diff--over { background: #dbeafe; color: #1e40af; }
 .pos-diff--short { background: #fee2e2; color: #991b1b; }
-.pos-modal-actions { display: flex; gap: .75rem; justify-content: flex-end; }
 
 /* Toast */
 .pos-toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: #111827; color: #fff; padding: .75rem 1.25rem; border-radius: 10px; font-weight: 600; z-index: 60; box-shadow: 0 4px 16px rgba(0,0,0,.2); }

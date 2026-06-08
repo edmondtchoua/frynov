@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import PosView from '@/modules/pos/views/PosView.vue'
 import { setupManagerAuth } from '@/test-utils/setupAuth'
+import { vFocusTrap } from '@/directives/focusTrap'
 
 // Mock the orchestrated services directly — PosView is a composition of these.
 // vi.hoisted lets the mock objects exist before the hoisted vi.mock factories run.
@@ -26,7 +27,13 @@ const SIMPLE_PRODUCT = {
 }
 
 function mountView() {
-  return mount(PosView, { global: { plugins: [setupManagerAuth()] } })
+  return mount(PosView, {
+    global: {
+      plugins: [setupManagerAuth()],
+      directives: { 'focus-trap': vFocusTrap },  // modals now use BaseModal (v-focus-trap)
+      stubs: { teleport: true },                 // render BaseModal's Teleport inline
+    },
+  })
 }
 
 async function mountWithSession() {

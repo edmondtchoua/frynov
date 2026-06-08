@@ -98,23 +98,10 @@
       </div>
     </div>
 
-    <!-- Restock Modal -->
-    <Teleport to="body">
-      <div v-if="modal.open" class="modal-backdrop" @click.self="closeModal">
-        <div class="modal-box">
-          <div class="modal-header">
-            <div>
-              <h3 class="modal-title">Réapprovisionner</h3>
-              <p class="modal-subtitle">{{ modal.stock?.product?.name }} · {{ modal.stock?.product?.sku }}</p>
-            </div>
-            <button class="modal-close" @click="closeModal">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M4 4l10 10M14 4L4 14" stroke="var(--gray-500)" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </div>
-
-          <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+    <!-- Restock Modal (shared BaseModal — UX-03) -->
+    <BaseModal v-model="modal.open" title="Réapprovisionner">
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+            <p class="modal-subtitle" style="margin: 0;">{{ modal.stock?.product?.name }} · {{ modal.stock?.product?.sku }}</p>
             <div class="stock-info-row">
               <div class="stock-info-item">
                 <span class="stock-info-label">Disponible actuellement</span>
@@ -166,22 +153,20 @@
             </div>
 
             <p v-if="modal.error" class="form-error">{{ modal.error }}</p>
-          </div>
-
-          <div class="modal-footer">
-            <button class="btn btn-ghost" @click="closeModal">Annuler</button>
-            <button
-              class="btn btn-primary"
-              :disabled="modal.saving || !form.quantity || form.quantity <= 0"
-              @click="submitRestock"
-            >
-              <span v-if="modal.saving" class="spinner-sm"></span>
-              Confirmer la réception
-            </button>
-          </div>
-        </div>
       </div>
-    </Teleport>
+
+      <template #footer>
+        <button class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button
+          class="btn btn-primary"
+          :disabled="modal.saving || !form.quantity || form.quantity <= 0"
+          @click="submitRestock"
+        >
+          <span v-if="modal.saving" class="spinner-sm"></span>
+          Confirmer la réception
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -189,6 +174,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import InventoryTabNav from "../components/InventoryTabNav.vue"
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import { inventoryService } from '../services/inventoryService'
 import type { Stock, MovementReason } from '../types'
 

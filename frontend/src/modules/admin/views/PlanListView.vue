@@ -44,17 +44,11 @@
     <div v-else-if="loading" class="state-msg">Chargement…</div>
     <div v-else class="state-msg">Aucun plan trouvé.</div>
 
-    <!-- Edit limits modal -->
-    <div v-if="modal.open" class="modal-backdrop" @click.self="modal.open = false">
-      <div class="modal-box">
-        <div class="modal-header">
-          <h3 class="modal-title">Éditer — {{ form.name }}</h3>
-          <button class="modal-close" @click="modal.open = false">×</button>
-        </div>
-        <div class="modal-body">
-          <div v-if="modal.error" class="form-error">{{ modal.error }}</div>
-          <p class="hint">Laisser un champ de limite <strong>vide = illimité (∞)</strong>. Source canonique : <code>plan_limits</code>.</p>
-          <div class="grid2">
+    <!-- Edit limits modal (shared BaseModal — UX-03) -->
+    <BaseModal v-model="modal.open" size="lg" :title="`Éditer — ${form.name}`">
+      <div v-if="modal.error" class="form-error">{{ modal.error }}</div>
+      <p class="hint">Laisser un champ de limite <strong>vide = illimité (∞)</strong>. Source canonique : <code>plan_limits</code>.</p>
+      <div class="grid2">
             <label>Nom<input v-model="form.name" class="form-input" /></label>
             <label>Utilisateurs inclus<input v-model.number="form.max_users" type="number" min="0" class="form-input" /></label>
             <label>Jours d'essai<input v-model.number="form.trial_days" type="number" min="0" class="form-input" /></label>
@@ -67,17 +61,16 @@
             <label>Appels API / mois<input v-model="limits.max_api_calls_per_month" type="number" min="0" class="form-input" placeholder="∞" /></label>
             <label>Stockage (Mo)<input v-model="limits.storage_mb" type="number" min="0" class="form-input" placeholder="∞" /></label>
           </div>
-          <div class="checks">
-            <label><input v-model="form.is_active" type="checkbox" /> Actif</label>
-            <label><input v-model="form.is_public" type="checkbox" /> Public</label>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" @click="modal.open = false">Annuler</button>
-          <button class="btn btn-primary" :disabled="modal.saving" @click="save">{{ modal.saving ? 'Enregistrement…' : 'Enregistrer' }}</button>
-        </div>
+      <div class="checks">
+        <label><input v-model="form.is_active" type="checkbox" /> Actif</label>
+        <label><input v-model="form.is_public" type="checkbox" /> Public</label>
       </div>
-    </div>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="modal.open = false">Annuler</button>
+        <button class="btn btn-primary" :disabled="modal.saving" @click="save">{{ modal.saving ? 'Enregistrement…' : 'Enregistrer' }}</button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -85,6 +78,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { formatMoney } from '@/shared/utils/money'
 import { adminService, type AdminPlan } from '../services/adminService'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 
 const plans   = ref<AdminPlan[]>([])
 const loading = ref(true)

@@ -203,77 +203,62 @@
       </div>
     </template>
 
-    <!-- ── Record payment modal ──────────────────────────────────────────────── -->
-    <Teleport to="body">
-      <div v-if="payModal.open" class="modal-backdrop" @click.self="payModal.open = false">
-        <div class="modal-box">
-          <div class="modal-header">
-            <div>
-              <h3 class="modal-title">Enregistrer un paiement</h3>
-              <p style="font-size: 0.875rem; color: var(--gray-500); margin-top: 2px;">
-                Commande {{ order?.number }} · Reste {{ fmt(Math.max(0, (order?.total_amount ?? 0) - payBalance)) }}
-              </p>
-            </div>
-            <button class="modal-close" @click="payModal.open = false">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M4 4l10 10M14 4L4 14" stroke="var(--gray-500)" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </div>
-
-          <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
-            <div class="form-group">
-              <label class="form-label">Montant <span style="color:#dc2626;">*</span></label>
-              <div style="display: flex; gap: 8px;">
-                <input
-                  v-model.number="payForm.amount"
-                  type="number" min="0" step="0.01"
-                  class="form-input" style="flex:1;"
-                  placeholder="0"
-                />
-                <!-- Currency locked to the order's: the balance sums centimes across
-                     payments without converting, so mixing currencies would corrupt it. -->
-                <input
-                  :value="payForm.currency"
-                  class="form-input" style="width: 90px; background:var(--gray-50); text-align:center;"
-                  readonly tabindex="-1" title="Devise de la commande"
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Moyen <span style="color:#dc2626;">*</span></label>
-              <select v-model="payForm.method" class="form-input">
-                <option value="cash">Espèces</option>
-                <option value="mobile_money">Mobile Money</option>
-                <option value="card">Carte</option>
-                <option value="transfer">Virement</option>
-                <option value="cheque">Chèque</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Référence</label>
-              <input v-model="payForm.reference" type="text" class="form-input" placeholder="N° reçu…" />
-            </div>
-
-            <p v-if="payModal.error" style="color:#dc2626; font-size:0.875rem;">{{ payModal.error }}</p>
-          </div>
-
-          <div class="modal-footer">
-            <button class="btn btn-ghost" @click="payModal.open = false">Annuler</button>
-            <button
-              class="btn btn-primary"
-              :disabled="payModal.saving || !payForm.amount || payForm.amount <= 0"
-              @click="submitPayment"
-            >
-              <span v-if="payModal.saving" class="spinner-sm"></span>
-              Enregistrer
-            </button>
+    <!-- ── Record payment modal (shared BaseModal — UX-03) ───────────────────── -->
+    <BaseModal v-model="payModal.open" title="Enregistrer un paiement">
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <p style="font-size: 0.875rem; color: var(--gray-500); margin: 0;">
+          Commande {{ order?.number }} · Reste {{ fmt(Math.max(0, (order?.total_amount ?? 0) - payBalance)) }}
+        </p>
+        <div class="form-group">
+          <label class="form-label">Montant <span style="color:#dc2626;">*</span></label>
+          <div style="display: flex; gap: 8px;">
+            <input
+              v-model.number="payForm.amount"
+              type="number" min="0" step="0.01"
+              class="form-input" style="flex:1;"
+              placeholder="0"
+            />
+            <!-- Currency locked to the order's: the balance sums centimes across
+                 payments without converting, so mixing currencies would corrupt it. -->
+            <input
+              :value="payForm.currency"
+              class="form-input" style="width: 90px; background:var(--gray-50); text-align:center;"
+              readonly tabindex="-1" title="Devise de la commande"
+            />
           </div>
         </div>
+
+        <div class="form-group">
+          <label class="form-label">Moyen <span style="color:#dc2626;">*</span></label>
+          <select v-model="payForm.method" class="form-input">
+            <option value="cash">Espèces</option>
+            <option value="mobile_money">Mobile Money</option>
+            <option value="card">Carte</option>
+            <option value="transfer">Virement</option>
+            <option value="cheque">Chèque</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Référence</label>
+          <input v-model="payForm.reference" type="text" class="form-input" placeholder="N° reçu…" />
+        </div>
+
+        <p v-if="payModal.error" style="color:#dc2626; font-size:0.875rem;">{{ payModal.error }}</p>
       </div>
-    </Teleport>
+
+      <template #footer>
+        <button class="btn btn-ghost" @click="payModal.open = false">Annuler</button>
+        <button
+          class="btn btn-primary"
+          :disabled="payModal.saving || !payForm.amount || payForm.amount <= 0"
+          @click="submitPayment"
+        >
+          <span v-if="payModal.saving" class="spinner-sm"></span>
+          Enregistrer
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -285,6 +270,7 @@ import { formatMoney } from '@/shared/utils/money'
 import { orderService } from '../services/orderService'
 import { paymentService } from '@/modules/payments/services/paymentService'
 import { deliveryService } from '@/modules/deliveries/services/deliveryService'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import type { Order } from '../types'
 import type { Payment, PaymentMethod } from '@/modules/payments/types'
 import type { Delivery, DeliveryStatus } from '@/modules/deliveries/types'

@@ -1,21 +1,21 @@
 <template>
   <div class="register-form">
     <div class="form-header">
-      <h2>Créer votre espace</h2>
-      <p>30 secondes pour démarrer. Aucune carte requise.</p>
+      <h2>{{ $t('auth.registerTitle') }}</h2>
+      <p>{{ $t('auth.registerSubtitle') }}</p>
     </div>
 
     <form @submit.prevent="handleSubmit" novalidate>
 
       <div class="form-group">
-        <label class="form-label" for="company">Nom de votre entreprise</label>
+        <label class="form-label" for="company">{{ $t('auth.companyLabel') }}</label>
         <input
           id="company"
           v-model="form.company"
           type="text"
           class="form-input"
           :class="{ error: errors.company }"
-          placeholder="Acme SAS"
+          :placeholder="$t('auth.companyPlaceholder')"
           autocomplete="organization"
           @input="clearError('company')"
         />
@@ -23,14 +23,14 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="name">Votre prénom et nom</label>
+        <label class="form-label" for="name">{{ $t('auth.nameLabel') }}</label>
         <input
           id="name"
           v-model="form.name"
           type="text"
           class="form-input"
           :class="{ error: errors.name }"
-          placeholder="Marie Dupont"
+          :placeholder="$t('auth.namePlaceholder')"
           autocomplete="name"
           @input="clearError('name')"
         />
@@ -38,14 +38,14 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="email">Adresse email professionnelle</label>
+        <label class="form-label" for="email">{{ $t('auth.emailProLabel') }}</label>
         <input
           id="email"
           v-model="form.email"
           type="email"
           class="form-input"
           :class="{ error: errors.email }"
-          placeholder="marie@acme.com"
+          :placeholder="$t('auth.emailProPlaceholder')"
           autocomplete="email"
           @input="clearError('email')"
         />
@@ -53,7 +53,7 @@
       </div>
 
       <div class="form-group" style="margin-bottom: 0.25rem;">
-        <label class="form-label" for="password">Mot de passe</label>
+        <label class="form-label" for="password">{{ $t('auth.password') }}</label>
         <div class="password-wrap">
           <input
             id="password"
@@ -61,14 +61,14 @@
             :type="showPassword ? 'text' : 'password'"
             class="form-input"
             :class="{ error: errors.password }"
-            placeholder="8 caractères minimum"
+            :placeholder="$t('auth.passwordPlaceholder')"
             autocomplete="new-password"
             @input="clearError('password')"
           />
           <button
             type="button"
             class="toggle-pass"
-            :aria-label="showPassword ? 'Masquer' : 'Afficher'"
+            :aria-label="showPassword ? $t('auth.hideShort') : $t('auth.showShort')"
             @click="showPassword = !showPassword"
           >
             <svg v-if="!showPassword" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -105,23 +105,23 @@
       </div>
 
       <p class="terms-notice">
-        En créant votre compte, vous acceptez nos
-        <a href="#">Conditions d'utilisation</a> et notre
-        <a href="#">Politique de confidentialité</a>.
+        {{ $t('auth.termsBefore') }}
+        <a href="#">{{ $t('auth.termsOfUse') }}</a> {{ $t('auth.termsAnd') }}
+        <a href="#">{{ $t('auth.privacyPolicy') }}</a>.
       </p>
 
       <button type="submit" class="btn btn-primary btn-xl" :disabled="loading" style="width: 100%; margin-top: 1rem; justify-content: center;">
         <span v-if="loading" class="spinner-sm spinner-white"></span>
-        {{ loading ? 'Création en cours…' : 'Créer mon espace' }}
+        {{ loading ? $t('auth.creating') : $t('auth.createMyWorkspace') }}
       </button>
 
     </form>
 
-    <div class="divider-text" style="margin: 1.5rem 0;">ou</div>
+    <div class="divider-text" style="margin: 1.5rem 0;">{{ $t('auth.or') }}</div>
 
     <p class="login-cta">
-      Déjà inscrit ?
-      <RouterLink to="/login" class="login-link">Se connecter</RouterLink>
+      {{ $t('auth.alreadyRegistered') }}
+      <RouterLink to="/login" class="login-link">{{ $t('auth.login') }}</RouterLink>
     </p>
   </div>
 </template>
@@ -131,6 +131,7 @@ import { ref, reactive, computed } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { authService } from '../services/authService'
 import { useAuthStore } from '@/stores/auth'
+import { t } from '@/i18n'
 
 const router   = useRouter()
 const authStore = useAuthStore()
@@ -159,17 +160,18 @@ const strengthLevel = computed(() => {
 })
 
 const strengthLabel = computed(() => {
-  return ['', 'Faible', 'Moyen', 'Bon', 'Excellent'][strengthLevel.value] ?? ''
+  const k = ['', 'weak', 'medium', 'good', 'excellent'][strengthLevel.value]
+  return k ? t(`auth.strength.${k}`) : ''
 })
 
 function validate(): boolean {
   let valid = true
-  if (!form.company.trim()) { errors.company  = 'Le nom de l\'entreprise est requis'; valid = false }
-  if (!form.name.trim())    { errors.name     = 'Votre nom est requis'; valid = false }
-  if (!form.email.trim())   { errors.email    = 'L\'email est requis'; valid = false }
-  else if (!/\S+@\S+\.\S+/.test(form.email)) { errors.email = 'Adresse email invalide'; valid = false }
-  if (!form.password)                        { errors.password = 'Le mot de passe est requis'; valid = false }
-  else if (form.password.length < 8)         { errors.password = 'Minimum 8 caractères'; valid = false }
+  if (!form.company.trim()) { errors.company  = t('auth.companyRequired'); valid = false }
+  if (!form.name.trim())    { errors.name     = t('auth.nameRequired'); valid = false }
+  if (!form.email.trim())   { errors.email    = t('auth.emailRequired'); valid = false }
+  else if (!/\S+@\S+\.\S+/.test(form.email)) { errors.email = t('auth.emailInvalid'); valid = false }
+  if (!form.password)                        { errors.password = t('auth.passwordRequired'); valid = false }
+  else if (form.password.length < 8)         { errors.password = t('auth.passwordMin'); valid = false }
   return valid
 }
 
@@ -203,7 +205,7 @@ async function handleSubmit() {
         errors[key] = Array.isArray(msgs) ? msgs[0] : msgs
       })
     } else {
-      globalError.value = err.response?.data?.message ?? 'Impossible de créer le compte. Réessayez.'
+      globalError.value = err.response?.data?.message ?? t('auth.registerFailed')
     }
   } finally {
     loading.value = false

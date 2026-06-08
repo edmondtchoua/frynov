@@ -3,6 +3,20 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : module Auth traduit FR/EN (UX-13) (2026-06-08)
+
+Branche `feature/ux-i18n-auth` (release `v1.0.0` → `rc.61`).
+
+### UX (i18n)
+- **`LoginView`** (connexion, mot de passe oublié, message d'expiration de session, erreurs
+  401/403/réseau) et **`RegisterView`** (création d'espace, force du mot de passe ×4, CGU,
+  validations) internationalisés.
+- Nouveau namespace **`auth.*`** (FR + EN) : libellés, placeholders, messages d'erreur, niveaux de
+  force (`strength`).
+
+### Tests
+- Frontend **254** (+1 : namespace `auth` dans `i18n.spec`) · `vue-tsc` propre.
+
 ## [Non publié] — i18n : périodes fiscales — module Inventaire 100 % traduit (UX-13) (2026-06-08)
 
 Branche `feature/ux-i18n-fiscal` (release `v1.0.0` → `rc.60`).

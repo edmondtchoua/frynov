@@ -1,6 +1,6 @@
 # État des lieux v1.0.0 — polish UX restant + suite de la recette finale
 
-> Mise à jour : 2026-06-08. Branche `release/v1.0.0` à **`v1.0.0-rc.59`** (cette session → `rc.60+`).
+> Mise à jour : 2026-06-08. Branche `release/v1.0.0` à **`v1.0.0-rc.60`** (cette session → `rc.61+`).
 > Complète (et actualise) `go-no-go-v1.0.0.md` (figé à rc.1). Depuis rc.1 ont été livrés :
 > RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13),
 > polish UX P1 — garde « modifications non enregistrées » sur la création de commande +
@@ -18,7 +18,8 @@
 > **confirmations centrées `ConfirmDialog`/`useConfirm`** (rc.47→rc.48, migration `confirm()` terminée),
 > **polish volets — Stock, Paiements, Admin, Fournisseurs, Entrepôts, Livraisons & Inventaire** (rc.49→rc.53 : sous-titre en-tête, `.input-affix` unité/devise/%, `.input-group` ; POS déjà conforme),
 > **refonte « Side-Drawer » terminée** (rc.54 : sous-titre Marketplace + 7 `alert()` → toasts `pushToast` ; plus aucun `confirm()`/`alert()` bloquant),
-> **module Inventaire traduit FR/EN — complet 6/6** : Entrepôts (rc.55), Stock (rc.56), Alertes (rc.57), Ajustements (rc.58), Transferts (rc.59), Périodes (rc.60) — namespace `inventory.*`.
+> **module Inventaire traduit FR/EN — complet 6/6** : Entrepôts (rc.55), Stock (rc.56), Alertes (rc.57), Ajustements (rc.58), Transferts (rc.59), Périodes (rc.60) — namespace `inventory.*`,
+> **module Auth traduit FR/EN** (rc.61 : Login + Register, namespace `auth.*`).
 > Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 253** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 

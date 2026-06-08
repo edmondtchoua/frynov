@@ -1,8 +1,8 @@
 <template>
   <div class="login-form">
     <div class="form-header">
-      <h2>Connexion</h2>
-      <p>Bienvenue sur Frynov ERP</p>
+      <h2>{{ $t('auth.loginTitle') }}</h2>
+      <p>{{ $t('auth.welcome') }}</p>
     </div>
 
     <!-- Inactivity session expiry message -->
@@ -17,14 +17,14 @@
     <form @submit.prevent="handleSubmit" novalidate>
 
       <div class="form-group">
-        <label class="form-label" for="email">Adresse email</label>
+        <label class="form-label" for="email">{{ $t('auth.emailLabel') }}</label>
         <input
           id="email"
           v-model="form.email"
           type="email"
           class="form-input"
           :class="{ error: errors.email }"
-          placeholder="admin@mycompany.com"
+          :placeholder="$t('auth.emailPlaceholder')"
           autocomplete="email"
           @input="clearError('email')"
         />
@@ -33,10 +33,10 @@
 
       <div class="form-group" style="margin-bottom: 0.5rem;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <label class="form-label" for="password">Mot de passe</label>
-          <a href="#" class="forgot-link" @click.prevent="showForgotMsg = !showForgotMsg">Mot de passe oublié ?</a>
+          <label class="form-label" for="password">{{ $t('auth.password') }}</label>
+          <a href="#" class="forgot-link" @click.prevent="showForgotMsg = !showForgotMsg">{{ $t('auth.forgotPassword') }}</a>
         </div>
-        <p v-if="showForgotMsg" style="color:#64748b;font-size:0.85rem;margin-top:4px;">Contactez votre administrateur pour reinitialiser votre mot de passe.</p>
+        <p v-if="showForgotMsg" style="color:#64748b;font-size:0.85rem;margin-top:4px;">{{ $t('auth.forgotHelp') }}</p>
         <div class="password-wrap">
           <input
             id="password"
@@ -51,7 +51,7 @@
           <button
             type="button"
             class="toggle-pass"
-            :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+            :aria-label="showPassword ? $t('auth.hidePassword') : $t('auth.showPassword')"
             @click="showPassword = !showPassword"
           >
             <svg v-if="!showPassword" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -76,16 +76,16 @@
 
       <button type="submit" class="btn btn-primary btn-xl" :disabled="loading" style="width: 100%; margin-top: 1.25rem; justify-content: center;">
         <span v-if="loading" class="spinner-sm spinner-white"></span>
-        {{ loading ? 'Connexion…' : 'Se connecter' }}
+        {{ loading ? $t('auth.loggingIn') : $t('auth.login') }}
       </button>
 
     </form>
 
-    <div class="divider-text" style="margin: 1.5rem 0;">ou</div>
+    <div class="divider-text" style="margin: 1.5rem 0;">{{ $t('auth.or') }}</div>
 
     <p class="signup-cta">
-      Pas encore de compte ?
-      <RouterLink to="/register" class="signup-link">Créer un espace de travail</RouterLink>
+      {{ $t('auth.noAccount') }}
+      <RouterLink to="/register" class="signup-link">{{ $t('auth.createWorkspace') }}</RouterLink>
     </p>
   </div>
 </template>
@@ -94,6 +94,7 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { t } from '@/i18n'
 import type { AxiosError } from 'axios'
 import type { ApiError } from '@/api/types'
 
@@ -111,7 +112,7 @@ const showForgotMsg = ref(false)
 // Show info banner if redirected due to session inactivity
 const inactivityMsg = computed(() =>
   route.query.reason === 'inactivity'
-    ? 'Votre session a expiré par inactivité. Veuillez vous reconnecter.'
+    ? t('auth.sessionExpired')
     : ''
 )
 
@@ -121,8 +122,8 @@ function clearError(field: string) {
 }
 
 async function handleSubmit() {
-  if (!form.email)    { errors.email    = 'L\'email est requis'; return }
-  if (!form.password) { errors.password = 'Le mot de passe est requis'; return }
+  if (!form.email)    { errors.email    = t('auth.emailRequired'); return }
+  if (!form.password) { errors.password = t('auth.passwordRequired'); return }
 
   loading.value    = true
   globalError.value = ''
@@ -141,16 +142,16 @@ async function handleSubmit() {
     const status   = axiosErr.response?.status
 
     if (status === 401) {
-      globalError.value = 'Email ou mot de passe incorrect.'
+      globalError.value = t('auth.invalidCredentials')
     } else if (status === 403) {
-      globalError.value = 'Votre compte est désactivé. Contactez votre administrateur.'
+      globalError.value = t('auth.accountDisabled')
     } else if (status === 422) {
       const validationErrors = axiosErr.response?.data?.errors ?? {}
       Object.entries(validationErrors).forEach(([field, msgs]) => {
         errors[field] = msgs[0]
       })
     } else {
-      globalError.value = 'Connexion impossible. Vérifiez votre connexion internet.'
+      globalError.value = t('auth.loginFailed')
     }
   } finally {
     loading.value = false

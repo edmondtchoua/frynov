@@ -3,6 +3,19 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Dashboard traduit FR/EN (UX-13) (2026-06-08)
+
+Branche `feature/ux-i18n-dashboard` (release `v1.0.0` → `rc.62`).
+
+### UX (i18n)
+- **`DashboardView`** internationalisé : sous-titre, **cartes KPI** (×4 + tendance « % vs hier »),
+  graphiques (CA, commandes récentes, top produits), bannière d'essai, **section modules** (badges
+  Actif/Bientôt/Inactif), **actions rapides**. Nouveau namespace `dashboard.*` ; réutilise
+  `orders.status` (libellés de commande), `inventory.units`, `common.*`, `nav.dashboard`.
+
+### Tests
+- Frontend **254** inchangé · `vue-tsc` propre.
+
 ## [Non publié] — i18n : module Auth traduit FR/EN (UX-13) (2026-06-08)
 
 Branche `feature/ux-i18n-auth` (release `v1.0.0` → `rc.61`).

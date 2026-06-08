@@ -61,42 +61,38 @@
       </div>
     </div>
 
-    <!-- Create / edit modal -->
-    <div v-if="modal.open" class="modal-backdrop" @click.self="closeModal">
-      <div class="modal-box">
-        <div class="modal-header">
-          <h3 class="modal-title">{{ modal.editing ? `Modifier — ${form.country_code}` : 'Nouvelle règle pays' }}</h3>
-          <button class="modal-close" aria-label="Fermer" @click="closeModal">×</button>
-        </div>
-        <div class="modal-body">
-          <div v-if="modal.error" class="form-error">{{ modal.error }}</div>
+    <!-- Create / edit modal (shared BaseModal — UX-03) -->
+    <BaseModal
+      v-model="modal.open"
+      :title="modal.editing ? `Modifier — ${form.country_code}` : 'Nouvelle règle pays'"
+    >
+      <div v-if="modal.error" class="form-error">{{ modal.error }}</div>
 
-          <label class="form-label">Code pays (ISO 2 lettres) *</label>
-          <input v-model="form.country_code" :disabled="modal.editing" maxlength="2" class="form-input" placeholder="SN" style="text-transform:uppercase" />
+      <label class="form-label">Code pays (ISO 2 lettres) *</label>
+      <input v-model="form.country_code" :disabled="modal.editing" maxlength="2" class="form-input" placeholder="SN" style="text-transform:uppercase" />
 
-          <label class="form-label">Devise par défaut (ISO 3)</label>
-          <input v-model="form.default_currency" maxlength="3" class="form-input" placeholder="XOF" style="text-transform:uppercase" />
+      <label class="form-label">Devise par défaut (ISO 3)</label>
+      <input v-model="form.default_currency" maxlength="3" class="form-input" placeholder="XOF" style="text-transform:uppercase" />
 
-          <label class="form-label">Fuseau horaire</label>
-          <input v-model="form.default_timezone" class="form-input" placeholder="Africa/Dakar" />
+      <label class="form-label">Fuseau horaire</label>
+      <input v-model="form.default_timezone" class="form-input" placeholder="Africa/Dakar" />
 
-          <label class="form-label">Plans autorisés (séparés par des virgules — vide = tous)</label>
-          <input v-model="form.allowed_plans" class="form-input" placeholder="starter, pro" />
+      <label class="form-label">Plans autorisés (séparés par des virgules — vide = tous)</label>
+      <input v-model="form.allowed_plans" class="form-input" placeholder="starter, pro" />
 
-          <div class="form-checks">
-            <label class="check"><input v-model="form.is_active" type="checkbox" /> Actif</label>
-            <label class="check"><input v-model="form.requires_approval" type="checkbox" /> Approbation manuelle requise</label>
-            <label class="check"><input v-model="form.is_blocked" type="checkbox" /> Bloqué (inscription interdite)</label>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" @click="closeModal">Annuler</button>
-          <button class="btn btn-primary" :disabled="modal.saving" @click="save">
-            {{ modal.saving ? 'Enregistrement…' : 'Enregistrer' }}
-          </button>
-        </div>
+      <div class="form-checks">
+        <label class="check"><input v-model="form.is_active" type="checkbox" /> Actif</label>
+        <label class="check"><input v-model="form.requires_approval" type="checkbox" /> Approbation manuelle requise</label>
+        <label class="check"><input v-model="form.is_blocked" type="checkbox" /> Bloqué (inscription interdite)</label>
       </div>
-    </div>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="closeModal">Annuler</button>
+        <button class="btn btn-primary" :disabled="modal.saving" @click="save">
+          {{ modal.saving ? 'Enregistrement…' : 'Enregistrer' }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -104,6 +100,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { adminService, type AdminCountryRule } from '../services/adminService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 
 const rules   = ref<AdminCountryRule[]>([])
 const loading = ref(true)

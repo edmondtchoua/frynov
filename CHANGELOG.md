@@ -3,6 +3,18 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 4ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave4` (release `v1.0.0` → `rc.27`).
+
+### UX
+- **Modales unifiées (UX-03, 4ᵉ vague)** — `ReturnsView` (refus de retour) et `CountryRuleListView`
+  (création/édition de règle pays) migrées vers `<BaseModal>` ; styles `.modal-*` dupliqués retirés
+  (ReturnsView). **11 modales / 9 vues migrées au total.**
+
+### Tests
+- Frontend **239** au vert · `vue-tsc` propre (contrat `BaseModal` couvert par 4 specs existantes).
+
 ## [Non publié] — i18n + BaseModal : module Livraisons (UX-13 + UX-03) (2026-06-07)
 
 Branche `feature/ux-i18n-deliveries` (release `v1.0.0` → `rc.26`).

@@ -3,6 +3,21 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : module Paiements traduit FR/EN (UX-13) (2026-06-07)
+
+Branche `feature/ux-i18n-payments` (release `v1.0.0` → `rc.28`).
+Voir `docs/modules/i18n.md`.
+
+### UX
+- **Module Paiements (`PaymentListView`)** — 3ᵉ module entièrement internationalisé : toutes les
+  chaînes via `$t` / `t()` (filtres, moyens de paiement, colonnes — y compris les `data-label`
+  des cartes mobiles, total, pagination, modale, message de confirmation d'annulation). Nouveau
+  namespace `payments.*` (dont `payments.method.*`) + libellés `common.*` mutualisés (date, amount,
+  note, previous, next). Bascule FR ↔ EN en direct.
+
+### Tests
+- Frontend **240** (+1 : re-rendu EN dans `PaymentListView.spec.ts`) · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 4ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave4` (release `v1.0.0` → `rc.27`).

@@ -3,28 +3,28 @@
     <SalesTabNav />
     <div class="page-header">
       <div>
-        <h2>Paiements</h2>
-        <p class="page-subtitle">{{ meta.total ?? '—' }} enregistrement{{ meta.total !== 1 ? 's' : '' }}</p>
+        <h2>{{ $t('payments.title') }}</h2>
+        <p class="page-subtitle">{{ meta.total ?? '—' }} {{ (meta.total ?? 0) !== 1 ? $t('payments.recordPlural') : $t('payments.recordSingular') }}</p>
       </div>
       <button class="btn btn-primary" @click="openCreate">
         <Icon name="plus" :size="16" />
-        Nouveau paiement
+        {{ $t('payments.new') }}
       </button>
     </div>
 
     <!-- Filters -->
     <div class="filter-bar">
       <select v-model="filters.method" class="form-input filter-select" @change="load">
-        <option value="">Tous les moyens</option>
-        <option value="cash">Espèces</option>
-        <option value="mobile_money">Mobile Money</option>
-        <option value="card">Carte</option>
-        <option value="transfer">Virement</option>
-        <option value="cheque">Chèque</option>
+        <option value="">{{ $t('payments.allMethods') }}</option>
+        <option value="cash">{{ $t('payments.method.cash') }}</option>
+        <option value="mobile_money">{{ $t('payments.method.mobile_money') }}</option>
+        <option value="card">{{ $t('payments.method.card') }}</option>
+        <option value="transfer">{{ $t('payments.method.transfer') }}</option>
+        <option value="cheque">{{ $t('payments.method.cheque') }}</option>
       </select>
       <!-- Site / entrepôt filter (Sprint 20 multi-sites) -->
-      <select v-model="filters.warehouse_id" class="form-input filter-select" @change="load" aria-label="Filtrer par entrepôt">
-        <option value="">Tous les entrepôts</option>
+      <select v-model="filters.warehouse_id" class="form-input filter-select" @change="load" :aria-label="$t('payments.allWarehouses')">
+        <option value="">{{ $t('payments.allWarehouses') }}</option>
         <option v-for="w in warehouses" :key="w.id" :value="w.id">
           {{ w.is_default ? '⭐ ' : '' }}{{ w.name }}
         </option>
@@ -38,8 +38,8 @@
     <StateBlock
       v-else-if="payments.length === 0"
       variant="empty"
-      title="Aucun paiement"
-      :message="filters.method ? 'Aucun paiement pour ce moyen de paiement.' : 'Les paiements enregistrés apparaîtront ici.'"
+      :title="$t('payments.empty')"
+      :message="filters.method ? $t('payments.emptyFiltered') : $t('payments.emptyDefault')"
     />
 
     <!-- Table -->
@@ -47,20 +47,20 @@
       <table class="data-table data-table--cards">
         <thead>
           <tr>
-            <th>Date</th>
-            <th class="hide-mobile">Commande</th>
-            <th>Moyen</th>
-            <th class="hide-mobile">Référence</th>
-            <th style="text-align: right;">Montant</th>
-            <th style="text-align: right;">Actions</th>
+            <th>{{ $t('common.date') }}</th>
+            <th class="hide-mobile">{{ $t('payments.colOrder') }}</th>
+            <th>{{ $t('payments.colMethod') }}</th>
+            <th class="hide-mobile">{{ $t('payments.colReference') }}</th>
+            <th style="text-align: right;">{{ $t('common.amount') }}</th>
+            <th style="text-align: right;">{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="p in payments" :key="p.id">
-            <td data-label="Date" style="white-space: nowrap; font-size: 0.85rem; color: var(--gray-600);">
+            <td :data-label="$t('common.date')" style="white-space: nowrap; font-size: 0.85rem; color: var(--gray-600);">
               {{ fmtDate(p.paid_at) }}
             </td>
-            <td class="hide-mobile" data-label="Commande">
+            <td class="hide-mobile" :data-label="$t('payments.colOrder')">
               <RouterLink
                 v-if="p.order_id"
                 :to="`/orders/${p.order_id}`"
@@ -70,27 +70,27 @@
               </RouterLink>
               <span v-else class="text-muted">—</span>
             </td>
-            <td data-label="Moyen">
+            <td :data-label="$t('payments.colMethod')">
               <span :class="`badge ${methodBadge(p.method)}`">{{ methodLabel(p.method) }}</span>
             </td>
-            <td class="hide-mobile" data-label="Référence">
+            <td class="hide-mobile" :data-label="$t('payments.colReference')">
               <span v-if="p.reference" style="font-family: monospace; font-size: 0.82rem;">{{ p.reference }}</span>
               <span v-else class="text-muted">—</span>
             </td>
-            <td data-label="Montant" style="text-align: right; font-weight: 600; font-variant-numeric: tabular-nums;">
+            <td :data-label="$t('common.amount')" style="text-align: right; font-weight: 600; font-variant-numeric: tabular-nums;">
               {{ fmtAmount(p.amount_cents, p.currency) }}
             </td>
             <td class="cell-actions" style="text-align: right;">
               <button
                 class="btn btn-ghost btn-sm"
                 style="color: #dc2626;"
-                title="Annuler ce paiement"
+                :title="$t('payments.voidTitle')"
                 @click="voidPayment(p)"
               >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
                 </svg>
-                <span class="hide-mobile">Annuler</span>
+                <span class="hide-mobile">{{ $t('payments.void') }}</span>
               </button>
             </td>
           </tr>
@@ -99,7 +99,7 @@
         <tfoot>
           <tr>
             <td colspan="4" style="text-align: right; font-weight: 700; padding: 12px 16px; color: var(--gray-700);">
-              Total affiché
+              {{ $t('payments.totalShown') }}
             </td>
             <td style="text-align: right; font-weight: 700; padding: 12px 16px; font-size: 1rem;">
               {{ fmtAmount(pageTotal, 'XOF') }}
@@ -112,20 +112,20 @@
 
     <!-- Pagination -->
     <div v-if="meta.last_page > 1" class="pagination">
-      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page <= 1" @click="goToPage(meta.current_page - 1)">← Précédent</button>
+      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page <= 1" @click="goToPage(meta.current_page - 1)">← {{ $t('common.previous') }}</button>
       <span class="page-info">Page {{ meta.current_page }} / {{ meta.last_page }}</span>
-      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goToPage(meta.current_page + 1)">Suivant →</button>
+      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goToPage(meta.current_page + 1)">{{ $t('common.next') }} →</button>
     </div>
 
     <!-- Create payment modal (shared BaseModal — UX-03) -->
     <BaseModal
       :model-value="modal.open"
-      title="Enregistrer un paiement"
+      :title="$t('payments.modalTitle')"
       @update:model-value="(v: boolean) => { if (!v) closeModal() }"
     >
       <div style="display: flex; flex-direction: column; gap: 16px;">
         <div class="form-group">
-          <label class="form-label">Montant <span style="color:#dc2626;">*</span></label>
+          <label class="form-label">{{ $t('common.amount') }} <span style="color:#dc2626;">*</span></label>
           <div style="display: flex; gap: 8px;">
             <input
               v-model.number="form.amount"
@@ -147,23 +147,23 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Moyen de paiement <span style="color:#dc2626;">*</span></label>
+          <label class="form-label">{{ $t('payments.methodLabel') }} <span style="color:#dc2626;">*</span></label>
           <select v-model="form.method" class="form-input">
-            <option value="cash">Espèces</option>
-            <option value="mobile_money">Mobile Money (Orange/Wave/MTN)</option>
-            <option value="card">Carte bancaire</option>
-            <option value="transfer">Virement</option>
-            <option value="cheque">Chèque</option>
+            <option value="cash">{{ $t('payments.method.cash') }}</option>
+            <option value="mobile_money">{{ $t('payments.method.mobile_money') }}</option>
+            <option value="card">{{ $t('payments.method.card') }}</option>
+            <option value="transfer">{{ $t('payments.method.transfer') }}</option>
+            <option value="cheque">{{ $t('payments.method.cheque') }}</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Référence transaction</label>
-          <input v-model="form.reference" type="text" class="form-input" placeholder="N° reçu, TX ID…" />
+          <label class="form-label">{{ $t('payments.referenceLabel') }}</label>
+          <input v-model="form.reference" type="text" class="form-input" :placeholder="$t('payments.referencePlaceholder')" />
         </div>
 
         <div class="form-group">
-          <label class="form-label">Note</label>
+          <label class="form-label">{{ $t('common.note') }}</label>
           <textarea v-model="form.note" class="form-input" style="resize: vertical; min-height: 60px;" rows="2"></textarea>
         </div>
 
@@ -171,14 +171,14 @@
       </div>
 
       <template #footer>
-        <button class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button class="btn btn-ghost" @click="closeModal">{{ $t('common.cancel') }}</button>
         <button
           class="btn btn-primary"
           :disabled="modal.saving || !form.amount || form.amount <= 0"
           @click="submitPayment"
         >
           <span v-if="modal.saving" class="spinner-sm"></span>
-          Enregistrer
+          {{ $t('common.save') }}
         </button>
       </template>
     </BaseModal>
@@ -196,6 +196,7 @@ import { useWarehouses } from '@/composables/useWarehouses'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import Icon from '@/shared/ui/Icon.vue'
+import { t } from '@/i18n'
 import type { Payment, PaymentMethod } from '../types'
 
 const payments = ref<Payment[]>([])
@@ -233,7 +234,7 @@ async function load() {
 function goToPage(page: number) { filters.page = page; load() }
 
 async function voidPayment(p: Payment) {
-  if (!confirm(`Annuler ce paiement de ${fmtAmount(p.amount_cents, p.currency)} ?`)) return
+  if (!confirm(t('payments.voidConfirm', { amount: fmtAmount(p.amount_cents, p.currency) }))) return
   try {
     await paymentService.void(p.id)
     load()
@@ -269,7 +270,7 @@ async function submitPayment() {
     closeModal()
     load()
   } catch (e: any) {
-    modal.error = e?.response?.data?.message ?? 'Une erreur est survenue.'
+    modal.error = e?.response?.data?.message ?? t('common.genericError')
   } finally {
     modal.saving = false
   }
@@ -277,13 +278,7 @@ async function submitPayment() {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 function methodLabel(m: PaymentMethod): string {
-  return ({
-    cash:         'Espèces',
-    mobile_money: 'Mobile Money',
-    card:         'Carte',
-    transfer:     'Virement',
-    cheque:       'Chèque',
-  } as Record<PaymentMethod, string>)[m] ?? m
+  return t(`payments.method.${m}`)
 }
 
 function methodBadge(m: PaymentMethod): string {

@@ -2,8 +2,8 @@
   <div>
 
     <div class="page-header">
-      <h2>Tableau de bord</h2>
-      <p class="page-subtitle">Vue d'ensemble de votre activité</p>
+      <h2>{{ $t('nav.dashboard') }}</h2>
+      <p class="page-subtitle">{{ $t('dashboard.subtitle') }}</p>
     </div>
 
     <!-- Loading -->
@@ -29,7 +29,7 @@
               <svg v-else width="12" height="12" viewBox="0 0 12 12" fill="none">
                 <path d="M6 10L2 6H5V2H7V6H10L6 10Z" fill="currentColor"/>
               </svg>
-              {{ Math.abs(kpi.change) }}% vs hier
+              {{ $t('dashboard.vsYesterday', { pct: Math.abs(kpi.change) }) }}
             </div>
           </div>
         </div>
@@ -41,8 +41,8 @@
         <!-- Revenue bar chart -->
         <div class="card chart-card">
           <div class="chart-card-header">
-            <h3>Chiffre d'affaires</h3>
-            <RouterLink to="/reports/sales" class="chart-card-link">Détail →</RouterLink>
+            <h3>{{ $t('dashboard.revenue') }}</h3>
+            <RouterLink to="/reports/sales" class="chart-card-link">{{ $t('dashboard.detail') }}</RouterLink>
           </div>
           <RevenueBarChart :points="dashboardData?.revenue_chart ?? []" />
         </div>
@@ -50,8 +50,8 @@
         <!-- Recent orders -->
         <div class="card chart-card">
           <div class="chart-card-header">
-            <h3>Commandes récentes</h3>
-            <RouterLink to="/orders" class="chart-card-link">Voir tout →</RouterLink>
+            <h3>{{ $t('dashboard.recentOrders') }}</h3>
+            <RouterLink to="/orders" class="chart-card-link">{{ $t('dashboard.seeAll') }}</RouterLink>
           </div>
           <div v-if="!dashboardData?.recent_orders?.length" class="chart-placeholder">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" class="chart-placeholder-icon">
@@ -59,15 +59,15 @@
               <rect x="4" y="17" width="24" height="4" rx="2" fill="var(--brand-secondary)" opacity="0.5"/>
               <rect x="4" y="26" width="28" height="4" rx="2" fill="var(--brand-secondary)" opacity="0.7"/>
             </svg>
-            <p>Aucune commande pour l'instant.</p>
+            <p>{{ $t('dashboard.noOrders') }}</p>
           </div>
           <table v-else class="data-table" style="margin-top:.5rem">
             <thead>
               <tr>
-                <th>N°</th>
-                <th>Client</th>
-                <th>Statut</th>
-                <th style="text-align:right">Montant</th>
+                <th>{{ $t('dashboard.colNumber') }}</th>
+                <th>{{ $t('dashboard.colCustomer') }}</th>
+                <th>{{ $t('common.status') }}</th>
+                <th style="text-align:right">{{ $t('common.amount') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -86,8 +86,8 @@
       <!-- Top products -->
       <div v-if="dashboardData?.top_products?.length" class="card" style="margin-top:1rem">
         <div class="chart-card-header" style="margin-bottom:.75rem">
-          <h3>Top produits — 30 derniers jours</h3>
-          <RouterLink to="/reports/sales" class="chart-card-link">Rapport ventes →</RouterLink>
+          <h3>{{ $t('dashboard.topProducts') }}</h3>
+          <RouterLink to="/reports/sales" class="chart-card-link">{{ $t('dashboard.salesReportLink') }}</RouterLink>
         </div>
         <div class="top-products-list">
           <div v-for="(p, idx) in dashboardData!.top_products" :key="p.product_id ?? idx" class="top-product-row">
@@ -97,7 +97,7 @@
               <span class="top-product-sku text-muted">{{ p.sku }}</span>
             </div>
             <div class="top-product-stats">
-              <span class="top-product-qty">{{ p.total_qty }} unités</span>
+              <span class="top-product-qty">{{ p.total_qty }} {{ $t('inventory.units') }}</span>
               <span class="top-product-revenue">{{ formatMoneyCompact(p.total_revenue) }}</span>
             </div>
           </div>
@@ -107,14 +107,14 @@
       <!-- ── Modules section ─────────────────────────────────────── -->
       <div class="card modules-section" style="margin-top:1.5rem">
         <div class="chart-card-header" style="margin-bottom:1rem">
-          <h3>Mes modules</h3>
-          <RouterLink to="/settings" class="chart-card-link">Gérer l'abonnement →</RouterLink>
+          <h3>{{ $t('dashboard.myModules') }}</h3>
+          <RouterLink to="/settings" class="chart-card-link">{{ $t('dashboard.manageSubscription') }}</RouterLink>
         </div>
 
         <!-- Trial banner -->
         <div v-if="subscriptionStatus === 'trialing' && trialDaysLeft !== null" class="trial-banner">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3.5L10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          Période d'essai — <strong>{{ trialDaysLeft }} jour{{ trialDaysLeft > 1 ? 's' : '' }}</strong> restant{{ trialDaysLeft > 1 ? 's' : '' }}
+          {{ $t('dashboard.trialPrefix') }} <strong>{{ trialDaysLeft }} {{ $t('dashboard.trialDaysUnit') }}</strong> {{ $t('dashboard.trialRemaining') }}
         </div>
 
         <div v-if="loadingModules" class="loading-center" style="min-height:80px"><span class="spinner-sm"></span></div>
@@ -136,22 +136,22 @@
             </div>
             <div class="module-dash-info">
               <span class="module-dash-name">{{ mod.name }}</span>
-              <span v-if="mod.tenant_active"         class="module-status-badge badge-success">Actif</span>
-              <span v-else-if="mod.status === 'coming_soon'" class="module-status-badge badge-gray">Bientôt</span>
-              <span v-else                           class="module-status-badge badge-warning">Inactif</span>
+              <span v-if="mod.tenant_active"         class="module-status-badge badge-success">{{ $t('common.active') }}</span>
+              <span v-else-if="mod.status === 'coming_soon'" class="module-status-badge badge-gray">{{ $t('dashboard.comingSoon') }}</span>
+              <span v-else                           class="module-status-badge badge-warning">{{ $t('common.inactive') }}</span>
             </div>
           </RouterLink>
         </div>
 
         <div v-else class="empty-state" style="padding:1.5rem 0">
-          <p>Aucun module configuré.</p>
+          <p>{{ $t('dashboard.noModules') }}</p>
         </div>
       </div>
 
       <!-- Quick actions -->
       <div class="card" style="margin-top: 1.5rem;">
         <div class="chart-card-header" style="margin-bottom: 1rem;">
-          <h3>Actions rapides</h3>
+          <h3>{{ $t('dashboard.quickActions') }}</h3>
         </div>
         <div class="quick-actions">
           <RouterLink to="/orders/new" class="quick-action">
@@ -162,7 +162,7 @@
                 <path d="M15 13v2M14 14h2" stroke="var(--brand-primary)" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
             </span>
-            <span>Nouvelle commande</span>
+            <span>{{ $t('orders.new') }}</span>
           </RouterLink>
           <RouterLink to="/catalog/products/create" class="quick-action">
             <span class="quick-action-icon">
@@ -173,7 +173,7 @@
                 <path d="M14 11v6M11 14h6" stroke="var(--brand-primary)" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
             </span>
-            <span>Ajouter un produit</span>
+            <span>{{ $t('dashboard.addProduct') }}</span>
           </RouterLink>
           <RouterLink to="/inventory" class="quick-action">
             <span class="quick-action-icon">
@@ -182,7 +182,7 @@
                 <path d="M10 10L17 6M10 10L3 6M10 10V18" stroke="var(--brand-primary)" stroke-width="1.5"/>
               </svg>
             </span>
-            <span>Gérer le stock</span>
+            <span>{{ $t('dashboard.manageStock') }}</span>
           </RouterLink>
           <RouterLink to="/reports/sales" class="quick-action">
             <span class="quick-action-icon">
@@ -192,7 +192,7 @@
                 <rect x="13" y="4" width="3" height="13" rx="1" fill="var(--brand-primary)"/>
               </svg>
             </span>
-            <span>Rapport ventes</span>
+            <span>{{ $t('dashboard.salesReport') }}</span>
           </RouterLink>
         </div>
       </div>
@@ -208,6 +208,7 @@ import { reportService, formatMoneyCompact, shortDate, type DashboardData } from
 import { authService } from '@/modules/auth/services/authService'
 import { moduleRouteTarget } from '@/modules/dashboard/route'
 import { useAuthStore } from '@/stores/auth'
+import { t } from '@/i18n'
 import ModuleIcon from '@/shared/components/ModuleIcon.vue'
 import type { ErpModule } from '@/modules/auth/types'
 
@@ -254,7 +255,7 @@ const RevenueBarChart = defineComponent({
 
       if (!props.points.length) {
         return h('div', { class: 'chart-placeholder' }, [
-          h('p', { style: 'color:var(--gray-400);font-size:.85rem' }, 'Aucune donnée de paiement pour les 7 derniers jours.')
+          h('p', { style: 'color:var(--gray-400);font-size:.85rem' }, t('dashboard.noChartData'))
         ])
       }
 
@@ -328,28 +329,28 @@ const kpis = computed(() => {
   return [
     {
       icon:   IconRevenue,
-      label:  'CA du jour',
+      label:  t('dashboard.kpiRevenue'),
       value:  d ? formatMoneyCompact(d.kpis.revenue_today) : '—',
       color:  'green',
       change: d?.kpis.revenue_today_change ?? null,
     },
     {
       icon:   IconOrders,
-      label:  'Commandes',
+      label:  t('dashboard.kpiOrders'),
       value:  d ? String(d.kpis.orders_today) : '—',
       color:  'blue',
       change: d?.kpis.orders_today_change ?? null,
     },
     {
       icon:   IconProducts,
-      label:  'Produits actifs',
+      label:  t('dashboard.kpiProducts'),
       value:  d ? String(d.kpis.active_products) : '—',
       color:  'purple',
       change: null,
     },
     {
       icon:   IconAlerts,
-      label:  'Alertes stock',
+      label:  t('dashboard.kpiAlerts'),
       value:  d ? String(d.kpis.low_stock_alerts) : '—',
       color:  'orange',
       change: null,
@@ -360,13 +361,7 @@ const kpis = computed(() => {
 // ── Order table helpers ───────────────────────────────────────────────────────
 
 function orderLabel(status: string): string {
-  const m: Record<string, string> = {
-    draft:     'Brouillon',
-    confirmed: 'Confirmée',
-    fulfilled: 'Livrée',
-    cancelled: 'Annulée',
-  }
-  return m[status] ?? status
+  return t(`orders.status.${status}`)
 }
 
 function orderBadge(status: string): string {

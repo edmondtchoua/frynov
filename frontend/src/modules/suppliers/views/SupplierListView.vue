@@ -4,12 +4,12 @@
     <!-- ── Header ────────────────────────────────────────────────────────── -->
     <div class="page-header">
       <div class="page-title">
-        <h1>Fournisseurs</h1>
-        <span class="count-badge">{{ meta.total }} fournisseur{{ meta.total !== 1 ? 's' : '' }}</span>
+        <h1>{{ $t('suppliers.title') }}</h1>
+        <span class="count-badge">{{ meta.total }} {{ meta.total !== 1 ? $t('suppliers.itemPlural') : $t('suppliers.itemSingular') }}</span>
       </div>
       <div class="header-actions">
         <button class="btn btn-primary" @click="openCreate">
-          <span class="btn-icon">+</span> Nouveau fournisseur
+          <span class="btn-icon">+</span> {{ $t('suppliers.new') }}
         </button>
       </div>
     </div>
@@ -20,12 +20,12 @@
         <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
           <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
         </svg>
-        <input v-model="search" class="search-input" placeholder="Rechercher un fournisseur…" @input="onSearch" />
+        <input v-model="search" class="search-input" :placeholder="$t('suppliers.searchPlaceholder')" @input="onSearch" />
       </div>
       <select v-model="statusFilter" class="filter-select" @change="load(1)">
-        <option value="">Tous les statuts</option>
-        <option value="active">Actifs</option>
-        <option value="inactive">Inactifs</option>
+        <option value="">{{ $t('suppliers.allStatuses') }}</option>
+        <option value="active">{{ $t('suppliers.activePlural') }}</option>
+        <option value="inactive">{{ $t('suppliers.inactivePlural') }}</option>
       </select>
     </div>
 
@@ -36,24 +36,24 @@
       <StateBlock
         v-else-if="suppliers.length === 0"
         variant="empty"
-        title="Aucun fournisseur trouvé"
+        :title="$t('suppliers.empty')"
       >
         <template #action>
-          <button class="btn btn-primary btn-sm" @click="openCreate">Ajouter le premier</button>
+          <button class="btn btn-primary btn-sm" @click="openCreate">{{ $t('suppliers.addFirst') }}</button>
         </template>
       </StateBlock>
 
       <table v-else class="data-table">
         <thead>
           <tr>
-            <th>Code</th>
-            <th>Nom</th>
-            <th>Contact</th>
-            <th>Email</th>
-            <th>Téléphone</th>
-            <th>Conditions</th>
-            <th>Statut</th>
-            <th class="col-actions">Actions</th>
+            <th>{{ $t('suppliers.colCode') }}</th>
+            <th>{{ $t('common.name') }}</th>
+            <th>{{ $t('suppliers.colContact') }}</th>
+            <th>{{ $t('common.email') }}</th>
+            <th>{{ $t('common.phone') }}</th>
+            <th>{{ $t('suppliers.colTerms') }}</th>
+            <th>{{ $t('common.status') }}</th>
+            <th class="col-actions">{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -76,16 +76,16 @@
             <td class="text-muted">{{ s.payment_terms ?? '—' }}</td>
             <td>
               <span :class="['status-badge', `status-${s.status}`]">
-                {{ s.status === 'active' ? 'Actif' : 'Inactif' }}
+                {{ s.status === 'active' ? $t('common.active') : $t('common.inactive') }}
               </span>
             </td>
             <td class="col-actions">
               <div class="action-group">
-                <RouterLink :to="`/suppliers/${s.id}`" class="btn-action btn-view" title="Voir le détail">
+                <RouterLink :to="`/suppliers/${s.id}`" class="btn-action btn-view" :title="$t('suppliers.viewDetail')">
                   <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M1 8C2.5 4.5 5 2.5 8 2.5S13.5 4.5 15 8c-1.5 3.5-4 5.5-7 5.5S2.5 11.5 1 8z" stroke="currentColor" stroke-width="1.4"/></svg>
                 </RouterLink>
-                <button class="btn-action btn-edit" title="Modifier" @click="openEdit(s)">✏️</button>
-                <button class="btn-action btn-delete" title="Supprimer" @click="confirmDelete(s)">🗑️</button>
+                <button class="btn-action btn-edit" :title="$t('common.edit')" @click="openEdit(s)">✏️</button>
+                <button class="btn-action btn-delete" :title="$t('common.delete')" @click="confirmDelete(s)">🗑️</button>
               </div>
             </td>
           </tr>
@@ -104,40 +104,40 @@
     <BaseModal
       v-model="showModal"
       size="lg"
-      :title="editingId ? 'Modifier le fournisseur' : 'Nouveau fournisseur'"
+      :title="editingId ? $t('suppliers.modalEditTitle') : $t('suppliers.modalCreateTitle')"
     >
       <form id="supplier-form" @submit.prevent="submitModal">
         <div class="form-grid">
           <div class="form-group">
-            <label>Nom <span class="required">*</span></label>
-            <input v-model="form.name" required class="form-input" placeholder="Raison sociale" />
+            <label>{{ $t('common.name') }} <span class="required">*</span></label>
+            <input v-model="form.name" required class="form-input" :placeholder="$t('suppliers.namePlaceholder')" />
           </div>
           <div class="form-group">
-            <label>Email</label>
-            <input v-model="form.email" type="email" class="form-input" placeholder="contact@fournisseur.com" />
+            <label>{{ $t('common.email') }}</label>
+            <input v-model="form.email" type="email" class="form-input" :placeholder="$t('suppliers.emailPlaceholder')" />
           </div>
           <div class="form-group">
-            <label>Téléphone</label>
+            <label>{{ $t('common.phone') }}</label>
             <input v-model="form.phone" class="form-input" placeholder="+225 07 00 00 00" />
           </div>
           <div class="form-group">
-            <label>Contact principal</label>
-            <input v-model="form.contact_name" class="form-input" placeholder="M. Dupont" />
+            <label>{{ $t('suppliers.contactPerson') }}</label>
+            <input v-model="form.contact_name" class="form-input" :placeholder="$t('suppliers.contactPlaceholder')" />
           </div>
           <div class="form-group full-width">
-            <label>Conditions de paiement</label>
-            <input v-model="form.payment_terms" class="form-input" placeholder="Ex: Net 30, Net 60" />
+            <label>{{ $t('suppliers.terms') }}</label>
+            <input v-model="form.payment_terms" class="form-input" :placeholder="$t('suppliers.termsPlaceholder')" />
           </div>
           <div class="form-group">
-            <label>Statut</label>
+            <label>{{ $t('common.status') }}</label>
             <select v-model="form.status" class="form-input">
-              <option value="active">Actif</option>
-              <option value="inactive">Inactif</option>
+              <option value="active">{{ $t('common.active') }}</option>
+              <option value="inactive">{{ $t('common.inactive') }}</option>
             </select>
           </div>
           <div class="form-group full-width">
-            <label>Notes</label>
-            <textarea v-model="form.notes" class="form-input form-textarea" rows="3" placeholder="Commentaires internes…"></textarea>
+            <label>{{ $t('common.notes') }}</label>
+            <textarea v-model="form.notes" class="form-input form-textarea" rows="3" :placeholder="$t('suppliers.notesPlaceholder')"></textarea>
           </div>
         </div>
 
@@ -145,9 +145,9 @@
       </form>
 
       <template #footer>
-        <button type="button" class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button type="button" class="btn btn-ghost" @click="closeModal">{{ $t('common.cancel') }}</button>
         <button type="submit" form="supplier-form" class="btn btn-primary" :disabled="submitting">
-          {{ submitting ? 'Enregistrement…' : (editingId ? 'Enregistrer' : 'Créer') }}
+          {{ submitting ? $t('common.saving') : (editingId ? $t('common.save') : $t('common.create')) }}
         </button>
       </template>
     </BaseModal>
@@ -161,6 +161,7 @@ import { RouterLink } from 'vue-router'
 import { supplierService } from '../services/supplierService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { t } from '@/i18n'
 import type { Supplier } from '../types'
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -228,19 +229,19 @@ async function submitModal() {
     closeModal()
     await load(meta.current_page)
   } catch (e: any) {
-    formError.value = e?.response?.data?.message ?? 'Une erreur est survenue.'
+    formError.value = e?.response?.data?.message ?? t('common.genericError')
   } finally {
     submitting.value = false
   }
 }
 
 async function confirmDelete(s: Supplier) {
-  if (!confirm(`Supprimer le fournisseur « ${s.name} » ?`)) return
+  if (!confirm(t('suppliers.confirmDelete', { name: s.name }))) return
   try {
     await supplierService.delete(s.id)
     await load(meta.current_page)
   } catch (e: any) {
-    alert(e?.response?.data?.message ?? 'Suppression impossible.')
+    alert(e?.response?.data?.message ?? t('suppliers.deleteFailed'))
   }
 }
 </script>

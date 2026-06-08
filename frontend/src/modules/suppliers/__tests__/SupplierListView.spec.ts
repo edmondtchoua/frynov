@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import SupplierListView from '@/modules/suppliers/views/SupplierListView.vue'
 import { setupManagerAuth } from '@/test-utils/setupAuth'
 import { vFocusTrap } from '@/directives/focusTrap'
+import { setLocale } from '@/i18n'
 import client from '@/api/client'
 
 const router = createRouter({
@@ -39,6 +40,7 @@ async function mountView() {
 
 describe('SupplierListView', () => {
   beforeEach(() => vi.clearAllMocks())
+  afterEach(() => setLocale('fr'))   // reset locale for other tests in this file
 
   it('renders suppliers with code and name', async () => {
     const w = await mountView()
@@ -62,5 +64,16 @@ describe('SupplierListView', () => {
     const submit = w.find('button[form="supplier-form"]')
     expect(submit.exists()).toBe(true)
     expect(submit.attributes('type')).toBe('submit')
+  })
+
+  it('re-renders in English when the locale is switched (i18n — UX-13)', async () => {
+    const w = await mountView()
+    expect(w.text()).toContain('Fournisseurs')   // French by default
+
+    setLocale('en')
+    await flushPromises()
+
+    expect(w.text()).toContain('Suppliers')
+    expect(w.text()).not.toContain('Fournisseurs')
   })
 })

@@ -1,7 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { t, setLocale, useI18n, SUPPORTED_LOCALES } from '@/i18n'
 import LanguageSwitcher from '@/shared/components/LanguageSwitcher.vue'
+
+// The i18n locale is a module singleton — always restore the default so the
+// active locale never leaks into other spec files (test isolation).
+afterEach(() => setLocale('fr'))
 
 describe('i18n core', () => {
   beforeEach(() => setLocale('fr'))
@@ -24,6 +28,15 @@ describe('i18n core', () => {
 
   it('returns the raw key when a translation is missing (visible signal)', () => {
     expect(t('does.not.exist')).toBe('does.not.exist')
+  })
+
+  it('translates the suppliers module namespace in both locales', () => {
+    setLocale('fr')
+    expect(t('suppliers.title')).toBe('Fournisseurs')
+    expect(t('suppliers.confirmDelete', { name: 'ACME' })).toBe('Supprimer le fournisseur « ACME » ?')
+    setLocale('en')
+    expect(t('suppliers.title')).toBe('Suppliers')
+    expect(t('suppliers.confirmDelete', { name: 'ACME' })).toBe('Delete supplier "ACME"?')
   })
 
   it('persists the chosen locale to localStorage', () => {

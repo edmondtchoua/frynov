@@ -10,7 +10,7 @@
 |---|---|---|
 | `StateBlock.vue` | États **loading / empty / error / forbidden** standardisés | `variant`, `title`, `message`, slot `#action` ; `role="status"`, `aria-busy` en loading ; respecte `prefers-reduced-motion` |
 | `BaseButton.vue` | Bouton primitif | `variant` (primary/secondary/danger/ghost), `size` (sm/md), `loading` (spinner + `aria-busy`), `block` ; anneau focus clavier global |
-| `BaseModal.vue` | Dialogue | `v-model`, `title`, `size` ; `role="dialog"` + `aria-modal` + **`v-focus-trap`** (piège Tab, Échap, restauration focus) ; slots défaut + `#footer` ; `Teleport` vers `body` |
+| `BaseModal.vue` | Dialogue **Side-Drawer / centré** | `v-model`, `title`, `subtitle`, `size` (sm/md/lg), **`variant`** (`drawer` défaut = volet droit 100vh · `center` = boîte centrée) ; `role="dialog"` + `aria-modal` + **`v-focus-trap`** (piège Tab, Échap, restauration focus) ; slots défaut + `#footer` + `#subtitle` ; `Teleport` vers `body` |
 | `Icon.vue` | Icône ligne | `<Icon name="plus" :size="14" />` — registre statique de primitives SVG (whitelist, **pas de `v-html`**), grille 16×16, `currentColor` ; décoratif par défaut (`aria-hidden`), `title` → `role="img"`. Noms : plus, search, view, edit, close, trash, check, download, filter, chevron-left/right |
 
 Page transverse : `pages/AccessUnavailableView.vue` (route `/unavailable`) — page
@@ -41,6 +41,19 @@ et en-tête — supprimer le chrome local et les styles `.modal-*` dupliqués. L
 `ProductFormView` (désactivation de variante), `PosView` (déclinaison + clôture de caisse),
 `SettingsView` (invitation + accès entrepôts + accès temporaire + mise à niveau).
 **Plus aucune modale ad-hoc dans le code** (`grep modal-overlay|modal-backdrop` = 0).
+
+### Refonte Side-Drawer (rc.46)
+Standard d'app : **volet latéral droit** (`variant="drawer"`, défaut). `BaseModal` s'ouvre
+plein écran (100vh) sur le flanc droit, largeur fixe selon `size` (**sm 400 / md 460 / lg 520 px**),
+glissé depuis la droite (`@keyframes drawer-in`, désactivé sous `prefers-reduced-motion`), voile
+sombre, fond blanc, en-tête (titre + `subtitle`/slot `#subtitle` + croix fine grise), corps défilant
+(`flex:1; overflow:auto`) et **pied collé en bas à droite**. `variant="center"` rend une boîte
+centrée arrondie pour les **confirmations critiques** (cf. Phase 2 `ConfirmDialog`/`useConfirm`).
+Le chrome est défini **une seule fois** dans `main.css` (`.modal-overlay(--drawer|--center)`,
+`.modal--drawer|--center` × `--sm|md|lg`) — `BaseModal` reste un primitif mince. Au passage,
+`.modal-overlay`/`.modal`, jusque-là **non définis** (volets sans voile ni positionnement), sont
+désormais cadrés ; `.modal-backdrop`/`.modal-box` morts supprimés. Tout consommateur existant de
+`<BaseModal>` bascule en volet **sans changement de code** (API rétro-compatible).
 Contrat testé (`PaymentListView.spec.ts`,
 `SupplierListView.spec.ts`, `SupplierDetailView.spec.ts`, `WarehouseView.spec.ts`,
 `DeliveryListView.spec.ts`, `RolesPanel.spec.ts`, `StockListView.spec.ts`, `PosView.spec.ts` → ouverture d'un `role="dialog"` `aria-modal`).

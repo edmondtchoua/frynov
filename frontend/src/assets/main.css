@@ -629,39 +629,65 @@ textarea.form-input {
   border-radius: 4px;
 }
 
-/* ── Modals (global) ──────────────────────────────────────────────────────
-   Shared dialog used by Stock, Alertes, Ventes, Paiements, Livraisons. These
-   structural classes had NO definition, so every modal rendered unstyled at the
-   bottom of the page — clicking "Entrée/Sortie/Ajuster" looked like a no-op. */
-.modal-backdrop {
+/* ── Dialogues : Side-Drawer + boîte centrée (refonte UI) ──────────────────
+   Source unique du chrome de `BaseModal.vue`. Standard de l'app : volet latéral
+   droit (`variant="drawer"`, défaut) ; `variant="center"` pour les confirmations.
+   NB : `.modal-overlay` / `.modal` n'étaient définis nulle part → les volets
+   rendaient sans voile ni positionnement (bug latent corrigé ici). */
+.modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.45);
+  z-index: 1000;
   display: flex;
+  animation: overlay-in 0.2s ease-out;
+}
+.modal-overlay--drawer { justify-content: flex-end; }
+.modal-overlay--center {
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  z-index: 1000;
 }
-.modal-box {
+
+.modal {
   background: var(--white, #fff);
-  border-radius: 14px;
-  width: 100%;
-  max-width: 480px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
+
+/* Volet latéral droit : pleine hauteur, largeur fixe, glissé depuis la droite. */
+.modal--drawer {
+  height: 100vh;
+  max-height: 100vh;
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.18);
+  animation: drawer-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.modal--drawer.modal--sm { max-width: 400px; }
+.modal--drawer.modal--md { max-width: 460px; }
+.modal--drawer.modal--lg { max-width: 520px; }
+
+/* Boîte centrée : carte arrondie (confirmations / cas courts). */
+.modal--center {
+  max-height: 90vh;
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+  animation: dialog-in 0.18s ease-out;
+}
+.modal--center.modal--sm { max-width: 420px; }
+.modal--center.modal--md { max-width: 520px; }
+.modal--center.modal--lg { max-width: 680px; }
+
 .modal-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.25rem 1.25rem 0.75rem;
+  padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--gray-100, #f1f5f9);
+  flex-shrink: 0;
 }
+.modal-heading { min-width: 0; }
 .modal-title {
   font-size: 1.05rem;
   font-weight: 700;
@@ -671,25 +697,48 @@ textarea.form-input {
 .modal-subtitle {
   font-size: 0.85rem;
   color: var(--gray-500, #64748b);
-  margin: 2px 0 0;
+  margin: 0.15rem 0 0;
 }
 .modal-close {
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--gray-400, #94a3b8);
+  padding: 0.35rem;
   border-radius: 6px;
-  line-height: 0;
   flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
 }
-.modal-close:hover { background: var(--gray-100, #f1f5f9); }
-.modal-body { padding: 1.25rem; }
+.modal-close:hover { background: var(--gray-100, #f1f5f9); color: var(--gray-700, #334155); }
+/* Corps défilant : occupe l'espace restant et garde le pied collé en bas. */
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
 .modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-  padding: 0.75rem 1.25rem 1.25rem;
+  padding: 1rem 1.5rem;
   border-top: 1px solid var(--gray-100, #f1f5f9);
+  flex-shrink: 0;
+}
+
+@keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay, .modal--drawer, .modal--center { animation: none; }
+}
+/* Sur très petit écran, le volet occupe toute la largeur. */
+@media (max-width: 480px) {
+  .modal--drawer { max-width: 100%; }
 }
 
 /* ── Accessibility (UX audit P0 / UX-04) ─────────────────────────────────────

@@ -3,6 +3,30 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Refonte UI : fondation Side-Drawer (BaseModal) (2026-06-08)
+
+Branche `feature/ux-drawer-foundation` (release `v1.0.0` → `rc.46`).
+
+### UX — refonte « volet latéral »
+- **`BaseModal` devient un Side-Drawer par défaut** (`variant="drawer"`) : volet plein écran
+  (100vh) sur le flanc **droit**, largeur fixe selon `size` (**sm 400 / md 460 / lg 520 px**),
+  voile sombre, fond blanc, slide-in (respecte `prefers-reduced-motion`), corps défilant et
+  **pied collé en bas**. Les **~25 vues** consommatrices basculent en volet **sans changement de
+  code** (API rétro-compatible).
+- Nouveau **`variant="center"`** (boîte centrée arrondie) réservé aux confirmations critiques
+  (socle de la Phase 2 `ConfirmDialog`/`useConfirm`).
+- En-tête enrichi : prop **`subtitle`** + slot **`#subtitle`** (contexte type « produit · SKU »),
+  croix de fermeture plus fine et grise.
+
+### Correctif (bug latent)
+- `.modal-overlay` / `.modal` n'étaient **définis nulle part** → les volets rendaient sans voile
+  ni positionnement. Le chrome est désormais centralisé dans `main.css` (source unique) ;
+  `.modal-backdrop` / `.modal-box` morts supprimés.
+
+### Tests
+- Frontend **248** (+4 : variant drawer par défaut, variant center + taille, sous-titre présent/absent
+  dans `ui.spec`) · `vue-tsc` propre · aucune régression sur les vues à modale.
+
 ## [Non publié] — i18n : liste Catégories traduite FR/EN (UX-13) (2026-06-08)
 
 Branche `feature/ux-i18n-categories` (release `v1.0.0` → `rc.45`).

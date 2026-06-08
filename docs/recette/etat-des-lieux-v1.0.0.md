@@ -1,6 +1,6 @@
 # État des lieux v1.0.0 — polish UX restant + suite de la recette finale
 
-> Mise à jour : 2026-06-08. Branche `release/v1.0.0` à **`v1.0.0-rc.44`** (cette session → `rc.45+`).
+> Mise à jour : 2026-06-08. Branche `release/v1.0.0` à **`v1.0.0-rc.45`** (cette session → `rc.46+`).
 > Complète (et actualise) `go-no-go-v1.0.0.md` (figé à rc.1). Depuis rc.1 ont été livrés :
 > RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13),
 > polish UX P1 — garde « modifications non enregistrées » sur la création de commande +
@@ -13,8 +13,9 @@
 > module Paiements traduit FR/EN (rc.28), `BaseModal` 5ᵉ vague (rc.29),
 > module Rapports traduit FR/EN (rc.30), `BaseModal` vagues 6→8 (rc.31→rc.33),
 > liste Commandes traduite FR/EN (rc.34), **migration `BaseModal` terminée** (rc.35→rc.43, 0 ad-hoc),
-> liste Produits traduite FR/EN (rc.44), liste Catégories traduite FR/EN (rc.45).
-> Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 244** · `vue-tsc` propre ·
+> liste Produits traduite FR/EN (rc.44), liste Catégories traduite FR/EN (rc.45),
+> **refonte UI Side-Drawer — fondation `BaseModal`** (rc.46).
+> Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 248** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 
 ---
@@ -33,7 +34,7 @@
 | 3 | ~~**UX-10 — feedback action (403)**~~ | P2 | S | ✅ **Livré** (rc.17) — les 403 de l'API (`api:forbidden`) remontent en **toast** d'erreur (`useNotifications.pushToast`) ; plus d'échec silencieux. |
 | 4 | ~~**UX-14 — page 404 dédiée**~~ | P2 | S | ✅ **Livré** (rc.17) — `NotFoundView` migrée sur `StateBlock` + `BaseButton` (cohérence design system). Page 402 = `/unavailable` (déjà livrée). |
 | 5 | ~~**UX-06 — cartes mobiles**~~ | P2 | M | ✅ **Pattern livré** (rc.18) — `.data-table--cards` (cartes empilées ≤640px, `data-label` par cellule) adopté sur **Commandes / Clients / Paiements**. Reste l'adoption incrémentale (Produits, Stock, Livraisons, Fournisseurs, Retours, admin). |
-| 6 | ~~**UX-03 — adoption `BaseModal`**~~ | P2 | M | ✅ **TERMINÉ (rc.19→rc.43)** — **33 modales / 24 vues** migrées vers `<BaseModal>`, **plus aucune modale ad-hoc** (`grep modal-overlay\|modal-backdrop` = 0). Chrome unifié (overlay, focus-trap, Échap, clic-extérieur) partout. Contrat testé sur 7 specs. |
+| 6 | ~~**UX-03 — adoption `BaseModal`**~~ | P2 | M | ✅ **TERMINÉ (rc.19→rc.43)** — **33 modales / 24 vues** migrées vers `<BaseModal>`, **plus aucune modale ad-hoc** (`grep modal-overlay\|modal-backdrop` = 0). Chrome unifié (overlay, focus-trap, Échap, clic-extérieur) partout. Contrat testé sur 7 specs. **Évolution (rc.46+)** : refonte **Side-Drawer** — `BaseModal` rendu en volet latéral droit par défaut (`variant="drawer"`), `variant="center"` pour les confirmations (Phase 2). Voir `ux-design-system.md`. |
 | 7 | ~~**UX-12 — filtres persistés**~~ | P2 | M | ✅ **Pattern livré** (rc.20) — composable `useUrlFilters` (filtres dans l'URL : refresh / back / liens partageables) sur **Produits + Paiements**. Reste l'adoption incrémentale (Commandes, Stock, Clients…). |
 | 8 | ~~**UX-11 — composant `Icon`**~~ | P2 | M | ✅ **Composant livré** (rc.21) — `shared/ui/Icon.vue` (registre SVG whitelist, sans `v-html`) adopté sur **Produits + Paiements**. Reste l'industrialisation incrémentale des SVG inline. |
 | 9 | ~~**UX-13 — i18n**~~ | P2 | L | ✅ **Fondation (rc.22) + 8 zones traduites (rc.24→rc.45)** — noyau i18n léger sans dépendance (FR + EN), API `$t`/`useI18n`, `LanguageSwitcher`, persistance ; **Fournisseurs, Livraisons, Paiements, Rapports, listes Commandes, Produits & Catégories** traduits + libellés `common.*` mutualisés. Voir `docs/modules/i18n.md`. Reste : migration incrémentale des autres modules + langues supplémentaires si besoin. |

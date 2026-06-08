@@ -1,16 +1,26 @@
 <template>
   <Teleport to="body">
-    <div v-if="modelValue" class="modal-overlay" @click.self="close">
+    <div
+      v-if="modelValue"
+      class="modal-overlay"
+      :class="`modal-overlay--${variant}`"
+      @click.self="close"
+    >
       <div
         class="modal"
-        :class="`modal--${size}`"
+        :class="[`modal--${variant}`, `modal--${size}`]"
         role="dialog"
         aria-modal="true"
         :aria-label="title"
         v-focus-trap="close"
       >
         <div class="modal-header">
-          <h3 class="modal-title">{{ title }}</h3>
+          <div class="modal-heading">
+            <h3 class="modal-title">{{ title }}</h3>
+            <p v-if="subtitle || $slots.subtitle" class="modal-subtitle">
+              <slot name="subtitle">{{ subtitle }}</slot>
+            </p>
+          </div>
           <button class="modal-close" type="button" aria-label="Fermer" @click="close">✕</button>
         </div>
         <div class="modal-body"><slot /></div>
@@ -21,17 +31,28 @@
 </template>
 
 <script setup lang="ts">
-/** Shared dialog (audit UX-03/UX-04): overlay + focus-trap (v-focus-trap) + Escape +
- *  restore-focus, with header/body/footer slots. v-model controls visibility. */
-withDefaults(defineProps<{ modelValue: boolean; title?: string; size?: 'sm' | 'md' | 'lg' }>(), { size: 'md' })
+/** Dialogue partagé (audit UX-03/UX-04 + refonte Side-Drawer).
+ *
+ *  - `variant="drawer"` (défaut) → **volet latéral droit** plein écran (100vh),
+ *    largeur fixe selon `size`, glissé depuis la droite. Standard de l'app pour
+ *    les formulaires et fenêtres contextuelles.
+ *  - `variant="center"` → boîte **centrée** arrondie, réservée aux confirmations
+ *    critiques / cas courts.
+ *
+ *  Chrome commun : voile sombre, focus-trap (`v-focus-trap`) + Échap + restauration
+ *  du focus, en-tête (titre + sous-titre optionnel) / corps défilant / pied collé.
+ *  `v-model` contrôle la visibilité. Le style vit dans `main.css` (source unique),
+ *  ce composant reste un primitif mince. */
+withDefaults(
+  defineProps<{
+    modelValue: boolean
+    title?: string
+    subtitle?: string
+    size?: 'sm' | 'md' | 'lg'
+    variant?: 'drawer' | 'center'
+  }>(),
+  { size: 'md', variant: 'drawer' },
+)
 const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
 function close() { emit('update:modelValue', false) }
 </script>
-
-<style scoped>
-/* Size modifiers layered on top of the global .modal styling (main.css). */
-.modal--sm { max-width: 420px; }
-.modal--md { max-width: 520px; }
-.modal--lg { max-width: 680px; }
-.modal-title { font-size: var(--text-base, 1rem); font-weight: 700; color: var(--gray-900); margin: 0; }
-</style>

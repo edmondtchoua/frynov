@@ -382,14 +382,13 @@
       </div>
     </form>
 
-    <!-- ── Deactivation modal ────────────────────────────────────────────── -->
-    <Teleport to="body">
-      <div v-if="showDeactivationModal" class="modal-overlay deact-overlay" @click.self="cancelDeactivation">
-        <div class="modal-box deact-box">
-          <div class="modal-header">
-            <h3>Gestion du stock — Désactivation de variante</h3>
-          </div>
-          <div class="modal-body">
+    <!-- ── Deactivation modal (shared BaseModal — UX-03) ─────────────────── -->
+    <BaseModal
+      :model-value="showDeactivationModal"
+      size="lg"
+      title="Gestion du stock — Désactivation de variante"
+      @update:model-value="(v: boolean) => { if (!v) cancelDeactivation() }"
+    >
             <p class="deact-intro">
               Les variantes suivantes ont du stock. Que souhaitez-vous faire avec ce stock ?
             </p>
@@ -450,16 +449,14 @@
                 </div>
               </label>
             </div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-ghost" @click="cancelDeactivation">Annuler la désactivation</button>
-            <button class="btn btn-primary" @click="confirmDeactivation">
-              Confirmer et continuer
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+
+      <template #footer>
+        <button class="btn btn-ghost" @click="cancelDeactivation">Annuler la désactivation</button>
+        <button class="btn btn-primary" @click="confirmDeactivation">
+          Confirmer et continuer
+        </button>
+      </template>
+    </BaseModal>
 
   </div>
 </template>
@@ -468,6 +465,7 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { productService } from '../services/productService'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import { getAuthToken } from '@/api/authToken'
 import client from '@/api/client'
 import type { Category, Product } from '../types'
@@ -1364,20 +1362,7 @@ onMounted(async () => {
   margin-bottom: 8px;
 }
 
-/* ── Deactivation modal ───────────────────────────────────────────────────── */
-.deact-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(2px);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 500; padding: 1rem;
-}
-.deact-box {
-  background: white; border-radius: var(--radius-lg);
-  width: 100%; max-width: 520px;
-  box-shadow: var(--shadow-xl);
-  display: flex; flex-direction: column; max-height: 90vh; overflow: hidden;
-}
+/* ── Deactivation modal — chrome via shared <BaseModal> (UX-03) ──────────────── */
 .deact-intro {
   font-size: 0.875rem; color: var(--gray-600); margin: 0 0 1rem;
 }

@@ -3,6 +3,18 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 15ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave15` (release `v1.0.0` → `rc.41`).
+
+### UX
+- **Modale unifiée (UX-03, 15ᵉ vague)** — `ProductFormView` (gestion du stock à la désactivation
+  d'une variante : transférer / sortir / conserver) migrée vers `<BaseModal>` ; styles `.deact-*`
+  de chrome retirés. **27 modales / 22 vues migrées au total.**
+
+### Tests
+- Frontend **242** au vert · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 14ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave14` (release `v1.0.0` → `rc.40`).

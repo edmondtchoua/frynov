@@ -3,6 +3,22 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : module Entrepôts traduit FR/EN (UX-13) (2026-06-08)
+
+Branche `feature/ux-i18n-inventory` (release `v1.0.0` → `rc.55`).
+
+### UX (i18n)
+- **`WarehouseView` (Entrepôts & Boutiques)** internationalisé : titre + compteur, bouton, état vide,
+  cartes (badges type/défaut/actif/en ligne, actions), et **volet créer/éditer** (libellés,
+  placeholders, types, devise, bascules, pied) ; messages runtime via `t()` (badge de type,
+  validation « nom et code requis », erreur d'enregistrement).
+- Nouveau namespace **`inventory.*`** (FR + EN) avec clés imbriquées `typeOption`/`typeBadge` ;
+  réutilise `common.*` (name, phone, active/inactive, edit, cancel, saving, update, create).
+
+### Tests
+- Frontend **253** (+1 : namespace `inventory` dans `i18n.spec` — titre + clé imbriquée FR/EN) ·
+  `vue-tsc` propre · `WarehouseView.spec` verte (FR inchangé).
+
 ## [Non publié] — Refonte UI : reliquat (Marketplace + alert() → toasts) + docs (2026-06-08)
 
 Branche `feature/ux-reliquat-docs` (release `v1.0.0` → `rc.54`).

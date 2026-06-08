@@ -3,6 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import StockListView from '@/modules/inventory/views/StockListView.vue'
 import { setupManagerAuth } from '@/test-utils/setupAuth'
+import { vFocusTrap } from '@/directives/focusTrap'
 import client from '@/api/client'
 
 const router = createRouter({
@@ -35,7 +36,12 @@ function mockGet(page = STOCK_PAGE) {
 
 async function mountView(page = STOCK_PAGE) {
   mockGet(page)
-  const w = mount(StockListView, { global: { plugins: [router, setupManagerAuth()] } })
+  const w = mount(StockListView, {
+    global: {
+      plugins: [router, setupManagerAuth()],
+      directives: { 'focus-trap': vFocusTrap },  // modal now uses BaseModal (v-focus-trap)
+    },
+  })
   await flushPromises()
   return w
 }
@@ -69,12 +75,11 @@ describe('StockListView', () => {
     expect(entreeBtn).toBeTruthy()
     await entreeBtn!.trigger('click')
 
-    // The modal is teleported to <body>; its CSS lives in main.css (was missing,
-    // which made the modal render unstyled off-screen → looked like a no-op).
-    const backdrop = document.body.querySelector('.modal-backdrop')
-    expect(backdrop).not.toBeNull()
-    expect(document.body.querySelector('.modal-box')).not.toBeNull()
-    expect(backdrop?.textContent).toContain('Entrée de stock')
+    // The modal is the shared <BaseModal> (UX-03), teleported to <body>.
+    const dialog = document.body.querySelector('[role="dialog"]')
+    expect(dialog).not.toBeNull()
+    expect(dialog?.getAttribute('aria-modal')).toBe('true')
+    expect(dialog?.textContent).toContain('Entrée de stock')
     w.unmount() // clean up the teleported node for the next test
   })
 })

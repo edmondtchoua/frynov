@@ -3,6 +3,19 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 5ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave5` (release `v1.0.0` → `rc.29`).
+
+### UX
+- **Modales unifiées (UX-03, 5ᵉ vague)** — `PlanListView` (édition des limites de plan) et
+  `StockAlertsView` (réapprovisionnement) migrées vers `<BaseModal>` (toutes deux utilisaient les
+  classes globales `.modal-*`, rien à nettoyer ; sous-titre de StockAlerts déplacé dans le corps).
+  **13 modales / 11 vues migrées au total.**
+
+### Tests
+- Frontend **240** au vert · `vue-tsc` propre (contrat `BaseModal` couvert par 4 specs existantes).
+
 ## [Non publié] — i18n : module Paiements traduit FR/EN (UX-13) (2026-06-07)
 
 Branche `feature/ux-i18n-payments` (release `v1.0.0` → `rc.28`).

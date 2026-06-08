@@ -3,14 +3,14 @@
     <CatalogTabNav />
     <div class="page-header">
       <div>
-        <h2>Catégories</h2>
-        <p class="page-subtitle">{{ categories.length }} catégorie{{ categories.length !== 1 ? 's' : '' }}</p>
+        <h2>{{ $t('catalog.categoriesTitle') }}</h2>
+        <p class="page-subtitle">{{ categories.length }} {{ categories.length !== 1 ? $t('catalog.categoryPlural') : $t('catalog.categorySingular') }}</p>
       </div>
       <button class="btn btn-primary" @click="openCreate">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
-        Nouvelle catégorie
+        {{ $t('catalog.newCategory') }}
       </button>
     </div>
 
@@ -25,9 +25,9 @@
         <rect x="4" y="4" width="32" height="32" rx="8" fill="var(--brand-primary-bg)"/>
         <path d="M10 14h20M10 20h14M10 26h10" stroke="var(--brand-primary)" stroke-width="2" stroke-linecap="round"/>
       </svg>
-      <h3>Aucune catégorie</h3>
-      <p>Organisez vos produits en créant votre première catégorie.</p>
-      <button class="btn btn-primary" @click="openCreate">Créer une catégorie</button>
+      <h3>{{ $t('catalog.emptyCategories') }}</h3>
+      <p>{{ $t('catalog.emptyCategoriesHint') }}</p>
+      <button class="btn btn-primary" @click="openCreate">{{ $t('catalog.createCategory') }}</button>
     </div>
 
     <!-- Table -->
@@ -35,11 +35,11 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Nom</th>
-            <th class="hide-mobile">Parent</th>
-            <th class="hide-mobile">Ordre</th>
-            <th>Statut</th>
-            <th style="text-align: right;">Actions</th>
+            <th>{{ $t('common.name') }}</th>
+            <th class="hide-mobile">{{ $t('catalog.colParent') }}</th>
+            <th class="hide-mobile">{{ $t('catalog.colOrder') }}</th>
+            <th>{{ $t('common.status') }}</th>
+            <th style="text-align: right;">{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -61,14 +61,14 @@
             </td>
             <td>
               <span :class="cat.is_active ? 'badge badge-success' : 'badge badge-gray'">
-                {{ cat.is_active ? 'Active' : 'Inactive' }}
+                {{ cat.is_active ? $t('catalog.statusActive') : $t('catalog.statusInactive') }}
               </span>
             </td>
             <td style="text-align: right;">
               <div class="row-actions">
-                <button class="btn btn-ghost btn-sm" @click="openEdit(cat)">Éditer</button>
+                <button class="btn btn-ghost btn-sm" @click="openEdit(cat)">{{ $t('common.edit') }}</button>
                 <button class="btn btn-ghost btn-sm text-danger" @click="confirmDelete(cat)">
-                  Supprimer
+                  {{ $t('common.delete') }}
                 </button>
               </div>
             </td>
@@ -80,27 +80,27 @@
     <!-- Create / Edit modal (shared BaseModal — UX-03) -->
     <BaseModal
       :model-value="showModal"
-      :title="editingId ? 'Modifier la catégorie' : 'Nouvelle catégorie'"
+      :title="editingId ? $t('catalog.editCategory') : $t('catalog.newCategory')"
       @update:model-value="(v: boolean) => { if (!v) closeModal() }"
     >
       <div class="form-group">
-        <label class="form-label" for="cat-name">Nom <span style="color: var(--color-error);">*</span></label>
+        <label class="form-label" for="cat-name">{{ $t('common.name') }} <span style="color: var(--color-error);">*</span></label>
         <input
           id="cat-name"
           v-model="catForm.name"
           type="text"
           class="form-input"
           :class="{ error: catErrors.name }"
-          placeholder="Ex : Vêtements"
+          :placeholder="$t('catalog.categoryNamePlaceholder')"
           @input="delete catErrors.name"
         />
         <span v-if="catErrors.name" class="form-error">{{ catErrors.name }}</span>
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="cat-parent">Catégorie parente</label>
+        <label class="form-label" for="cat-parent">{{ $t('catalog.parentCategory') }}</label>
         <select id="cat-parent" v-model="catForm.parent_id" class="form-input">
-          <option value="">Aucune (catégorie racine)</option>
+          <option value="">{{ $t('catalog.noParent') }}</option>
           <option
             v-for="cat in rootCategories"
             :key="cat.id"
@@ -111,19 +111,19 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="cat-description">Description</label>
+        <label class="form-label" for="cat-description">{{ $t('common.description') }}</label>
         <input
           id="cat-description"
           v-model="catForm.description"
           type="text"
           class="form-input"
-          placeholder="Description courte…"
+          :placeholder="$t('catalog.descriptionPlaceholder')"
         />
       </div>
 
       <div class="form-row">
         <div class="form-group" style="margin-bottom: 0;">
-          <label class="form-label" for="cat-order">Ordre d'affichage</label>
+          <label class="form-label" for="cat-order">{{ $t('catalog.displayOrder') }}</label>
           <input
             id="cat-order"
             v-model.number="catForm.sort_order"
@@ -133,22 +133,22 @@
           />
         </div>
         <div class="form-group" style="margin-bottom: 0;">
-          <label class="form-label">Statut</label>
+          <label class="form-label">{{ $t('common.status') }}</label>
           <label class="toggle-wrap">
             <input v-model="catForm.is_active" type="checkbox" class="toggle-input" />
             <span class="toggle-track">
               <span class="toggle-thumb"></span>
             </span>
-            <span class="toggle-label">{{ catForm.is_active ? 'Active' : 'Inactive' }}</span>
+            <span class="toggle-label">{{ catForm.is_active ? $t('catalog.statusActive') : $t('catalog.statusInactive') }}</span>
           </label>
         </div>
       </div>
 
       <template #footer>
-        <button class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button class="btn btn-ghost" @click="closeModal">{{ $t('common.cancel') }}</button>
         <button class="btn btn-primary" :disabled="saving" @click="saveCategory">
           <span v-if="saving" class="spinner-sm spinner-white"></span>
-          {{ saving ? 'Enregistrement…' : (editingId ? 'Mettre à jour' : 'Créer') }}
+          {{ saving ? $t('common.saving') : (editingId ? $t('common.update') : $t('common.create')) }}
         </button>
       </template>
     </BaseModal>
@@ -160,6 +160,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
 import { productService } from '../services/productService'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { t } from '@/i18n'
 import type { Category } from '../types'
 
 const categories = ref<Category[]>([])
@@ -226,7 +227,7 @@ function closeModal() {
 }
 
 async function saveCategory() {
-  if (!catForm.name.trim()) { catErrors.name = 'Le nom est requis'; return }
+  if (!catForm.name.trim()) { catErrors.name = t('catalog.nameRequired'); return }
   saving.value = true
   try {
     const data = {
@@ -249,7 +250,7 @@ async function saveCategory() {
 }
 
 async function confirmDelete(cat: Category) {
-  if (!confirm(`Supprimer "${cat.name}" ? Cette action est irréversible.`)) return
+  if (!confirm(t('catalog.confirmDeleteCategory', { name: cat.name }))) return
   try {
     await productService.categories.delete(cat.id)
     load()

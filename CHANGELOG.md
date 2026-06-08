@@ -3,6 +3,23 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : liste Catégories traduite FR/EN (UX-13) (2026-06-08)
+
+Branche `feature/ux-i18n-categories` (release `v1.0.0` → `rc.45`).
+
+### UX
+- **Liste Catégories (`CategoryListView`)** internationalisée : titre + compteur, bouton « Nouvelle
+  catégorie », état vide (+ aide), colonnes (Nom/Parent/Ordre/Statut/Actions), badge Active/Inactive,
+  actions de ligne, et **modale créer/éditer** (titre, libellés, placeholders, bascule de statut, pied
+  Annuler/Créer/Mettre à jour) ; messages runtime (validation « nom requis », confirmation de
+  suppression interpolée) via `t()`.
+- Enrichit le namespace **`catalog.*`** (sous-ensemble catégories) + ajoute `common.description` /
+  `common.update` mutualisés.
+
+### Tests
+- Frontend **244** (+1 : sous-namespace catégories dans `i18n.spec` — titre + confirmation interpolée
+  FR/EN) · `vue-tsc` propre.
+
 ## [Non publié] — i18n : liste Produits traduite FR/EN (UX-13) (2026-06-07)
 
 Branche `feature/ux-i18n-products` (release `v1.0.0` → `rc.44`).

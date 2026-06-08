@@ -3,6 +3,23 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Refonte UI : polish des volets — module Paiements (Phase 3) (2026-06-08)
+
+Branche `feature/ux-drawer-payments` (release `v1.0.0` → `rc.50`).
+
+### UX — polish volets (Phase 3, module Paiements)
+- **`OrderDetailView` (enregistrer un paiement)** : contexte « Commande N° · Reste … » remonté en
+  **sous-titre** d'en-tête ; **devise de la commande affichée en suffixe** du champ montant via
+  `.input-affix` (remplace la boîte devise en lecture seule séparée) — calqué sur la capture de
+  référence (montant … XAF).
+- **`ManualPaymentView` (rejet)** : nom du tenant remonté en **sous-titre** d'en-tête.
+- **`PaymentListView`** : champ montant + sélecteur de devise désormais **accolés** (nouveau pattern
+  réutilisable **`.input-group`**), lus comme un seul contrôle.
+
+### Tests
+- Frontend **252** inchangé (polish visuel) · `vue-tsc` propre · `OrderDetailView`/`PaymentListView`
+  specs vertes (titres/flux inchangés).
+
 ## [Non publié] — Refonte UI : polish des volets — module Stock (Phase 3) (2026-06-08)
 
 Branche `feature/ux-drawer-stock` (release `v1.0.0` → `rc.49`).

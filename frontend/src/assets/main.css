@@ -391,6 +391,19 @@ textarea.form-input {
   pointer-events: none;
 }
 
+/* Champ + sélecteur accolés (ex. montant + devise) — lus comme un seul contrôle. */
+.input-group { display: flex; }
+.input-group > .form-input { border-radius: 0; }
+.input-group > :first-child {
+  border-top-left-radius: var(--radius-md);
+  border-bottom-left-radius: var(--radius-md);
+}
+.input-group > :last-child {
+  border-top-right-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
+}
+.input-group > .form-input + .form-input { border-left: none; }
+
 /* ── Alerts ──────────────────────────────────────────────── */
 .alert {
   display: flex;

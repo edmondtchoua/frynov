@@ -86,8 +86,8 @@
     </div>
 
     <!-- Reject modal (shared BaseModal — UX-03) -->
-    <BaseModal v-model="rejectModal.open" size="sm" title="Rejeter le paiement">
-      <p class="modal-desc">Indiquez la raison du rejet pour <strong>{{ rejectModal.payment?.tenant_name }}</strong>.</p>
+    <BaseModal v-model="rejectModal.open" size="sm" title="Rejeter le paiement" :subtitle="rejectModal.payment?.tenant_name">
+      <p class="modal-desc">Indiquez la raison du rejet de ce paiement.</p>
       <textarea
         v-model="rejectModal.reason"
         class="form-textarea"

@@ -105,6 +105,7 @@
       v-model="showModal"
       size="lg"
       :title="editingId ? $t('suppliers.modalEditTitle') : $t('suppliers.modalCreateTitle')"
+      :subtitle="editingId ? form.name : ''"
     >
       <form id="supplier-form" @submit.prevent="submitModal">
         <div class="form-grid">

@@ -79,7 +79,7 @@
     </div>
 
     <!-- ── Create / Edit modal (shared BaseModal — UX-03) ──────────────────── -->
-    <BaseModal v-model="modal.open" size="lg" :title="modal.editing ? 'Modifier la promotion' : 'Nouvelle promotion'">
+    <BaseModal v-model="modal.open" size="lg" :title="modal.editing ? 'Modifier la promotion' : 'Nouvelle promotion'" :subtitle="modal.editing ? form.code : ''">
       <div class="promo-modal-body">
           <div class="form-row">
             <label>Code *</label>
@@ -105,7 +105,14 @@
             </div>
             <div class="form-row">
               <label>Valeur *</label>
-              <input v-model.number="form.discount_value" type="number" min="1" class="form-input" />
+              <div class="input-affix">
+                <input
+                  v-model.number="form.discount_value"
+                  type="number" min="1" class="form-input"
+                  :style="form.discount_type === 'percent' ? 'padding-right: 2.25rem' : ''"
+                />
+                <span v-if="form.discount_type === 'percent'" class="input-affix__suffix">%</span>
+              </div>
             </div>
           </div>
           <div class="form-row">

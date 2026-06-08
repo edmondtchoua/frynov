@@ -3,6 +3,20 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Refonte UI : polish des volets — Admin & Fournisseurs (Phase 3) (2026-06-08)
+
+Branche `feature/ux-drawer-admin` (release `v1.0.0` → `rc.51`).
+
+### UX — polish volets (Phase 3)
+- **`PromotionListView`** : champ **valeur de remise** avec suffixe **`%`** dynamique (`.input-affix`,
+  affiché quand le type = pourcentage) ; **sous-titre** = code promo à l'édition.
+- **`SupplierListView`** : **sous-titre** = nom du fournisseur à l'édition (contexte d'en-tête).
+- *(`PlanListView` édite des limites — pas de prix dans le modal — et `CountryRuleListView` des
+  codes/devise ISO : aucun champ montant, donc pas d'affixe ; leurs titres portent déjà le contexte.)*
+
+### Tests
+- Frontend **252** inchangé (polish visuel) · `vue-tsc` propre · specs vertes.
+
 ## [Non publié] — Refonte UI : polish des volets — module Paiements (Phase 3) (2026-06-08)
 
 Branche `feature/ux-drawer-payments` (release `v1.0.0` → `rc.50`).

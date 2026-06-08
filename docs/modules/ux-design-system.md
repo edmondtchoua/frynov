@@ -74,9 +74,15 @@ class="form-input"/><span class="input-affix__suffix">XAF</span></div>`), bloc d
   `PaymentListView` — montant + sélecteur de devise **accolés** via le nouveau pattern réutilisable
   **`.input-group`** (lus comme un seul contrôle).
 
-Patterns réutilisables introduits : **`.input-affix`** (suffixe fixe unité/devise) et **`.input-group`**
+- **Admin & Fournisseurs (rc.51)** : `PromotionListView` — **valeur de remise** avec suffixe `%`
+  dynamique (`.input-affix`, affiché quand `discount_type === 'percent'`) + sous-titre = code promo
+  à l'édition ; `SupplierListView` — sous-titre = nom du fournisseur à l'édition. *(NB : `PlanListView`
+  édite des limites — pas de prix dans le modal — et `CountryRuleListView` des codes/devise ISO :
+  aucun champ montant → pas d'affixe ; leurs titres portent déjà le contexte.)*
+
+Patterns réutilisables introduits : **`.input-affix`** (suffixe fixe unité/devise/%) et **`.input-group`**
 (champ + sélecteur accolés). Reste (modules suivants) : Catalogue (ProductForm), Livraisons,
-Fournisseurs, Promotions/Plans, Entrepôts, POS, etc.
+Entrepôts, Transfert/Période de stock, POS, Marketplace, etc.
 Le chrome est défini **une seule fois** dans `main.css` (`.modal-overlay(--drawer|--center)`,
 `.modal--drawer|--center` × `--sm|md|lg`) — `BaseModal` reste un primitif mince. Au passage,
 `.modal-overlay`/`.modal`, jusque-là **non définis** (volets sans voile ni positionnement), sont

@@ -1,8 +1,13 @@
-import { vi }         from 'vitest'
+import { vi, beforeEach } from 'vitest'
 import { config }     from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import { i18n }       from '@/i18n'
+import { i18n, setLocale } from '@/i18n'
 import { vFocusTrap } from '@/directives/focusTrap'
+
+// jsdom's navigator.language is en-US, so i18n would default to English in tests.
+// Force French before every test (the source-of-truth locale our assertions expect);
+// specs that exercise the EN switch call setLocale('en') within the test and reset after.
+beforeEach(() => setLocale('fr'))
 
 // Global Vue test-utils configuration.
 // NOTE: PrimeVue is intentionally excluded — primeicons@7 has broken package exports.

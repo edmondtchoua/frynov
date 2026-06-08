@@ -58,6 +58,17 @@ Tenants (liste + détail), Paiement manuel, Paramètres (équipe), Transfert de 
 exclusions). *(Exclus : `CustomerDetailView` — module Clients, session concurrente ;
 `orderService.confirm()` = méthode API ; `useUnsavedChanges` = garde de navigation hors composant.
 Les `alert()` d'erreur restants → à basculer en toasts, hors périmètre de cette phase.)*
+
+### Polish des volets par module (Phase 3 — rc.49→)
+Application du détail charté, module par module : **sous-titre contextuel** dans l'en-tête (via la
+prop `subtitle` de `BaseModal`, ex. « produit · SKU »), **suffixe d'unité/devise** collé à droite
+dans le champ (pattern réutilisable **`.input-affix`** : `<div class="input-affix"><input
+class="form-input"/><span class="input-affix__suffix">XAF</span></div>`), bloc de **contexte grisé**
+(`var(--gray-50)` / `#F8F9FA`), disposition verticale stricte.
+- **Module Stock (rc.49)** : `StockListView` (entrée/sortie/ajustement) et `StockAlertsView`
+  (réappro) — sous-titre produit·SKU remonté dans l'en-tête, suffixe « unités » sur les quantités,
+  bloc info-stock en contexte grisé. Reste (modules suivants) : Paiements/Paiement manuel (suffixe
+  **XAF**), Catalogue (ProductForm), Commandes, etc.
 Le chrome est défini **une seule fois** dans `main.css` (`.modal-overlay(--drawer|--center)`,
 `.modal--drawer|--center` × `--sm|md|lg`) — `BaseModal` reste un primitif mince. Au passage,
 `.modal-overlay`/`.modal`, jusque-là **non définis** (volets sans voile ni positionnement), sont

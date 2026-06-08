@@ -3,6 +3,19 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : liste Commandes traduite FR/EN (UX-13) (2026-06-07)
+
+Branche `feature/ux-i18n-orders-list` (release `v1.0.0` → `rc.34`).
+
+### UX
+- **Liste Commandes (`OrderListView`)** internationalisée : titre, onglets de statut, filtres
+  (recherche/dates/entrepôt), colonnes (+ `data-label` cartes mobiles), statuts, pagination, états
+  vide/erreur. Nouveau namespace `orders.*` (`tab`/`status`) + `common.view` mutualisé. Bascule
+  FR ↔ EN en direct. (Reste `OrderCreateView`/`OrderDetailView` pour compléter le module.)
+
+### Tests
+- Frontend **242** (+1 : namespace `orders` dans `i18n.spec`) · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 8ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave8` (release `v1.0.0` → `rc.33`).

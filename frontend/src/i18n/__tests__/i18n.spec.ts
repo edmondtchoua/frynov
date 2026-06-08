@@ -39,6 +39,16 @@ describe('i18n core', () => {
     expect(t('suppliers.confirmDelete', { name: 'ACME' })).toBe('Delete supplier "ACME"?')
   })
 
+  it('translates the orders module namespace (tabs + status)', () => {
+    setLocale('fr')
+    expect(t('orders.title')).toBe('Commandes')
+    expect(t('orders.tab.draft')).toBe('Brouillons')
+    expect(t('orders.status.fulfilled')).toBe('Livrée')
+    setLocale('en')
+    expect(t('orders.title')).toBe('Orders')
+    expect(t('orders.status.fulfilled')).toBe('Fulfilled')
+  })
+
   it('translates the reports module namespace (nested keys + interpolation)', () => {
     setLocale('fr')
     expect(t('reports.salesTitle')).toBe('Rapport des ventes')

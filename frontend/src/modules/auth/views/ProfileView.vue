@@ -1,8 +1,8 @@
 <template>
   <div>
     <div class="page-header">
-      <h2>Mon profil</h2>
-      <p class="page-subtitle">Gérez vos informations personnelles et la sécurité de votre compte.</p>
+      <h2>{{ $t('profile.title') }}</h2>
+      <p class="page-subtitle">{{ $t('profile.subtitle') }}</p>
     </div>
 
     <div class="profile-layout">
@@ -33,7 +33,7 @@
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
             <path d="M6.5 1L8 4.5H12L9 7 10 11 6.5 9 3 11 4 7 1 4.5H5L6.5 1Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
           </svg>
-          Super administrateur
+          {{ $t('profile.superAdmin') }}
         </div>
       </div>
 
@@ -43,19 +43,19 @@
         <!-- Edit profile -->
         <div class="profile-section">
           <div class="section-header">
-            <h3>Informations personnelles</h3>
-            <p>Nom et adresse email associés à votre compte.</p>
+            <h3>{{ $t('profile.personalInfo') }}</h3>
+            <p>{{ $t('profile.personalInfoDesc') }}</p>
           </div>
 
           <form @submit.prevent="saveProfile" class="profile-form">
             <div class="form-row-2">
               <div class="form-group">
-                <label class="form-label">Nom complet</label>
-                <input v-model="profileForm.name" class="form-input" placeholder="Votre nom" required />
+                <label class="form-label">{{ $t('profile.fullName') }}</label>
+                <input v-model="profileForm.name" class="form-input" :placeholder="$t('profile.namePlaceholder')" required />
               </div>
               <div class="form-group">
-                <label class="form-label">Adresse email</label>
-                <input v-model="profileForm.email" type="email" class="form-input" placeholder="vous@exemple.com" required />
+                <label class="form-label">{{ $t('auth.emailLabel') }}</label>
+                <input v-model="profileForm.email" type="email" class="form-input" :placeholder="$t('profile.emailPlaceholder')" required />
               </div>
             </div>
 
@@ -68,7 +68,7 @@
             <div class="form-actions">
               <button type="submit" class="btn btn-primary" :disabled="profileSaving">
                 <span v-if="profileSaving" class="spinner-sm spinner-white"></span>
-                {{ profileSaving ? 'Enregistrement…' : 'Enregistrer' }}
+                {{ profileSaving ? $t('common.saving') : $t('common.save') }}
               </button>
             </div>
           </form>
@@ -77,13 +77,13 @@
         <!-- Change password -->
         <div class="profile-section">
           <div class="section-header">
-            <h3>Changer le mot de passe</h3>
-            <p>Après modification, toutes les autres sessions seront révoquées.</p>
+            <h3>{{ $t('profile.changePassword') }}</h3>
+            <p>{{ $t('profile.changePasswordDesc') }}</p>
           </div>
 
           <form @submit.prevent="savePassword" class="profile-form">
             <div class="form-group">
-              <label class="form-label">Mot de passe actuel</label>
+              <label class="form-label">{{ $t('profile.currentPassword') }}</label>
               <div class="input-password-wrap">
                 <input
                   v-model="pwdForm.current"
@@ -101,7 +101,7 @@
 
             <div class="form-row-2">
               <div class="form-group">
-                <label class="form-label">Nouveau mot de passe</label>
+                <label class="form-label">{{ $t('profile.newPassword') }}</label>
                 <div class="input-password-wrap">
                   <input
                     v-model="pwdForm.password"
@@ -127,7 +127,7 @@
                 </div>
               </div>
               <div class="form-group">
-                <label class="form-label">Confirmer le mot de passe</label>
+                <label class="form-label">{{ $t('profile.confirmPassword') }}</label>
                 <div class="input-password-wrap">
                   <input
                     v-model="pwdForm.confirmation"
@@ -157,7 +157,7 @@
                 :disabled="pwdSaving || !pwdForm.current || !pwdForm.password || !pwdForm.confirmation"
               >
                 <span v-if="pwdSaving" class="spinner-sm spinner-white"></span>
-                {{ pwdSaving ? 'Modification…' : 'Modifier le mot de passe' }}
+                {{ pwdSaving ? $t('profile.changing') : $t('profile.changePasswordBtn') }}
               </button>
             </div>
           </form>
@@ -166,11 +166,11 @@
         <!-- Active sessions -->
         <div class="profile-section">
           <div class="section-header">
-            <h3>Sessions actives</h3>
-            <p>Les autres appareils connectés à votre compte.</p>
+            <h3>{{ $t('profile.sessions') }}</h3>
+            <p>{{ $t('profile.sessionsDesc') }}</p>
           </div>
 
-          <div v-if="sessionsLoading" class="state-loading">Chargement…</div>
+          <div v-if="sessionsLoading" class="state-loading">{{ $t('common.loading') }}</div>
           <div v-else class="sessions-list">
             <div
               v-for="s in sessions"
@@ -187,18 +187,18 @@
               <div class="session-info">
                 <span class="session-name">
                   {{ s.name }}
-                  <span v-if="s.is_current" class="session-current-badge">Session actuelle</span>
+                  <span v-if="s.is_current" class="session-current-badge">{{ $t('profile.currentSession') }}</span>
                 </span>
                 <span class="session-date">
-                  Dernière activité {{ s.last_used_at ? fmtDate(s.last_used_at) : 'jamais' }} —
-                  Créée le {{ fmtDate(s.created_at) }}
+                  {{ $t('profile.lastActivity') }} {{ s.last_used_at ? fmtDate(s.last_used_at) : $t('profile.never') }} —
+                  {{ $t('profile.createdOn') }} {{ fmtDate(s.created_at) }}
                 </span>
               </div>
               <button
                 v-if="!s.is_current"
                 class="btn btn-sm btn-ghost session-revoke"
                 @click="revokeSession(s.id)"
-              >Révoquer</button>
+              >{{ $t('profile.revoke') }}</button>
             </div>
           </div>
         </div>
@@ -211,6 +211,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, defineComponent, h } from 'vue'
 import { useConfirm } from '@/composables/useConfirm'
+import { t } from '@/i18n'
 import { formatDateTime } from '@/shared/utils/date'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
@@ -239,7 +240,7 @@ const initials = computed(() => {
 })
 
 function roleLabel(r: string): string {
-  return { admin: 'Admin', manager: 'Manager', member: 'Membre', viewer: 'Lecteur', 'super-admin': 'Super Admin' }[r] ?? r
+  return t(`profile.role.${r}`)
 }
 
 // ── Profile form ──────────────────────────────────────────────────────────────
@@ -257,7 +258,7 @@ async function saveProfile() {
       email: profileForm.email,
     })
     profileError.value = false
-    profileMsg.value   = data.message ?? 'Profil mis à jour.'
+    profileMsg.value   = data.message ?? t('profile.profileUpdated')
     // Update store
     if (auth.user) {
       auth.user.name  = profileForm.name
@@ -266,7 +267,7 @@ async function saveProfile() {
   } catch (err: any) {
     profileError.value = true
     const msgs = err?.response?.data?.errors ?? {}
-    profileMsg.value   = Object.values(msgs).flat().join(' ') || err?.response?.data?.message || 'Erreur.'
+    profileMsg.value   = Object.values(msgs).flat().join(' ') || err?.response?.data?.message || t('profile.error')
   } finally {
     profileSaving.value = false
     setTimeout(() => { profileMsg.value = '' }, 4000)
@@ -295,8 +296,9 @@ const pwdStrength = computed((): number => {
 })
 
 const pwdStrengthLabel = computed(() => {
-  const labels = ['', 'Faible', 'Moyen', 'Fort', 'Très fort']
-  return labels[pwdStrength.value] ?? ''
+  const keys = ['', 'weak', 'medium', 'strong', 'veryStrong']
+  const k = keys[pwdStrength.value]
+  return k ? t(`profile.strength.${k}`) : ''
 })
 
 const pwdStrengthColor = computed(() => {
@@ -309,7 +311,7 @@ async function savePassword() {
   pwdMsg.value   = ''
 
   if (pwdForm.password !== pwdForm.confirmation) {
-    pwdErrors.confirmation = 'Les mots de passe ne correspondent pas.'
+    pwdErrors.confirmation = t('profile.passwordMismatch')
     return
   }
 
@@ -321,7 +323,7 @@ async function savePassword() {
       password_confirmation:         pwdForm.confirmation,
     })
     pwdMsgError.value = false
-    pwdMsg.value      = data.message ?? 'Mot de passe modifié.'
+    pwdMsg.value      = data.message ?? t('profile.passwordChanged')
     Object.assign(pwdForm, { current: '', password: '', confirmation: '' })
     await loadSessions() // refresh sessions list
   } catch (err: any) {
@@ -330,7 +332,7 @@ async function savePassword() {
     Object.assign(pwdErrors, Object.fromEntries(
       Object.entries(errs).map(([k, v]: any) => [k, v[0]])
     ))
-    pwdMsg.value = err?.response?.data?.message ?? 'Erreur.'
+    pwdMsg.value = err?.response?.data?.message ?? t('profile.error')
   } finally {
     pwdSaving.value = false
     setTimeout(() => { pwdMsg.value = '' }, 5000)
@@ -357,9 +359,9 @@ const { confirm } = useConfirm()
 
 async function revokeSession(id: number) {
   if (!(await confirm({
-    title: 'Révoquer la session',
-    message: 'Révoquer cette session ?',
-    confirmLabel: 'Révoquer',
+    title: t('profile.revokeTitle'),
+    message: t('profile.revokeConfirm'),
+    confirmLabel: t('profile.revoke'),
     danger: true,
   }))) return
   await client.delete(`/api/me/sessions/${id}`)

@@ -77,6 +77,16 @@ describe('i18n core', () => {
     expect(t('inventory.reasonOpt.sale')).toBe('Sale')
   })
 
+  it('translates the auth module namespace (login/register + nested strength)', () => {
+    setLocale('fr')
+    expect(t('auth.loginTitle')).toBe('Connexion')
+    expect(t('auth.strength.good')).toBe('Bon')
+    expect(t('auth.createWorkspace')).toBe('Créer un espace de travail')
+    setLocale('en')
+    expect(t('auth.loginTitle')).toBe('Sign in')
+    expect(t('auth.strength.good')).toBe('Good')
+  })
+
   it('translates the orders module namespace (tabs + status)', () => {
     setLocale('fr')
     expect(t('orders.title')).toBe('Commandes')

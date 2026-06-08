@@ -3,6 +3,18 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 8ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave8` (release `v1.0.0` → `rc.33`).
+
+### UX
+- **Modales unifiées (UX-03, 8ᵉ vague)** — `StockTransferView` (**3 modales** : création de transfert,
+  réception, résolution de litige) migrées vers `<BaseModal>` ; styles `.modal-*` dupliqués retirés.
+  **20 modales / 15 vues migrées au total.**
+
+### Tests
+- Frontend **241** au vert · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 7ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave7` (release `v1.0.0` → `rc.32`).

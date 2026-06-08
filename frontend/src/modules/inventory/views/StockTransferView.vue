@@ -56,55 +56,56 @@
       </table>
     </div>
 
-    <!-- Create Modal -->
-    <div v-if="showCreate" class="modal-overlay" @click.self="showCreate = false">
-      <div class="modal-card">
-        <h2 class="modal-title">Nouveau transfert</h2>
-        <div class="form-group">
-          <label class="form-label">Entrepôt source *</label>
-          <select v-model="form.source_warehouse_id" class="form-input">
-            <option value="">Sélectionner...</option>
-            <option v-for="w in warehouses" :key="w.id" :value="w.id">{{ w.name }} ({{ w.code }})</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Entrepôt destination *</label>
-          <select v-model="form.destination_warehouse_id" class="form-input">
-            <option value="">Sélectionner...</option>
-            <option
-              v-for="w in warehouses.filter(w => w.id !== form.source_warehouse_id)"
-              :key="w.id" :value="w.id"
-            >{{ w.name }} ({{ w.code }})</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Notes</label>
-          <textarea v-model="form.notes" class="form-input" rows="2" placeholder="Transporteur, instructions..."></textarea>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Lignes *</label>
-          <div v-for="(line, i) in form.lines" :key="i" class="transfer-line">
-            <input v-model="line.product_id" class="form-input" placeholder="Product ID" />
-            <input v-model.number="line.quantity" type="number" class="form-input qty-input" min="1" placeholder="Qté" />
-            <button class="btn btn-sm btn-danger" @click="form.lines.splice(i,1)">✕</button>
-          </div>
-          <button class="btn btn-sm btn-secondary mt-2" @click="form.lines.push({product_id:'',quantity:1})">
-            + Ajouter ligne
-          </button>
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" @click="showCreate = false">Annuler</button>
-          <button class="btn btn-primary" :disabled="creating" @click="createTransfer">
-            {{ creating ? 'Création...' : 'Créer le transfert' }}
-          </button>
-        </div>
+    <!-- Create Modal (shared BaseModal — UX-03) -->
+    <BaseModal v-model="showCreate" size="lg" title="Nouveau transfert">
+      <div class="form-group">
+        <label class="form-label">Entrepôt source *</label>
+        <select v-model="form.source_warehouse_id" class="form-input">
+          <option value="">Sélectionner...</option>
+          <option v-for="w in warehouses" :key="w.id" :value="w.id">{{ w.name }} ({{ w.code }})</option>
+        </select>
       </div>
-    </div>
+      <div class="form-group">
+        <label class="form-label">Entrepôt destination *</label>
+        <select v-model="form.destination_warehouse_id" class="form-input">
+          <option value="">Sélectionner...</option>
+          <option
+            v-for="w in warehouses.filter(w => w.id !== form.source_warehouse_id)"
+            :key="w.id" :value="w.id"
+          >{{ w.name }} ({{ w.code }})</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea v-model="form.notes" class="form-input" rows="2" placeholder="Transporteur, instructions..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Lignes *</label>
+        <div v-for="(line, i) in form.lines" :key="i" class="transfer-line">
+          <input v-model="line.product_id" class="form-input" placeholder="Product ID" />
+          <input v-model.number="line.quantity" type="number" class="form-input qty-input" min="1" placeholder="Qté" />
+          <button class="btn btn-sm btn-danger" @click="form.lines.splice(i,1)">✕</button>
+        </div>
+        <button class="btn btn-sm btn-secondary mt-2" @click="form.lines.push({product_id:'',quantity:1})">
+          + Ajouter ligne
+        </button>
+      </div>
 
-    <!-- Receive Modal -->
-    <div v-if="showReceive && selectedTransfer" class="modal-overlay" @click.self="showReceive = false">
-      <div class="modal-card">
-        <h2 class="modal-title">Réceptionner {{ selectedTransfer.number }}</h2>
+      <template #footer>
+        <button class="btn btn-secondary" @click="showCreate = false">Annuler</button>
+        <button class="btn btn-primary" :disabled="creating" @click="createTransfer">
+          {{ creating ? 'Création...' : 'Créer le transfert' }}
+        </button>
+      </template>
+    </BaseModal>
+
+    <!-- Receive Modal (shared BaseModal — UX-03) -->
+    <BaseModal
+      :model-value="showReceive"
+      :title="selectedTransfer ? `Réceptionner ${selectedTransfer.number}` : ''"
+      @update:model-value="(v: boolean) => { if (!v) showReceive = false }"
+    >
+      <template v-if="selectedTransfer">
         <p class="modal-info">Saisissez les quantités réellement reçues pour chaque ligne.</p>
         <div v-for="line in selectedTransfer.lines" :key="line.id" class="receive-line">
           <span class="receive-label">{{ line.product?.name ?? line.product_id }}</span>
@@ -116,39 +117,42 @@
             :placeholder="String(line.quantity_shipped)"
           />
         </div>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" @click="showReceive = false">Annuler</button>
-          <button class="btn btn-primary" :disabled="receiving" @click="receiveTransfer">
-            {{ receiving ? 'Enregistrement...' : 'Confirmer réception' }}
-          </button>
-        </div>
-      </div>
-    </div>
+      </template>
 
-    <!-- Resolve Modal -->
-    <div v-if="showResolve && selectedTransfer" class="modal-overlay" @click.self="showResolve = false">
-      <div class="modal-card">
-        <h2 class="modal-title">Résoudre litige — {{ selectedTransfer.number }}</h2>
-        <div class="form-group">
-          <label class="form-label">Résolution *</label>
-          <select v-model="resolveForm.resolution" class="form-input">
-            <option value="accept_partial">Accepter partiel</option>
-            <option value="restock_source">Retour à la source</option>
-            <option value="write_off">Perte (write-off)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Raison *</label>
-          <textarea v-model="resolveForm.reason" class="form-input" rows="2" placeholder="Expliquer..."></textarea>
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" @click="showResolve = false">Annuler</button>
-          <button class="btn btn-danger" :disabled="resolving || !resolveForm.reason" @click="resolveDispute">
-            {{ resolving ? 'Résolution...' : 'Confirmer' }}
-          </button>
-        </div>
+      <template #footer>
+        <button class="btn btn-secondary" @click="showReceive = false">Annuler</button>
+        <button class="btn btn-primary" :disabled="receiving" @click="receiveTransfer">
+          {{ receiving ? 'Enregistrement...' : 'Confirmer réception' }}
+        </button>
+      </template>
+    </BaseModal>
+
+    <!-- Resolve Modal (shared BaseModal — UX-03) -->
+    <BaseModal
+      :model-value="showResolve"
+      :title="selectedTransfer ? `Résoudre litige — ${selectedTransfer.number}` : ''"
+      @update:model-value="(v: boolean) => { if (!v) showResolve = false }"
+    >
+      <div class="form-group">
+        <label class="form-label">Résolution *</label>
+        <select v-model="resolveForm.resolution" class="form-input">
+          <option value="accept_partial">Accepter partiel</option>
+          <option value="restock_source">Retour à la source</option>
+          <option value="write_off">Perte (write-off)</option>
+        </select>
       </div>
-    </div>
+      <div class="form-group">
+        <label class="form-label">Raison *</label>
+        <textarea v-model="resolveForm.reason" class="form-input" rows="2" placeholder="Expliquer..."></textarea>
+      </div>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="showResolve = false">Annuler</button>
+        <button class="btn btn-danger" :disabled="resolving || !resolveForm.reason" @click="resolveDispute">
+          {{ resolving ? 'Résolution...' : 'Confirmer' }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -156,6 +160,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { formatDate } from '@/shared/utils/date'
 import InventoryTabNav from "../components/InventoryTabNav.vue"
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import api from '@/services/api'
 
 interface Warehouse { id: string; name: string; code: string }
@@ -290,11 +295,8 @@ onMounted(load)
 .filter-bar      { margin-bottom: 16px; }
 .filter-select   { max-width: 220px; }
 .actions-cell    { display: flex; gap: 4px; flex-wrap: wrap; }
-.modal-overlay   { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
-.modal-card      { background: white; border-radius: 12px; padding: 28px; width: 560px; max-width: 95vw; max-height: 90vh; overflow-y: auto; }
-.modal-title     { font-size: 1.125rem; font-weight: 600; margin: 0 0 16px; }
+/* Modal chrome now provided by the shared <BaseModal> (UX-03). */
 .modal-info      { color: #64748b; font-size: 0.875rem; margin-bottom: 16px; }
-.modal-actions   { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
 .transfer-line   { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
 .qty-input       { width: 80px !important; }
 .receive-line    { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; padding: 8px; background: #f8fafc; border-radius: 8px; }

@@ -163,10 +163,10 @@
     <BaseModal
       :model-value="modal.open"
       :title="modalTitle"
+      :subtitle="modalSubtitle"
       @update:model-value="(v: boolean) => { if (!v) closeModal() }"
     >
       <div style="display: flex; flex-direction: column; gap: 16px;">
-            <p class="modal-subtitle" style="margin:0;">{{ modal.stock?.product?.name }} · {{ modal.stock?.product?.sku }}</p>
             <!-- Current stock info -->
             <div class="stock-info-row">
               <div class="stock-info-item">
@@ -189,13 +189,16 @@
                 {{ modal.mode === 'adjust' ? 'Nouvelle quantité absolue' : 'Quantité' }}
                 <span class="required-star">*</span>
               </label>
-              <input
-                v-model.number="form.quantity"
-                type="number"
-                min="0"
-                class="form-input"
-                :placeholder="modal.mode === 'adjust' ? 'Ex : 42' : 'Ex : 10'"
-              />
+              <div class="input-affix">
+                <input
+                  v-model.number="form.quantity"
+                  type="number"
+                  min="0"
+                  class="form-input"
+                  :placeholder="modal.mode === 'adjust' ? 'Ex : 42' : 'Ex : 10'"
+                />
+                <span class="input-affix__suffix">unités</span>
+              </div>
               <p v-if="modal.mode === 'in'" class="form-hint">
                 Après : {{ (modal.stock?.quantity ?? 0) + (form.quantity || 0) }} unités
               </p>
@@ -309,6 +312,11 @@ const modalTitle = computed(() => ({
   out:    'Sortie de stock',
   adjust: 'Ajustement de stock',
 })[modal.mode])
+
+// Sous-titre contextuel du volet : produit · SKU (affiché dans l'en-tête).
+const modalSubtitle = computed(() =>
+  modal.stock ? `${modal.stock.product?.name ?? ''} · ${modal.stock.product?.sku ?? ''}` : '',
+)
 
 const formValid = computed(() => {
   if (form.quantity === undefined || form.quantity < 0) return false

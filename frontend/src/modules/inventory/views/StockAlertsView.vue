@@ -99,9 +99,8 @@
     </div>
 
     <!-- Restock Modal (shared BaseModal — UX-03) -->
-    <BaseModal v-model="modal.open" title="Réapprovisionner">
+    <BaseModal v-model="modal.open" title="Réapprovisionner" :subtitle="modal.stock?.product ? (modal.stock.product.name + ' · ' + modal.stock.product.sku) : ''">
       <div style="display: flex; flex-direction: column; gap: 16px;">
-            <p class="modal-subtitle" style="margin: 0;">{{ modal.stock?.product?.name }} · {{ modal.stock?.product?.sku }}</p>
             <div class="stock-info-row">
               <div class="stock-info-item">
                 <span class="stock-info-label">Disponible actuellement</span>
@@ -121,13 +120,16 @@
 
             <div class="form-group">
               <label class="form-label">Quantité à réceptionner <span class="required-star">*</span></label>
-              <input
-                v-model.number="form.quantity"
-                type="number"
-                min="1"
-                class="form-input"
-                placeholder="Ex : 50"
-              />
+              <div class="input-affix">
+                <input
+                  v-model.number="form.quantity"
+                  type="number"
+                  min="1"
+                  class="form-input"
+                  placeholder="Ex : 50"
+                />
+                <span class="input-affix__suffix">unités</span>
+              </div>
               <p v-if="form.quantity" class="form-hint">
                 Après réception : {{ (modal.stock?.quantity ?? 0) + (form.quantity || 0) }} unités
               </p>

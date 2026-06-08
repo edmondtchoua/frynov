@@ -375,6 +375,22 @@ textarea.form-input {
   color: var(--color-error);
 }
 
+/* Champ avec suffixe (unité / devise) collé à droite, À L'INTÉRIEUR du champ.
+   Réutilisable : <div class="input-affix"><input class="form-input"/><span
+   class="input-affix__suffix">XAF</span></div> (refonte UI — Phase 3). */
+.input-affix { position: relative; display: block; }
+.input-affix > .form-input { padding-right: 3.25rem; }
+.input-affix__suffix {
+  position: absolute;
+  right: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-500);
+  font-size: 0.85rem;
+  font-weight: 500;
+  pointer-events: none;
+}
+
 /* ── Alerts ──────────────────────────────────────────────── */
 .alert {
   display: flex;

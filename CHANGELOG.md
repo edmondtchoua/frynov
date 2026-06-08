@@ -3,6 +3,23 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Refonte UI : polish des volets — module Stock (Phase 3) (2026-06-08)
+
+Branche `feature/ux-drawer-stock` (release `v1.0.0` → `rc.49`).
+
+### UX — polish volets (Phase 3, module Stock)
+- **Sous-titre contextuel dans l'en-tête** : `StockListView` (entrée/sortie/ajustement) et
+  `StockAlertsView` (réapprovisionnement) affichent désormais « produit · SKU » via la prop
+  `subtitle` de `BaseModal` (au lieu d'un `<p>` en haut du corps) — calqué sur la capture de référence.
+- **Suffixe d'unité dans le champ** : nouveau pattern réutilisable **`.input-affix`** (suffixe
+  collé à droite, à l'intérieur de l'input) ; appliqué aux champs quantité (« unités »). Prêt pour
+  les suffixes **devise (XAF)** des modules monétaires à venir.
+- Bloc info-stock conservé en **contexte grisé** (`--gray-50`).
+
+### Tests
+- Frontend **252** inchangé (polish visuel ; `StockListView.spec` toujours verte — le titre du
+  volet est inchangé, le sous-titre reste dans le dialogue) · `vue-tsc` propre.
+
 ## [Non publié] — Refonte UI : confirmations centrées — vague 2 (fin) (2026-06-08)
 
 Branche `feature/ux-confirm-wave2` (release `v1.0.0` → `rc.48`).

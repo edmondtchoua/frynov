@@ -52,59 +52,55 @@
       </article>
     </div>
 
-    <!-- ── Create / edit modal ──────────────────────────────────────────── -->
-    <div v-if="modal.open" class="modal-overlay" @click.self="closeModal">
-      <div class="modal modal--wide" role="dialog" aria-modal="true" v-focus-trap="closeModal">
-        <div class="modal-header">
-          <h3>{{ modal.editing ? 'Modifier le rôle' : 'Nouveau rôle personnalisé' }}</h3>
-          <button class="modal-close" @click="closeModal">✕</button>
+    <!-- ── Create / edit modal (shared BaseModal — UX-03) ───────────────── -->
+    <BaseModal v-model="modal.open" size="lg" :title="modal.editing ? 'Modifier le rôle' : 'Nouveau rôle personnalisé'">
+      <div class="roles-modal-body">
+        <div class="form-row">
+          <label>Nom du rôle <span class="req">*</span></label>
+          <input
+            v-model="form.name"
+            class="form-input"
+            placeholder="ex. Responsable dépôt"
+            maxlength="50"
+          />
         </div>
-        <div class="modal-body">
-          <div class="form-row">
-            <label>Nom du rôle <span class="req">*</span></label>
-            <input
-              v-model="form.name"
-              class="form-input"
-              placeholder="ex. Responsable dépôt"
-              maxlength="50"
-            />
-          </div>
 
-          <div v-if="!grantable.length" class="modal-desc">
-            Aucune permission accordable avec votre plan actuel.
-          </div>
-
-          <div v-for="group in groupedGrantable" :key="group.module" class="perm-group">
-            <div class="perm-group-head">
-              <span class="perm-group-title">{{ moduleLabel(group.module) }}</span>
-              <button type="button" class="link-btn" @click="toggleGroup(group)">
-                {{ allChecked(group) ? 'Tout décocher' : 'Tout cocher' }}
-              </button>
-            </div>
-            <div class="perm-group-grid">
-              <label v-for="perm in group.perms" :key="perm" class="perm-check">
-                <input type="checkbox" :value="perm" v-model="form.permissions" />
-                <span>{{ actionLabel(perm) }}</span>
-              </label>
-            </div>
-          </div>
-
-          <div v-if="modal.error" class="form-error">{{ modal.error }}</div>
+        <div v-if="!grantable.length" class="modal-desc">
+          Aucune permission accordable avec votre plan actuel.
         </div>
-        <div class="modal-footer">
-          <button class="btn-cancel" @click="closeModal">Annuler</button>
-          <button class="btn-submit" :disabled="modal.saving || !form.name.trim()" @click="save">
-            {{ modal.saving ? 'Enregistrement…' : (modal.editing ? 'Enregistrer' : 'Créer le rôle') }}
-          </button>
+
+        <div v-for="group in groupedGrantable" :key="group.module" class="perm-group">
+          <div class="perm-group-head">
+            <span class="perm-group-title">{{ moduleLabel(group.module) }}</span>
+            <button type="button" class="link-btn" @click="toggleGroup(group)">
+              {{ allChecked(group) ? 'Tout décocher' : 'Tout cocher' }}
+            </button>
+          </div>
+          <div class="perm-group-grid">
+            <label v-for="perm in group.perms" :key="perm" class="perm-check">
+              <input type="checkbox" :value="perm" v-model="form.permissions" />
+              <span>{{ actionLabel(perm) }}</span>
+            </label>
+          </div>
         </div>
+
+        <div v-if="modal.error" class="form-error">{{ modal.error }}</div>
       </div>
-    </div>
+
+      <template #footer>
+        <button class="btn-cancel" @click="closeModal">Annuler</button>
+        <button class="btn-submit" :disabled="modal.saving || !form.name.trim()" @click="save">
+          {{ modal.saving ? 'Enregistrement…' : (modal.editing ? 'Enregistrer' : 'Créer le rôle') }}
+        </button>
+      </template>
+    </BaseModal>
   </section>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { roleService, type TenantRole } from '../services/roleService'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 
 const roles = ref<TenantRole[]>([])
 const grantable = ref<string[]>([])
@@ -320,17 +316,9 @@ defineExpose({ load })
 }
 .perm-chip--more { background: var(--gray-200); font-weight: 600; }
 
-/* Modal */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
-.modal { background: white; border-radius: var(--radius-lg); width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
-.modal--wide { max-width: 640px; }
-.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--gray-100); }
-.modal-header h3 { font-size: var(--text-base); font-weight: 700; color: var(--gray-900); margin: 0; }
-.modal-close { background: none; border: none; font-size: 1.125rem; color: var(--gray-400); cursor: pointer; padding: 0.25rem; }
-.modal-close:hover { color: var(--gray-700); }
-.modal-body { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+/* Modal — chrome provided by the shared <BaseModal> (UX-03); body gets column spacing. */
+.roles-modal-body { display: flex; flex-direction: column; gap: 1rem; }
 .modal-desc { font-size: var(--text-sm); color: var(--gray-500); margin: 0; }
-.modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid var(--gray-100); }
 
 .form-row { display: flex; flex-direction: column; gap: 0.375rem; }
 .form-row label { font-size: var(--text-sm); font-weight: 500; color: var(--gray-600); }

@@ -3,6 +3,21 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 3ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave3` (release `v1.0.0` → `rc.25`).
+Voir `docs/modules/ux-design-system.md` (§ Migration des modales).
+
+### UX
+- **Modales unifiées (UX-03, 3ᵉ vague)** — `WarehouseView` (création/édition d'emplacement) et
+  `StockAdjustmentView` (**2 modales** : nouvelle demande + rejet) migrées de leur modale ad-hoc
+  vers `<BaseModal>` (overlay, `Teleport`, focus-trap, Échap, clic-extérieur, en-tête/fermeture
+  cohérents ; styles `.modal-*` dupliqués supprimés). **7 modales / 6 vues migrées au total.**
+
+### Tests
+- Frontend **236** (+2 : `WarehouseView.spec.ts` — liste + ouverture d'un `role="dialog"`
+  `aria-modal`) · `vue-tsc` propre.
+
 ## [Non publié] — i18n : module Fournisseurs traduit FR/EN (UX-13) (2026-06-07)
 
 Branche `feature/ux-i18n-suppliers` (release `v1.0.0` → `rc.24`).

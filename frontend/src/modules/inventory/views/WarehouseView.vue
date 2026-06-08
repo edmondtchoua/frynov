@@ -69,88 +69,82 @@
       </div>
     </div>
 
-    <!-- Create / Edit Modal -->
-    <Teleport to="body">
-      <div v-if="modal.open" class="modal-overlay" @click.self="closeModal">
-        <div class="modal">
-          <div class="modal-header">
-            <h3>{{ modal.editing ? 'Modifier' : 'Nouvel emplacement' }}</h3>
-            <button class="modal-close" @click="closeModal">✕</button>
+    <!-- Create / Edit Modal (shared BaseModal — UX-03) -->
+    <BaseModal v-model="modal.open" :title="modal.editing ? 'Modifier' : 'Nouvel emplacement'">
+      <div class="modal-fields">
+        <div class="form-group">
+          <label class="form-label">Nom <span style="color:var(--color-error)">*</span></label>
+          <input v-model="form.name" class="form-input" placeholder="Ex : Entrepôt Dakar" />
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label">Code <span style="color:var(--color-error)">*</span></label>
+            <input v-model="form.code" class="form-input mono" placeholder="WH-DKR" style="text-transform:uppercase" />
           </div>
-          <div class="modal-body">
-            <div class="form-group">
-              <label class="form-label">Nom <span style="color:var(--color-error)">*</span></label>
-              <input v-model="form.name" class="form-input" placeholder="Ex : Entrepôt Dakar" />
-            </div>
-            <div class="form-row-2">
-              <div class="form-group">
-                <label class="form-label">Code <span style="color:var(--color-error)">*</span></label>
-                <input v-model="form.code" class="form-input mono" placeholder="WH-DKR" style="text-transform:uppercase" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Type</label>
-                <select v-model="form.type" class="form-input">
-                  <option value="warehouse">Entrepôt</option>
-                  <option value="shop">Boutique physique</option>
-                  <option value="dropship">Dropship</option>
-                  <option value="virtual">Virtuel / En ligne</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-row-2">
-              <div class="form-group">
-                <label class="form-label">Téléphone</label>
-                <input v-model="form.phone" class="form-input" placeholder="+221 77 000 00 00" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Devise</label>
-                <select v-model="form.currency" class="form-input">
-                  <option value="XOF">XOF — Franc CFA UEMOA</option>
-                  <option value="XAF">XAF — Franc CFA CEMAC</option>
-                  <option value="GHS">GHS — Cedi ghanéen</option>
-                  <option value="NGN">NGN — Naira nigérian</option>
-                  <option value="EUR">EUR — Euro</option>
-                  <option value="USD">USD — Dollar US</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Ville / Pays</label>
-              <div class="form-row-2">
-                <input v-model="form.city" class="form-input" placeholder="Dakar" />
-                <input v-model="form.country" class="form-input" placeholder="SN" maxlength="2" style="text-transform:uppercase" />
-              </div>
-            </div>
-            <div class="form-switches">
-              <label class="switch-row">
-                <input v-model="form.is_active" type="checkbox" role="switch" class="switch-input" />
-                <span class="switch-track"><span class="switch-thumb"></span></span>
-                <span class="switch-label">Emplacement actif</span>
-              </label>
-              <label class="switch-row">
-                <input v-model="form.sells_online" type="checkbox" role="switch" class="switch-input" />
-                <span class="switch-track"><span class="switch-thumb"></span></span>
-                <span class="switch-label">Expose le stock en ligne</span>
-              </label>
-            </div>
-            <div v-if="modal.error" class="form-error" style="margin-top:.5rem">{{ modal.error }}</div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-ghost" @click="closeModal">Annuler</button>
-            <button class="btn btn-primary" :disabled="modal.saving" @click="save">
-              <span v-if="modal.saving" class="spinner-sm spinner-white"></span>
-              {{ modal.saving ? 'Enregistrement…' : (modal.editing ? 'Mettre à jour' : 'Créer') }}
-            </button>
+          <div class="form-group">
+            <label class="form-label">Type</label>
+            <select v-model="form.type" class="form-input">
+              <option value="warehouse">Entrepôt</option>
+              <option value="shop">Boutique physique</option>
+              <option value="dropship">Dropship</option>
+              <option value="virtual">Virtuel / En ligne</option>
+            </select>
           </div>
         </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label">Téléphone</label>
+            <input v-model="form.phone" class="form-input" placeholder="+221 77 000 00 00" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Devise</label>
+            <select v-model="form.currency" class="form-input">
+              <option value="XOF">XOF — Franc CFA UEMOA</option>
+              <option value="XAF">XAF — Franc CFA CEMAC</option>
+              <option value="GHS">GHS — Cedi ghanéen</option>
+              <option value="NGN">NGN — Naira nigérian</option>
+              <option value="EUR">EUR — Euro</option>
+              <option value="USD">USD — Dollar US</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ville / Pays</label>
+          <div class="form-row-2">
+            <input v-model="form.city" class="form-input" placeholder="Dakar" />
+            <input v-model="form.country" class="form-input" placeholder="SN" maxlength="2" style="text-transform:uppercase" />
+          </div>
+        </div>
+        <div class="form-switches">
+          <label class="switch-row">
+            <input v-model="form.is_active" type="checkbox" role="switch" class="switch-input" />
+            <span class="switch-track"><span class="switch-thumb"></span></span>
+            <span class="switch-label">Emplacement actif</span>
+          </label>
+          <label class="switch-row">
+            <input v-model="form.sells_online" type="checkbox" role="switch" class="switch-input" />
+            <span class="switch-track"><span class="switch-thumb"></span></span>
+            <span class="switch-label">Expose le stock en ligne</span>
+          </label>
+        </div>
+        <div v-if="modal.error" class="form-error" style="margin-top:.5rem">{{ modal.error }}</div>
       </div>
-    </Teleport>
+
+      <template #footer>
+        <button class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button class="btn btn-primary" :disabled="modal.saving" @click="save">
+          <span v-if="modal.saving" class="spinner-sm spinner-white"></span>
+          {{ modal.saving ? 'Enregistrement…' : (modal.editing ? 'Mettre à jour' : 'Créer') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import InventoryTabNav from "../components/InventoryTabNav.vue"
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import client from '@/api/client'
 
 interface Warehouse {
@@ -258,14 +252,8 @@ onMounted(load)
 .wh-meta    { display:flex; gap:.5rem; flex-wrap:wrap; }
 .wh-actions { display:flex; gap:.5rem; margin-top:.25rem; }
 
-/* Modal */
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:2000; padding:1rem; }
-.modal { background:white; border-radius:var(--radius-lg); width:100%; max-width:520px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2); }
-.modal-header { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 1.5rem; border-bottom:1px solid var(--gray-100); }
-.modal-header h3 { font-size:var(--text-base); font-weight:700; margin:0; }
-.modal-close { background:none; border:none; font-size:1.125rem; color:var(--gray-400); cursor:pointer; }
-.modal-body { padding:1.25rem 1.5rem; display:flex; flex-direction:column; gap:1rem; }
-.modal-footer { display:flex; justify-content:flex-end; gap:.75rem; padding:1rem 1.5rem; border-top:1px solid var(--gray-100); }
+/* Modal chrome now provided by the shared <BaseModal> (UX-03). */
+.modal-fields { display:flex; flex-direction:column; gap:1rem; }
 
 .form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
 @media (max-width:480px) { .form-row-2 { grid-template-columns:1fr; } }

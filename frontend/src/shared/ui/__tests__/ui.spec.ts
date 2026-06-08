@@ -34,17 +34,46 @@ describe('BaseButton (UX-03)', () => {
   })
 })
 
-describe('BaseModal (UX-03/UX-04)', () => {
-  it('renders dialog semantics when open and emits close', async () => {
-    const w = mount(BaseModal, {
-      props: { modelValue: true, title: 'Titre' },
+describe('BaseModal (UX-03/UX-04 + refonte Side-Drawer)', () => {
+  const mountModal = (props: Record<string, unknown>) =>
+    mount(BaseModal, {
+      props: { modelValue: true, title: 'Titre', ...props },
       slots: { default: '<p>contenu</p>' },
       global: { directives: { 'focus-trap': vFocusTrap }, stubs: { teleport: true } },
     })
+
+  it('renders dialog semantics when open and emits close', async () => {
+    const w = mountModal({})
     const dialog = w.find('[role="dialog"]')
     expect(dialog.exists()).toBe(true)
     expect(dialog.attributes('aria-modal')).toBe('true')
     await w.find('.modal-close').trigger('click')
     expect(w.emitted('update:modelValue')?.[0]).toEqual([false])
+  })
+
+  it('defaults to the right-side drawer variant', () => {
+    const w = mountModal({})
+    expect(w.find('.modal-overlay').classes()).toContain('modal-overlay--drawer')
+    const box = w.find('[role="dialog"]')
+    expect(box.classes()).toContain('modal--drawer')
+    expect(box.classes()).toContain('modal--md') // taille par défaut
+  })
+
+  it('switches to a centered box for variant="center" + honours size', () => {
+    const w = mountModal({ variant: 'center', size: 'sm' })
+    expect(w.find('.modal-overlay').classes()).toContain('modal-overlay--center')
+    const box = w.find('[role="dialog"]')
+    expect(box.classes()).toContain('modal--center')
+    expect(box.classes()).toContain('modal--sm')
+  })
+
+  it('renders an optional subtitle in the header', () => {
+    const w = mountModal({ subtitle: 'BAS-0015 · Bassine 30L' })
+    expect(w.find('.modal-subtitle').text()).toBe('BAS-0015 · Bassine 30L')
+  })
+
+  it('omits the subtitle node when none is provided', () => {
+    const w = mountModal({})
+    expect(w.find('.modal-subtitle').exists()).toBe(false)
   })
 })

@@ -3,6 +3,21 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Refonte UI : polish des volets — Entrepôts & Livraisons (Phase 3) (2026-06-08)
+
+Branche `feature/ux-drawer-pos` (release `v1.0.0` → `rc.52`).
+
+### UX — polish volets (Phase 3)
+- **`WarehouseView`** : titre « Modifier l'emplacement » (au lieu de « Modifier » nu) + **sous-titre**
+  = nom de l'entrepôt à l'édition.
+- **`DeliveryListView`** : **sous-titre** = référence commande sur le volet « Signaler un échec »
+  (`failModal.orderRef` capturé à l'ouverture).
+- *(`PosView` déjà conforme : devise en suffixe via `.pos-amount-input` / `.pos-currency` sur le fond
+  de caisse et la clôture — pattern précurseur de `.input-affix` ; aucun changement nécessaire.)*
+
+### Tests
+- Frontend **252** inchangé (polish visuel) · `vue-tsc` propre · specs vertes.
+
 ## [Non publié] — Refonte UI : polish des volets — Admin & Fournisseurs (Phase 3) (2026-06-08)
 
 Branche `feature/ux-drawer-admin` (release `v1.0.0` → `rc.51`).

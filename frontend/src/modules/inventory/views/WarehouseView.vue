@@ -70,7 +70,7 @@
     </div>
 
     <!-- Create / Edit Modal (shared BaseModal — UX-03) -->
-    <BaseModal v-model="modal.open" :title="modal.editing ? 'Modifier' : 'Nouvel emplacement'">
+    <BaseModal v-model="modal.open" :title="modal.editing ? 'Modifier l’emplacement' : 'Nouvel emplacement'" :subtitle="modal.editing ? form.name : ''">
       <div class="modal-fields">
         <div class="form-group">
           <label class="form-label">Nom <span style="color:var(--color-error)">*</span></label>

@@ -3,10 +3,10 @@
     <InventoryTabNav />
     <div class="page-header">
       <div>
-        <h1 class="page-title">Périodes fiscales</h1>
-        <p class="page-subtitle">Verrouillage comptable irréversible des périodes clôturées</p>
+        <h1 class="page-title">{{ $t('inventory.fiscalTitle') }}</h1>
+        <p class="page-subtitle">{{ $t('inventory.fiscalSubtitle') }}</p>
       </div>
-      <button class="btn btn-primary" @click="showCreate = true">+ Nouvelle période</button>
+      <button class="btn btn-primary" @click="showCreate = true">+ {{ $t('inventory.newPeriod') }}</button>
     </div>
 
     <div v-if="loading" class="loading-center">
@@ -32,11 +32,11 @@
             <rect x="3" y="11" width="18" height="11" rx="2"/>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
-          Verrouillée le {{ fmtDate(p.locked_at) }}
+          {{ $t('inventory.lockedOn') }} {{ fmtDate(p.locked_at) }}
           <span v-if="p.integrityOk !== undefined"
             :class="p.integrityOk ? 'badge badge-success' : 'badge badge-error'"
             style="margin-left:6px; font-size:0.7rem">
-            {{ p.integrityOk ? '✓ Intégrité OK' : '✗ Altération détectée !' }}
+            {{ p.integrityOk ? $t('inventory.integrityOk') : $t('inventory.integrityFail') }}
           </span>
         </div>
 
@@ -46,52 +46,52 @@
             class="btn btn-sm btn-danger"
             @click="openLock(p)"
           >
-            🔒 Verrouiller définitivement
+            🔒 {{ $t('inventory.lockPermanently') }}
           </button>
           <button
             v-if="p.status === 'locked'"
             class="btn btn-sm btn-secondary"
             @click="verifyIntegrity(p)"
           >
-            Vérifier intégrité
+            {{ $t('inventory.verifyIntegrity') }}
           </button>
         </div>
       </div>
 
       <div v-if="periods.length === 0" class="empty-state">
-        Aucune période fiscale définie — créez la première pour commencer la gestion comptable.
+        {{ $t('inventory.emptyPeriods') }}
       </div>
     </div>
 
     <!-- Create Modal (shared BaseModal — UX-03) -->
-    <BaseModal v-model="showCreate" size="lg" title="Nouvelle période fiscale">
+    <BaseModal v-model="showCreate" size="lg" :title="$t('inventory.newPeriodTitle')">
       <div class="form-group">
-        <label class="form-label">Nom *</label>
-        <input v-model="form.name" class="form-input" placeholder="Ex: Exercice 2025" />
+        <label class="form-label">{{ $t('common.name') }} *</label>
+        <input v-model="form.name" class="form-input" :placeholder="$t('inventory.periodNamePlaceholder')" />
       </div>
       <div class="form-group">
-        <label class="form-label">Type *</label>
+        <label class="form-label">{{ $t('inventory.type') }} *</label>
         <select v-model="form.type" class="form-input">
-          <option value="annual">Annuel</option>
-          <option value="quarterly">Trimestriel</option>
-          <option value="monthly">Mensuel</option>
+          <option value="annual">{{ $t('inventory.fiscalType.annual') }}</option>
+          <option value="quarterly">{{ $t('inventory.fiscalType.quarterly') }}</option>
+          <option value="monthly">{{ $t('inventory.fiscalType.monthly') }}</option>
         </select>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Début *</label>
+          <label class="form-label">{{ $t('inventory.startDate') }} *</label>
           <input v-model="form.starts_at" type="date" class="form-input" />
         </div>
         <div class="form-group">
-          <label class="form-label">Fin *</label>
+          <label class="form-label">{{ $t('inventory.endDate') }} *</label>
           <input v-model="form.ends_at" type="date" class="form-input" />
         </div>
       </div>
 
       <template #footer>
-        <button class="btn btn-secondary" @click="showCreate = false">Annuler</button>
+        <button class="btn btn-secondary" @click="showCreate = false">{{ $t('common.cancel') }}</button>
         <button class="btn btn-primary" :disabled="saving || !form.name || !form.starts_at || !form.ends_at" @click="createPeriod">
-          {{ saving ? 'Création...' : 'Créer' }}
+          {{ saving ? $t('inventory.creating') : $t('common.create') }}
         </button>
       </template>
     </BaseModal>
@@ -99,35 +99,34 @@
     <!-- Lock Confirmation Modal (shared BaseModal — UX-03) -->
     <BaseModal
       :model-value="!!lockTarget"
-      title="⚠️ Verrouillage irréversible"
+      :title="$t('inventory.lockTitle')"
       :subtitle="lockTarget?.name"
       @update:model-value="(v: boolean) => { if (!v) lockTarget = null }"
     >
       <template v-if="lockTarget">
         <div class="warning-box">
-          Cette action est <strong>définitive et irréversible</strong>. Une fois verrouillée,
-          aucune écriture de stock ne pourra être effectuée sur la période
+          {{ $t('inventory.lockWarningStart') }} <strong>{{ $t('inventory.lockWarningStrong') }}</strong>{{ $t('inventory.lockWarningMid') }}
           <strong>{{ lockTarget.name }}</strong>
           ({{ fmtDate(lockTarget.starts_at) }} → {{ fmtDate(lockTarget.ends_at) }}).
         </div>
         <div class="form-group">
-          <label class="form-label">Raison du verrouillage *</label>
+          <label class="form-label">{{ $t('inventory.lockReasonLabel') }} *</label>
           <input
             v-model="lockReason"
             class="form-input"
-            placeholder="Ex: Clôture exercice 2025 approuvée en conseil de direction"
+            :placeholder="$t('inventory.lockReasonPlaceholder')"
           />
         </div>
       </template>
 
       <template #footer>
-        <button class="btn btn-secondary" @click="lockTarget = null">Annuler</button>
+        <button class="btn btn-secondary" @click="lockTarget = null">{{ $t('common.cancel') }}</button>
         <button
           class="btn btn-danger"
           :disabled="!lockReason || locking"
           @click="confirmLock"
         >
-          {{ locking ? 'Verrouillage...' : '🔒 Confirmer le verrouillage' }}
+          {{ locking ? $t('inventory.locking') : '🔒 ' + $t('inventory.confirmLock') }}
         </button>
       </template>
     </BaseModal>
@@ -140,6 +139,7 @@ import { formatDate } from '@/shared/utils/date'
 import InventoryTabNav from "../components/InventoryTabNav.vue"
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import api from '@/services/api'
+import { t } from '@/i18n'
 
 interface FiscalPeriod {
   id: string
@@ -203,11 +203,11 @@ async function verifyIntegrity(p: FiscalPeriod) {
 }
 
 const fmtDate = formatDate
-function typeLabel(t: string): string {
-  return { annual: 'Annuel', quarterly: 'Trimestriel', monthly: 'Mensuel' }[t] ?? t
+function typeLabel(type: string): string {
+  return t(`inventory.fiscalType.${type}`)
 }
 function statusLabel(s: string): string {
-  return { open: 'Ouverte', review: 'En révision', locked: 'Verrouillée' }[s] ?? s
+  return t(`inventory.fiscalStatus.${s}`)
 }
 function statusBadge(s: string): string {
   return `badge ${s === 'locked' ? 'badge-error' : s === 'review' ? 'badge-warning' : 'badge-success'}`

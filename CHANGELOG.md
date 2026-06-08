@@ -3,6 +3,20 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : périodes fiscales — module Inventaire 100 % traduit (UX-13) (2026-06-08)
+
+Branche `feature/ux-i18n-fiscal` (release `v1.0.0` → `rc.60`).
+
+### UX (i18n)
+- **`FiscalPeriodView` (Périodes fiscales)** internationalisé : en-tête, cartes (types ×3, statuts ×3,
+  intégrité, actions), volet **création** et volet **verrouillage irréversible** (avertissement +
+  raison). `typeLabel`/`statusLabel` via `t()` (`fiscalType` / `fiscalStatus`).
+- **🎯 Module Inventaire 100 % traduit** (6 vues : Entrepôts, Stock, Alertes, Ajustements, Transferts,
+  Périodes — namespace `inventory.*`).
+
+### Tests
+- Frontend **253** inchangé · `vue-tsc` propre.
+
 ## [Non publié] — i18n : transferts inter-entrepôts traduits FR/EN (UX-13) (2026-06-08)
 
 Branche `feature/ux-i18n-transfer` (release `v1.0.0` → `rc.59`).

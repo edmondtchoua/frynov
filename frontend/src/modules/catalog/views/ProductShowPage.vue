@@ -693,6 +693,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue'
+import { pushToast } from '@/composables/useNotifications'
 import { formatDateTime } from '@/shared/utils/date'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
@@ -860,7 +861,7 @@ async function fetchAndPrintLabel(
       win.addEventListener('load', () => win.print(), { once: true })
     }
   } catch (e: any) {
-    alert('Erreur lors de l\'impression : ' + (e?.response?.data?.message ?? e?.message))
+    pushToast('Erreur lors de l\'impression : ' + (e?.response?.data?.message ?? e?.message))
   }
 }
 

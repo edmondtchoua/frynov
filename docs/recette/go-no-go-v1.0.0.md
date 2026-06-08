@@ -1,8 +1,9 @@
 # Go / No-Go — Frynov ERP v1.0.0 (candidat production)
 
 > Version candidate à la **mise en production et au début des activités**.
-> Branche : `release/v1.0.0` (figée depuis `develop`). RC : `v1.0.0-rc.1`.
-> Date d'évaluation : 2026-06-06.
+> Branche : `release/v1.0.0` (figée depuis `develop`). RC : **`v1.0.0-rc.54`**.
+> Date d'évaluation : 2026-06-06 · **Actualisé : 2026-06-08 (rc.54)**.
+> Détail rc-par-rc depuis rc.1 : voir `etat-des-lieux-v1.0.0.md`.
 
 ---
 
@@ -16,14 +17,22 @@
 
 Le socle ERP est **exploitable en production contrôlée** : modules métier couverts par tests, sécurité multitenant + RBAC + audit en place, monnaie centralisée, pricing localisé branché sur le backend, multi-sites (filtres + scoping d'accès) testé en isolation.
 
+> **Durcissements livrés depuis rc.1** (cf. `etat-des-lieux-v1.0.0.md`) : remédiation audit
+> sécurité (**module gating fail-closed** + commande de backfill `tenants:backfill-modules`), **RBAC
+> rôles custom**, et **audit UX/UI complet** — design system (`BaseModal`/`BaseButton`/`StateBlock`/
+> `Icon`/`ConfirmDialog`), **refonte UI « Side-Drawer »** (toutes les modales en volet latéral droit +
+> confirmations centrées + alertes en toasts), **i18n FR/EN**, feedback d'action non bloquant.
+> ⚠️ **Prérequis prod** (régression possible) : exécuter `php artisan tenants:backfill-modules` avant
+> déploiement, sinon les tenants existants seraient verrouillés (gating fail-closed).
+
 ---
 
 ## 1. Tests automatisés
 
 | Dimension | Résultat | Détail |
 |---|---|---|
-| **Backend (unit + intégration)** | ✅ **597** (595 passés, **2 skipped**, 0 fatal, 0 incomplete) | Skips = contraintes `CHECK` **MySQL-only** (`StockIntegrityTest`), non exécutables sous SQLite, validées en prod. |
-| **Frontend (Vitest)** | ✅ **179** (33 fichiers) | Composants critiques, services, money, géo/pricing, multi-sites, ajustements de stock, édition de plan. |
+| **Backend (unit + intégration)** | ✅ **642** (640 passés, **2 skipped**, 0 fatal) | Skips = contraintes `CHECK` **MySQL-only** (`StockIntegrityTest`), non exécutables sous SQLite, validées en prod. (rc.1 : 597) |
+| **Frontend (Vitest)** | ✅ **252** (51 fichiers) | + design system (`BaseModal` drawer/center, `ConfirmDialog`), i18n (noyau + namespaces), `useNotifications`, en plus des composants/services/money/géo-pricing/multi-sites historiques. (rc.1 : 179) |
 | **Type-check** | ✅ `vue-tsc --noEmit` propre | — |
 | **Build prod** | ✅ `vite build` produit `dist/` | ⚠️ le script `npm run build` enchaîne `vue-tsc` : exécuter en CI après `npm ci` (vue-tsc est en devDependency). |
 
@@ -37,7 +46,7 @@ Le socle ERP est **exploitable en production contrôlée** : modules métier cou
 |---|---|---|
 | Auth / Onboarding (6 étapes, devise persistée, guard) | ✅ | recette v0.8.0 §1 |
 | Catalogue (produits, catégories, variantes N-axes, attributs, étiquettes) | ✅ | recette v0.8.0 §4 |
-| Stock multi-entrepôts (entrée/sortie/ajuster, modales centrées) | ✅ | recette v0.8.0 §7 |
+| Stock multi-entrepôts (entrée/sortie/ajuster, **volets latéraux**) | ✅ | recette v0.8.0 §7 |
 | Commandes → Paiements → Livraisons → Retours | ✅ | recette v0.8.0 §6/§8/§10 |
 | POS / Caisse (ouvrir, encaisser, clôturer + écart) | ✅ | recette v0.8.0 §9 |
 | Import/Export (modèles avec déroulantes tenant, downloads authentifiés) | ✅ | recette v0.8.0 §10 |
@@ -49,6 +58,10 @@ Le socle ERP est **exploitable en production contrôlée** : modules métier cou
 | **Ajustements de stock** (Stock → Ajustements) : demande + validation manager + historique | ✅ câblé v1.0.0-rc | `route-audit-v1.0.0.md` |
 | **Édition des limites de plan** (super-admin, `PlanListView`) | ✅ câblé v1.0.0-rc | `route-audit-v1.0.0.md` |
 | Responsive (sidebar drawer, tableaux scrollables) | ✅ | recette v0.8.0 §13 |
+| **Design system (UX-03/05/11)** : `BaseModal`, `BaseButton`, `StateBlock`, `Icon`, `ConfirmDialog` | ✅ rc.19→ | `docs/modules/ux-design-system.md` |
+| **Refonte UI « Side-Drawer » (UX-03)** : toutes les modales → volet latéral droit ; confirmations centrées (`useConfirm`) ; alertes → toasts | ✅ rc.46→rc.54 | `ux-design-system.md` |
+| **i18n FR/EN (UX-13)** : noyau sans dépendance + sélecteur + 8 zones traduites | ✅ rc.22→rc.45 | `docs/modules/i18n.md` |
+| **Feedback non bloquant (UX-10)** : 403 + erreurs d'action → toasts (`pushToast`) | ✅ rc.17/rc.54 | `useNotifications` |
 
 > Recommandé avant GO ferme : repasser la **recette v0.8.0** + les 5 nouveaux parcours ci-dessus sur un `migrate:fresh --seed`.
 
@@ -107,10 +120,12 @@ Le socle ERP est **exploitable en production contrôlée** : modules métier cou
 
 ## 7. Checklist de finalisation v1.0.0
 
+- [ ] **Backfill `tenant_modules`** (CRITIQUE — gating fail-closed) : `php artisan tenants:backfill-modules` sur la prod + vérif staging *(commande livrée + testée rc.16)*
 - [ ] Recette finale signée (recette v0.8.0 + 5 parcours v0.9.0)
-- [ ] Décision P6 actée (approche A recommandée)
+- [ ] Décision P6 actée (approche A recommandée ; note `docs/decisions/p6-checkout-approach.md` à signer)
 - [ ] Zones d'ombre §5 acceptées **ou** durcies
-- [ ] CI : `npm ci && npm run build` vert + `php artisan test` vert
+- [x] CI configurée (`ci-develop`/`ci-feature` : `npm ci` + `npm run build` + `php artisan test`) — *à faire tourner sur `release/v1.0.0`*
+- [x] **Audit UX/UI livré** : design system + refonte « Side-Drawer » + i18n FR/EN + feedback toasts (rc.6→rc.54)
 - [ ] GitFlow : `release/v1.0.0` → `main` + tag `v1.0.0` + back-merge `develop`
 - [ ] Branche par défaut GitHub = `main`
 - [ ] `migrate:fresh --seed` validé sur l'environnement de prod cible

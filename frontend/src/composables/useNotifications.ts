@@ -40,7 +40,7 @@ let _toastSeq = 0
  * Push a transient client-side toast (auto-dismissed). Used for immediate feedback
  * on actions — e.g. a 403 from the API — so failures are never silent (audit UX-10).
  */
-function pushToast(message: string, severity: AppNotification['severity'] = 'error'): void {
+export function pushToast(message: string, severity: AppNotification['severity'] = 'error'): void {
   const toast: AppNotification = {
     id: `local-${++_toastSeq}`,
     type: 'client',

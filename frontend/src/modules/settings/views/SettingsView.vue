@@ -603,6 +603,7 @@ import { fetchPublicPricing, type PublicPlan } from '@/services/publicPricingSer
 import RolesPanel from '@/modules/settings/components/RolesPanel.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
+import { pushToast } from '@/composables/useNotifications'
 import { useWarehouses } from '@/composables/useWarehouses'
 import type { WorkspaceUser } from '@/modules/auth/types'
 
@@ -826,7 +827,7 @@ async function changeRole(user: WorkspaceUser, newRole: string) {
     const idx = teamUsers.value.findIndex(u => u.id === user.id)
     if (idx !== -1) teamUsers.value[idx] = updated
   } catch (err: any) {
-    alert(err?.response?.data?.message ?? 'Erreur lors du changement de rôle.')
+    pushToast(err?.response?.data?.message ?? 'Erreur lors du changement de rôle.')
     await loadTeamUsers()
   }
 }
@@ -846,7 +847,7 @@ async function toggleUser(user: WorkspaceUser) {
     const idx = teamUsers.value.findIndex(u => u.id === user.id)
     if (idx !== -1) teamUsers.value[idx] = result.data
   } catch (err: any) {
-    alert(err?.response?.data?.message ?? 'Erreur.')
+    pushToast(err?.response?.data?.message ?? 'Erreur.')
   }
 }
 

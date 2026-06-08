@@ -67,8 +67,16 @@ class="form-input"/><span class="input-affix__suffix">XAF</span></div>`), bloc d
 (`var(--gray-50)` / `#F8F9FA`), disposition verticale stricte.
 - **Module Stock (rc.49)** : `StockListView` (entrée/sortie/ajustement) et `StockAlertsView`
   (réappro) — sous-titre produit·SKU remonté dans l'en-tête, suffixe « unités » sur les quantités,
-  bloc info-stock en contexte grisé. Reste (modules suivants) : Paiements/Paiement manuel (suffixe
-  **XAF**), Catalogue (ProductForm), Commandes, etc.
+  bloc info-stock en contexte grisé.
+- **Module Paiements (rc.50)** : `OrderDetailView` (enregistrer un paiement) — sous-titre « Commande
+  N° · Reste » dans l'en-tête + **devise de la commande en suffixe** (`.input-affix`, remplace la
+  boîte devise séparée) ; `ManualPaymentView` (rejet) — sous-titre tenant dans l'en-tête ;
+  `PaymentListView` — montant + sélecteur de devise **accolés** via le nouveau pattern réutilisable
+  **`.input-group`** (lus comme un seul contrôle).
+
+Patterns réutilisables introduits : **`.input-affix`** (suffixe fixe unité/devise) et **`.input-group`**
+(champ + sélecteur accolés). Reste (modules suivants) : Catalogue (ProductForm), Livraisons,
+Fournisseurs, Promotions/Plans, Entrepôts, POS, etc.
 Le chrome est défini **une seule fois** dans `main.css` (`.modal-overlay(--drawer|--center)`,
 `.modal--drawer|--center` × `--sm|md|lg`) — `BaseModal` reste un primitif mince. Au passage,
 `.modal-overlay`/`.modal`, jusque-là **non définis** (volets sans voile ni positionnement), sont

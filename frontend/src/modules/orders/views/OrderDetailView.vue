@@ -204,27 +204,24 @@
     </template>
 
     <!-- ── Record payment modal (shared BaseModal — UX-03) ───────────────────── -->
-    <BaseModal v-model="payModal.open" title="Enregistrer un paiement">
+    <BaseModal
+      v-model="payModal.open"
+      title="Enregistrer un paiement"
+      :subtitle="order ? ('Commande ' + order.number + ' · Reste ' + fmt(Math.max(0, (order.total_amount ?? 0) - payBalance))) : ''"
+    >
       <div style="display: flex; flex-direction: column; gap: 14px;">
-        <p style="font-size: 0.875rem; color: var(--gray-500); margin: 0;">
-          Commande {{ order?.number }} · Reste {{ fmt(Math.max(0, (order?.total_amount ?? 0) - payBalance)) }}
-        </p>
         <div class="form-group">
           <label class="form-label">Montant <span style="color:#dc2626;">*</span></label>
-          <div style="display: flex; gap: 8px;">
+          <!-- Devise verrouillée sur celle de la commande (le solde somme les centimes
+               sans conversion) → affichée en suffixe du champ. -->
+          <div class="input-affix">
             <input
               v-model.number="payForm.amount"
               type="number" min="0" step="0.01"
-              class="form-input" style="flex:1;"
+              class="form-input"
               placeholder="0"
             />
-            <!-- Currency locked to the order's: the balance sums centimes across
-                 payments without converting, so mixing currencies would corrupt it. -->
-            <input
-              :value="payForm.currency"
-              class="form-input" style="width: 90px; background:var(--gray-50); text-align:center;"
-              readonly tabindex="-1" title="Devise de la commande"
-            />
+            <span class="input-affix__suffix">{{ payForm.currency }}</span>
           </div>
         </div>
 

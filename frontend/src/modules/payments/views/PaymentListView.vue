@@ -126,7 +126,7 @@
       <div style="display: flex; flex-direction: column; gap: 16px;">
         <div class="form-group">
           <label class="form-label">{{ $t('common.amount') }} <span style="color:#dc2626;">*</span></label>
-          <div style="display: flex; gap: 8px;">
+          <div class="input-group">
             <input
               v-model.number="form.amount"
               type="number"

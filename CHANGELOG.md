@@ -3,6 +3,18 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 12ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave12` (release `v1.0.0` → `rc.38`).
+
+### UX
+- **Modale unifiée (UX-03, 12ᵉ vague)** — `MarketplaceListingsView` (connexion/édition d'une listing
+  marketplace) migrée vers `<BaseModal>` ; styles `.modal-*` dupliqués retirés (corps via
+  `.mp-modal-body`). **24 modales / 19 vues migrées au total.**
+
+### Tests
+- Frontend **242** au vert · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 11ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave11` (release `v1.0.0` → `rc.37`).

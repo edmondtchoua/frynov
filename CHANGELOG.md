@@ -3,6 +3,22 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n + BaseModal : module Livraisons (UX-13 + UX-03) (2026-06-07)
+
+Branche `feature/ux-i18n-deliveries` (release `v1.0.0` → `rc.26`).
+Voir `docs/modules/i18n.md`, `docs/modules/ux-design-system.md`.
+
+### UX
+- **Module Livraisons finalisé (`DeliveryListView`)** — 2ᵉ module entièrement internationalisé :
+  toutes les chaînes via `$t`/`t()` (statuts, colonnes, actions, modales), nouveau namespace
+  `deliveries.*` + `common.allStatuses` mutualisé ; bascule FR ↔ EN en direct.
+- Ses **2 modales** (nouvelle livraison + signalement d'échec) migrées vers `<BaseModal>`
+  (focus-trap, Échap, clic-extérieur). Total cumulé : **9 modales / 7 vues** sur `<BaseModal>`.
+
+### Tests
+- Frontend **239** (+3 : `DeliveryListView.spec.ts` — liste + `role="dialog"` `aria-modal` +
+  re-rendu EN au changement de langue) · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 3ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave3` (release `v1.0.0` → `rc.25`).

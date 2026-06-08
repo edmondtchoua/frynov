@@ -3,26 +3,26 @@
     <SalesTabNav />
     <div class="page-header">
       <div>
-        <h2>Livraisons</h2>
-        <p class="page-subtitle">{{ meta.total ?? '—' }} livraison{{ meta.total !== 1 ? 's' : '' }}</p>
+        <h2>{{ $t('deliveries.title') }}</h2>
+        <p class="page-subtitle">{{ meta.total ?? '—' }} {{ (meta.total ?? 0) !== 1 ? $t('deliveries.itemPlural') : $t('deliveries.itemSingular') }}</p>
       </div>
       <button class="btn btn-primary" @click="openCreate">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
-        Nouvelle livraison
+        {{ $t('deliveries.new') }}
       </button>
     </div>
 
     <!-- Filters -->
     <div class="filter-bar">
       <select v-model="filters.status" class="form-input filter-select" style="max-width: 200px;" @change="load">
-        <option value="">Tous les statuts</option>
-        <option value="pending">En attente</option>
-        <option value="dispatched">Expédiée</option>
-        <option value="in_transit">En transit</option>
-        <option value="delivered">Livrée</option>
-        <option value="failed">Échec</option>
+        <option value="">{{ $t('common.allStatuses') }}</option>
+        <option value="pending">{{ $t('deliveries.status.pending') }}</option>
+        <option value="dispatched">{{ $t('deliveries.status.dispatched') }}</option>
+        <option value="in_transit">{{ $t('deliveries.status.in_transit') }}</option>
+        <option value="delivered">{{ $t('deliveries.status.delivered') }}</option>
+        <option value="failed">{{ $t('deliveries.status.failed') }}</option>
       </select>
     </div>
 
@@ -33,8 +33,8 @@
     <StateBlock
       v-else-if="deliveries.length === 0"
       variant="empty"
-      title="Aucune livraison"
-      :message="filters.status ? 'Aucune livraison avec ce statut.' : 'Les livraisons apparaîtront ici.'"
+      :title="$t('deliveries.empty')"
+      :message="filters.status ? $t('deliveries.emptyFiltered') : $t('deliveries.emptyDefault')"
     />
 
     <!-- Table -->
@@ -42,12 +42,12 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Statut</th>
-            <th class="hide-mobile">Commande</th>
-            <th class="hide-mobile">Transporteur</th>
-            <th class="hide-mobile">Suivi</th>
-            <th>Dates</th>
-            <th style="text-align: right;">Actions</th>
+            <th>{{ $t('common.status') }}</th>
+            <th class="hide-mobile">{{ $t('deliveries.colOrder') }}</th>
+            <th class="hide-mobile">{{ $t('deliveries.colCarrier') }}</th>
+            <th class="hide-mobile">{{ $t('deliveries.colTracking') }}</th>
+            <th>{{ $t('deliveries.colDates') }}</th>
+            <th style="text-align: right;">{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -77,7 +77,7 @@
               <div v-if="d.delivered_at">✅ {{ fmtDate(d.delivered_at) }}</div>
               <div v-if="d.failed_at">❌ {{ fmtDate(d.failed_at) }}</div>
               <div v-if="!d.dispatched_at && !d.delivered_at && !d.failed_at" class="text-muted">
-                Créée {{ fmtDate(d.created_at) }}
+                {{ $t('deliveries.created', { date: fmtDate(d.created_at) }) }}
               </div>
             </td>
             <td>
@@ -90,7 +90,7 @@
                   @click="doDispatch(d)"
                 >
                   <span v-if="actionId === d.id" class="spinner-sm"></span>
-                  Expédier
+                  {{ $t('deliveries.dispatch') }}
                 </button>
                 <!-- Deliver -->
                 <button
@@ -101,7 +101,7 @@
                   @click="doDeliver(d)"
                 >
                   <span v-if="actionId === d.id" class="spinner-sm"></span>
-                  Livré
+                  {{ $t('deliveries.markDelivered') }}
                 </button>
                 <!-- Fail -->
                 <button
@@ -111,7 +111,7 @@
                   :disabled="actionId === d.id"
                   @click="openFail(d)"
                 >
-                  Échec
+                  {{ $t('deliveries.fail') }}
                 </button>
               </div>
             </td>
@@ -127,73 +127,51 @@
       <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goToPage(meta.current_page + 1)">Suivant →</button>
     </div>
 
-    <!-- Create modal -->
-    <Teleport to="body">
-      <div v-if="createModal.open" class="modal-backdrop" @click.self="createModal.open = false">
-        <div class="modal-box">
-          <div class="modal-header">
-            <h3 class="modal-title">Nouvelle livraison</h3>
-            <button class="modal-close" @click="createModal.open = false">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M4 4l10 10M14 4L4 14" stroke="var(--gray-500)" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </div>
-          <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
-            <div class="form-group">
-              <label class="form-label">Transporteur</label>
-              <input v-model="createForm.carrier" type="text" class="form-input" placeholder="DHL, FedEx, Colissimo…" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">N° de suivi</label>
-              <input v-model="createForm.tracking_number" type="text" class="form-input" placeholder="ABC123456789" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Notes</label>
-              <textarea v-model="createForm.notes" class="form-input" rows="2" style="resize: vertical; min-height: 56px;"></textarea>
-            </div>
-            <p v-if="createModal.error" style="color: #dc2626; font-size: 0.875rem;">{{ createModal.error }}</p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-ghost" @click="createModal.open = false">Annuler</button>
-            <button class="btn btn-primary" :disabled="createModal.saving" @click="submitCreate">
-              <span v-if="createModal.saving" class="spinner-sm"></span>
-              Créer
-            </button>
-          </div>
+    <!-- Create modal (shared BaseModal — UX-03) -->
+    <BaseModal v-model="createModal.open" :title="$t('deliveries.new')">
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div class="form-group">
+          <label class="form-label">{{ $t('deliveries.carrier') }}</label>
+          <input v-model="createForm.carrier" type="text" class="form-input" placeholder="DHL, FedEx, Colissimo…" />
         </div>
+        <div class="form-group">
+          <label class="form-label">{{ $t('deliveries.tracking') }}</label>
+          <input v-model="createForm.tracking_number" type="text" class="form-input" placeholder="ABC123456789" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ $t('common.notes') }}</label>
+          <textarea v-model="createForm.notes" class="form-input" rows="2" style="resize: vertical; min-height: 56px;"></textarea>
+        </div>
+        <p v-if="createModal.error" style="color: #dc2626; font-size: 0.875rem;">{{ createModal.error }}</p>
       </div>
-    </Teleport>
 
-    <!-- Fail reason modal -->
-    <Teleport to="body">
-      <div v-if="failModal.open" class="modal-backdrop" @click.self="failModal.open = false">
-        <div class="modal-box" style="max-width: 420px;">
-          <div class="modal-header">
-            <h3 class="modal-title">Signaler un échec</h3>
-            <button class="modal-close" @click="failModal.open = false">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M4 4l10 10M14 4L4 14" stroke="var(--gray-500)" stroke-width="1.5" stroke-linecap="round"/>
-              </svg>
-            </button>
-          </div>
-          <div class="modal-body" style="display: flex; flex-direction: column; gap: 12px;">
-            <div class="form-group">
-              <label class="form-label">Raison de l'échec <span style="color:#dc2626;">*</span></label>
-              <textarea v-model="failModal.reason" class="form-input" rows="3" style="resize: vertical;" placeholder="Ex : Adresse introuvable, client absent…"></textarea>
-            </div>
-            <p v-if="failModal.error" style="color: #dc2626; font-size: 0.875rem;">{{ failModal.error }}</p>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-ghost" @click="failModal.open = false">Annuler</button>
-            <button class="btn btn-danger" :disabled="failModal.saving || !failModal.reason.trim()" @click="submitFail">
-              <span v-if="failModal.saving" class="spinner-sm"></span>
-              Confirmer l'échec
-            </button>
-          </div>
+      <template #footer>
+        <button class="btn btn-ghost" @click="createModal.open = false">{{ $t('common.cancel') }}</button>
+        <button class="btn btn-primary" :disabled="createModal.saving" @click="submitCreate">
+          <span v-if="createModal.saving" class="spinner-sm"></span>
+          {{ $t('common.create') }}
+        </button>
+      </template>
+    </BaseModal>
+
+    <!-- Fail reason modal (shared BaseModal — UX-03) -->
+    <BaseModal v-model="failModal.open" size="sm" :title="$t('deliveries.failTitle')">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label">{{ $t('deliveries.failReason') }} <span style="color:#dc2626;">*</span></label>
+          <textarea v-model="failModal.reason" class="form-input" rows="3" style="resize: vertical;" :placeholder="$t('deliveries.failReasonPlaceholder')"></textarea>
         </div>
+        <p v-if="failModal.error" style="color: #dc2626; font-size: 0.875rem;">{{ failModal.error }}</p>
       </div>
-    </Teleport>
+
+      <template #footer>
+        <button class="btn btn-ghost" @click="failModal.open = false">{{ $t('common.cancel') }}</button>
+        <button class="btn btn-danger" :disabled="failModal.saving || !failModal.reason.trim()" @click="submitFail">
+          <span v-if="failModal.saving" class="spinner-sm"></span>
+          {{ $t('deliveries.failConfirm') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -204,6 +182,8 @@ import { RouterLink } from 'vue-router'
 import SalesTabNav from '../../orders/components/SalesTabNav.vue'
 import { deliveryService } from '../services/deliveryService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
+import BaseModal from '@/shared/ui/BaseModal.vue'
+import { t } from '@/i18n'
 import type { Delivery, DeliveryStatus } from '../types'
 
 const deliveries = ref<Delivery[]>([])
@@ -271,7 +251,7 @@ async function submitFail() {
     failModal.open = false
     load()
   } catch (e: any) {
-    failModal.error = e?.response?.data?.message ?? 'Une erreur est survenue.'
+    failModal.error = e?.response?.data?.message ?? t('common.genericError')
   } finally {
     failModal.saving = false
   }
@@ -299,7 +279,7 @@ async function submitCreate() {
     createModal.open = false
     load()
   } catch (e: any) {
-    createModal.error = e?.response?.data?.message ?? 'Une erreur est survenue.'
+    createModal.error = e?.response?.data?.message ?? t('common.genericError')
   } finally {
     createModal.saving = false
   }
@@ -307,13 +287,7 @@ async function submitCreate() {
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 function statusLabel(s: DeliveryStatus): string {
-  return ({
-    pending:    'En attente',
-    dispatched: 'Expédiée',
-    in_transit: 'En transit',
-    delivered:  'Livrée',
-    failed:     'Échec',
-  } as Record<DeliveryStatus, string>)[s] ?? s
+  return t(`deliveries.status.${s}`)
 }
 
 function statusBadge(s: DeliveryStatus): string {

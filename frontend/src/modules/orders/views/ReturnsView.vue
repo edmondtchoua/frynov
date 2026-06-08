@@ -58,27 +58,30 @@
       </table>
     </div>
 
-    <!-- Reject Modal -->
-    <div v-if="rejectTarget" class="modal-overlay" @click.self="rejectTarget = null">
-      <div class="modal-card">
-        <h2 class="modal-title">Refuser le retour {{ rejectTarget.number }}</h2>
-        <div class="form-group">
-          <label class="form-label">Raison du refus *</label>
-          <textarea
-            v-model="rejectReason"
-            class="form-input"
-            rows="3"
-            placeholder="Ex: Délai de retour dépassé (30 jours), article utilisé..."
-          ></textarea>
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" @click="rejectTarget = null">Annuler</button>
-          <button class="btn btn-danger" :disabled="!rejectReason || rejecting" @click="confirmReject">
-            {{ rejecting ? 'Refus en cours...' : 'Confirmer le refus' }}
-          </button>
-        </div>
+    <!-- Reject Modal (shared BaseModal — UX-03) -->
+    <BaseModal
+      :model-value="!!rejectTarget"
+      size="sm"
+      :title="rejectTarget ? `Refuser le retour ${rejectTarget.number}` : ''"
+      @update:model-value="(v: boolean) => { if (!v) rejectTarget = null }"
+    >
+      <div class="form-group">
+        <label class="form-label">Raison du refus *</label>
+        <textarea
+          v-model="rejectReason"
+          class="form-input"
+          rows="3"
+          placeholder="Ex: Délai de retour dépassé (30 jours), article utilisé..."
+        ></textarea>
       </div>
-    </div>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="rejectTarget = null">Annuler</button>
+        <button class="btn btn-danger" :disabled="!rejectReason || rejecting" @click="confirmReject">
+          {{ rejecting ? 'Refus en cours...' : 'Confirmer le refus' }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -87,6 +90,7 @@ import { ref, onMounted } from 'vue'
 import { formatDate } from '@/shared/utils/date'
 import api from '@/services/api'
 import StateBlock from '@/shared/ui/StateBlock.vue'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import SalesTabNav from '../components/SalesTabNav.vue'
 
 interface OrderReturn {
@@ -183,8 +187,5 @@ onMounted(load)
 .filter-bar     { margin-bottom: 16px; }
 .filter-select  { max-width: 220px; }
 .actions-cell   { display: flex; gap: 4px; flex-wrap: wrap; }
-.modal-overlay  { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
-.modal-card     { background: white; border-radius: 12px; padding: 28px; width: 480px; max-width: 95vw; }
-.modal-title    { font-size: 1.125rem; font-weight: 600; margin: 0 0 16px; }
-.modal-actions  { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+/* Modal chrome now provided by the shared <BaseModal> (UX-03). */
 </style>

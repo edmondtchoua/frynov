@@ -3,6 +3,21 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : transferts inter-entrepôts traduits FR/EN (UX-13) (2026-06-08)
+
+Branche `feature/ux-i18n-transfer` (release `v1.0.0` → `rc.59`).
+
+### UX (i18n)
+- **`StockTransferView` (Transferts inter-entrepôts)** internationalisé : en-tête + compteur, filtre
+  de statut, table (colonnes, statuts ×8, actions Expédier/Réceptionner/Résoudre), et **3 volets**
+  (création : entrepôts/notes/lignes ; réception : quantités reçues ; résolution de litige :
+  résolution + raison). `statusLabel` via `t()` (`transferStatus`).
+- Étend `inventory.*` (transferts) ; réutilise `common.*` (status, actions, notes, quantity,
+  allStatuses, cancel, saving, confirm).
+
+### Tests
+- Frontend **253** inchangé · `vue-tsc` propre.
+
 ## [Non publié] — i18n : ajustements de stock traduits FR/EN (UX-13) (2026-06-08)
 
 Branche `feature/ux-i18n-stockadj` (release `v1.0.0` → `rc.58`).

@@ -5,18 +5,18 @@
 
     <div class="page-header">
       <div>
-        <h2>Rapport de stock</h2>
-        <p class="page-subtitle">Valeur du stock, ruptures et produits en alerte</p>
+        <h2>{{ $t('reports.stockTitle') }}</h2>
+        <p class="page-subtitle">{{ $t('reports.stockSubtitle') }}</p>
       </div>
       <div class="header-actions">
-        <select v-model="warehouseId" class="form-input" style="max-width: 190px" aria-label="Filtrer par entrepôt">
-          <option value="">Tous les entrepôts</option>
+        <select v-model="warehouseId" class="form-input" style="max-width: 190px" :aria-label="$t('common.allWarehouses')">
+          <option value="">{{ $t('common.allWarehouses') }}</option>
           <option v-for="w in warehouses" :key="w.id" :value="w.id">
             {{ w.is_default ? '⭐ ' : '' }}{{ w.name }}
           </option>
         </select>
         <RouterLink to="/inventory/alerts" class="btn btn-secondary btn-sm">
-          Voir les alertes →
+          {{ $t('reports.viewAlerts') }} →
         </RouterLink>
       </div>
     </div>
@@ -39,7 +39,7 @@
           </div>
           <div class="kpi-body">
             <div class="kpi-value">{{ formatMoneyCompact(data.stock_value) }}</div>
-            <div class="kpi-label">Valeur du stock (coût)</div>
+            <div class="kpi-label">{{ $t('reports.kpiStockValue') }}</div>
           </div>
         </div>
 
@@ -54,7 +54,7 @@
           </div>
           <div class="kpi-body">
             <div class="kpi-value">{{ data.total_skus }}</div>
-            <div class="kpi-label">Références suivies</div>
+            <div class="kpi-label">{{ $t('reports.kpiSkus') }}</div>
           </div>
         </div>
 
@@ -67,7 +67,7 @@
           </div>
           <div class="kpi-body">
             <div class="kpi-value" :class="data.low_stock_count > 0 ? 'kpi-warn' : ''">{{ data.low_stock_count }}</div>
-            <div class="kpi-label">En alerte stock bas</div>
+            <div class="kpi-label">{{ $t('reports.kpiLowStock') }}</div>
           </div>
         </div>
 
@@ -80,7 +80,7 @@
           </div>
           <div class="kpi-body">
             <div class="kpi-value" :class="data.out_of_stock > 0 ? 'kpi-error' : ''">{{ data.out_of_stock }}</div>
-            <div class="kpi-label">En rupture de stock</div>
+            <div class="kpi-label">{{ $t('reports.kpiOutOfStock') }}</div>
           </div>
         </div>
       </div>
@@ -91,10 +91,10 @@
         <!-- Low stock items -->
         <div class="card">
           <h3 class="section-title">
-            Produits en alerte
+            {{ $t('reports.lowStockTitle') }}
             <span v-if="data.low_stock_count > 10" class="text-muted" style="font-weight:400;font-size:var(--text-xs)"> (top 10)</span>
           </h3>
-          <div v-if="!data.low_stock_items.length" class="empty-state">Aucun produit en alerte stock.</div>
+          <div v-if="!data.low_stock_items.length" class="empty-state">{{ $t('reports.noLowStock') }}</div>
           <div v-else class="alert-list">
             <div v-for="item in data.low_stock_items" :key="item.id" class="alert-item">
               <div class="alert-item-info">
@@ -118,8 +118,8 @@
 
         <!-- Recent movements by type -->
         <div class="card">
-          <h3 class="section-title">Mouvements — 30 derniers jours</h3>
-          <div v-if="!data.recent_movements.length" class="empty-state">Aucun mouvement enregistré.</div>
+          <h3 class="section-title">{{ $t('reports.movementsTitle') }}</h3>
+          <div v-if="!data.recent_movements.length" class="empty-state">{{ $t('reports.noMovements') }}</div>
           <div v-else class="movements-list">
             <div v-for="m in data.recent_movements" :key="m.type" class="movement-row">
               <span class="movement-icon" :class="`movement-icon--${m.type}`">
@@ -135,7 +135,7 @@
               </span>
               <div class="movement-info">
                 <span class="movement-type">{{ movementLabel(m.type) }}</span>
-                <span class="text-muted">{{ m.count }} opération{{ m.count > 1 ? 's' : '' }}</span>
+                <span class="text-muted">{{ m.count }} {{ m.count > 1 ? $t('reports.operationsWord') : $t('reports.operationWord') }}</span>
               </div>
               <div class="movement-bar-wrap">
                 <div
@@ -144,7 +144,7 @@
                   :style="{ width: `${maxMovementQty > 0 ? (m.total_qty / maxMovementQty) * 100 : 0}%` }"
                 ></div>
               </div>
-              <span class="movement-qty">{{ m.total_qty }} unités</span>
+              <span class="movement-qty">{{ m.total_qty }} {{ $t('reports.unitsWord') }}</span>
             </div>
           </div>
         </div>
@@ -154,7 +154,7 @@
     </template>
 
     <div v-else class="alert alert-error" style="margin-top:1.5rem">
-      Erreur de chargement des données.
+      {{ $t('reports.loadError') }}
     </div>
 
   </div>
@@ -166,6 +166,7 @@ import { RouterLink } from 'vue-router'
 import ReportsTabNav from '../components/ReportsTabNav.vue'
 import { reportService, formatMoneyCompact, type StockData } from '../services/reportService'
 import { useWarehouses } from '@/composables/useWarehouses'
+import { t } from '@/i18n'
 
 const loading = ref(true)
 const data    = ref<StockData | null>(null)
@@ -192,13 +193,7 @@ const maxMovementQty = computed(() => {
 })
 
 function movementLabel(type: string): string {
-  const m: Record<string, string> = {
-    in:         'Entrées',
-    out:        'Sorties',
-    adjustment: 'Ajustements',
-    return:     'Retours',
-  }
-  return m[type] ?? type
+  return t('reports.movement.' + type)
 }
 </script>
 

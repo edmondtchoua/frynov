@@ -3,6 +3,22 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal TERMINÉE (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave17` (release `v1.0.0` → `rc.43`).
+
+### UX
+- **Dernière vague (UX-03, 17ᵉ)** — `SettingsView` : **4 modales** (invitation d'un membre, accès
+  entrepôts, accès temporaire auto-expirant, demande de mise à niveau / preuve de paiement) migrées
+  vers `<BaseModal>` ; chrome `.modal-*` dupliqué retiré (corps via `.settings-modal-body`).
+- **🎯 Migration `BaseModal` 100 % terminée** : **33 modales / 24 vues**, **plus aucune modale
+  ad-hoc** dans le code (`grep modal-overlay|modal-backdrop` = 0). Chrome unifié (overlay,
+  focus-trap, Échap, clic-extérieur, en-tête/fermeture) sur toute l'application.
+
+### Tests
+- `v-focus-trap` enregistré globalement dans `test-setup.ts` (plus de warning, specs allégées).
+  Frontend **242** au vert · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 16ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave16` (release `v1.0.0` → `rc.42`).

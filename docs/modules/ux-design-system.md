@@ -32,14 +32,16 @@ Pattern pour remplacer une modale ad-hoc (`.modal-overlay`/`.modal-backdrop` + c
 `BaseModal` apporte overlay, `Teleport`, focus-trap, Échap, clic-extérieur, bouton de fermeture
 et en-tête — supprimer le chrome local et les styles `.modal-*` dupliqués. Lier la fermeture via
 `@update:model-value` (et non `v-model`) quand `onClose()` a des effets de bord (réinitialisation).
-**Adopté** (29 modales / 23 vues) : `CustomerListView`, `PaymentListView`, `SupplierListView`,
+**Adopté — migration terminée ✅ (33 modales / 24 vues, 0 ad-hoc restante)** : `CustomerListView`, `PaymentListView`, `SupplierListView`,
 `SupplierDetailView` (suppression), `CategoryListView`, `WarehouseView`, `StockAdjustmentView`
 (création + rejet), `DeliveryListView` (création + échec), `ReturnsView` (refus), `CountryRuleListView`,
 `PlanListView`, `StockAlertsView`, `FiscalPeriodView` (création + verrouillage), `ManualPaymentView`
 (rejet), `StockTransferView` (création + réception + résolution), `RolesPanel` (création/édition de rôle), `ImportHistoryView` (détail d'import), `PromotionListView`
 (création/édition), `MarketplaceListingsView` (connexion marketplace), `OrderDetailView` (enregistrer paiement), `StockListView` (entrée/sortie/ajustement),
-`ProductFormView` (désactivation de variante), `PosView` (déclinaison + clôture de caisse).
-Reste (incrémental, ~1 vue) : SettingsView (5 modales). Contrat testé (`PaymentListView.spec.ts`,
+`ProductFormView` (désactivation de variante), `PosView` (déclinaison + clôture de caisse),
+`SettingsView` (invitation + accès entrepôts + accès temporaire + mise à niveau).
+**Plus aucune modale ad-hoc dans le code** (`grep modal-overlay|modal-backdrop` = 0).
+Contrat testé (`PaymentListView.spec.ts`,
 `SupplierListView.spec.ts`, `SupplierDetailView.spec.ts`, `WarehouseView.spec.ts`,
 `DeliveryListView.spec.ts`, `RolesPanel.spec.ts`, `StockListView.spec.ts`, `PosView.spec.ts` → ouverture d'un `role="dialog"` `aria-modal`).
 Astuce pour un formulaire avec `<form>` : garder le `<form id="…">` dans le slot par défaut et lier

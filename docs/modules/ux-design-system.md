@@ -12,6 +12,7 @@
 | `BaseButton.vue` | Bouton primitif | `variant` (primary/secondary/danger/ghost), `size` (sm/md), `loading` (spinner + `aria-busy`), `block` ; anneau focus clavier global |
 | `BaseModal.vue` | Dialogue **Side-Drawer / centré** | `v-model`, `title`, `subtitle`, `size` (sm/md/lg), **`variant`** (`drawer` défaut = volet droit 100vh · `center` = boîte centrée) ; `role="dialog"` + `aria-modal` + **`v-focus-trap`** (piège Tab, Échap, restauration focus) ; slots défaut + `#footer` + `#subtitle` ; `Teleport` vers `body` |
 | `Icon.vue` | Icône ligne | `<Icon name="plus" :size="14" />` — registre statique de primitives SVG (whitelist, **pas de `v-html`**), grille 16×16, `currentColor` ; décoratif par défaut (`aria-hidden`), `title` → `role="img"`. Noms : plus, search, view, edit, close, trash, check, download, filter, chevron-left/right |
+| `ConfirmDialog.vue` + `useConfirm()` | **Confirmation centrée** | Remplace `window.confirm()` natif par une boîte centrée (`BaseModal variant="center"`). Host **monté une seule fois** dans `App.vue` ; `const { confirm } = useConfirm()` → `await confirm({ title, message, danger?, confirmLabel?, cancelLabel? })` renvoie `Promise<boolean>`. Toute fermeture (croix/Échap/clic-extérieur) = annulation. |
 
 Page transverse : `pages/AccessUnavailableView.vue` (route `/unavailable`) — page
 « accès indisponible » contextualisée (module désactivé / permission manquante / quota),
@@ -48,7 +49,11 @@ plein écran (100vh) sur le flanc droit, largeur fixe selon `size` (**sm 400 / m
 glissé depuis la droite (`@keyframes drawer-in`, désactivé sous `prefers-reduced-motion`), voile
 sombre, fond blanc, en-tête (titre + `subtitle`/slot `#subtitle` + croix fine grise), corps défilant
 (`flex:1; overflow:auto`) et **pied collé en bas à droite**. `variant="center"` rend une boîte
-centrée arrondie pour les **confirmations critiques** (cf. Phase 2 `ConfirmDialog`/`useConfirm`).
+centrée arrondie pour les **confirmations critiques** — exploité par `ConfirmDialog`/`useConfirm`
+(rc.47, voir ligne dédiée ci-dessus). Migration des `confirm()` natifs **par vagues** : vague 1
+(rc.47) = Catégories, Fournisseurs, Paiements (annulation), Commande (annulation paiement), Règles
+pays, Promotions, Rôles. Reste (vague 2) : Marketplace, Import (assistant/historique), Tenants,
+Paiement manuel, Paramètres (équipe), Transfert de stock, Retours, Profil.
 Le chrome est défini **une seule fois** dans `main.css` (`.modal-overlay(--drawer|--center)`,
 `.modal--drawer|--center` × `--sm|md|lg`) — `BaseModal` reste un primitif mince. Au passage,
 `.modal-overlay`/`.modal`, jusque-là **non définis** (volets sans voile ni positionnement), sont

@@ -195,6 +195,7 @@ import { paymentService } from '../services/paymentService'
 import { useWarehouses } from '@/composables/useWarehouses'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { useConfirm } from '@/composables/useConfirm'
 import Icon from '@/shared/ui/Icon.vue'
 import { t } from '@/i18n'
 import type { Payment, PaymentMethod } from '../types'
@@ -233,8 +234,15 @@ async function load() {
 
 function goToPage(page: number) { filters.page = page; load() }
 
+const { confirm } = useConfirm()
+
 async function voidPayment(p: Payment) {
-  if (!confirm(t('payments.voidConfirm', { amount: fmtAmount(p.amount_cents, p.currency) }))) return
+  if (!(await confirm({
+    title: t('payments.void'),
+    message: t('payments.voidConfirm', { amount: fmtAmount(p.amount_cents, p.currency) }),
+    confirmLabel: t('payments.void'),
+    danger: true,
+  }))) return
   try {
     await paymentService.void(p.id)
     load()

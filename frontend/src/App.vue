@@ -37,6 +37,9 @@
       </Transition>
     </RouterView>
   </AppLayout>
+
+  <!-- Host unique des confirmations centrées (useConfirm) — Teleport vers body -->
+  <ConfirmDialog />
 </template>
 
 <script setup lang="ts">
@@ -46,6 +49,7 @@ import AppLayout           from '@/layouts/AppLayout.vue'
 import AuthLayout          from '@/layouts/AuthLayout.vue'
 import AdminLayout         from '@/layouts/AdminLayout.vue'
 import AppProgressBar      from '@/shared/components/AppProgressBar.vue'
+import ConfirmDialog       from '@/shared/ui/ConfirmDialog.vue'
 import { useSessionTimeout } from '@/composables/useSessionTimeout'
 
 // Start the inactivity-based session timeout tracker

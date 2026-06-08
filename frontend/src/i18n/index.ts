@@ -36,7 +36,7 @@ const messages: Record<Locale, Dict> = {
       genericError: 'Une erreur est survenue.', allStatuses: 'Tous les statuts',
       date: 'Date', amount: 'Montant', note: 'Note', previous: 'Précédent', next: 'Suivant',
       allWarehouses: 'Tous les entrepôts', product: 'Produit', quantity: 'Qté', view: 'Voir',
-      description: 'Description', update: 'Mettre à jour',
+      description: 'Description', update: 'Mettre à jour', confirm: 'Confirmer',
     },
     nav: {
       dashboard: 'Tableau de bord', catalog: 'Catalogue', inventory: 'Stock',
@@ -151,6 +151,7 @@ const messages: Record<Locale, Dict> = {
       genericError: 'An error occurred.', allStatuses: 'All statuses',
       date: 'Date', amount: 'Amount', note: 'Note', previous: 'Previous', next: 'Next',
       allWarehouses: 'All warehouses', product: 'Product', quantity: 'Qty', view: 'View',
+      description: 'Description', update: 'Update', confirm: 'Confirm',
     },
     nav: {
       dashboard: 'Dashboard', catalog: 'Catalog', inventory: 'Inventory',

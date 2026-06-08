@@ -156,6 +156,7 @@ import { formatDate } from '@/shared/utils/date'
 import { adminService, type AdminPromotion } from '../services/adminService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { useConfirm } from '@/composables/useConfirm'
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const promos  = ref<AdminPromotion[]>([])
@@ -265,8 +266,15 @@ async function toggleActive(p: AdminPromotion) {
   await load()
 }
 
+const { confirm } = useConfirm()
+
 async function doDelete(p: AdminPromotion) {
-  if (!confirm(`Supprimer la promotion "${p.code}" ?`)) return
+  if (!(await confirm({
+    title: 'Supprimer',
+    message: `Supprimer la promotion "${p.code}" ?`,
+    confirmLabel: 'Supprimer',
+    danger: true,
+  }))) return
   await adminService.deletePromotion(p.id)
   await load()
 }

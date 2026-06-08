@@ -160,6 +160,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
 import { productService } from '../services/productService'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { useConfirm } from '@/composables/useConfirm'
 import { t } from '@/i18n'
 import type { Category } from '../types'
 
@@ -249,8 +250,15 @@ async function saveCategory() {
   }
 }
 
+const { confirm } = useConfirm()
+
 async function confirmDelete(cat: Category) {
-  if (!confirm(t('catalog.confirmDeleteCategory', { name: cat.name }))) return
+  if (!(await confirm({
+    title: t('common.delete'),
+    message: t('catalog.confirmDeleteCategory', { name: cat.name }),
+    confirmLabel: t('common.delete'),
+    danger: true,
+  }))) return
   try {
     await productService.categories.delete(cat.id)
     load()

@@ -3,6 +3,30 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Refonte UI : confirmations centrées (ConfirmDialog / useConfirm) — vague 1 (2026-06-08)
+
+Branche `feature/ux-confirm-dialog` (release `v1.0.0` → `rc.47`).
+
+### UX — confirmations
+- Nouveau **`ConfirmDialog.vue`** (boîte **centrée** via `BaseModal variant="center"`) + composable
+  **`useConfirm()`** : `await confirm({ title, message, danger?, … }) → Promise<boolean>`. Host monté
+  une seule fois dans `App.vue` ; toute fermeture (croix/Échap/clic-extérieur) vaut annulation ;
+  bouton **rouge** en mode `danger`. Remplace les `window.confirm()` natifs par une boîte cohérente
+  avec le design system (mêmes boutons, angles, polices).
+- **Vague 1** — migrés : `CategoryListView`, `SupplierListView` (suppression), `PaymentListView`
+  (annulation), `OrderDetailView` (annulation de paiement), `CountryRuleListView`, `PromotionListView`
+  (suppression), `RolesPanel` (suppression de rôle). *(Les `confirm()` des services/composables —
+  `orderService`, `useUnsavedChanges` — restent inchangés : hors composant.)*
+
+### Correctif i18n
+- `common.update` / `common.description` **manquaient en anglais** (introduits FR-only en rc.45) →
+  l'UI EN affichait le fallback français. Ajoutés ; nouvelle clé `common.confirm` (FR/EN).
+
+### Tests
+- Frontend **252** (+4 : `ConfirmDialog.spec` — ouverture/validation/annulation/libellé défaut ;
+  `PaymentListView` & `OrderDetailView` spec migrées vers un mock `useConfirm` ; garde-fou i18n EN)
+  · `vue-tsc` propre.
+
 ## [Non publié] — Refonte UI : fondation Side-Drawer (BaseModal) (2026-06-08)
 
 Branche `feature/ux-drawer-foundation` (release `v1.0.0` → `rc.46`).

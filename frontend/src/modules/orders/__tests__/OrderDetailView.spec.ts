@@ -5,6 +5,11 @@ import OrderDetailView from '@/modules/orders/views/OrderDetailView.vue'
 import { setupManagerAuth } from '@/test-utils/setupAuth'
 import client from '@/api/client'
 
+// voidPayment() passe par useConfirm() (host ConfirmDialog dans App.vue, absent ici)
+// → on mocke le composable pour auto-confirmer.
+const { confirmMock } = vi.hoisted(() => ({ confirmMock: vi.fn(() => Promise.resolve(true)) }))
+vi.mock('@/composables/useConfirm', () => ({ useConfirm: () => ({ confirm: confirmMock }) }))
+
 const router = createRouter({
   history: createMemoryHistory(),
   routes: [
@@ -66,8 +71,7 @@ describe('OrderDetailView', () => {
 
   it('surfaces an error when voiding a payment fails (was silently swallowed)', async () => {
     const w = await mountView()
-    // Confirm dialog → accept
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    // Confirm dialog → accept (useConfirm mocké en tête de fichier)
     // Void rejects with a backend message
     vi.mocked(client.delete).mockRejectedValue({ response: { data: { message: 'Paiement déjà annulé.' } } })
 

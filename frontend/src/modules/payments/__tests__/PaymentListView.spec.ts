@@ -7,6 +7,11 @@ import { vFocusTrap } from '@/directives/focusTrap'
 import { setLocale } from '@/i18n'
 import client from '@/api/client'
 
+// useConfirm() résout via le host ConfirmDialog monté dans App.vue, absent de ce
+// montage de vue isolée → on le mocke pour auto-confirmer (et asserter l'appel).
+const { confirmMock } = vi.hoisted(() => ({ confirmMock: vi.fn(() => Promise.resolve(true)) }))
+vi.mock('@/composables/useConfirm', () => ({ useConfirm: () => ({ confirm: confirmMock }) }))
+
 const router = createRouter({
   history: createMemoryHistory(),
   routes: [
@@ -73,13 +78,11 @@ describe('PaymentListView', () => {
   })
 
   it('voids a payment via the service after confirmation', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     const w = await mountView()
     await w.findAll('button').find(b => b.text().includes('Annuler'))!.trigger('click')
     await flushPromises()
-    expect(confirmSpy).toHaveBeenCalled()
+    expect(confirmMock).toHaveBeenCalled()
     expect(client.delete).toHaveBeenCalledWith('/api/payments/pay1')
-    confirmSpy.mockRestore()
   })
 
   it('shows an empty state when there are no payments', async () => {

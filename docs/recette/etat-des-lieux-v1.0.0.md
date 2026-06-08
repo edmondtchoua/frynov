@@ -1,6 +1,6 @@
 # État des lieux v1.0.0 — polish UX restant + suite de la recette finale
 
-> Mise à jour : 2026-06-08. Branche `release/v1.0.0` à **`v1.0.0-rc.45`** (cette session → `rc.46+`).
+> Mise à jour : 2026-06-08. Branche `release/v1.0.0` à **`v1.0.0-rc.46`** (cette session → `rc.47+`).
 > Complète (et actualise) `go-no-go-v1.0.0.md` (figé à rc.1). Depuis rc.1 ont été livrés :
 > RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13),
 > polish UX P1 — garde « modifications non enregistrées » sur la création de commande +
@@ -14,8 +14,9 @@
 > module Rapports traduit FR/EN (rc.30), `BaseModal` vagues 6→8 (rc.31→rc.33),
 > liste Commandes traduite FR/EN (rc.34), **migration `BaseModal` terminée** (rc.35→rc.43, 0 ad-hoc),
 > liste Produits traduite FR/EN (rc.44), liste Catégories traduite FR/EN (rc.45),
-> **refonte UI Side-Drawer — fondation `BaseModal`** (rc.46).
-> Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 248** · `vue-tsc` propre ·
+> **refonte UI Side-Drawer — fondation `BaseModal`** (rc.46),
+> **confirmations centrées `ConfirmDialog`/`useConfirm` — vague 1** (rc.47).
+> Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 252** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 
 ---

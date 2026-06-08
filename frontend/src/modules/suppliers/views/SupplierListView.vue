@@ -161,6 +161,7 @@ import { RouterLink } from 'vue-router'
 import { supplierService } from '../services/supplierService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { useConfirm } from '@/composables/useConfirm'
 import { t } from '@/i18n'
 import type { Supplier } from '../types'
 
@@ -235,8 +236,15 @@ async function submitModal() {
   }
 }
 
+const { confirm } = useConfirm()
+
 async function confirmDelete(s: Supplier) {
-  if (!confirm(t('suppliers.confirmDelete', { name: s.name }))) return
+  if (!(await confirm({
+    title: t('common.delete'),
+    message: t('suppliers.confirmDelete', { name: s.name }),
+    confirmLabel: t('common.delete'),
+    danger: true,
+  }))) return
   try {
     await supplierService.delete(s.id)
     await load(meta.current_page)

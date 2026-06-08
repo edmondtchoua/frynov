@@ -155,7 +155,7 @@
     </BaseModal>
 
     <!-- Fail reason modal (shared BaseModal — UX-03) -->
-    <BaseModal v-model="failModal.open" size="sm" :title="$t('deliveries.failTitle')">
+    <BaseModal v-model="failModal.open" size="sm" :title="$t('deliveries.failTitle')" :subtitle="failModal.orderRef">
       <div style="display: flex; flex-direction: column; gap: 12px;">
         <div class="form-group">
           <label class="form-label">{{ $t('deliveries.failReason') }} <span style="color:#dc2626;">*</span></label>
@@ -197,7 +197,7 @@ const createModal = reactive({ open: false, saving: false, error: '' })
 const createForm  = reactive({ carrier: '', tracking_number: '', notes: '' })
 
 // ── Fail modal ────────────────────────────────────────────────────────────────
-const failModal = reactive({ open: false, saving: false, error: '', deliveryId: '', reason: '' })
+const failModal = reactive({ open: false, saving: false, error: '', deliveryId: '', orderRef: '', reason: '' })
 
 // ── Data ───────────────────────────────────────────────────────────────────────
 async function load() {
@@ -236,6 +236,7 @@ async function doDeliver(d: Delivery) {
 
 function openFail(d: Delivery) {
   failModal.deliveryId = d.id
+  failModal.orderRef   = d.order_number ?? d.order_id
   failModal.reason     = ''
   failModal.error      = ''
   failModal.saving     = false

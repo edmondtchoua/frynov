@@ -3,24 +3,24 @@
     <InventoryTabNav />
     <div class="page-header">
       <div>
-        <h1 class="page-title">Transferts inter-entrepôts</h1>
-        <p class="page-subtitle">{{ transfers.length }} transfert(s)</p>
+        <h1 class="page-title">{{ $t('inventory.transfersTitle') }}</h1>
+        <p class="page-subtitle">{{ $t('inventory.transfersCount', { count: transfers.length }) }}</p>
       </div>
       <button class="btn btn-primary" @click="openCreate">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Nouveau transfert
+        {{ $t('inventory.newTransfer') }}
       </button>
     </div>
 
     <div class="filter-bar">
       <select v-model="filterStatus" class="form-input filter-select">
-        <option value="">Tous les statuts</option>
-        <option value="draft">Brouillon</option>
-        <option value="in_transit">En transit</option>
-        <option value="partial">Partiel</option>
-        <option value="received">Reçu</option>
-        <option value="completed">Terminé</option>
-        <option value="disputed">Litige</option>
+        <option value="">{{ $t('common.allStatuses') }}</option>
+        <option value="draft">{{ $t('inventory.transferStatus.draft') }}</option>
+        <option value="in_transit">{{ $t('inventory.transferStatus.in_transit') }}</option>
+        <option value="partial">{{ $t('inventory.transferStatus.partial') }}</option>
+        <option value="received">{{ $t('inventory.transferStatus.received') }}</option>
+        <option value="completed">{{ $t('inventory.transferStatus.completed') }}</option>
+        <option value="disputed">{{ $t('inventory.transferStatus.disputed') }}</option>
       </select>
     </div>
 
@@ -28,12 +28,12 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Numéro</th>
-            <th>Source</th>
-            <th>Destination</th>
-            <th>Statut</th>
-            <th>Expédié le</th>
-            <th>Actions</th>
+            <th>{{ $t('inventory.colNumber') }}</th>
+            <th>{{ $t('inventory.colSource') }}</th>
+            <th>{{ $t('inventory.colDestination') }}</th>
+            <th>{{ $t('common.status') }}</th>
+            <th>{{ $t('inventory.shippedOn') }}</th>
+            <th>{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -44,31 +44,31 @@
             <td><span :class="statusBadge(t.status)">{{ statusLabel(t.status) }}</span></td>
             <td>{{ t.shipped_at ? fmtDate(t.shipped_at) : '—' }}</td>
             <td class="actions-cell">
-              <button v-if="t.status === 'draft'" class="btn btn-sm btn-primary" @click="ship(t)">Expédier</button>
-              <button v-if="t.status === 'in_transit'" class="btn btn-sm btn-blue" @click="openReceive(t)">Réceptionner</button>
-              <button v-if="['partial','disputed'].includes(t.status)" class="btn btn-sm btn-danger" @click="openResolve(t)">Résoudre</button>
+              <button v-if="t.status === 'draft'" class="btn btn-sm btn-primary" @click="ship(t)">{{ $t('inventory.ship') }}</button>
+              <button v-if="t.status === 'in_transit'" class="btn btn-sm btn-blue" @click="openReceive(t)">{{ $t('inventory.receive') }}</button>
+              <button v-if="['partial','disputed'].includes(t.status)" class="btn btn-sm btn-danger" @click="openResolve(t)">{{ $t('inventory.resolve') }}</button>
             </td>
           </tr>
           <tr v-if="filteredTransfers.length === 0">
-            <td colspan="6" class="empty-state">Aucun transfert trouvé</td>
+            <td colspan="6" class="empty-state">{{ $t('inventory.noTransfers') }}</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <!-- Create Modal (shared BaseModal — UX-03) -->
-    <BaseModal v-model="showCreate" size="lg" title="Nouveau transfert">
+    <BaseModal v-model="showCreate" size="lg" :title="$t('inventory.newTransfer')">
       <div class="form-group">
-        <label class="form-label">Entrepôt source *</label>
+        <label class="form-label">{{ $t('inventory.sourceWarehouse') }} *</label>
         <select v-model="form.source_warehouse_id" class="form-input">
-          <option value="">Sélectionner...</option>
+          <option value="">{{ $t('inventory.selectEllipsis') }}</option>
           <option v-for="w in warehouses" :key="w.id" :value="w.id">{{ w.name }} ({{ w.code }})</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Entrepôt destination *</label>
+        <label class="form-label">{{ $t('inventory.destWarehouse') }} *</label>
         <select v-model="form.destination_warehouse_id" class="form-input">
-          <option value="">Sélectionner...</option>
+          <option value="">{{ $t('inventory.selectEllipsis') }}</option>
           <option
             v-for="w in warehouses.filter(w => w.id !== form.source_warehouse_id)"
             :key="w.id" :value="w.id"
@@ -76,25 +76,25 @@
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Notes</label>
-        <textarea v-model="form.notes" class="form-input" rows="2" placeholder="Transporteur, instructions..."></textarea>
+        <label class="form-label">{{ $t('common.notes') }}</label>
+        <textarea v-model="form.notes" class="form-input" rows="2" :placeholder="$t('inventory.carrierPlaceholder')"></textarea>
       </div>
       <div class="form-group">
-        <label class="form-label">Lignes *</label>
+        <label class="form-label">{{ $t('inventory.lines') }} *</label>
         <div v-for="(line, i) in form.lines" :key="i" class="transfer-line">
-          <input v-model="line.product_id" class="form-input" placeholder="Product ID" />
-          <input v-model.number="line.quantity" type="number" class="form-input qty-input" min="1" placeholder="Qté" />
+          <input v-model="line.product_id" class="form-input" :placeholder="$t('inventory.productIdPlaceholder')" />
+          <input v-model.number="line.quantity" type="number" class="form-input qty-input" min="1" :placeholder="$t('common.quantity')" />
           <button class="btn btn-sm btn-danger" @click="form.lines.splice(i,1)">✕</button>
         </div>
         <button class="btn btn-sm btn-secondary mt-2" @click="form.lines.push({product_id:'',quantity:1})">
-          + Ajouter ligne
+          {{ $t('inventory.addLine') }}
         </button>
       </div>
 
       <template #footer>
-        <button class="btn btn-secondary" @click="showCreate = false">Annuler</button>
+        <button class="btn btn-secondary" @click="showCreate = false">{{ $t('common.cancel') }}</button>
         <button class="btn btn-primary" :disabled="creating" @click="createTransfer">
-          {{ creating ? 'Création...' : 'Créer le transfert' }}
+          {{ creating ? $t('inventory.creating') : $t('inventory.createTransfer') }}
         </button>
       </template>
     </BaseModal>
@@ -102,15 +102,15 @@
     <!-- Receive Modal (shared BaseModal — UX-03) -->
     <BaseModal
       :model-value="showReceive"
-      title="Réceptionner le transfert"
+      :title="$t('inventory.receiveTransferTitle')"
       :subtitle="selectedTransfer?.number"
       @update:model-value="(v: boolean) => { if (!v) showReceive = false }"
     >
       <template v-if="selectedTransfer">
-        <p class="modal-info">Saisissez les quantités réellement reçues pour chaque ligne.</p>
+        <p class="modal-info">{{ $t('inventory.receiveHint') }}</p>
         <div v-for="line in selectedTransfer.lines" :key="line.id" class="receive-line">
           <span class="receive-label">{{ line.product?.name ?? line.product_id }}</span>
-          <span class="receive-shipped">Expédié: <strong>{{ line.quantity_shipped }}</strong></span>
+          <span class="receive-shipped">{{ $t('inventory.shipped') }}: <strong>{{ line.quantity_shipped }}</strong></span>
           <input
             v-model.number="receiveQtys[line.id]"
             type="number" class="form-input receive-qty"
@@ -121,9 +121,9 @@
       </template>
 
       <template #footer>
-        <button class="btn btn-secondary" @click="showReceive = false">Annuler</button>
+        <button class="btn btn-secondary" @click="showReceive = false">{{ $t('common.cancel') }}</button>
         <button class="btn btn-primary" :disabled="receiving" @click="receiveTransfer">
-          {{ receiving ? 'Enregistrement...' : 'Confirmer réception' }}
+          {{ receiving ? $t('common.saving') : $t('inventory.confirmReceive') }}
         </button>
       </template>
     </BaseModal>
@@ -131,27 +131,27 @@
     <!-- Resolve Modal (shared BaseModal — UX-03) -->
     <BaseModal
       :model-value="showResolve"
-      title="Résoudre le litige"
+      :title="$t('inventory.resolveDisputeTitle')"
       :subtitle="selectedTransfer?.number"
       @update:model-value="(v: boolean) => { if (!v) showResolve = false }"
     >
       <div class="form-group">
-        <label class="form-label">Résolution *</label>
+        <label class="form-label">{{ $t('inventory.resolution') }} *</label>
         <select v-model="resolveForm.resolution" class="form-input">
-          <option value="accept_partial">Accepter partiel</option>
-          <option value="restock_source">Retour à la source</option>
-          <option value="write_off">Perte (write-off)</option>
+          <option value="accept_partial">{{ $t('inventory.resolutionOpt.acceptPartial') }}</option>
+          <option value="restock_source">{{ $t('inventory.resolutionOpt.restockSource') }}</option>
+          <option value="write_off">{{ $t('inventory.resolutionOpt.writeOff') }}</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Raison *</label>
-        <textarea v-model="resolveForm.reason" class="form-input" rows="2" placeholder="Expliquer..."></textarea>
+        <label class="form-label">{{ $t('inventory.reason') }} *</label>
+        <textarea v-model="resolveForm.reason" class="form-input" rows="2" :placeholder="$t('inventory.explainPlaceholder')"></textarea>
       </div>
 
       <template #footer>
-        <button class="btn btn-secondary" @click="showResolve = false">Annuler</button>
+        <button class="btn btn-secondary" @click="showResolve = false">{{ $t('common.cancel') }}</button>
         <button class="btn btn-danger" :disabled="resolving || !resolveForm.reason" @click="resolveDispute">
-          {{ resolving ? 'Résolution...' : 'Confirmer' }}
+          {{ resolving ? $t('inventory.resolving') : $t('common.confirm') }}
         </button>
       </template>
     </BaseModal>
@@ -165,6 +165,7 @@ import InventoryTabNav from "../components/InventoryTabNav.vue"
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import api from '@/services/api'
+import { t } from '@/i18n'
 
 interface Warehouse { id: string; name: string; code: string }
 interface TransferLine {
@@ -274,12 +275,7 @@ async function resolveDispute() {
 }
 
 function statusLabel(s: string): string {
-  const labels: Record<string, string> = {
-    draft: 'Brouillon', requested: 'Demandé', in_transit: 'En transit',
-    received: 'Reçu', partial: 'Partiel', completed: 'Terminé',
-    disputed: 'Litige', cancelled: 'Annulé',
-  }
-  return labels[s] ?? s
+  return t(`inventory.transferStatus.${s}`)
 }
 
 function statusBadge(s: string): string {

@@ -322,6 +322,7 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive, watch, onUnmounted } from 'vue'
+import { useConfirm } from '@/composables/useConfirm'
 import { useRouter } from 'vue-router'
 import { importExportService } from '../services/importExportService'
 import type { ImportEntityType, ImportMode, ImportSession, ImportRow, ImportStatus, RowAction, RowStatus } from '../types'
@@ -534,9 +535,16 @@ async function executeImport() {
   }
 }
 
+const { confirm } = useConfirm()
+
 async function cancelSession() {
   if (!session.value) return
-  if (!confirm('Annuler cet import ?')) return
+  if (!(await confirm({
+    title: 'Annuler l\'import',
+    message: 'Annuler cet import ?',
+    confirmLabel: 'Annuler l\'import',
+    danger: true,
+  }))) return
   try {
     await importExportService.cancel(session.value.id)
     router.push('/import/history')

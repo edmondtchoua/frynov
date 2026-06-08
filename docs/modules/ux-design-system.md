@@ -50,10 +50,14 @@ glissé depuis la droite (`@keyframes drawer-in`, désactivé sous `prefers-redu
 sombre, fond blanc, en-tête (titre + `subtitle`/slot `#subtitle` + croix fine grise), corps défilant
 (`flex:1; overflow:auto`) et **pied collé en bas à droite**. `variant="center"` rend une boîte
 centrée arrondie pour les **confirmations critiques** — exploité par `ConfirmDialog`/`useConfirm`
-(rc.47, voir ligne dédiée ci-dessus). Migration des `confirm()` natifs **par vagues** : vague 1
-(rc.47) = Catégories, Fournisseurs, Paiements (annulation), Commande (annulation paiement), Règles
-pays, Promotions, Rôles. Reste (vague 2) : Marketplace, Import (assistant/historique), Tenants,
-Paiement manuel, Paramètres (équipe), Transfert de stock, Retours, Profil.
+(rc.47, voir ligne dédiée ci-dessus). Migration des `confirm()` natifs **terminée** (rc.47→rc.48) :
+vague 1 (rc.47) = Catégories, Fournisseurs, Paiements (annulation), Commande (annulation paiement),
+Règles pays, Promotions, Rôles ; vague 2 (rc.48) = Marketplace, Import (assistant + historique),
+Tenants (liste + détail), Paiement manuel, Paramètres (équipe), Transfert de stock, Retours
+(approbation + remise en stock), Profil. **Plus aucun `confirm()` bloquant côté vues** (hors
+exclusions). *(Exclus : `CustomerDetailView` — module Clients, session concurrente ;
+`orderService.confirm()` = méthode API ; `useUnsavedChanges` = garde de navigation hors composant.
+Les `alert()` d'erreur restants → à basculer en toasts, hors périmètre de cette phase.)*
 Le chrome est défini **une seule fois** dans `main.css` (`.modal-overlay(--drawer|--center)`,
 `.modal--drawer|--center` × `--sm|md|lg`) — `BaseModal` reste un primitif mince. Au passage,
 `.modal-overlay`/`.modal`, jusque-là **non définis** (volets sans voile ni positionnement), sont

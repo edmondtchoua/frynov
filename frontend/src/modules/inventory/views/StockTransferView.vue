@@ -161,6 +161,7 @@ import { ref, computed, onMounted } from 'vue'
 import { formatDate } from '@/shared/utils/date'
 import InventoryTabNav from "../components/InventoryTabNav.vue"
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { useConfirm } from '@/composables/useConfirm'
 import api from '@/services/api'
 
 interface Warehouse { id: string; name: string; code: string }
@@ -236,8 +237,14 @@ async function createTransfer() {
   } finally { creating.value = false }
 }
 
+const { confirm } = useConfirm()
+
 async function ship(t: Transfer) {
-  if (!confirm(`Expédier le transfert ${t.number} ?`)) return
+  if (!(await confirm({
+    title: 'Expédier le transfert',
+    message: `Expédier le transfert ${t.number} ?`,
+    confirmLabel: 'Expédier',
+  }))) return
   await api.post(`/inventory/transfers/${t.id}/ship`, {})
   await load()
 }

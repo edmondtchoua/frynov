@@ -114,6 +114,7 @@ import { RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { useConfirm } from '@/composables/useConfirm'
 import { adminService, type AdminManualPayment } from '../services/adminService'
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -163,8 +164,14 @@ async function loadPendingCount() {
 // ── Actions ───────────────────────────────────────────────────────────────────
 const actionError = ref('')   // affiche les erreurs d'approbation dans l'UI
 
+const { confirm } = useConfirm()
+
 async function doApprove(p: AdminManualPayment) {
-  if (!confirm(`Approuver le paiement de ${p.tenant_name} (plan ${p.plan_code}) ?`)) return
+  if (!(await confirm({
+    title: 'Approuver le paiement',
+    message: `Approuver le paiement de ${p.tenant_name} (plan ${p.plan_code}) ?`,
+    confirmLabel: 'Approuver',
+  }))) return
   actionError.value = ''
   try {
     await adminService.approveManualPayment(p.id)

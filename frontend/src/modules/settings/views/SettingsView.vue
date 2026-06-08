@@ -399,14 +399,13 @@
       </div>
     </div>
 
-    <!-- ── Invite team member modal ──────────────────────────────────────── -->
-    <div v-if="inviteModal.open" class="modal-overlay" @click.self="closeInvite">
-      <div class="modal" role="dialog" aria-modal="true" v-focus-trap>
-        <div class="modal-header">
-          <h3>Inviter un membre</h3>
-          <button class="modal-close" @click="closeInvite">✕</button>
-        </div>
-        <div class="modal-body">
+    <!-- ── Invite team member modal (shared BaseModal — UX-03) ───────────── -->
+    <BaseModal
+      :model-value="inviteModal.open"
+      title="Inviter un membre"
+      @update:model-value="(v: boolean) => { if (!v) closeInvite() }"
+    >
+      <div class="settings-modal-body">
           <!-- After success: show temp password -->
           <div v-if="inviteModal.success" class="invite-success">
             <div class="invite-success-msg">
@@ -451,57 +450,48 @@
             </div>
             <div v-if="inviteModal.error" class="form-error">{{ inviteModal.error }}</div>
           </template>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel" @click="closeInvite">
-            {{ inviteModal.success ? 'Fermer' : 'Annuler' }}
-          </button>
-          <button
-            v-if="!inviteModal.success"
-            class="btn-submit"
-            :disabled="inviteModal.saving || !inviteForm.name || !inviteForm.email || !inviteForm.role"
-            @click="submitInvite"
-          >{{ inviteModal.saving ? 'Ajout…' : 'Ajouter le membre' }}</button>
-        </div>
       </div>
-    </div>
 
-    <!-- ── Member site/warehouse access modal (multi-sites) ───────────────── -->
-    <div v-if="whModal.open" class="modal-overlay" @click.self="whModal.open = false">
-      <div class="modal" role="dialog" aria-modal="true" v-focus-trap>
-        <div class="modal-header">
-          <h3>Accès aux entrepôts — {{ whModal.userName }}</h3>
-          <button class="modal-close" @click="whModal.open = false">✕</button>
-        </div>
-        <div class="modal-body">
-          <p class="modal-desc">
-            Cochez les entrepôts auxquels ce membre a accès. <strong>Aucune sélection = accès à tous les sites.</strong>
-            Les managers et admins voient toujours tous les sites.
-          </p>
-          <div v-if="whModal.error" class="form-error">{{ whModal.error }}</div>
-          <label v-for="w in warehouses" :key="w.id" style="display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0; font-size:0.9rem; cursor:pointer;">
-            <input v-model="whModal.selected" type="checkbox" :value="w.id" />
-            {{ w.is_default ? '⭐ ' : '' }}{{ w.name }} <span style="color:#94a3b8; font-size:0.8rem;">{{ w.code }}</span>
-          </label>
-          <p v-if="!warehouses.length" class="modal-desc">Aucun entrepôt. Créez-en dans Stock &amp; Inventaire → Entrepôts.</p>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel" @click="whModal.open = false">Annuler</button>
-          <button class="btn-submit" :disabled="whModal.saving" @click="saveWarehouses">
-            {{ whModal.saving ? 'Enregistrement…' : 'Enregistrer' }}
-          </button>
-        </div>
+      <template #footer>
+        <button class="btn-cancel" @click="closeInvite">
+          {{ inviteModal.success ? 'Fermer' : 'Annuler' }}
+        </button>
+        <button
+          v-if="!inviteModal.success"
+          class="btn-submit"
+          :disabled="inviteModal.saving || !inviteForm.name || !inviteForm.email || !inviteForm.role"
+          @click="submitInvite"
+        >{{ inviteModal.saving ? 'Ajout…' : 'Ajouter le membre' }}</button>
+      </template>
+    </BaseModal>
+
+    <!-- ── Member site/warehouse access modal (shared BaseModal — UX-03) ──── -->
+    <BaseModal v-model="whModal.open" :title="`Accès aux entrepôts — ${whModal.userName}`">
+      <div class="settings-modal-body">
+      <p class="modal-desc">
+        Cochez les entrepôts auxquels ce membre a accès. <strong>Aucune sélection = accès à tous les sites.</strong>
+        Les managers et admins voient toujours tous les sites.
+      </p>
+      <div v-if="whModal.error" class="form-error">{{ whModal.error }}</div>
+      <label v-for="w in warehouses" :key="w.id" style="display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0; font-size:0.9rem; cursor:pointer;">
+        <input v-model="whModal.selected" type="checkbox" :value="w.id" />
+        {{ w.is_default ? '⭐ ' : '' }}{{ w.name }} <span style="color:#94a3b8; font-size:0.8rem;">{{ w.code }}</span>
+      </label>
+      <p v-if="!warehouses.length" class="modal-desc">Aucun entrepôt. Créez-en dans Stock &amp; Inventaire → Entrepôts.</p>
       </div>
-    </div>
+
+      <template #footer>
+        <button class="btn-cancel" @click="whModal.open = false">Annuler</button>
+        <button class="btn-submit" :disabled="whModal.saving" @click="saveWarehouses">
+          {{ whModal.saving ? 'Enregistrement…' : 'Enregistrer' }}
+        </button>
+      </template>
+    </BaseModal>
 
     <!-- ── Member temporary access modal (auto-expiring role) ─────────────── -->
-    <div v-if="tempModal.open" class="modal-overlay" @click.self="tempModal.open = false">
-      <div class="modal" role="dialog" aria-modal="true" v-focus-trap>
-        <div class="modal-header">
-          <h3>Accès temporaire — {{ tempModal.userName }}</h3>
-          <button class="modal-close" @click="tempModal.open = false">✕</button>
-        </div>
-        <div class="modal-body">
+    <!-- ── Member temporary access modal (shared BaseModal — UX-03) ───────── -->
+    <BaseModal v-model="tempModal.open" :title="`Accès temporaire — ${tempModal.userName}`">
+      <div class="settings-modal-body">
           <p class="modal-desc">Accordez un rôle à durée limitée. Il est <strong>révoqué automatiquement</strong> à l'échéance, sans action manuelle.</p>
           <div v-if="tempModal.error" class="form-error">{{ tempModal.error }}</div>
 
@@ -528,24 +518,19 @@
           <div class="form-row"><label>Note</label>
             <input v-model="tempForm.note" type="text" class="form-input" placeholder="Optionnel" />
           </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel" @click="tempModal.open = false">Fermer</button>
-          <button class="btn-submit" :disabled="tempModal.saving || !tempForm.expires_at" @click="grantTemp">
-            {{ tempModal.saving ? 'Attribution…' : 'Accorder l’accès' }}
-          </button>
-        </div>
       </div>
-    </div>
 
-    <!-- ── Upgrade / payment proof modal (teleported to root level) ───────── -->
-    <div v-if="upgradeModal.open" class="modal-overlay" @click.self="upgradeModal.open = false">
-      <div class="modal" role="dialog" aria-modal="true" v-focus-trap>
-        <div class="modal-header">
-          <h3>Demande de mise à niveau</h3>
-          <button class="modal-close" @click="upgradeModal.open = false">✕</button>
-        </div>
-        <div class="modal-body">
+      <template #footer>
+        <button class="btn-cancel" @click="tempModal.open = false">Fermer</button>
+        <button class="btn-submit" :disabled="tempModal.saving || !tempForm.expires_at" @click="grantTemp">
+          {{ tempModal.saving ? 'Attribution…' : 'Accorder l’accès' }}
+        </button>
+      </template>
+    </BaseModal>
+
+    <!-- ── Upgrade / payment proof modal (shared BaseModal — UX-03) ───────── -->
+    <BaseModal v-model="upgradeModal.open" size="lg" title="Demande de mise à niveau">
+      <div class="settings-modal-body">
           <p class="modal-desc">
             Soumettez votre preuve de paiement. Un administrateur validera votre demande dans les 24h.
           </p>
@@ -596,15 +581,15 @@
           </div>
           <div v-if="upgradeModal.error" class="form-error">{{ upgradeModal.error }}</div>
           <div v-if="upgradeModal.success" class="form-success">{{ upgradeModal.success }}</div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancel" @click="upgradeModal.open = false">Annuler</button>
-          <button class="btn-submit" :disabled="upgradeModal.saving" @click="submitUpgrade">
-            {{ upgradeModal.saving ? 'Envoi…' : 'Soumettre la demande' }}
-          </button>
-        </div>
       </div>
-    </div>
+
+      <template #footer>
+        <button class="btn-cancel" @click="upgradeModal.open = false">Annuler</button>
+        <button class="btn-submit" :disabled="upgradeModal.saving" @click="submitUpgrade">
+          {{ upgradeModal.saving ? 'Envoi…' : 'Soumettre la demande' }}
+        </button>
+      </template>
+    </BaseModal>
 
   </div>
 </template>
@@ -616,6 +601,7 @@ import { authService } from '@/modules/auth/services/authService'
 import { roleService, type TenantRole } from '@/modules/settings/services/roleService'
 import { fetchPublicPricing, type PublicPlan } from '@/services/publicPricingService'
 import RolesPanel from '@/modules/settings/components/RolesPanel.vue'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useWarehouses } from '@/composables/useWarehouses'
 import type { WorkspaceUser } from '@/modules/auth/types'
 
@@ -1422,38 +1408,9 @@ const visibleTabs = computed(() => tabs.filter(t => t.id !== 'roles' || isAdmin.
 .upgrade-btn:hover { opacity: 0.88; }
 
 /* ── Modal (shared) ──────────────────────────────────────────────────────── */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, .45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  padding: 1rem;
-}
-.modal {
-  background: white;
-  border-radius: var(--radius-lg);
-  width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, .2);
-}
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--gray-100);
-}
-.modal-header h3 { font-size: var(--text-base); font-weight: 700; color: var(--gray-900); margin: 0; }
-.modal-close { background: none; border: none; font-size: 1.125rem; color: var(--gray-400); cursor: pointer; padding: 0.25rem; }
-.modal-close:hover { color: var(--gray-700); }
-.modal-body { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+/* Chrome via shared <BaseModal> (UX-03); body content spacing via .settings-modal-body. */
+.settings-modal-body { display: flex; flex-direction: column; gap: 1rem; }
 .modal-desc { font-size: var(--text-sm); color: var(--gray-500); margin: 0; }
-.modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid var(--gray-100); }
 
 .form-row { display: flex; flex-direction: column; gap: 0.375rem; }
 .form-row label { font-size: var(--text-sm); font-weight: 500; color: var(--gray-600); }

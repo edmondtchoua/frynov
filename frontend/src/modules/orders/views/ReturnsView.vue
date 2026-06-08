@@ -91,6 +91,7 @@ import { formatDate } from '@/shared/utils/date'
 import api from '@/services/api'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { useConfirm } from '@/composables/useConfirm'
 import SalesTabNav from '../components/SalesTabNav.vue'
 
 interface OrderReturn {
@@ -123,14 +124,24 @@ async function load() {
   } finally { loading.value = false }
 }
 
+const { confirm } = useConfirm()
+
 async function approve(r: OrderReturn) {
-  if (!confirm(`Approuver le retour ${r.number} ?`)) return
+  if (!(await confirm({
+    title: 'Approuver le retour',
+    message: `Approuver le retour ${r.number} ?`,
+    confirmLabel: 'Approuver',
+  }))) return
   await api.post(`/orders/returns/${r.id}/approve`, {})
   await load()
 }
 
 async function restock(r: OrderReturn) {
-  if (!confirm(`Remettre en stock les articles de ${r.number} ?`)) return
+  if (!(await confirm({
+    title: 'Remettre en stock',
+    message: `Remettre en stock les articles de ${r.number} ?`,
+    confirmLabel: 'Remettre en stock',
+  }))) return
   await api.post(`/orders/returns/${r.id}/restock`, {})
   await load()
 }

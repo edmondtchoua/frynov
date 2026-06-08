@@ -183,6 +183,7 @@ import { useRouter } from 'vue-router'
 import { importExportService } from '../services/importExportService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { useConfirm } from '@/composables/useConfirm'
 import type { ImportSession } from '../types'
 import { ENTITY_LABELS, MODE_LABELS, STATUS_LABELS } from '../types'
 
@@ -230,8 +231,15 @@ function canCancel(s: ImportSession): boolean {
   return !['completed', 'partial', 'failed', 'cancelled'].includes(s.status)
 }
 
+const { confirm } = useConfirm()
+
 async function cancelSession(s: ImportSession) {
-  if (!confirm(`Annuler l'import « ${s.original_filename} » ?`)) return
+  if (!(await confirm({
+    title: 'Annuler l\'import',
+    message: `Annuler l'import « ${s.original_filename} » ?`,
+    confirmLabel: 'Annuler l\'import',
+    danger: true,
+  }))) return
   try {
     await importExportService.cancel(s.id)
     await load(meta.current_page)

@@ -210,6 +210,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, defineComponent, h } from 'vue'
+import { useConfirm } from '@/composables/useConfirm'
 import { formatDateTime } from '@/shared/utils/date'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
@@ -352,8 +353,15 @@ async function loadSessions() {
   }
 }
 
+const { confirm } = useConfirm()
+
 async function revokeSession(id: number) {
-  if (!confirm('Révoquer cette session ?')) return
+  if (!(await confirm({
+    title: 'Révoquer la session',
+    message: 'Révoquer cette session ?',
+    confirmLabel: 'Révoquer',
+    danger: true,
+  }))) return
   await client.delete(`/api/me/sessions/${id}`)
   sessions.value = sessions.value.filter(s => s.id !== id)
 }

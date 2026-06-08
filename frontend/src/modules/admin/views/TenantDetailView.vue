@@ -142,6 +142,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useConfirm } from '@/composables/useConfirm'
 import { formatDate } from '@/shared/utils/date'
 import { useRoute, RouterLink } from 'vue-router'
 import { adminService, type AdminTenant, type AdminPlan } from '../services/adminService'
@@ -191,8 +192,15 @@ async function loadModules() {
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────────
+const { confirm } = useConfirm()
+
 async function doSuspend() {
-  if (!confirm(`Suspendre "${tenant.value?.name}" ?`)) return
+  if (!(await confirm({
+    title: 'Suspendre',
+    message: `Suspendre "${tenant.value?.name}" ?`,
+    confirmLabel: 'Suspendre',
+    danger: true,
+  }))) return
   await adminService.suspendTenant(id)
   await load()
 }

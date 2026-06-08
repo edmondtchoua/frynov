@@ -602,6 +602,7 @@ import { roleService, type TenantRole } from '@/modules/settings/services/roleSe
 import { fetchPublicPricing, type PublicPlan } from '@/services/publicPricingService'
 import RolesPanel from '@/modules/settings/components/RolesPanel.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { useConfirm } from '@/composables/useConfirm'
 import { useWarehouses } from '@/composables/useWarehouses'
 import type { WorkspaceUser } from '@/modules/auth/types'
 
@@ -830,9 +831,16 @@ async function changeRole(user: WorkspaceUser, newRole: string) {
   }
 }
 
+const { confirm } = useConfirm()
+
 async function toggleUser(user: WorkspaceUser) {
   const action = user.is_active ? 'désactiver' : 'réactiver'
-  if (!confirm(`Voulez-vous ${action} ${user.name} ?`)) return
+  if (!(await confirm({
+    title: 'Confirmer',
+    message: `Voulez-vous ${action} ${user.name} ?`,
+    confirmLabel: action,
+    danger: user.is_active,
+  }))) return
   try {
     const result = await authService.toggleUser(user.id)
     const idx = teamUsers.value.findIndex(u => u.id === user.id)

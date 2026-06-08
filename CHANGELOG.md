@@ -3,6 +3,26 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Refonte UI : confirmations centrées — vague 2 (fin) (2026-06-08)
+
+Branche `feature/ux-confirm-wave2` (release `v1.0.0` → `rc.48`).
+
+### UX — confirmations (suite)
+- Migration `confirm()` natif → `useConfirm()` **terminée** sur les vues. Vague 2 (10 fichiers,
+  11 points) : `MarketplaceListingsView` (suppression connexion), `ImportWizardView` +
+  `ImportHistoryView` (annulation import), `TenantListView` + `TenantDetailView` (suspension),
+  `ManualPaymentView` (approbation), `SettingsView` (activation/désactivation membre),
+  `StockTransferView` (expédition), `ReturnsView` (approbation + remise en stock), `ProfileView`
+  (révocation de session). Boutons `danger` pour les actions destructives, primaires pour les
+  validations positives.
+- **Plus aucun `confirm()` bloquant côté vues** (hors `CustomerDetailView` — module Clients en
+  session concurrente, `orderService.confirm()` = méthode API, `useUnsavedChanges` = garde de
+  navigation hors composant).
+
+### Tests
+- Frontend **252** inchangé (migration mécanique ; primitif déjà couvert rc.47) · `vue-tsc` propre ·
+  aucune spec impactée (les flux `confirm()` de la vague 2 ne sont pas exercés en test).
+
 ## [Non publié] — Refonte UI : confirmations centrées (ConfirmDialog / useConfirm) — vague 1 (2026-06-08)
 
 Branche `feature/ux-confirm-dialog` (release `v1.0.0` → `rc.47`).

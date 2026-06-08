@@ -204,6 +204,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { formatDateTime } from '@/shared/utils/date'
 import client from '@/api/client'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { useConfirm } from '@/composables/useConfirm'
 
 const activeTab      = ref<'listings'|'alerts'>('listings')
 const listings       = ref<any[]>([])
@@ -277,8 +278,15 @@ async function save() {
   finally { modal.saving = false }
 }
 
+const { confirm } = useConfirm()
+
 async function deleteListing(id: string) {
-  if (!confirm('Supprimer cette connexion ?')) return
+  if (!(await confirm({
+    title: 'Supprimer',
+    message: 'Supprimer cette connexion ?',
+    confirmLabel: 'Supprimer',
+    danger: true,
+  }))) return
   await client.delete(`/api/marketplace/listings/${id}`)
   loadListings()
 }

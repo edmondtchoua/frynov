@@ -3,6 +3,18 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 13ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave13` (release `v1.0.0` → `rc.39`).
+
+### UX
+- **Modale unifiée (UX-03, 13ᵉ vague)** — `OrderDetailView` (enregistrer un paiement sur une
+  commande) migrée vers `<BaseModal>` ; sous-titre (n° commande + reste à payer) déplacé dans le
+  corps. **25 modales / 20 vues migrées au total.**
+
+### Tests
+- Frontend **242** au vert · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 12ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave12` (release `v1.0.0` → `rc.38`).

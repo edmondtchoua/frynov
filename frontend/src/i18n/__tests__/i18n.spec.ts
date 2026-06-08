@@ -48,6 +48,18 @@ describe('i18n core', () => {
     expect(t('catalog.status.archived')).toBe('Archived')
   })
 
+  it('translates the catalog categories sub-namespace (title + interpolated confirm)', () => {
+    setLocale('fr')
+    expect(t('catalog.categoriesTitle')).toBe('Catégories')
+    expect(t('catalog.noParent')).toBe('Aucune (catégorie racine)')
+    expect(t('catalog.confirmDeleteCategory', { name: 'Vêtements' }))
+      .toBe('Supprimer "Vêtements" ? Cette action est irréversible.')
+    setLocale('en')
+    expect(t('catalog.categoriesTitle')).toBe('Categories')
+    expect(t('catalog.confirmDeleteCategory', { name: 'Clothing' }))
+      .toBe('Delete "Clothing"? This action cannot be undone.')
+  })
+
   it('translates the orders module namespace (tabs + status)', () => {
     setLocale('fr')
     expect(t('orders.title')).toBe('Commandes')

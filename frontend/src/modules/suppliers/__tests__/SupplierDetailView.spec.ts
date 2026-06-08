@@ -3,6 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import SupplierDetailView from '@/modules/suppliers/views/SupplierDetailView.vue'
 import { setupManagerAuth } from '@/test-utils/setupAuth'
+import { setLocale } from '@/i18n'
 import client from '@/api/client'
 
 const router = createRouter({
@@ -30,7 +31,7 @@ async function mountView() {
 }
 
 describe('SupplierDetailView', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks(); setLocale('fr') })  // assert against French labels
 
   it('renders the supplier name, code and contact info', async () => {
     const w = await mountView()

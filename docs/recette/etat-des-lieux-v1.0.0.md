@@ -1,14 +1,15 @@
 # État des lieux v1.0.0 — polish UX restant + suite de la recette finale
 
-> Mise à jour : 2026-06-07. Branche `release/v1.0.0` à **`v1.0.0-rc.22`** (cette session → `rc.23`).
+> Mise à jour : 2026-06-07. Branche `release/v1.0.0` à **`v1.0.0-rc.23`** (cette session → `rc.24`).
 > Complète (et actualise) `go-no-go-v1.0.0.md` (figé à rc.1). Depuis rc.1 ont été livrés :
 > RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13),
 > polish UX P1 — garde « modifications non enregistrées » sur la création de commande +
 > récap onboarding (rc.14→rc.15), **backfill `tenant_modules`** (rc.16),
 > feedback action 403 + page 404 design-system (rc.17), cartes mobiles (rc.18),
 > migration `BaseModal` — 1ʳᵉ vague (rc.19), filtres persistés dans l'URL (rc.20),
-> composant `Icon` (rc.21), fondation i18n FR+EN (rc.22), `BaseModal` 2ᵉ vague (rc.23).
-> Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 230** · `vue-tsc` propre ·
+> composant `Icon` (rc.21), fondation i18n FR+EN (rc.22), `BaseModal` 2ᵉ vague (rc.23),
+> module Fournisseurs traduit FR/EN (rc.24).
+> Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 234** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 
 ---
@@ -30,7 +31,7 @@
 | 6 | ~~**UX-03 — adoption `BaseModal`**~~ | P2 | M | ✅ **2 vagues** (rc.19 + rc.23) — `CustomerListView`, `PaymentListView`, `SupplierListView`, `CategoryListView` migrées vers `<BaseModal>` (pattern documenté + testé). Reste l'adoption incrémentale (~20 vues : Stock, Livraisons, Retours, Promotions, ManualPayment, RolesPanel, WarehouseView…). |
 | 7 | ~~**UX-12 — filtres persistés**~~ | P2 | M | ✅ **Pattern livré** (rc.20) — composable `useUrlFilters` (filtres dans l'URL : refresh / back / liens partageables) sur **Produits + Paiements**. Reste l'adoption incrémentale (Commandes, Stock, Clients…). |
 | 8 | ~~**UX-11 — composant `Icon`**~~ | P2 | M | ✅ **Composant livré** (rc.21) — `shared/ui/Icon.vue` (registre SVG whitelist, sans `v-html`) adopté sur **Produits + Paiements**. Reste l'industrialisation incrémentale des SVG inline. |
-| 9 | ~~**UX-13 — i18n**~~ | P2 | L | ✅ **Fondation livrée** (rc.22) — noyau i18n léger sans dépendance (FR + EN), API `$t`/`useI18n`, `LanguageSwitcher` (barre supérieure), persistance, pilote `NotFoundView`. Voir `docs/modules/i18n.md`. Reste : **migration incrémentale des chaînes** (gros du travail) + langues supplémentaires si besoin. |
+| 9 | ~~**UX-13 — i18n**~~ | P2 | L | ✅ **Fondation (rc.22) + 1ᵉʳ module (rc.24)** — noyau i18n léger sans dépendance (FR + EN), API `$t`/`useI18n`, `LanguageSwitcher`, persistance ; **module Fournisseurs entièrement traduit** + libellés `common.*` mutualisés. Voir `docs/modules/i18n.md`. Reste : migration incrémentale des autres modules + langues supplémentaires si besoin. |
 
 **Verdict UX** : aucun item bloquant pour le GO. **Tous les items P2 (UX-01→14) sont livrés ou
 amorcés** (primitive/fondation + vues phares) ; ne reste que l'**adoption incrémentale** des

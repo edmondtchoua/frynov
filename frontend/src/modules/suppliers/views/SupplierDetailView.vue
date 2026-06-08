@@ -7,36 +7,36 @@
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        Fournisseurs
+        {{ $t('suppliers.title') }}
       </RouterLink>
       <div class="header-actions" v-if="supplier">
         <span class="status-badge" :class="supplier.status === 'active' ? 'badge-active' : 'badge-inactive'">
-          {{ supplier.status === 'active' ? 'Actif' : 'Inactif' }}
+          {{ supplier.status === 'active' ? $t('common.active') : $t('common.inactive') }}
         </span>
         <button v-if="isManagerOrAbove && !editing" class="btn btn-secondary" @click="startEdit">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <path d="M11.5 2.5a2.121 2.121 0 013 3L5 15H2v-3L11.5 2.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
           </svg>
-          Modifier
+          {{ $t('common.edit') }}
         </button>
         <button v-if="isManagerOrAbove && !editing" class="btn btn-danger-outline" @click="showDeleteConfirm = true">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
             <path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9a1 1 0 001 1h6a1 1 0 001-1l1-9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          Supprimer
+          {{ $t('common.delete') }}
         </button>
       </div>
     </div>
 
     <!-- Loading -->
     <div v-if="loading" class="loading-center">
-      <span class="spinner-sm"></span> Chargement…
+      <span class="spinner-sm"></span> {{ $t('common.loading') }}
     </div>
 
     <!-- Error -->
     <div v-else-if="fetchError" class="card error-state">
       <p>{{ fetchError }}</p>
-      <button class="btn btn-secondary" @click="load">Réessayer</button>
+      <button class="btn btn-secondary" @click="load">{{ $t('common.retry') }}</button>
     </div>
 
     <!-- Content -->
@@ -54,37 +54,37 @@
         <!-- Read mode -->
         <div v-if="!editing" class="info-grid">
           <div class="info-item">
-            <label>Personne de contact</label>
+            <label>{{ $t('suppliers.contactPerson') }}</label>
             <span>{{ supplier.contact_name ?? '—' }}</span>
           </div>
           <div class="info-item">
-            <label>Email</label>
+            <label>{{ $t('common.email') }}</label>
             <a v-if="supplier.email" :href="`mailto:${supplier.email}`" class="link">{{ supplier.email }}</a>
             <span v-else>—</span>
           </div>
           <div class="info-item">
-            <label>Téléphone</label>
+            <label>{{ $t('common.phone') }}</label>
             <a v-if="supplier.phone" :href="`tel:${supplier.phone}`" class="link">{{ supplier.phone }}</a>
             <span v-else>—</span>
           </div>
           <div class="info-item">
-            <label>Conditions de paiement</label>
+            <label>{{ $t('suppliers.terms') }}</label>
             <span>{{ supplier.payment_terms ?? '—' }}</span>
           </div>
           <div v-if="formattedAddress" class="info-item info-item--wide">
-            <label>Adresse</label>
+            <label>{{ $t('suppliers.address') }}</label>
             <span>{{ formattedAddress }}</span>
           </div>
           <div v-if="supplier.notes" class="info-item info-item--wide">
-            <label>Notes</label>
+            <label>{{ $t('common.notes') }}</label>
             <span class="notes-text">{{ supplier.notes }}</span>
           </div>
           <div class="info-item">
-            <label>Créé le</label>
+            <label>{{ $t('common.createdAt') }}</label>
             <span>{{ formatDate(supplier.created_at) }}</span>
           </div>
           <div class="info-item">
-            <label>Dernière modification</label>
+            <label>{{ $t('common.updatedAt') }}</label>
             <span>{{ formatDate(supplier.updated_at) }}</span>
           </div>
         </div>
@@ -93,43 +93,43 @@
         <form v-else class="edit-form" @submit.prevent="saveEdit">
           <div class="form-grid">
             <div class="form-group">
-              <label class="form-label">Nom <span class="required">*</span></label>
+              <label class="form-label">{{ $t('common.name') }} <span class="required">*</span></label>
               <input v-model="form.name" class="form-input" required />
             </div>
             <div class="form-group">
-              <label class="form-label">Personne de contact</label>
-              <input v-model="form.contact_name" class="form-input" placeholder="Nom du contact" />
+              <label class="form-label">{{ $t('suppliers.contactPerson') }}</label>
+              <input v-model="form.contact_name" class="form-input" :placeholder="$t('suppliers.contactPlaceholder')" />
             </div>
             <div class="form-group">
-              <label class="form-label">Email</label>
-              <input v-model="form.email" type="email" class="form-input" placeholder="email@fournisseur.com" />
+              <label class="form-label">{{ $t('common.email') }}</label>
+              <input v-model="form.email" type="email" class="form-input" :placeholder="$t('suppliers.emailPlaceholder')" />
             </div>
             <div class="form-group">
-              <label class="form-label">Téléphone</label>
+              <label class="form-label">{{ $t('common.phone') }}</label>
               <input v-model="form.phone" class="form-input" placeholder="+221 77 000 00 00" />
             </div>
             <div class="form-group">
-              <label class="form-label">Conditions de paiement</label>
-              <input v-model="form.payment_terms" class="form-input" placeholder="ex : 30 jours nets" />
+              <label class="form-label">{{ $t('suppliers.terms') }}</label>
+              <input v-model="form.payment_terms" class="form-input" :placeholder="$t('suppliers.termsPlaceholder')" />
             </div>
             <div class="form-group">
-              <label class="form-label">Statut</label>
+              <label class="form-label">{{ $t('common.status') }}</label>
               <select v-model="form.status" class="form-input">
-                <option value="active">Actif</option>
-                <option value="inactive">Inactif</option>
+                <option value="active">{{ $t('common.active') }}</option>
+                <option value="inactive">{{ $t('common.inactive') }}</option>
               </select>
             </div>
             <div class="form-group form-group--wide">
-              <label class="form-label">Notes</label>
-              <textarea v-model="form.notes" class="form-input" rows="3" placeholder="Informations supplémentaires…" />
+              <label class="form-label">{{ $t('common.notes') }}</label>
+              <textarea v-model="form.notes" class="form-input" rows="3" :placeholder="$t('suppliers.notesPlaceholder')" />
             </div>
           </div>
           <div class="edit-actions">
             <button type="submit" class="btn btn-primary" :disabled="saving">
               <span v-if="saving" class="spinner-sm"></span>
-              {{ saving ? 'Enregistrement…' : 'Enregistrer' }}
+              {{ saving ? $t('common.saving') : $t('common.save') }}
             </button>
-            <button type="button" class="btn btn-ghost" @click="cancelEdit">Annuler</button>
+            <button type="button" class="btn btn-ghost" @click="cancelEdit">{{ $t('common.cancel') }}</button>
             <p v-if="saveError" class="form-error">{{ saveError }}</p>
           </div>
         </form>
@@ -139,13 +139,13 @@
     <!-- Delete confirm modal -->
     <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="showDeleteConfirm = false">
       <div class="modal-box">
-        <h3 class="modal-title">Supprimer ce fournisseur ?</h3>
-        <p class="modal-desc">Cette action est irréversible. Le fournisseur <strong>{{ supplier?.name }}</strong> sera définitivement supprimé.</p>
+        <h3 class="modal-title">{{ $t('suppliers.deleteConfirmTitle') }}</h3>
+        <p class="modal-desc">{{ $t('suppliers.deleteConfirmDesc', { name: supplier?.name ?? '' }) }}</p>
         <div class="modal-actions">
           <button class="btn btn-danger" @click="doDelete" :disabled="deleting">
-            {{ deleting ? 'Suppression…' : 'Supprimer' }}
+            {{ deleting ? $t('suppliers.deleting') : $t('common.delete') }}
           </button>
-          <button class="btn btn-ghost" @click="showDeleteConfirm = false">Annuler</button>
+          <button class="btn btn-ghost" @click="showDeleteConfirm = false">{{ $t('common.cancel') }}</button>
         </div>
       </div>
     </div>
@@ -159,6 +159,7 @@ import { formatDate } from '@/shared/utils/date'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { supplierService } from '../services/supplierService'
 import { usePermission } from '@/composables/usePermission'
+import { t } from '@/i18n'
 import type { Supplier, UpdateSupplierPayload } from '../types'
 
 const route  = useRoute()
@@ -193,7 +194,7 @@ async function load() {
     const res        = await supplierService.get(id)
     supplier.value   = res.data
   } catch {
-    fetchError.value = 'Impossible de charger ce fournisseur.'
+    fetchError.value = t('suppliers.fetchError')
   } finally {
     loading.value = false
   }
@@ -227,7 +228,7 @@ async function saveEdit() {
     supplier.value = res.data
     editing.value  = false
   } catch (e: any) {
-    saveError.value = e?.response?.data?.message ?? 'Erreur lors de la mise à jour.'
+    saveError.value = e?.response?.data?.message ?? t('suppliers.updateError')
   } finally {
     saving.value = false
   }

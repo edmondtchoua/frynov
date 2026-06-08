@@ -3,6 +3,25 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : module Fournisseurs traduit FR/EN (UX-13) (2026-06-07)
+
+Branche `feature/ux-i18n-suppliers` (release `v1.0.0` → `rc.24`).
+Voir `docs/modules/i18n.md`.
+
+### UX
+- **Module Fournisseurs entièrement internationalisé (UX-13)** — `SupplierListView` et
+  `SupplierDetailView` : toutes les chaînes visibles passent par `$t` (template) / `t()` (script :
+  `confirm`/`alert`, fallback d'erreur). Nouveau namespace `suppliers.*` + libellés génériques
+  mutualisés sous `common.*` (name, email, phone, status, actions, notes, active/inactive,
+  createdAt/updatedAt, saving, retry, genericError) pour réemploi par les prochains modules.
+  Le sélecteur de langue bascule l'UI Fournisseurs en direct (FR ↔ EN).
+
+### Tests
+- `i18n` enregistré globalement dans `test-setup.ts` (`$t` disponible à chaque montage) ; specs
+  changeant la locale la restaurent (isolation).
+- Frontend **234** (+ namespace `suppliers` dans `i18n.spec`, re-rendu EN dans
+  `SupplierListView.spec`) · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 2ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave2` (release `v1.0.0` → `rc.23`).

@@ -3,13 +3,13 @@
     <CatalogTabNav />
     <div class="page-header">
       <div>
-        <h2>Catalogue produits</h2>
-        <p class="page-subtitle">{{ meta.total ?? '—' }} produit{{ (meta.total ?? 0) !== 1 ? 's' : '' }}</p>
+        <h2>{{ $t('catalog.productsTitle') }}</h2>
+        <p class="page-subtitle">{{ meta.total ?? '—' }} {{ (meta.total ?? 0) !== 1 ? $t('catalog.productPlural') : $t('catalog.productSingular') }}</p>
       </div>
       <div class="header-actions">
         <RouterLink to="/catalog/products/create" class="btn btn-primary">
           <Icon name="plus" :size="14" />
-          Nouveau produit
+          {{ $t('catalog.newProduct') }}
         </RouterLink>
       </div>
     </div>
@@ -19,16 +19,16 @@
       <div class="search-wrap">
         <Icon name="search" class="search-icon" :size="15" />
         <input v-model="filters.search" type="text" class="form-input search-input"
-               placeholder="     Nom, SKU, code-barres…" @input="debouncedLoad" />
+               :placeholder="$t('catalog.searchPlaceholder')" @input="debouncedLoad" />
       </div>
       <select v-model="filters.status" class="form-input filter-sel" @change="load">
-        <option value="">Tous les statuts</option>
-        <option value="active">Actif</option>
-        <option value="draft">Brouillon</option>
-        <option value="archived">Archivé</option>
+        <option value="">{{ $t('common.allStatuses') }}</option>
+        <option value="active">{{ $t('catalog.status.active') }}</option>
+        <option value="draft">{{ $t('catalog.status.draft') }}</option>
+        <option value="archived">{{ $t('catalog.status.archived') }}</option>
       </select>
       <select v-model="filters.category_id" class="form-input filter-sel" @change="load">
-        <option value="">Toutes catégories</option>
+        <option value="">{{ $t('catalog.allCategories') }}</option>
         <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
       </select>
     </div>
@@ -36,22 +36,22 @@
     <!-- Selection action bar -->
     <Transition name="slide-down">
       <div v-if="selected.size > 0" class="selection-bar">
-        <span class="sel-count">{{ selected.size }} produit{{ selected.size > 1 ? 's' : '' }} sélectionné{{ selected.size > 1 ? 's' : '' }}</span>
+        <span class="sel-count">{{ selected.size }} {{ selected.size > 1 ? $t('catalog.selectedPlural') : $t('catalog.selectedSingular') }}</span>
         <div class="sel-actions">
           <div class="copies-wrap">
-            <label class="copies-label">Copies :</label>
+            <label class="copies-label">{{ $t('catalog.copies') }}</label>
             <input v-model.number="batchCopies" type="number" min="1" max="500"
                    class="copies-input" />
           </div>
           <button class="btn btn-secondary btn-sm" @click="printBatch('thermal')" :disabled="printing">
             <span v-if="printing" class="spinner-sm"></span>
             <template v-else>🖨</template>
-            Thermique
+            {{ $t('catalog.thermal') }}
           </button>
           <button class="btn btn-secondary btn-sm" @click="printBatch('a4sheet')" :disabled="printing">
-            📄 Planche A4
+            📄 {{ $t('catalog.a4sheet') }}
           </button>
-          <button class="btn btn-ghost btn-sm" @click="clearSelection">✕ Désélectionner</button>
+          <button class="btn btn-ghost btn-sm" @click="clearSelection">✕ {{ $t('catalog.deselect') }}</button>
         </div>
       </div>
     </Transition>
@@ -61,11 +61,11 @@
     <StateBlock
       v-else-if="products.length === 0"
       variant="empty"
-      title="Aucun produit"
-      :message="filters.search ? 'Aucun résultat pour cette recherche.' : 'Commencez par ajouter votre premier produit.'"
+      :title="$t('catalog.emptyProducts')"
+      :message="filters.search ? $t('catalog.noResults') : $t('catalog.emptyProductsHint')"
     >
       <template v-if="!filters.search" #action>
-        <RouterLink to="/catalog/products/create" class="btn btn-primary">Ajouter un produit</RouterLink>
+        <RouterLink to="/catalog/products/create" class="btn btn-primary">{{ $t('catalog.addProduct') }}</RouterLink>
       </template>
     </StateBlock>
 
@@ -77,11 +77,11 @@
               <input type="checkbox" :checked="allSelected" :indeterminate="someSelected && !allSelected"
                      @change="toggleAll" class="cb" />
             </th>
-            <th>Produit</th>
-            <th class="hide-mobile">Catégorie</th>
-            <th>Prix</th>
-            <th class="hide-mobile">Statut</th>
-            <th style="text-align:right">Actions</th>
+            <th>{{ $t('catalog.colProduct') }}</th>
+            <th class="hide-mobile">{{ $t('catalog.colCategory') }}</th>
+            <th>{{ $t('catalog.colPrice') }}</th>
+            <th class="hide-mobile">{{ $t('common.status') }}</th>
+            <th style="text-align:right">{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -99,7 +99,7 @@
                   <div class="product-meta">
                     <span class="sku-tag">{{ p.sku }}</span>
                     <span v-if="p.has_variants || (p.variants_count ?? 0) > 0" class="variant-tag">
-                      {{ p.variants_count ?? '' }} variante{{ (p.variants_count ?? 0) > 1 ? 's' : '' }}
+                      {{ p.variants_count ?? '' }} {{ (p.variants_count ?? 0) > 1 ? $t('catalog.variantPlural') : $t('catalog.variantSingular') }}
                     </span>
                     <span v-if="p.barcode" class="barcode-tag">{{ p.barcode }}</span>
                   </div>
@@ -122,17 +122,17 @@
             <td>
               <div class="row-actions">
                 <!-- Voir → show page / Éditer → edit form -->
-                <RouterLink :to="`/catalog/products/${p.id}`" class="btn btn-ghost btn-sm" title="Voir la fiche">
+                <RouterLink :to="`/catalog/products/${p.id}`" class="btn btn-ghost btn-sm" :title="$t('catalog.viewProduct')">
                   <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                     <circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.4"/>
                     <path d="M1 8C2.5 4.5 5 2.5 8 2.5S13.5 4.5 15 8c-1.5 3.5-4 5.5-7 5.5S2.5 11.5 1 8z" stroke="currentColor" stroke-width="1.4"/>
                   </svg>
                 </RouterLink>
-                <RouterLink :to="`/catalog/products/${p.id}/edit`" class="btn btn-ghost btn-sm" title="Modifier">✏️</RouterLink>
-                <button class="btn btn-ghost btn-sm icon-btn" title="Imprimer étiquette"
+                <RouterLink :to="`/catalog/products/${p.id}/edit`" class="btn btn-ghost btn-sm" :title="$t('common.edit')">✏️</RouterLink>
+                <button class="btn btn-ghost btn-sm icon-btn" :title="$t('catalog.printLabel')"
                         @click.stop="printOne(p)">🏷</button>
                 <button class="btn btn-ghost btn-sm"
-                        @click="toggleStatus(p)">{{ p.status === 'active' ? 'Archiver' : 'Activer' }}</button>
+                        @click="toggleStatus(p)">{{ p.status === 'active' ? $t('catalog.archive') : $t('catalog.activate') }}</button>
               </div>
             </td>
           </tr>
@@ -141,9 +141,9 @@
     </div>
 
     <div v-if="meta.last_page > 1" class="pagination">
-      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page <= 1" @click="goPage(meta.current_page - 1)">← Précédent</button>
+      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page <= 1" @click="goPage(meta.current_page - 1)">← {{ $t('common.previous') }}</button>
       <span class="page-info">Page {{ meta.current_page }} / {{ meta.last_page }}</span>
-      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goPage(meta.current_page + 1)">Suivant →</button>
+      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goPage(meta.current_page + 1)">{{ $t('common.next') }} →</button>
     </div>
   </div>
 </template>
@@ -157,6 +157,7 @@ import { getAuthToken } from '@/api/authToken'
 import { useUrlFilters } from '@/composables/useUrlFilters'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import Icon from '@/shared/ui/Icon.vue'
+import { t } from '@/i18n'
 import type { Category, Product, ProductStatus } from '../types'
 
 const products   = ref<Product[]>([])
@@ -244,7 +245,7 @@ function statusClass(s: ProductStatus) {
   return { active: 'badge badge-success', draft: 'badge badge-gray', archived: 'badge badge-warning' }[s] ?? 'badge badge-gray'
 }
 function statusLbl(s: ProductStatus) {
-  return { active: 'Actif', draft: 'Brouillon', archived: 'Archivé' }[s] ?? s
+  return t(`catalog.status.${s}`)
 }
 
 onMounted(() => {

@@ -39,6 +39,15 @@ describe('i18n core', () => {
     expect(t('suppliers.confirmDelete', { name: 'ACME' })).toBe('Delete supplier "ACME"?')
   })
 
+  it('translates the catalog module namespace (status + columns)', () => {
+    setLocale('fr')
+    expect(t('catalog.productsTitle')).toBe('Catalogue produits')
+    expect(t('catalog.status.archived')).toBe('Archivé')
+    setLocale('en')
+    expect(t('catalog.productsTitle')).toBe('Product catalog')
+    expect(t('catalog.status.archived')).toBe('Archived')
+  })
+
   it('translates the orders module namespace (tabs + status)', () => {
     setLocale('fr')
     expect(t('orders.title')).toBe('Commandes')

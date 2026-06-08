@@ -3,6 +3,20 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : liste Produits traduite FR/EN (UX-13) (2026-06-07)
+
+Branche `feature/ux-i18n-products` (release `v1.0.0` → `rc.44`).
+
+### UX
+- **Liste Produits (`ProductListView`)** internationalisée : titre, filtres (recherche/statut/catégorie),
+  barre de sélection (impression lots), colonnes, statuts, badges de variantes, actions de ligne,
+  pagination, états vide/recherche. Nouveau namespace `catalog.*` (`status`) + `common.*` réutilisés.
+- **Correctif tests** : sous jsdom la locale par défaut serait `en` (navigator.language) → `test-setup.ts`
+  force désormais `fr` avant chaque test (les specs anglaises basculent puis restaurent).
+
+### Tests
+- Frontend **243** (+1 : namespace `catalog` dans `i18n.spec`) · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal TERMINÉE (UX-03) (2026-06-07)
 
 Branche `feature/ux-basemodal-wave17` (release `v1.0.0` → `rc.43`).

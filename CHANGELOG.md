@@ -3,6 +3,20 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : ajustements de stock traduits FR/EN (UX-13) (2026-06-08)
+
+Branche `feature/ux-i18n-stockadj` (release `v1.0.0` → `rc.58`).
+
+### UX (i18n)
+- **`StockAdjustmentView` (Ajustements de stock)** internationalisé : en-tête, file d'attente +
+  historique (colonnes, statuts), volets **création** (article, quantité, motif, note) et **rejet**
+  (motif). Libellés de **motif (8)** et de **statut (4)** via `t()` (`adjReason` / `adjStatus`) ;
+  erreurs runtime traduites.
+- Étend `inventory.*` (ajustements) ; `REASON_LABELS` du service n'est plus consommé par la vue.
+
+### Tests
+- Frontend **253** inchangé · `vue-tsc` propre.
+
 ## [Non publié] — i18n : alertes de stock traduites FR/EN (UX-13) (2026-06-08)
 
 Branche `feature/ux-i18n-stock2` (release `v1.0.0` → `rc.57`).

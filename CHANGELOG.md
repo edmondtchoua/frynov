@@ -3,6 +3,18 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 9ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave9` (release `v1.0.0` → `rc.35`).
+
+### UX
+- **Modale unifiée (UX-03, 9ᵉ vague)** — `RolesPanel` (création/édition de rôle personnalisé,
+  Paramètres) migrée vers `<BaseModal>` ; chrome/`v-focus-trap` manuels remplacés, styles `.modal-*`
+  dupliqués retirés (corps via `.roles-modal-body`). **21 modales / 16 vues migrées au total.**
+
+### Tests
+- `RolesPanel.spec` adapté (teleport stub + `v-focus-trap`). Frontend **242** au vert · `vue-tsc` propre.
+
 ## [Non publié] — i18n : liste Commandes traduite FR/EN (UX-13) (2026-06-07)
 
 Branche `feature/ux-i18n-orders-list` (release `v1.0.0` → `rc.34`).

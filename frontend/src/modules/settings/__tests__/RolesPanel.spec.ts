@@ -4,6 +4,7 @@ import RolesPanel from '@/modules/settings/components/RolesPanel.vue'
 
 vi.mock('@/api/client', () => ({ default: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() } }))
 import client from '@/api/client'
+import { vFocusTrap } from '@/directives/focusTrap'
 
 const ROLES = {
   data: [
@@ -15,7 +16,12 @@ const ROLES = {
 
 async function mountPanel() {
   vi.mocked(client.get).mockResolvedValue({ data: ROLES } as any)
-  const w = mount(RolesPanel)
+  const w = mount(RolesPanel, {
+    global: {
+      directives: { 'focus-trap': vFocusTrap },  // modal now uses BaseModal (v-focus-trap)
+      stubs: { teleport: true },                 // render BaseModal's Teleport inline
+    },
+  })
   await flushPromises()
   return w
 }

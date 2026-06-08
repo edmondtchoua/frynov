@@ -1,6 +1,6 @@
 # État des lieux v1.0.0 — polish UX restant + suite de la recette finale
 
-> Mise à jour : 2026-06-07. Branche `release/v1.0.0` à **`v1.0.0-rc.23`** (cette session → `rc.24`).
+> Mise à jour : 2026-06-07. Branche `release/v1.0.0` à **`v1.0.0-rc.24`** (cette session → `rc.25`).
 > Complète (et actualise) `go-no-go-v1.0.0.md` (figé à rc.1). Depuis rc.1 ont été livrés :
 > RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13),
 > polish UX P1 — garde « modifications non enregistrées » sur la création de commande +
@@ -8,8 +8,8 @@
 > feedback action 403 + page 404 design-system (rc.17), cartes mobiles (rc.18),
 > migration `BaseModal` — 1ʳᵉ vague (rc.19), filtres persistés dans l'URL (rc.20),
 > composant `Icon` (rc.21), fondation i18n FR+EN (rc.22), `BaseModal` 2ᵉ vague (rc.23),
-> module Fournisseurs traduit FR/EN (rc.24).
-> Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 234** · `vue-tsc` propre ·
+> module Fournisseurs traduit FR/EN (rc.24), `BaseModal` 3ᵉ vague (rc.25).
+> Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 236** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 
 ---

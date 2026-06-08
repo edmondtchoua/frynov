@@ -58,51 +58,43 @@
       </div>
     </section>
 
-    <!-- Create modal -->
-    <div v-if="createModal.open" class="modal-backdrop" @click.self="createModal.open = false">
-      <div class="modal-box">
-        <div class="modal-header"><h3 class="modal-title">Nouvelle demande d'ajustement</h3><button class="modal-close" @click="createModal.open = false">×</button></div>
-        <div class="modal-body">
-          <div v-if="createModal.error" class="form-error">{{ createModal.error }}</div>
-          <label class="form-label">Article en stock *</label>
-          <select v-model="form.stock_id" class="form-input" @change="onStockPick">
-            <option value="">— Sélectionner —</option>
-            <option v-for="s in stocks" :key="s.id" :value="s.id">
-              {{ s.product?.name }}{{ s.warehouse ? ` · ${s.warehouse.name}` : '' }} (stock : {{ s.quantity }})
-            </option>
-          </select>
-          <label class="form-label">Nouvelle quantité réelle *</label>
-          <input v-model.number="form.new_quantity" type="number" min="0" class="form-input" />
-          <label class="form-label">Motif *</label>
-          <select v-model="form.reason" class="form-input">
-            <option v-for="r in REASONS" :key="r" :value="r">{{ reasonLabel(r) }}</option>
-          </select>
-          <label class="form-label">Note</label>
-          <textarea v-model="form.note" class="form-input" rows="2" placeholder="Précision (optionnel)"></textarea>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" @click="createModal.open = false">Annuler</button>
-          <button class="btn btn-primary" :disabled="createModal.saving || !form.stock_id" @click="submitCreate">
-            {{ createModal.saving ? 'Envoi…' : 'Soumettre' }}
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- Create modal (shared BaseModal — UX-03) -->
+    <BaseModal v-model="createModal.open" title="Nouvelle demande d'ajustement">
+      <div v-if="createModal.error" class="form-error">{{ createModal.error }}</div>
+      <label class="form-label">Article en stock *</label>
+      <select v-model="form.stock_id" class="form-input" @change="onStockPick">
+        <option value="">— Sélectionner —</option>
+        <option v-for="s in stocks" :key="s.id" :value="s.id">
+          {{ s.product?.name }}{{ s.warehouse ? ` · ${s.warehouse.name}` : '' }} (stock : {{ s.quantity }})
+        </option>
+      </select>
+      <label class="form-label">Nouvelle quantité réelle *</label>
+      <input v-model.number="form.new_quantity" type="number" min="0" class="form-input" />
+      <label class="form-label">Motif *</label>
+      <select v-model="form.reason" class="form-input">
+        <option v-for="r in REASONS" :key="r" :value="r">{{ reasonLabel(r) }}</option>
+      </select>
+      <label class="form-label">Note</label>
+      <textarea v-model="form.note" class="form-input" rows="2" placeholder="Précision (optionnel)"></textarea>
 
-    <!-- Reject modal -->
-    <div v-if="rejectModal.open" class="modal-backdrop" @click.self="rejectModal.open = false">
-      <div class="modal-box">
-        <div class="modal-header"><h3 class="modal-title">Rejeter la demande</h3><button class="modal-close" @click="rejectModal.open = false">×</button></div>
-        <div class="modal-body">
-          <label class="form-label">Motif du rejet *</label>
-          <textarea v-model="rejectModal.reason" class="form-input" rows="2"></textarea>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" @click="rejectModal.open = false">Annuler</button>
-          <button class="btn btn-danger" :disabled="busy || !rejectModal.reason" @click="confirmReject">Rejeter</button>
-        </div>
-      </div>
-    </div>
+      <template #footer>
+        <button class="btn btn-secondary" @click="createModal.open = false">Annuler</button>
+        <button class="btn btn-primary" :disabled="createModal.saving || !form.stock_id" @click="submitCreate">
+          {{ createModal.saving ? 'Envoi…' : 'Soumettre' }}
+        </button>
+      </template>
+    </BaseModal>
+
+    <!-- Reject modal (shared BaseModal — UX-03) -->
+    <BaseModal v-model="rejectModal.open" size="sm" title="Rejeter la demande">
+      <label class="form-label">Motif du rejet *</label>
+      <textarea v-model="rejectModal.reason" class="form-input" rows="2"></textarea>
+
+      <template #footer>
+        <button class="btn btn-secondary" @click="rejectModal.open = false">Annuler</button>
+        <button class="btn btn-danger" :disabled="busy || !rejectModal.reason" @click="confirmReject">Rejeter</button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -110,6 +102,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import client from '@/api/client'
 import InventoryTabNav from '../components/InventoryTabNav.vue'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 import { stockAdjustmentService, ADJUSTMENT_REASONS, REASON_LABELS, type StockAdjustment } from '../services/stockAdjustmentService'
 
 interface StockRow { id: string; quantity: number; product?: { name: string; sku: string }; warehouse?: { name: string } }

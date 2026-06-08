@@ -3,6 +3,23 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : liste Stock traduite FR/EN (UX-13) (2026-06-08)
+
+Branche `feature/ux-i18n-stocklist` (release `v1.0.0` → `rc.56`).
+
+### UX (i18n)
+- **`StockListView` (Stock)** internationalisé : en-tête + compteur, actions (réception, alertes),
+  filtres (recherche / entrepôt / catégorie / stock bas), barre KPI entrepôt, table (colonnes,
+  badges Stock bas/OK), actions de ligne (entrée/sortie/ajuster/historique), pagination, et **volet
+  entrée/sortie/ajustement** (titre dynamique, infos stock, quantité + suffixe « unités », indices
+  Après/Ajustement, raisons, référence, note, pied). Titre du volet via `t()`.
+- Étend le namespace **`inventory.*`** (clés `kpi`, `modalTitle`, `reasonOpt`) ; réutilise `common.*`
+  (product, quantity, status, actions, note, previous/next, allWarehouses).
+
+### Tests
+- Frontend **253** (assertions `inventory` enrichies : stock + raison + interpolation) · `vue-tsc`
+  propre · `StockListView.spec` verte (FR inchangé).
+
 ## [Non publié] — i18n : module Entrepôts traduit FR/EN (UX-13) (2026-06-08)
 
 Branche `feature/ux-i18n-inventory` (release `v1.0.0` → `rc.55`).

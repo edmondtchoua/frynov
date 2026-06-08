@@ -1,6 +1,6 @@
 # État des lieux v1.0.0 — polish UX restant + suite de la recette finale
 
-> Mise à jour : 2026-06-08. Branche `release/v1.0.0` à **`v1.0.0-rc.54`** (cette session → `rc.55+`).
+> Mise à jour : 2026-06-08. Branche `release/v1.0.0` à **`v1.0.0-rc.55`** (cette session → `rc.56+`).
 > Complète (et actualise) `go-no-go-v1.0.0.md` (figé à rc.1). Depuis rc.1 ont été livrés :
 > RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13),
 > polish UX P1 — garde « modifications non enregistrées » sur la création de commande +
@@ -18,7 +18,7 @@
 > **confirmations centrées `ConfirmDialog`/`useConfirm`** (rc.47→rc.48, migration `confirm()` terminée),
 > **polish volets — Stock, Paiements, Admin, Fournisseurs, Entrepôts, Livraisons & Inventaire** (rc.49→rc.53 : sous-titre en-tête, `.input-affix` unité/devise/%, `.input-group` ; POS déjà conforme),
 > **refonte « Side-Drawer » terminée** (rc.54 : sous-titre Marketplace + 7 `alert()` → toasts `pushToast` ; plus aucun `confirm()`/`alert()` bloquant),
-> **module Entrepôts traduit FR/EN** (rc.55, namespace `inventory.*`).
+> **module Inventaire traduit FR/EN** — Entrepôts (rc.55) + liste Stock (rc.56), namespace `inventory.*`.
 > Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 253** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 

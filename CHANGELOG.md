@@ -3,6 +3,18 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — Polish UX P2 : migration BaseModal — 11ᵉ vague (UX-03) (2026-06-07)
+
+Branche `feature/ux-basemodal-wave11` (release `v1.0.0` → `rc.37`).
+
+### UX
+- **Modale unifiée (UX-03, 11ᵉ vague)** — `PromotionListView` (création/édition de promotion, admin)
+  migrée vers `<BaseModal>` ; styles `.modal-*` dupliqués retirés (corps via `.promo-modal-body`).
+  **23 modales / 18 vues migrées au total.**
+
+### Tests
+- Frontend **242** au vert · `vue-tsc` propre.
+
 ## [Non publié] — Polish UX P2 : migration BaseModal — 10ᵉ vague (UX-03) (2026-06-07)
 
 Branche `feature/ux-importhistory` (release `v1.0.0` → `rc.36`).

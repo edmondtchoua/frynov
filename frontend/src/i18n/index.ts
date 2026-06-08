@@ -279,6 +279,13 @@ const messages: Record<Locale, Dict> = {
       profileUpdated: 'Profil mis à jour.', passwordMismatch: 'Les mots de passe ne correspondent pas.',
       passwordChanged: 'Mot de passe modifié.', error: 'Erreur.',
     },
+    admin: {
+      searchTenant: 'Rechercher un tenant…', allPlans: 'Tous les plans',
+      colTenant: 'Tenant', colPlan: 'Plan', colSubscription: 'Abonnement',
+      tenantStatus: { active: 'Actif', suspended: 'Suspendu', cancelled: 'Annulé' },
+      details: 'Détails', suspend: 'Suspendre', reactivate: 'Réactiver',
+      noTenants: 'Aucun espace client trouvé', suspendConfirm: 'Suspendre « {name} » ?',
+    },
     language: { label: 'Langue' },
   },
   en: {
@@ -534,6 +541,13 @@ const messages: Record<Locale, Dict> = {
       revoke: 'Revoke', revokeTitle: 'Revoke session', revokeConfirm: 'Revoke this session?',
       profileUpdated: 'Profile updated.', passwordMismatch: 'Passwords do not match.',
       passwordChanged: 'Password changed.', error: 'Error.',
+    },
+    admin: {
+      searchTenant: 'Search a tenant…', allPlans: 'All plans',
+      colTenant: 'Tenant', colPlan: 'Plan', colSubscription: 'Subscription',
+      tenantStatus: { active: 'Active', suspended: 'Suspended', cancelled: 'Cancelled' },
+      details: 'Details', suspend: 'Suspend', reactivate: 'Reactivate',
+      noTenants: 'No client workspace found', suspendConfirm: 'Suspend "{name}"?',
     },
     language: { label: 'Language' },
   },

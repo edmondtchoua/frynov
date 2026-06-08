@@ -3,6 +3,20 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : back-office Admin — liste des tenants (UX-13) (2026-06-08)
+
+Branche `feature/ux-i18n-tenants` (release `v1.0.0` → `rc.64`).
+
+### UX (i18n)
+- **`TenantListView`** (back-office super-admin) internationalisé : filtres (recherche, statut, plan),
+  table (colonnes, statut traduit via `statusLabel`), actions (Détails/Suspendre/Réactiver),
+  pagination, confirmation de suspension. Nouveau namespace `admin.*` ; réutilise `common.*`
+  (allStatuses, status, createdAt, actions, previous/next).
+- *(`TenantDetailView` — 434 lignes — prévu à l'itération suivante.)*
+
+### Tests
+- Frontend **254** inchangé · `vue-tsc` propre.
+
 ## [Non publié] — i18n : profil utilisateur traduit FR/EN (UX-13) (2026-06-08)
 
 Branche `feature/ux-i18n-profile` (release `v1.0.0` → `rc.63`).

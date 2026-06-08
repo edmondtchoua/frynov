@@ -3,14 +3,14 @@
     <InventoryTabNav />
     <div class="page-header">
       <div>
-        <h2>Entrepôts & Boutiques</h2>
-        <p class="page-subtitle">{{ warehouses.length }} emplacement{{ warehouses.length !== 1 ? 's' : '' }}</p>
+        <h2>{{ $t('inventory.warehousesTitle') }}</h2>
+        <p class="page-subtitle">{{ warehouses.length }} {{ warehouses.length !== 1 ? $t('inventory.locationPlural') : $t('inventory.locationSingular') }}</p>
       </div>
       <button class="btn btn-primary" @click="openCreate">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
-        Nouvel emplacement
+        {{ $t('inventory.newLocation') }}
       </button>
     </div>
 
@@ -24,9 +24,9 @@
         <path d="M8 28V14l12-7 12 7v14" stroke="var(--brand-primary)" stroke-width="2" stroke-linejoin="round"/>
         <path d="M16 28v-8h8v8" stroke="var(--brand-primary)" stroke-width="2" stroke-linejoin="round"/>
       </svg>
-      <h3>Aucun emplacement</h3>
-      <p>Créez votre premier entrepôt ou boutique pour gérer le stock par localisation.</p>
-      <button class="btn btn-primary" @click="openCreate">Créer un emplacement</button>
+      <h3>{{ $t('inventory.emptyLocations') }}</h3>
+      <p>{{ $t('inventory.emptyLocationsHint') }}</p>
+      <button class="btn btn-primary" @click="openCreate">{{ $t('inventory.createLocation') }}</button>
     </div>
 
     <div v-else class="wh-grid">
@@ -40,7 +40,7 @@
           <div class="wh-type-badge" :class="`type-${wh.type}`">
             {{ typeLabel(wh.type) }}
           </div>
-          <div v-if="wh.is_default" class="wh-default-badge">Par défaut</div>
+          <div v-if="wh.is_default" class="wh-default-badge">{{ $t('inventory.default') }}</div>
         </div>
 
         <div class="wh-name">{{ wh.name }}</div>
@@ -52,52 +52,52 @@
 
         <div class="wh-meta">
           <span :class="wh.is_active ? 'badge badge-success' : 'badge badge-gray'">
-            {{ wh.is_active ? 'Actif' : 'Inactif' }}
+            {{ wh.is_active ? $t('common.active') : $t('common.inactive') }}
           </span>
-          <span v-if="wh.sells_online" class="badge badge-blue">En ligne</span>
+          <span v-if="wh.sells_online" class="badge badge-blue">{{ $t('inventory.online') }}</span>
         </div>
 
         <div class="wh-actions">
-          <button class="btn btn-ghost btn-sm" @click="openEdit(wh)">Modifier</button>
+          <button class="btn btn-ghost btn-sm" @click="openEdit(wh)">{{ $t('common.edit') }}</button>
           <button
             v-if="!wh.is_default"
             class="btn btn-ghost btn-sm"
             @click="setDefault(wh)"
             :disabled="settingDefault === wh.id"
-          >{{ settingDefault === wh.id ? '…' : 'Définir par défaut' }}</button>
+          >{{ settingDefault === wh.id ? '…' : $t('inventory.setDefault') }}</button>
         </div>
       </div>
     </div>
 
     <!-- Create / Edit Modal (shared BaseModal — UX-03) -->
-    <BaseModal v-model="modal.open" :title="modal.editing ? 'Modifier l’emplacement' : 'Nouvel emplacement'" :subtitle="modal.editing ? form.name : ''">
+    <BaseModal v-model="modal.open" :title="modal.editing ? $t('inventory.editLocation') : $t('inventory.newLocation')" :subtitle="modal.editing ? form.name : ''">
       <div class="modal-fields">
         <div class="form-group">
-          <label class="form-label">Nom <span style="color:var(--color-error)">*</span></label>
-          <input v-model="form.name" class="form-input" placeholder="Ex : Entrepôt Dakar" />
+          <label class="form-label">{{ $t('common.name') }} <span style="color:var(--color-error)">*</span></label>
+          <input v-model="form.name" class="form-input" :placeholder="$t('inventory.namePlaceholder')" />
         </div>
         <div class="form-row-2">
           <div class="form-group">
-            <label class="form-label">Code <span style="color:var(--color-error)">*</span></label>
-            <input v-model="form.code" class="form-input mono" placeholder="WH-DKR" style="text-transform:uppercase" />
+            <label class="form-label">{{ $t('inventory.code') }} <span style="color:var(--color-error)">*</span></label>
+            <input v-model="form.code" class="form-input mono" :placeholder="$t('inventory.codePlaceholder')" style="text-transform:uppercase" />
           </div>
           <div class="form-group">
-            <label class="form-label">Type</label>
+            <label class="form-label">{{ $t('inventory.type') }}</label>
             <select v-model="form.type" class="form-input">
-              <option value="warehouse">Entrepôt</option>
-              <option value="shop">Boutique physique</option>
-              <option value="dropship">Dropship</option>
-              <option value="virtual">Virtuel / En ligne</option>
+              <option value="warehouse">{{ $t('inventory.typeOption.warehouse') }}</option>
+              <option value="shop">{{ $t('inventory.typeOption.shopPhysical') }}</option>
+              <option value="dropship">{{ $t('inventory.typeOption.dropship') }}</option>
+              <option value="virtual">{{ $t('inventory.typeOption.virtual') }}</option>
             </select>
           </div>
         </div>
         <div class="form-row-2">
           <div class="form-group">
-            <label class="form-label">Téléphone</label>
+            <label class="form-label">{{ $t('common.phone') }}</label>
             <input v-model="form.phone" class="form-input" placeholder="+221 77 000 00 00" />
           </div>
           <div class="form-group">
-            <label class="form-label">Devise</label>
+            <label class="form-label">{{ $t('inventory.currency') }}</label>
             <select v-model="form.currency" class="form-input">
               <option value="XOF">XOF — Franc CFA UEMOA</option>
               <option value="XAF">XAF — Franc CFA CEMAC</option>
@@ -109,7 +109,7 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Ville / Pays</label>
+          <label class="form-label">{{ $t('inventory.cityCountry') }}</label>
           <div class="form-row-2">
             <input v-model="form.city" class="form-input" placeholder="Dakar" />
             <input v-model="form.country" class="form-input" placeholder="SN" maxlength="2" style="text-transform:uppercase" />
@@ -119,22 +119,22 @@
           <label class="switch-row">
             <input v-model="form.is_active" type="checkbox" role="switch" class="switch-input" />
             <span class="switch-track"><span class="switch-thumb"></span></span>
-            <span class="switch-label">Emplacement actif</span>
+            <span class="switch-label">{{ $t('inventory.locationActive') }}</span>
           </label>
           <label class="switch-row">
             <input v-model="form.sells_online" type="checkbox" role="switch" class="switch-input" />
             <span class="switch-track"><span class="switch-thumb"></span></span>
-            <span class="switch-label">Expose le stock en ligne</span>
+            <span class="switch-label">{{ $t('inventory.exposeOnline') }}</span>
           </label>
         </div>
         <div v-if="modal.error" class="form-error" style="margin-top:.5rem">{{ modal.error }}</div>
       </div>
 
       <template #footer>
-        <button class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button class="btn btn-ghost" @click="closeModal">{{ $t('common.cancel') }}</button>
         <button class="btn btn-primary" :disabled="modal.saving" @click="save">
           <span v-if="modal.saving" class="spinner-sm spinner-white"></span>
-          {{ modal.saving ? 'Enregistrement…' : (modal.editing ? 'Mettre à jour' : 'Créer') }}
+          {{ modal.saving ? $t('common.saving') : (modal.editing ? $t('common.update') : $t('common.create')) }}
         </button>
       </template>
     </BaseModal>
@@ -146,6 +146,7 @@ import { ref, reactive, onMounted } from 'vue'
 import InventoryTabNav from "../components/InventoryTabNav.vue"
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import client from '@/api/client'
+import { t } from '@/i18n'
 
 interface Warehouse {
   id: string; name: string; code: string; type: string; currency: string
@@ -169,8 +170,8 @@ async function load() {
   } catch { warehouses.value = [] } finally { loading.value = false }
 }
 
-function typeLabel(t: string) {
-  return { warehouse:'Entrepôt', shop:'Boutique', dropship:'Dropship', virtual:'Virtuel' }[t] ?? t
+function typeLabel(type: string) {
+  return t(`inventory.typeBadge.${type}`)
 }
 
 function openCreate() {
@@ -190,7 +191,7 @@ function openEdit(wh: Warehouse) {
 function closeModal() { modal.open = false }
 
 async function save() {
-  if (!form.name.trim() || !form.code.trim()) { modal.error = 'Nom et code sont obligatoires.'; return }
+  if (!form.name.trim() || !form.code.trim()) { modal.error = t('inventory.nameCodeRequired'); return }
   modal.saving = true; modal.error = ''
   const payload = {
     name: form.name, code: form.code.toUpperCase(), type: form.type,
@@ -206,7 +207,7 @@ async function save() {
     }
     closeModal(); load()
   } catch (e: any) {
-    modal.error = e?.response?.data?.message ?? 'Erreur lors de l\'enregistrement.'
+    modal.error = e?.response?.data?.message ?? t('inventory.saveError')
   } finally { modal.saving = false }
 }
 

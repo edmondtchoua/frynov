@@ -63,6 +63,16 @@ describe('i18n core', () => {
       .toBe('Delete "Clothing"? This action cannot be undone.')
   })
 
+  it('translates the inventory module namespace (warehouses + clé imbriquée)', () => {
+    setLocale('fr')
+    expect(t('inventory.warehousesTitle')).toBe('Entrepôts & Boutiques')
+    expect(t('inventory.typeBadge.shop')).toBe('Boutique')
+    expect(t('inventory.setDefault')).toBe('Définir par défaut')
+    setLocale('en')
+    expect(t('inventory.warehousesTitle')).toBe('Warehouses & Shops')
+    expect(t('inventory.typeBadge.shop')).toBe('Shop')
+  })
+
   it('translates the orders module namespace (tabs + status)', () => {
     setLocale('fr')
     expect(t('orders.title')).toBe('Commandes')

@@ -3,11 +3,11 @@
     <InventoryTabNav />
     <div class="page-header">
       <div>
-        <h2>Alertes stock bas</h2>
-        <p class="page-subtitle">{{ alerts.length }} article{{ alerts.length > 1 ? 's' : '' }} sous le seuil</p>
+        <h2>{{ $t('inventory.alertsTitle') }}</h2>
+        <p class="page-subtitle">{{ $t('inventory.itemsBelowThreshold', { count: alerts.length }) }}</p>
       </div>
       <RouterLink to="/inventory" class="btn btn-ghost">
-        ← Retour au stock
+        ← {{ $t('inventory.backToStock') }}
       </RouterLink>
     </div>
 
@@ -22,8 +22,8 @@
         <circle cx="24" cy="24" r="20" fill="var(--success-bg, #d1fae5)"/>
         <path d="M15 24l6 6 12-12" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <h3>Tout est en ordre !</h3>
-      <p>Aucun article ne se trouve sous son seuil de stock minimum.</p>
+      <h3>{{ $t('inventory.allGood') }}</h3>
+      <p>{{ $t('inventory.allGoodHint') }}</p>
     </div>
 
     <!-- Alert banner -->
@@ -33,7 +33,7 @@
           <path d="M10 2.5a6 6 0 0 1 6 6v3l1.5 2H2.5L4 11.5v-3a6 6 0 0 1 6-6Z" stroke="#92400e" stroke-width="1.5"/>
           <path d="M8 16.5a2 2 0 0 0 4 0" stroke="#92400e" stroke-width="1.5"/>
         </svg>
-        <span>{{ alerts.length }} article{{ alerts.length > 1 ? 's nécessitent' : ' nécessite' }} un réapprovisionnement urgent.</span>
+        <span>{{ $t('inventory.urgentRestock', { count: alerts.length }) }}</span>
       </div>
 
       <!-- Alert cards grid -->
@@ -47,18 +47,18 @@
               <div class="product-name">{{ stock.product?.name ?? '—' }}</div>
               <div class="product-sku">{{ stock.product?.sku ?? '—' }}</div>
             </div>
-            <span class="badge badge-warning">Stock bas</span>
+            <span class="badge badge-warning">{{ $t('inventory.lowStock') }}</span>
           </div>
 
           <!-- Stock numbers -->
           <div class="alert-numbers">
             <div class="alert-num-item">
-              <span class="alert-num-label">Disponible</span>
+              <span class="alert-num-label">{{ $t('inventory.available') }}</span>
               <span class="alert-num-value alert-num-critical">{{ stock.available }}</span>
             </div>
             <div class="alert-num-divider">vs</div>
             <div class="alert-num-item">
-              <span class="alert-num-label">Seuil min</span>
+              <span class="alert-num-label">{{ $t('inventory.minThreshold') }}</span>
               <span class="alert-num-value">{{ stock.low_stock_threshold }}</span>
             </div>
           </div>
@@ -75,7 +75,7 @@
               ></div>
             </div>
             <span class="stock-bar-label">
-              {{ stock.available === 0 ? 'Rupture' : Math.round((stock.available / stock.low_stock_threshold) * 100) + '% du seuil' }}
+              {{ stock.available === 0 ? $t('inventory.outOfStock') : $t('inventory.percentOfThreshold', { pct: Math.round((stock.available / stock.low_stock_threshold) * 100) }) }}
             </span>
           </div>
 
@@ -85,7 +85,7 @@
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
-              Réapprovisionner
+              {{ $t('inventory.restock') }}
             </button>
             <RouterLink :to="`/inventory/movements/${stock.product_id}`" class="btn btn-ghost btn-sm">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -99,19 +99,19 @@
     </div>
 
     <!-- Restock Modal (shared BaseModal — UX-03) -->
-    <BaseModal v-model="modal.open" title="Réapprovisionner" :subtitle="modal.stock?.product ? (modal.stock.product.name + ' · ' + modal.stock.product.sku) : ''">
+    <BaseModal v-model="modal.open" :title="$t('inventory.restock')" :subtitle="modal.stock?.product ? (modal.stock.product.name + ' · ' + modal.stock.product.sku) : ''">
       <div style="display: flex; flex-direction: column; gap: 16px;">
             <div class="stock-info-row">
               <div class="stock-info-item">
-                <span class="stock-info-label">Disponible actuellement</span>
+                <span class="stock-info-label">{{ $t('inventory.currentlyAvailable') }}</span>
                 <span class="stock-info-value alert-num-critical">{{ modal.stock?.available }}</span>
               </div>
               <div class="stock-info-item">
-                <span class="stock-info-label">Seuil minimum</span>
+                <span class="stock-info-label">{{ $t('inventory.minThresholdFull') }}</span>
                 <span class="stock-info-value">{{ modal.stock?.low_stock_threshold }}</span>
               </div>
               <div class="stock-info-item">
-                <span class="stock-info-label">Manque</span>
+                <span class="stock-info-label">{{ $t('inventory.shortfall') }}</span>
                 <span class="stock-info-value">
                   {{ Math.max(0, (modal.stock?.low_stock_threshold ?? 0) - (modal.stock?.available ?? 0)) }}
                 </span>
@@ -119,7 +119,7 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label">Quantité à réceptionner <span class="required-star">*</span></label>
+              <label class="form-label">{{ $t('inventory.qtyToReceive') }} <span class="required-star">*</span></label>
               <div class="input-affix">
                 <input
                   v-model.number="form.quantity"
@@ -128,44 +128,44 @@
                   class="form-input"
                   placeholder="Ex : 50"
                 />
-                <span class="input-affix__suffix">unités</span>
+                <span class="input-affix__suffix">{{ $t('inventory.units') }}</span>
               </div>
               <p v-if="form.quantity" class="form-hint">
-                Après réception : {{ (modal.stock?.quantity ?? 0) + (form.quantity || 0) }} unités
+                {{ $t('inventory.afterReceipt') }} {{ (modal.stock?.quantity ?? 0) + (form.quantity || 0) }} {{ $t('inventory.units') }}
               </p>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Raison</label>
+              <label class="form-label">{{ $t('inventory.reason') }}</label>
               <select v-model="form.reason" class="form-input">
-                <option value="delivery">Livraison fournisseur</option>
-                <option value="return">Retour client</option>
-                <option value="manual">Saisie manuelle</option>
+                <option value="delivery">{{ $t('inventory.restockReason.delivery') }}</option>
+                <option value="return">{{ $t('inventory.restockReason.return') }}</option>
+                <option value="manual">{{ $t('inventory.restockReason.manual') }}</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Référence commande fournisseur</label>
-              <input v-model="form.reference" type="text" class="form-input" placeholder="Ex : BC-2026-042" />
+              <label class="form-label">{{ $t('inventory.supplierOrderRef') }}</label>
+              <input v-model="form.reference" type="text" class="form-input" :placeholder="$t('inventory.supplierOrderRefPlaceholder')" />
             </div>
 
             <div class="form-group">
-              <label class="form-label">Note</label>
-              <textarea v-model="form.note" class="form-input" style="resize: vertical; min-height: 60px;" rows="2" placeholder="Commentaire optionnel…"></textarea>
+              <label class="form-label">{{ $t('common.note') }}</label>
+              <textarea v-model="form.note" class="form-input" style="resize: vertical; min-height: 60px;" rows="2" :placeholder="$t('inventory.notePlaceholder')"></textarea>
             </div>
 
             <p v-if="modal.error" class="form-error">{{ modal.error }}</p>
       </div>
 
       <template #footer>
-        <button class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button class="btn btn-ghost" @click="closeModal">{{ $t('common.cancel') }}</button>
         <button
           class="btn btn-primary"
           :disabled="modal.saving || !form.quantity || form.quantity <= 0"
           @click="submitRestock"
         >
           <span v-if="modal.saving" class="spinner-sm"></span>
-          Confirmer la réception
+          {{ $t('inventory.confirmReceipt') }}
         </button>
       </template>
     </BaseModal>
@@ -178,6 +178,7 @@ import { RouterLink } from 'vue-router'
 import InventoryTabNav from "../components/InventoryTabNav.vue"
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { inventoryService } from '../services/inventoryService'
+import { t } from '@/i18n'
 import type { Stock, MovementReason } from '../types'
 
 const alerts  = ref<Stock[]>([])
@@ -227,7 +228,7 @@ async function submitRestock() {
     closeModal()
     load()
   } catch (e: any) {
-    modal.error = e?.response?.data?.message ?? 'Une erreur est survenue.'
+    modal.error = e?.response?.data?.message ?? t('common.genericError')
   } finally {
     modal.saving = false
   }

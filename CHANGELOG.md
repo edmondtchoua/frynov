@@ -3,6 +3,20 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : alertes de stock traduites FR/EN (UX-13) (2026-06-08)
+
+Branche `feature/ux-i18n-stock2` (release `v1.0.0` → `rc.57`).
+
+### UX (i18n)
+- **`StockAlertsView` (Alertes stock bas)** internationalisé : en-tête + compteur, bannière
+  d'urgence, cartes d'alerte (badges, disponible vs seuil, barre de progression « % du seuil » /
+  « Rupture »), et **volet de réapprovisionnement** (infos stock, quantité + « unités », raisons
+  fournisseur, référence, note, pied). Erreur runtime via `common.genericError`.
+- Étend `inventory.*` (alertes : titre, seuils, réappro, `restockReason`).
+
+### Tests
+- Frontend **253** inchangé · `vue-tsc` propre.
+
 ## [Non publié] — i18n : liste Stock traduite FR/EN (UX-13) (2026-06-08)
 
 Branche `feature/ux-i18n-stocklist` (release `v1.0.0` → `rc.56`).

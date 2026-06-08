@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import PaymentListView from '@/modules/payments/views/PaymentListView.vue'
 import { setupManagerAuth } from '@/test-utils/setupAuth'
 import { vFocusTrap } from '@/directives/focusTrap'
+import { setLocale } from '@/i18n'
 import client from '@/api/client'
 
 const router = createRouter({
@@ -51,7 +52,8 @@ async function mountView(page = PAYMENTS) {
 const noSpaces = (s: string) => s.replace(/\s/g, '')
 
 describe('PaymentListView', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks(); setLocale('fr') })
+  afterEach(() => setLocale('fr'))
 
   it('renders payments with method label, reference and amount in major units (÷100)', async () => {
     const w = await mountView()
@@ -113,5 +115,16 @@ describe('PaymentListView', () => {
     expect(dialog.exists()).toBe(true)
     expect(dialog.attributes('aria-modal')).toBe('true')           // BaseModal a11y contract
     expect(dialog.text()).toContain('Enregistrer un paiement')     // title rendered by BaseModal
+  })
+
+  it('re-renders in English when the locale is switched (i18n — UX-13)', async () => {
+    const w = await mountView()
+    expect(w.text()).toContain('Paiements')   // French by default
+
+    setLocale('en')
+    await flushPromises()
+
+    expect(w.text()).toContain('Payments')
+    expect(w.text()).toContain('New payment')
   })
 })

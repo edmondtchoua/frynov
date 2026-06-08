@@ -3,15 +3,15 @@
     <InventoryTabNav />
     <div class="page-header">
       <div>
-        <h2>Stock</h2>
-        <p class="page-subtitle">{{ meta.total ?? '—' }} produits en stock</p>
+        <h2>{{ $t('inventory.stockTitle') }}</h2>
+        <p class="page-subtitle">{{ $t('inventory.productsInStock', { count: meta.total ?? '—' }) }}</p>
       </div>
-      <div class="header-actions"><RouterLink to="/inventory/batch-delivery" class="btn btn-secondary btn-sm">↓ Réception livraison</RouterLink><RouterLink to="/inventory/alerts" class="btn btn-ghost" style="gap: 6px;">
+      <div class="header-actions"><RouterLink to="/inventory/batch-delivery" class="btn btn-secondary btn-sm">↓ {{ $t('inventory.batchDelivery') }}</RouterLink><RouterLink to="/inventory/alerts" class="btn btn-ghost" style="gap: 6px;">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M8 2a5 5 0 0 1 5 5v2.5l1 1.5H2l1-1.5V7a5 5 0 0 1 5-5Z" stroke="var(--warning-color, #f59e0b)" stroke-width="1.4"/>
           <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke="var(--warning-color, #f59e0b)" stroke-width="1.4"/>
         </svg>
-        Alertes{{ alertCount > 0 ? ` (${alertCount})` : '' }}
+        {{ $t('inventory.alerts') }}{{ alertCount > 0 ? ` (${alertCount})` : '' }}
       </RouterLink>
     </div>
     </div>
@@ -27,21 +27,21 @@
           v-model="filters.search"
           type="text"
           class="form-input search-input"
-          placeholder="Nom, SKU…"
+          :placeholder="$t('inventory.searchPlaceholder')"
           @input="debouncedLoad"
         />
       </div>
 
       <!-- Warehouse filter (P0 multi-entrepôts) -->
       <select v-model="filters.warehouse_id" class="form-input filter-sel" @change="onWarehouseChange">
-        <option value="">Tous les entrepôts</option>
+        <option value="">{{ $t('common.allWarehouses') }}</option>
         <option v-for="w in warehouses" :key="w.id" :value="w.id">
           {{ w.is_default ? '⭐ ' : '' }}{{ w.name }}
         </option>
       </select>
 
       <select v-model="filters.category_id" class="form-input filter-sel" @change="load">
-        <option value="">Toutes les catégories</option>
+        <option value="">{{ $t('inventory.allCategories') }}</option>
         <option v-for="c in categories" :key="c.id" :value="c.id">
           {{ c.parent_id ? '└ ' : '' }}{{ c.name }}
         </option>
@@ -49,20 +49,20 @@
 
       <label class="toggle-label">
         <input v-model="filters.lowStockOnly" type="checkbox" class="toggle-checkbox" @change="load" />
-        <span class="toggle-text">Stock bas uniquement</span>
+        <span class="toggle-text">{{ $t('inventory.lowStockOnly') }}</span>
       </label>
     </div>
 
     <!-- Warehouse KPI summary bar (visible when a specific warehouse is selected) -->
     <Transition name="slide-up">
       <div v-if="whSummary" class="wh-summary-bar">
-        <div class="wh-kpi"><div class="wh-kpi-val">{{ whSummary.sku_count }}</div><div class="wh-kpi-lbl">SKUs</div></div>
-        <div class="wh-kpi"><div class="wh-kpi-val">{{ whSummary.total_qty.toLocaleString('fr-FR') }}</div><div class="wh-kpi-lbl">Total</div></div>
-        <div class="wh-kpi"><div class="wh-kpi-val">{{ whSummary.available_qty.toLocaleString('fr-FR') }}</div><div class="wh-kpi-lbl">Disponible</div></div>
+        <div class="wh-kpi"><div class="wh-kpi-val">{{ whSummary.sku_count }}</div><div class="wh-kpi-lbl">{{ $t('inventory.kpi.skus') }}</div></div>
+        <div class="wh-kpi"><div class="wh-kpi-val">{{ whSummary.total_qty.toLocaleString('fr-FR') }}</div><div class="wh-kpi-lbl">{{ $t('inventory.kpi.total') }}</div></div>
+        <div class="wh-kpi"><div class="wh-kpi-val">{{ whSummary.available_qty.toLocaleString('fr-FR') }}</div><div class="wh-kpi-lbl">{{ $t('inventory.available') }}</div></div>
         <div class="wh-kpi" :class="{ 'wh-kpi--warn': whSummary.low_stock_count > 0 }">
-          <div class="wh-kpi-val">{{ whSummary.low_stock_count }}</div><div class="wh-kpi-lbl">Stock bas</div>
+          <div class="wh-kpi-val">{{ whSummary.low_stock_count }}</div><div class="wh-kpi-lbl">{{ $t('inventory.lowStock') }}</div>
         </div>
-        <div class="wh-kpi"><div class="wh-kpi-val">{{ fmtValue(whSummary.total_value_cents) }}</div><div class="wh-kpi-lbl">Valeur</div></div>
+        <div class="wh-kpi"><div class="wh-kpi-val">{{ fmtValue(whSummary.total_value_cents) }}</div><div class="wh-kpi-lbl">{{ $t('inventory.kpi.value') }}</div></div>
       </div>
     </Transition>
 
@@ -73,8 +73,8 @@
     <StateBlock
       v-else-if="stocks.length === 0"
       variant="empty"
-      title="Aucun stock trouvé"
-      :message="filters.search ? 'Aucun résultat pour cette recherche.' : 'Les articles apparaîtront ici une fois synchronisés.'"
+      :title="$t('inventory.emptyStock')"
+      :message="filters.search ? $t('inventory.emptySearch') : $t('inventory.emptyDefault')"
     />
 
     <!-- Table -->
@@ -82,12 +82,12 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Produit</th>
-            <th class="hide-mobile" style="text-align: right;">Qté</th>
-            <th class="hide-mobile" style="text-align: right;">Réservé</th>
-            <th style="text-align: right;">Disponible</th>
-            <th class="hide-mobile">Statut</th>
-            <th style="text-align: right;">Actions</th>
+            <th>{{ $t('common.product') }}</th>
+            <th class="hide-mobile" style="text-align: right;">{{ $t('common.quantity') }}</th>
+            <th class="hide-mobile" style="text-align: right;">{{ $t('inventory.reserved') }}</th>
+            <th style="text-align: right;">{{ $t('inventory.available') }}</th>
+            <th class="hide-mobile">{{ $t('common.status') }}</th>
+            <th style="text-align: right;">{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -114,36 +114,36 @@
               {{ stock.available }}
             </td>
             <td class="hide-mobile">
-              <span v-if="stock.is_low_stock" class="badge badge-warning">Stock bas</span>
-              <span v-else class="badge badge-success">OK</span>
+              <span v-if="stock.is_low_stock" class="badge badge-warning">{{ $t('inventory.lowStock') }}</span>
+              <span v-else class="badge badge-success">{{ $t('inventory.statusOk') }}</span>
             </td>
             <td>
               <div class="row-actions" style="justify-content: flex-end;">
-                <button class="btn btn-ghost btn-sm" title="Entrée stock" @click="openModal(stock, 'in')">
+                <button class="btn btn-ghost btn-sm" :title="$t('inventory.moveInTitle')" @click="openModal(stock, 'in')">
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                   </svg>
-                  <span class="hide-mobile">Entrée</span>
+                  <span class="hide-mobile">{{ $t('inventory.moveIn') }}</span>
                 </button>
-                <button class="btn btn-ghost btn-sm" title="Sortie stock" @click="openModal(stock, 'out')">
+                <button class="btn btn-ghost btn-sm" :title="$t('inventory.moveOutTitle')" @click="openModal(stock, 'out')">
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <path d="M2 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                   </svg>
-                  <span class="hide-mobile">Sortie</span>
+                  <span class="hide-mobile">{{ $t('inventory.moveOut') }}</span>
                 </button>
-                <button class="btn btn-ghost btn-sm" title="Ajuster" @click="openModal(stock, 'adjust')">
+                <button class="btn btn-ghost btn-sm" :title="$t('inventory.adjust')" @click="openModal(stock, 'adjust')">
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <circle cx="7" cy="7" r="2.5" stroke="currentColor" stroke-width="1.4"/>
                     <path d="M7 1v2M7 11v2M1 7h2M11 7h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
                   </svg>
-                  <span class="hide-mobile">Ajuster</span>
+                  <span class="hide-mobile">{{ $t('inventory.adjust') }}</span>
                 </button>
-                <RouterLink :to="`/inventory/movements/${stock.product_id}`" class="btn btn-ghost btn-sm" title="Historique">
+                <RouterLink :to="`/inventory/movements/${stock.product_id}`" class="btn btn-ghost btn-sm" :title="$t('inventory.history')">
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/>
                     <path d="M7 4v3.5l2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
                   </svg>
-                  <span class="hide-mobile">Historique</span>
+                  <span class="hide-mobile">{{ $t('inventory.history') }}</span>
                 </RouterLink>
               </div>
             </td>
@@ -154,9 +154,9 @@
 
     <!-- Pagination -->
     <div v-if="meta.last_page > 1" class="pagination">
-      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page <= 1" @click="goToPage(meta.current_page - 1)">← Précédent</button>
+      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page <= 1" @click="goToPage(meta.current_page - 1)">← {{ $t('common.previous') }}</button>
       <span class="page-info">Page {{ meta.current_page }} / {{ meta.last_page }}</span>
-      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goToPage(meta.current_page + 1)">Suivant →</button>
+      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goToPage(meta.current_page + 1)">{{ $t('common.next') }} →</button>
     </div>
 
     <!-- Move / Adjust Modal (shared BaseModal — UX-03) -->
@@ -170,15 +170,15 @@
             <!-- Current stock info -->
             <div class="stock-info-row">
               <div class="stock-info-item">
-                <span class="stock-info-label">Quantité actuelle</span>
+                <span class="stock-info-label">{{ $t('inventory.currentQty') }}</span>
                 <span class="stock-info-value">{{ modal.stock?.quantity }}</span>
               </div>
               <div class="stock-info-item">
-                <span class="stock-info-label">Disponible</span>
+                <span class="stock-info-label">{{ $t('inventory.available') }}</span>
                 <span class="stock-info-value" :style="modal.stock?.is_low_stock ? 'color:#b45309;' : ''">{{ modal.stock?.available }}</span>
               </div>
               <div class="stock-info-item">
-                <span class="stock-info-label">Seuil bas</span>
+                <span class="stock-info-label">{{ $t('inventory.lowThreshold') }}</span>
                 <span class="stock-info-value">{{ modal.stock?.low_stock_threshold }}</span>
               </div>
             </div>
@@ -186,7 +186,7 @@
             <!-- Quantity -->
             <div class="form-group">
               <label class="form-label">
-                {{ modal.mode === 'adjust' ? 'Nouvelle quantité absolue' : 'Quantité' }}
+                {{ modal.mode === 'adjust' ? $t('inventory.newAbsoluteQty') : $t('inventory.quantity') }}
                 <span class="required-star">*</span>
               </label>
               <div class="input-affix">
@@ -197,56 +197,56 @@
                   class="form-input"
                   :placeholder="modal.mode === 'adjust' ? 'Ex : 42' : 'Ex : 10'"
                 />
-                <span class="input-affix__suffix">unités</span>
+                <span class="input-affix__suffix">{{ $t('inventory.units') }}</span>
               </div>
               <p v-if="modal.mode === 'in'" class="form-hint">
-                Après : {{ (modal.stock?.quantity ?? 0) + (form.quantity || 0) }} unités
+                {{ $t('inventory.after') }} {{ (modal.stock?.quantity ?? 0) + (form.quantity || 0) }} {{ $t('inventory.units') }}
               </p>
               <p v-else-if="modal.mode === 'out'" class="form-hint">
-                Après : {{ Math.max(0, (modal.stock?.quantity ?? 0) - (form.quantity || 0)) }} unités
+                {{ $t('inventory.after') }} {{ Math.max(0, (modal.stock?.quantity ?? 0) - (form.quantity || 0)) }} {{ $t('inventory.units') }}
               </p>
               <p v-else class="form-hint">
-                Ajustement : {{ form.quantity !== undefined ? (form.quantity - (modal.stock?.quantity ?? 0) >= 0 ? '+' : '') + (form.quantity - (modal.stock?.quantity ?? 0)) : '—' }} unités
+                {{ $t('inventory.adjustment') }} {{ form.quantity !== undefined ? (form.quantity - (modal.stock?.quantity ?? 0) >= 0 ? '+' : '') + (form.quantity - (modal.stock?.quantity ?? 0)) : '—' }} {{ $t('inventory.units') }}
               </p>
             </div>
 
             <!-- Reason (move-in/out only) -->
             <div v-if="modal.mode !== 'adjust'" class="form-group">
-              <label class="form-label">Raison <span class="required-star">*</span></label>
+              <label class="form-label">{{ $t('inventory.reason') }} <span class="required-star">*</span></label>
               <select v-model="form.reason" class="form-input">
-                <option v-if="modal.mode === 'in'" value="delivery">Livraison</option>
-                <option v-if="modal.mode === 'in'" value="return">Retour client</option>
-                <option v-if="modal.mode === 'in'" value="manual">Manuel</option>
-                <option v-if="modal.mode === 'out'" value="sale">Vente</option>
-                <option v-if="modal.mode === 'out'" value="loss">Perte / casse</option>
-                <option v-if="modal.mode === 'out'" value="manual">Manuel</option>
+                <option v-if="modal.mode === 'in'" value="delivery">{{ $t('inventory.reasonOpt.delivery') }}</option>
+                <option v-if="modal.mode === 'in'" value="return">{{ $t('inventory.reasonOpt.return') }}</option>
+                <option v-if="modal.mode === 'in'" value="manual">{{ $t('inventory.reasonOpt.manual') }}</option>
+                <option v-if="modal.mode === 'out'" value="sale">{{ $t('inventory.reasonOpt.sale') }}</option>
+                <option v-if="modal.mode === 'out'" value="loss">{{ $t('inventory.reasonOpt.loss') }}</option>
+                <option v-if="modal.mode === 'out'" value="manual">{{ $t('inventory.reasonOpt.manual') }}</option>
               </select>
             </div>
 
             <!-- Reference -->
             <div class="form-group">
-              <label class="form-label">Référence</label>
-              <input v-model="form.reference" type="text" class="form-input" placeholder="N° bon de livraison, commande…" />
+              <label class="form-label">{{ $t('inventory.reference') }}</label>
+              <input v-model="form.reference" type="text" class="form-input" :placeholder="$t('inventory.referencePlaceholder')" />
             </div>
 
             <!-- Note -->
             <div class="form-group">
-              <label class="form-label">Note</label>
-              <textarea v-model="form.note" class="form-input form-textarea" rows="2" placeholder="Commentaire optionnel…"></textarea>
+              <label class="form-label">{{ $t('common.note') }}</label>
+              <textarea v-model="form.note" class="form-input form-textarea" rows="2" :placeholder="$t('inventory.notePlaceholder')"></textarea>
             </div>
 
             <p v-if="modal.error" class="form-error">{{ modal.error }}</p>
       </div>
 
       <template #footer>
-        <button class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button class="btn btn-ghost" @click="closeModal">{{ $t('common.cancel') }}</button>
         <button
           class="btn btn-primary"
           :disabled="modal.saving || !formValid"
           @click="submitModal"
         >
           <span v-if="modal.saving" class="spinner-sm"></span>
-          {{ modal.mode === 'in' ? 'Enregistrer l\'entrée' : modal.mode === 'out' ? 'Enregistrer la sortie' : 'Appliquer l\'ajustement' }}
+          {{ modal.mode === 'in' ? $t('inventory.submitIn') : modal.mode === 'out' ? $t('inventory.submitOut') : $t('inventory.submitAdjust') }}
         </button>
       </template>
     </BaseModal>
@@ -257,6 +257,7 @@
 import { ref, reactive, watch, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
+import { t } from '@/i18n'
 import InventoryTabNav from "../components/InventoryTabNav.vue"
 import { inventoryService } from '../services/inventoryService'
 import { productService } from '@/modules/catalog/services/productService'
@@ -308,9 +309,9 @@ const modal = reactive({
 const form = reactive({ quantity: undefined as number | undefined, reason: 'delivery' as MovementReason, reference: '', note: '' })
 
 const modalTitle = computed(() => ({
-  in:     'Entrée de stock',
-  out:    'Sortie de stock',
-  adjust: 'Ajustement de stock',
+  in:     t('inventory.modalTitle.in'),
+  out:    t('inventory.modalTitle.out'),
+  adjust: t('inventory.modalTitle.adjust'),
 })[modal.mode])
 
 // Sous-titre contextuel du volet : produit · SKU (affiché dans l'en-tête).

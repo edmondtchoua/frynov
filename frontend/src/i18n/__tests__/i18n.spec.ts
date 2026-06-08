@@ -68,9 +68,13 @@ describe('i18n core', () => {
     expect(t('inventory.warehousesTitle')).toBe('Entrepôts & Boutiques')
     expect(t('inventory.typeBadge.shop')).toBe('Boutique')
     expect(t('inventory.setDefault')).toBe('Définir par défaut')
+    expect(t('inventory.stockTitle')).toBe('Stock')
+    expect(t('inventory.reasonOpt.sale')).toBe('Vente')
+    expect(t('inventory.productsInStock', { count: 12 })).toBe('12 produits en stock')
     setLocale('en')
     expect(t('inventory.warehousesTitle')).toBe('Warehouses & Shops')
     expect(t('inventory.typeBadge.shop')).toBe('Shop')
+    expect(t('inventory.reasonOpt.sale')).toBe('Sale')
   })
 
   it('translates the orders module namespace (tabs + status)', () => {

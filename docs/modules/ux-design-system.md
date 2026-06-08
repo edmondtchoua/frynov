@@ -32,12 +32,12 @@ Pattern pour remplacer une modale ad-hoc (`.modal-overlay`/`.modal-backdrop` + c
 `BaseModal` apporte overlay, `Teleport`, focus-trap, Échap, clic-extérieur, bouton de fermeture
 et en-tête — supprimer le chrome local et les styles `.modal-*` dupliqués. Lier la fermeture via
 `@update:model-value` (et non `v-model`) quand `onClose()` a des effets de bord (réinitialisation).
-**Adopté** (22 modales / 17 vues) : `CustomerListView`, `PaymentListView`, `SupplierListView`,
+**Adopté** (23 modales / 18 vues) : `CustomerListView`, `PaymentListView`, `SupplierListView`,
 `SupplierDetailView` (suppression), `CategoryListView`, `WarehouseView`, `StockAdjustmentView`
 (création + rejet), `DeliveryListView` (création + échec), `ReturnsView` (refus), `CountryRuleListView`,
 `PlanListView`, `StockAlertsView`, `FiscalPeriodView` (création + verrouillage), `ManualPaymentView`
-(rejet), `StockTransferView` (création + réception + résolution), `RolesPanel` (création/édition de rôle), `ImportHistoryView` (détail d'import).
-Reste (incrémental, ~7 vues) : Promotions, OrderDetail, MarketplaceListings, ProductForm,
+(rejet), `StockTransferView` (création + réception + résolution), `RolesPanel` (création/édition de rôle), `ImportHistoryView` (détail d'import), `PromotionListView`
+(création/édition). Reste (incrémental, ~6 vues) : OrderDetail, MarketplaceListings, ProductForm,
 PosView, SettingsView, StockList. Contrat testé (`PaymentListView.spec.ts`,
 `SupplierListView.spec.ts`, `SupplierDetailView.spec.ts`, `WarehouseView.spec.ts`,
 `DeliveryListView.spec.ts`, `RolesPanel.spec.ts` → ouverture d'un `role="dialog"` `aria-modal`).

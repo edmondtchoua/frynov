@@ -78,15 +78,9 @@
       <button :disabled="page === meta.last_page" @click="page++; load()">Suivant →</button>
     </div>
 
-    <!-- ── Create / Edit modal ─────────────────────────────────────────────── -->
-    <div v-if="modal.open" class="modal-overlay" @click.self="modal.open = false">
-      <div class="modal">
-        <div class="modal-header">
-          <h3>{{ modal.editing ? 'Modifier la promotion' : 'Nouvelle promotion' }}</h3>
-          <button class="modal-close" @click="modal.open = false">✕</button>
-        </div>
-
-        <div class="modal-body">
+    <!-- ── Create / Edit modal (shared BaseModal — UX-03) ──────────────────── -->
+    <BaseModal v-model="modal.open" size="lg" :title="modal.editing ? 'Modifier la promotion' : 'Nouvelle promotion'">
+      <div class="promo-modal-body">
           <div class="form-row">
             <label>Code *</label>
             <input
@@ -143,16 +137,15 @@
             </label>
           </div>
           <div v-if="modal.error" class="form-error">{{ modal.error }}</div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn-cancel" @click="modal.open = false">Annuler</button>
-          <button class="btn-submit" :disabled="modal.saving" @click="savePromo">
-            {{ modal.saving ? 'Enregistrement…' : (modal.editing ? 'Mettre à jour' : 'Créer') }}
-          </button>
-        </div>
       </div>
-    </div>
+
+      <template #footer>
+        <button class="btn-cancel" @click="modal.open = false">Annuler</button>
+        <button class="btn-submit" :disabled="modal.saving" @click="savePromo">
+          {{ modal.saving ? 'Enregistrement…' : (modal.editing ? 'Mettre à jour' : 'Créer') }}
+        </button>
+      </template>
+    </BaseModal>
 
   </div>
 </template>
@@ -162,6 +155,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { formatDate } from '@/shared/utils/date'
 import { adminService, type AdminPromotion } from '../services/adminService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
+import BaseModal from '@/shared/ui/BaseModal.vue'
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const promos  = ref<AdminPromotion[]>([])
@@ -385,39 +379,8 @@ onMounted(load)
 .pagination button:hover:not(:disabled) { background: #f8fafc; }
 .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* ── Modal ───────────────────────────────────────────────────────────────── */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-.modal {
-  background: white;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 540px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,.2);
-}
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #f1f5f9;
-}
-.modal-header h3 { font-size: 1rem; font-weight: 700; color: #0f172a; margin: 0; }
-.modal-close { background: none; border: none; font-size: 1.125rem; color: #94a3b8; cursor: pointer; padding: 0.25rem; }
-.modal-close:hover { color: #334155; }
-
-.modal-body { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
-.modal-footer { display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid #f1f5f9; }
+/* ── Modal — chrome via shared <BaseModal> (UX-03); body via .promo-modal-body. ── */
+.promo-modal-body { display: flex; flex-direction: column; gap: 1rem; }
 
 .form-row { display: flex; flex-direction: column; gap: 0.375rem; }
 .form-row label { font-size: 0.8125rem; font-weight: 500; color: #475569; }

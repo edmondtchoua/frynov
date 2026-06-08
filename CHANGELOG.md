@@ -3,6 +3,19 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : profil utilisateur traduit FR/EN (UX-13) (2026-06-08)
+
+Branche `feature/ux-i18n-profile` (release `v1.0.0` → `rc.63`).
+
+### UX (i18n)
+- **`ProfileView`** internationalisé : carte identité (rôles, super-admin), **infos personnelles**,
+  **changement de mot de passe** (indicateur de force ×4), **sessions actives** (révocation +
+  confirmation). Nouveau namespace `profile.*` (rôles + niveaux de force imbriqués) ; réutilise
+  `common.*` et `auth.emailLabel`.
+
+### Tests
+- Frontend **254** inchangé · `vue-tsc` propre.
+
 ## [Non publié] — i18n : Dashboard traduit FR/EN (UX-13) (2026-06-08)
 
 Branche `feature/ux-i18n-dashboard` (release `v1.0.0` → `rc.62`).

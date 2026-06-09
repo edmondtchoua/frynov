@@ -212,7 +212,7 @@ async function remove(r: AdminCountryRule) {
     await adminService.deleteCountryRule(r.id)
     await load()
   } catch {
-    error.value = 'Suppression impossible.'
+    error.value = t('common.deleteFailed')
   }
 }
 

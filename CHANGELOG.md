@@ -3,6 +3,29 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : pagination unifiée + 11 vues partielles soldées (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-pagination` (release `v1.0.0` → `rc.70`). **Les 26 vues câblées i18n sont désormais toutes complètes** (0 reliquat connu).
+
+### UX (i18n)
+- **`common.pageOf`** (`Page {current} / {total}`) + **`common.deleteFailed`** introduits ; `admin.pageOf`
+  promu vers `common` (doublon supprimé, `ManualPaymentView` migrée).
+- **Pagination unifiée** via `common.pageOf` sur 9 vues : Promotion, Tenant, Supplier, Payment, Order,
+  Delivery, Stock, Produits (l'audit avait manqué Produits/Stock — d'où le besoin de la garde CI).
+- **`DeliveryListView`** : « ← Précédent / Suivant → » → `common.previous`/`next`.
+- **`CountryRuleListView`** : `'Suppression impossible.'` → `common.deleteFailed` ; **`StockListView`** :
+  `'Une erreur est survenue.'` → `common.genericError`.
+- **`StockTransferView`** : confirmation d'expédition traduite (`inventory.shipTransfer*`/`ship`) ;
+  paramètre local `t` renommé `tr` pour ne plus masquer la fonction i18n.
+- **`StockReportView`** : « (top 10) » → `reports.top10`.
+
+### Gouvernance i18n
+- Tracker [`i18n-coverage.md`](docs/recette/i18n-coverage.md) mis à jour : **26 ✅ / 0 🟡 / 22 ⬜**.
+  Prochaine brique : garde automatisée (gate CI dur, ratchet avec allowlist).
+
+### Tests
+- Frontend **254** inchangé · `vue-tsc` propre.
+
 ## [Non publié] — i18n : formulaire produit + tracker de couverture (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-catalog-productform` (release `v1.0.0` → `rc.69`).

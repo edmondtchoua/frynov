@@ -1,16 +1,16 @@
 <template>
   <div class="pos">
     <!-- Loading -->
-    <div v-if="loading" class="pos-loading">Chargement de la caisse…</div>
+    <div v-if="loading" class="pos-loading">{{ $t('pos.loading') }}</div>
 
     <!-- ── No open session → open-session screen ──────────────────────────── -->
     <div v-else-if="!session" class="pos-open">
       <div class="pos-open-card">
-        <h1 class="pos-open-title">Ouvrir une session de caisse</h1>
-        <p class="pos-open-sub">Saisissez le fond de caisse présent dans le tiroir avant de commencer.</p>
+        <h1 class="pos-open-title">{{ $t('pos.openTitle') }}</h1>
+        <p class="pos-open-sub">{{ $t('pos.openSub') }}</p>
 
         <label class="pos-field">
-          <span>Fond de caisse</span>
+          <span>{{ $t('pos.openingFloat') }}</span>
           <div class="pos-amount-input">
             <input
               v-model.number="openingFloat" type="number" min="0" step="any"
@@ -23,7 +23,7 @@
         <p v-if="openError" class="pos-error">{{ openError }}</p>
 
         <button class="pos-btn pos-btn--primary pos-btn--lg" :disabled="opening" data-test="open-session" @click="openSession">
-          {{ opening ? 'Ouverture…' : 'Ouvrir la caisse' }}
+          {{ opening ? $t('pos.opening') : $t('pos.openButton') }}
         </button>
       </div>
     </div>
@@ -33,12 +33,12 @@
       <!-- Header -->
       <header class="pos-header">
         <div>
-          <span class="pos-badge">Caisse ouverte</span>
-          <span class="pos-header-meta">{{ session.label || 'Session' }} · {{ session.sales_count }} vente(s)</span>
+          <span class="pos-badge">{{ $t('pos.sessionOpen') }}</span>
+          <span class="pos-header-meta">{{ session.label || $t('pos.sessionFallback') }} · {{ $t('pos.salesCount', { count: session.sales_count }) }}</span>
         </div>
         <div class="pos-header-right">
-          <span class="pos-expected" data-test="expected-cash">Espèces attendues : <strong>{{ fmt(session.expected_cash_cents) }}</strong></span>
-          <button class="pos-btn pos-btn--ghost" data-test="open-close-modal" @click="openCloseModal">Clôturer la caisse</button>
+          <span class="pos-expected" data-test="expected-cash">{{ $t('pos.expectedCash') }} : <strong>{{ fmt(session.expected_cash_cents) }}</strong></span>
+          <button class="pos-btn pos-btn--ghost" data-test="open-close-modal" @click="openCloseModal">{{ $t('pos.closeRegister') }}</button>
         </div>
       </header>
 
@@ -47,15 +47,15 @@
         <section class="pos-catalog">
           <input
             v-model="query" class="pos-input pos-search" data-test="product-search"
-            placeholder="Rechercher un produit ou scanner un code…" @input="onSearch" @keyup.enter="onScan"
+            :placeholder="$t('pos.searchPlaceholder')" @input="onSearch" @keyup.enter="onScan"
           />
-          <div v-if="searching" class="pos-hint">Recherche…</div>
-          <div v-else-if="results.length === 0 && query" class="pos-hint">Aucun produit trouvé.</div>
+          <div v-if="searching" class="pos-hint">{{ $t('pos.searching') }}</div>
+          <div v-else-if="results.length === 0 && query" class="pos-hint">{{ $t('pos.noProducts') }}</div>
           <ul class="pos-results">
             <li v-for="p in results" :key="p.id" class="pos-result" :data-test="`product-${p.sku}`" @click="addProduct(p)">
               <div class="pos-result-main">
                 <span class="pos-result-name">{{ p.name }}</span>
-                <span class="pos-result-sku">{{ p.sku }}<span v-if="p.has_variants"> · {{ p.variants_count }} décl.</span></span>
+                <span class="pos-result-sku">{{ p.sku }}<span v-if="p.has_variants"> · {{ $t('pos.declShort', { count: p.variants_count }) }}</span></span>
               </div>
               <span class="pos-result-price">{{ fmt(p.price?.amount) }}</span>
             </li>
@@ -64,8 +64,8 @@
 
         <!-- Right: cart -->
         <section class="pos-cart">
-          <h2 class="pos-cart-title">Panier</h2>
-          <div v-if="cart.length === 0" class="pos-cart-empty">Le panier est vide. Ajoutez des produits depuis la liste.</div>
+          <h2 class="pos-cart-title">{{ $t('pos.cart') }}</h2>
+          <div v-if="cart.length === 0" class="pos-cart-empty">{{ $t('pos.cartEmpty') }}</div>
           <ul v-else class="pos-cart-lines">
             <li v-for="(line, i) in cart" :key="line.product_id + (line.variant_id ?? '')" class="pos-line">
               <div class="pos-line-info">
@@ -83,16 +83,16 @@
 
           <div class="pos-cart-foot">
             <div class="pos-total-row">
-              <span>Total</span>
+              <span>{{ $t('common.total') }}</span>
               <strong data-test="cart-total">{{ fmt(cartTotalCents) }}</strong>
             </div>
 
             <label class="pos-field">
-              <span>Moyen de paiement</span>
+              <span>{{ $t('payments.methodLabel') }}</span>
               <select v-model="method" class="pos-input" data-test="method">
-                <option value="cash">Espèces</option>
-                <option value="mobile_money">Mobile Money</option>
-                <option value="card">Carte</option>
+                <option value="cash">{{ $t('payments.method.cash') }}</option>
+                <option value="mobile_money">{{ $t('payments.method.mobile_money') }}</option>
+                <option value="card">{{ $t('payments.method.card') }}</option>
               </select>
             </label>
 
@@ -102,7 +102,7 @@
               class="pos-btn pos-btn--primary pos-btn--lg"
               :disabled="cart.length === 0 || checkingOut" data-test="checkout" @click="checkout"
             >
-              {{ checkingOut ? 'Encaissement…' : `Encaisser ${fmt(cartTotalCents)}` }}
+              {{ checkingOut ? $t('pos.checkingOut') : $t('pos.checkout', { amount: fmt(cartTotalCents) }) }}
             </button>
           </div>
         </section>
@@ -110,8 +110,8 @@
     </div>
 
     <!-- Variant picker (shared BaseModal — UX-03) -->
-    <BaseModal v-model="picker.open" :title="`Choisir une déclinaison — ${picker.productName}`">
-      <div v-if="picker.loading" class="pos-hint">Chargement…</div>
+    <BaseModal v-model="picker.open" :title="$t('pos.pickVariantTitle', { name: picker.productName })">
+      <div v-if="picker.loading" class="pos-hint">{{ $t('common.loading') }}</div>
       <ul v-else class="pos-variant-list">
         <li v-for="v in picker.variants" :key="v.id" class="pos-variant" :data-test="`variant-${v.sku}`" @click="pickVariant(v)">
           <span>{{ v.label }} · {{ v.sku }}</span>
@@ -119,20 +119,20 @@
         </li>
       </ul>
       <template #footer>
-        <button class="pos-btn pos-btn--ghost" @click="picker.open = false">Annuler</button>
+        <button class="pos-btn pos-btn--ghost" @click="picker.open = false">{{ $t('common.cancel') }}</button>
       </template>
     </BaseModal>
 
     <!-- Close session modal (shared BaseModal — UX-03) -->
-    <BaseModal v-model="closeModal.open" title="Clôture de caisse">
+    <BaseModal v-model="closeModal.open" :title="$t('pos.closeTitle')">
       <div class="pos-recon">
-        <div class="pos-recon-row"><span>Fond de caisse</span><strong>{{ fmt(session?.opening_float_cents) }}</strong></div>
-        <div class="pos-recon-row"><span>Ventes espèces</span><strong>{{ fmt(session?.cash_sales_cents) }}</strong></div>
-        <div class="pos-recon-row pos-recon-row--accent"><span>Espèces attendues</span><strong>{{ fmt(session?.expected_cash_cents) }}</strong></div>
+        <div class="pos-recon-row"><span>{{ $t('pos.openingFloat') }}</span><strong>{{ fmt(session?.opening_float_cents) }}</strong></div>
+        <div class="pos-recon-row"><span>{{ $t('pos.cashSales') }}</span><strong>{{ fmt(session?.cash_sales_cents) }}</strong></div>
+        <div class="pos-recon-row pos-recon-row--accent"><span>{{ $t('pos.expectedCash') }}</span><strong>{{ fmt(session?.expected_cash_cents) }}</strong></div>
       </div>
 
       <label class="pos-field">
-        <span>Espèces comptées dans le tiroir</span>
+        <span>{{ $t('pos.countedCash') }}</span>
         <div class="pos-amount-input">
           <input v-model.number="closeModal.counted" type="number" min="0" step="any" class="pos-input" data-test="counted-cash" />
           <span class="pos-currency">{{ currency }}</span>
@@ -140,16 +140,16 @@
       </label>
 
       <div class="pos-diff" :class="diffClass" data-test="difference">
-        Écart : {{ fmt(differenceCents) }}
-        <span v-if="differenceCents === 0"> ✓ caisse juste</span>
-        <span v-else-if="differenceCents > 0"> (surplus)</span>
-        <span v-else> (manquant)</span>
+        {{ $t('pos.difference') }} {{ fmt(differenceCents) }}
+        <span v-if="differenceCents === 0"> ✓ {{ $t('pos.exact') }}</span>
+        <span v-else-if="differenceCents > 0"> {{ $t('pos.surplus') }}</span>
+        <span v-else> {{ $t('pos.short') }}</span>
       </div>
 
       <template #footer>
-        <button class="pos-btn pos-btn--ghost" @click="closeModal.open = false">Annuler</button>
+        <button class="pos-btn pos-btn--ghost" @click="closeModal.open = false">{{ $t('common.cancel') }}</button>
         <button class="pos-btn pos-btn--primary" :disabled="closeModal.submitting" data-test="confirm-close" @click="confirmClose">
-          {{ closeModal.submitting ? 'Clôture…' : 'Clôturer' }}
+          {{ closeModal.submitting ? $t('pos.closing') : $t('pos.close') }}
         </button>
       </template>
     </BaseModal>
@@ -168,6 +168,7 @@ import { useAuthStore } from '@/stores/auth'
 import { productService } from '@/modules/catalog/services/productService'
 import { posService } from '../services/posService'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { t } from '@/i18n'
 import type { CashRegisterSession, PosCartItem, PosPaymentMethod } from '../types'
 
 const auth = useAuthStore()
@@ -196,7 +197,7 @@ async function openSession() {
   try {
     session.value = await posService.open({ opening_float_cents: toCents(openingFloat.value) })
   } catch (e: any) {
-    openError.value = e?.response?.data?.message ?? 'Impossible d’ouvrir la caisse.'
+    openError.value = e?.response?.data?.message ?? t('pos.openError')
   } finally {
     opening.value = false
   }
@@ -311,9 +312,9 @@ async function checkout() {
     cart.value = []
     query.value = ''
     results.value = []
-    flash(`Vente enregistrée • ${fmt(total)}`)
+    flash(t('pos.saleRecorded', { amount: fmt(total) }))
   } catch (e: any) {
-    checkoutError.value = e?.response?.data?.message ?? 'Échec de l’encaissement.'
+    checkoutError.value = e?.response?.data?.message ?? t('pos.checkoutError')
   } finally {
     checkingOut.value = false
   }
@@ -346,9 +347,9 @@ async function confirmClose() {
     session.value = null
     cart.value = []
     openingFloat.value = 0
-    flash(`Caisse clôturée • écart ${formatMoney(closed.difference_cents ?? 0, currency.value)}`)
+    flash(t('pos.registerClosed', { diff: formatMoney(closed.difference_cents ?? 0, currency.value) }))
   } catch (e: any) {
-    flash(e?.response?.data?.message ?? 'Échec de la clôture.')
+    flash(e?.response?.data?.message ?? t('pos.closeError'))
   } finally {
     closeModal.submitting = false
   }

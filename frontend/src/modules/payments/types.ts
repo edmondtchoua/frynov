@@ -18,7 +18,11 @@ export interface RecordPaymentPayload {
   order_id?: string
   amount_cents: number
   currency: string
-  method: PaymentMethod
+  /** Catégorie canonique. Optionnelle si `provider` (moyen spécifique du marché, P6) est fourni. */
+  method?: PaymentMethod
+  /** P6 — moyen spécifique du marché (wave/orange_money/mtn_money/mpesa/bank_transfer/card/cash).
+   *  Le backend en dérive la catégorie `method` canonique. */
+  provider?: string
   reference?: string
   note?: string
 }

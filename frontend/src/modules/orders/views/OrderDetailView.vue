@@ -227,7 +227,13 @@
 
         <div class="form-group">
           <label class="form-label">{{ $t('payments.colMethod') }} <span style="color:#dc2626;">*</span></label>
-          <select v-model="payForm.method" class="form-input">
+          <!-- P6 — moyens spécifiques au marché si disponibles, sinon catégories canoniques -->
+          <select v-if="marketMethods.length" v-model="payForm.provider" class="form-input">
+            <option v-for="pm in marketMethods" :key="pm.method" :value="pm.method">
+              {{ $t('billing.payMethods.method.' + pm.method) }} · {{ $t('billing.payMethods.mode.' + pm.mode) }}
+            </option>
+          </select>
+          <select v-else v-model="payForm.method" class="form-input">
             <option value="cash">{{ $t('payments.method.cash') }}</option>
             <option value="mobile_money">{{ $t('payments.method.mobile_money') }}</option>
             <option value="card">{{ $t('payments.method.card') }}</option>
@@ -267,6 +273,8 @@ import { formatMoney } from '@/shared/utils/money'
 import { orderService } from '../services/orderService'
 import { paymentService } from '@/modules/payments/services/paymentService'
 import { deliveryService } from '@/modules/deliveries/services/deliveryService'
+import { useGeoContent } from '@/composables/useGeoContent'
+import { fetchPublicPaymentMethods, type PublicPaymentMethod } from '@/services/publicPricingService'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { t } from '@/i18n'
@@ -291,7 +299,20 @@ const payBalance   = ref(0)
 const payIsFullyPaid = ref(false)
 const payActionError = ref<string | null>(null)   // surfaced void/record errors
 const payModal     = reactive({ open: false, saving: false, error: '' })
-const payForm      = reactive({ amount: undefined as number | undefined, currency: 'XOF', method: 'cash' as PaymentMethod, reference: '' })
+const payForm      = reactive({ amount: undefined as number | undefined, currency: 'XOF', method: 'cash' as PaymentMethod, provider: '', reference: '' })
+
+// ── P6 — moyens de paiement spécifiques au marché (sinon repli sur les catégories canoniques) ──
+const { market } = useGeoContent()
+const marketMethods = ref<PublicPaymentMethod[]>([])
+
+async function loadMarketMethods() {
+  const code = market.value.code === 'africa' ? 'waemu' : market.value.code
+  try {
+    marketMethods.value = (await fetchPublicPaymentMethods({ market: code })).data
+  } catch {
+    marketMethods.value = [] // repli : le <select> canonique reste affiché
+  }
+}
 
 // ── Deliveries ─────────────────────────────────────────────────────────────────
 const deliveries      = ref<Delivery[]>([])
@@ -355,6 +376,7 @@ function openPaymentModal() {
   payForm.amount    = remaining > 0 ? remaining / 100 : undefined
   payForm.currency  = order.value?.currency ?? 'XOF'
   payForm.method    = 'cash'
+  payForm.provider  = marketMethods.value[0]?.method ?? ''
   payForm.reference = ''
   payModal.error    = ''
   payModal.saving   = false
@@ -366,11 +388,13 @@ async function submitPayment() {
   payModal.saving = true
   payModal.error  = ''
   try {
+    // P6 — si un moyen spécifique du marché est sélectionné, on poste `provider`
+    // (le backend en dérive la catégorie canonique `method`) ; sinon `method` direct.
     await paymentService.record({
       order_id:     id,
       amount_cents: Math.round(payForm.amount * 100),
       currency:     payForm.currency,
-      method:       payForm.method,
+      ...(payForm.provider ? { provider: payForm.provider } : { method: payForm.method }),
       reference:    payForm.reference || undefined,
     })
     payModal.open = false
@@ -424,7 +448,7 @@ function fmt(cents: number) {
 const fmtDate = formatDateTime
 const fmtDateShort = formatDateShort
 
-onMounted(() => { load(); loadPayments(); loadDeliveries() })
+onMounted(() => { load(); loadPayments(); loadDeliveries(); loadMarketMethods() })
 </script>
 
 <style scoped>

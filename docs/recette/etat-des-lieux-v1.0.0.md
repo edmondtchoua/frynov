@@ -40,7 +40,9 @@
 > **🧬 Catalogue — duplication produit/catégorie COMPLÈTE** (rc.89 backend + rc.90 wizard) : `ProductDuplicationService`
 > (SKU/identifiants régénérés, stock/identifiants jamais copiés, status draft, transactionnel) + 4 endpoints +
 > `ProductDuplicationWizard.vue` (aperçu + tags) + actions « Dupliquer » (ProductShow/CategoryList) — **gate catalogue P1 levé** (11 tests).
-> Tests : **backend 656** (653 ✅ / 2 skipped / **1 échec pré-existant hors périmètre** : `ImportModuleTest` adresse client) · **frontend 260** · `vue-tsc` propre ·
+> **💳 P6-1 — socle moyens de paiement par marché** (rc.92) : table `market_payment_methods` (10 marchés, tout
+> `manual`/`quote`, **zéro PSP**) + `GET /api/public/payment-methods` → DoD « chaque devise = un flux ou une mention » matérialisé (+5 tests). Cf. [`p6-cadrage.md`](decisions/p6-cadrage.md).
+> Tests : **backend 661** (658 ✅ / 2 skipped / **1 échec pré-existant hors périmètre** : `ImportModuleTest` adresse client) · **frontend 260** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 
 ---

@@ -633,8 +633,8 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 
 > 📋 **Cadrage livré (2026-06-09)** : [`docs/decisions/p6-cadrage.md`](decisions/p6-cadrage.md) —
 > état du code vérifié, design `market_payment_methods`, plan incrémental P6-1 (socle, zéro PSP) →
-> P6-4 (PSP par marché, post-1.0). Approche A (manuel/sur-devis) recommandée pour v1.0.0. **En attente
-> de validation fondateur avant tout code de flux financier.**
+> P6-4 (PSP par marché, post-1.0). Approche A (manuel/sur-devis) validée pour v1.0.0.
+> ✅ **P6-1 livré (rc.92)** : table + seeder 10 marchés (tout manual/quote) + `GET /api/public/payment-methods` + 5 tests. **Aucun rail PSP réel** (NO-GO respecté). Reste P6-2 (checkout déclaratif) pour v1.0.0.
 
 **Objectif** : brancher les rails de paiement selon marché.
 

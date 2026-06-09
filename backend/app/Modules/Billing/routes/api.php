@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('public/pricing', [PublicPricingController::class, 'index'])->name('public.pricing');
 Route::get('public/geo', [PublicPricingController::class, 'geo'])->name('public.geo');
+Route::get('public/payment-methods', [PublicPricingController::class, 'paymentMethods'])->name('public.payment-methods');
 
 Route::middleware(['auth:sanctum'])->group(function () {
     // Promo code

@@ -3,6 +3,30 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧬 Catalogue : duplication produit/catégorie — backend (P1) (2026-06-09)
+
+Branche `feature/catalog-duplication-backend` (release `v1.0.0` → `rc.89`).
+
+### Catalogue (gate P1 — fonctionnalité absente jusqu'ici)
+- **`ProductDuplicationService`** (politique serveur opposable §5bis) : le backend est source de vérité.
+  - **Régénère** `sku` + `internal_barcode` (via `CatalogService`), les `sku` de variantes, le `slug` de catégorie.
+  - **Vide** `barcode` + `gtin` ; **force** `status` à `draft` ; nom suffixé « (copie) ».
+  - **Copie** la config catalogue (prix, coût, description, type, catégorie, fournisseur) + les **attributs/valeurs**
+    (remap `product_id`) + les **variantes** (pivot attribut↔valeur re-lié).
+  - **Ne copie JAMAIS** stock, mouvements, lots, séries/IMEI/VIN, garanties, licences. **Transactionnel** (rollback total).
+- **Endpoints** (gardes RBAC `manager|admin|products.*`, isolation tenant, quota produits sur la création) :
+  `POST /api/catalog/products/{id}/duplicate-preview` · `/duplicate` · `categories/{id}/duplicate-preview` · `/duplicate`.
+  Audit : action `product.duplicated` (n'altère pas l'historique source).
+
+### Tests
+- **+8 tests** `ProductDuplicationTest` (preview sans persistance, régénération identifiants + status draft, variantes
+  SKU régénérés/barcode vidé, attributs/valeurs + pivot re-lié, **non-copie stock/mouvements**, catégorie nœud-seul
+  slug régénéré, **RBAC member → 403**, **isolation tenant → 404**). Suite Catalogue **81 ✅** (215 assertions).
+  Backend **656 tests** (653 ✅ / 2 skipped / 1 échec pré-existant hors périmètre).
+
+### Suite
+- Frontend `ProductDuplicationWizard.vue` + actions « Dupliquer » (`ProductShowPage`/`CategoryListView`) → **rc.90**.
+
 ## [Non publié] — 🔒 Sécurité : warehouse-scoping des GET unitaires (Sprint 20) (2026-06-09)
 
 Branche `feature/sec-warehouse-scoping` (release `v1.0.0` → `rc.86`).

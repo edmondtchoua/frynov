@@ -5,6 +5,7 @@ namespace App\Modules\Catalog\Http\Controllers;
 use App\Modules\Catalog\Http\Resources\CategoryResource;
 use App\Modules\Catalog\Models\Category;
 use App\Modules\Catalog\Services\CatalogService;
+use App\Modules\Catalog\Services\ProductDuplicationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -81,5 +82,37 @@ class CategoryController extends Controller
         $category->delete();
 
         return response()->json(['message' => 'Catégorie supprimée.']);
+    }
+
+    /**
+     * POST /api/catalog/categories/{id}/duplicate-preview
+     * Aperçu NON persisté (nœud seul, slug régénéré, sans produits ni sous-catégories).
+     */
+    public function duplicatePreview(Request $request, string $id): JsonResponse
+    {
+        $category = Category::where('tenant_id', $request->user()->tenant_id)->find($id);
+
+        if (! $category) {
+            return response()->json(['message' => 'Catégorie introuvable.'], 404);
+        }
+
+        return response()->json(['data' => app(ProductDuplicationService::class)->previewCategory($category)]);
+    }
+
+    /**
+     * POST /api/catalog/categories/{id}/duplicate
+     * Duplique le NŒUD catégorie seul (nom + « (copie) », parent identique, slug régénéré).
+     */
+    public function duplicate(Request $request, string $id): JsonResponse
+    {
+        $category = Category::where('tenant_id', $request->user()->tenant_id)->find($id);
+
+        if (! $category) {
+            return response()->json(['message' => 'Catégorie introuvable.'], 404);
+        }
+
+        $new = app(ProductDuplicationService::class)->duplicateCategory($category);
+
+        return response()->json(['data' => new CategoryResource($new)], 201);
     }
 }

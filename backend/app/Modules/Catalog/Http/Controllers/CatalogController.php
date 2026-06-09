@@ -5,6 +5,7 @@ namespace App\Modules\Catalog\Http\Controllers;
 use App\Modules\Catalog\Http\Resources\CatalogResource;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Services\CatalogService;
+use App\Modules\Catalog\Services\ProductDuplicationService;
 use App\Modules\Inventory\Models\Stock;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Services\StockService;
@@ -275,5 +276,38 @@ class CatalogController extends Controller
         $product = $this->catalog->activateProduct($product);
 
         return response()->json(['data' => new CatalogResource($product)]);
+    }
+
+    /**
+     * POST /api/catalog/products/{id}/duplicate-preview
+     * Aperçu NON persisté de la duplication (politique §5bis) — pour le wizard.
+     */
+    public function duplicatePreview(Request $request, string $id): JsonResponse
+    {
+        $product = $this->catalog->findProduct($request->user()->tenant_id, $id);
+
+        if (! $product) {
+            return response()->json(['message' => 'Produit introuvable.'], 404);
+        }
+
+        return response()->json(['data' => app(ProductDuplicationService::class)->previewProduct($product)]);
+    }
+
+    /**
+     * POST /api/catalog/products/{id}/duplicate
+     * Duplique le produit (+ attributs + variantes) — SKU/identifiants régénérés, stock NON copié,
+     * status draft, transactionnel. Cf. ProductDuplicationService.
+     */
+    public function duplicate(Request $request, string $id): JsonResponse
+    {
+        $product = $this->catalog->findProduct($request->user()->tenant_id, $id);
+
+        if (! $product) {
+            return response()->json(['message' => 'Produit introuvable.'], 404);
+        }
+
+        $new = app(ProductDuplicationService::class)->duplicateProduct($product);
+
+        return response()->json(['data' => new CatalogResource($new)], 201);
     }
 }

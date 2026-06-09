@@ -53,6 +53,9 @@ Route::prefix('catalog')->name('catalog.')->group(function () {
 
             // Products — write
             Route::post('products',                    [CatalogController::class, 'store'])->name('products.store')->middleware('quota:products');
+            // Duplication assistée sécurisée (P1) — politique serveur (cf. ProductDuplicationService)
+            Route::post('products/{id}/duplicate-preview', [CatalogController::class, 'duplicatePreview'])->name('products.duplicate-preview');
+            Route::post('products/{id}/duplicate',         [CatalogController::class, 'duplicate'])->name('products.duplicate')->middleware('quota:products');
             Route::put('products/{id}',                [CatalogController::class, 'update'])->name('products.update');
             Route::patch('products/{id}/archive',      [CatalogController::class, 'archive'])->name('products.archive');
             Route::patch('products/{id}/activate',     [CatalogController::class, 'activate'])->name('products.activate');
@@ -71,6 +74,8 @@ Route::prefix('catalog')->name('catalog.')->group(function () {
 
             // Categories — write
             Route::post('categories',         [CategoryController::class, 'store'])->name('categories.store');
+            Route::post('categories/{id}/duplicate-preview', [CategoryController::class, 'duplicatePreview'])->name('categories.duplicate-preview');
+            Route::post('categories/{id}/duplicate',         [CategoryController::class, 'duplicate'])->name('categories.duplicate');
             Route::put('categories/{id}',     [CategoryController::class, 'update'])->name('categories.update');
             Route::delete('categories/{id}',  [CategoryController::class, 'destroy'])->name('categories.destroy');
 

@@ -25,10 +25,18 @@ class OrderService
 
     // ── Queries ────────────────────────────────────────────────────────────
 
-    public function findById(string $id, string $tenantId): Order
+    /**
+     * @param  array<int,string>|null  $warehouseIds  null = no site restriction (admin/manager);
+     *                                 array = the order must belong to one of these warehouses
+     *                                 ([] = deny all). Mirrors the scoping applied by paginate()
+     *                                 so a warehouse-restricted operator can never reach another
+     *                                 site's order via a known UUID (Sprint 20 — GET unitaires).
+     */
+    public function findById(string $id, string $tenantId, ?array $warehouseIds = null): Order
     {
         $order = Order::where('id', $id)
             ->where('tenant_id', $tenantId)
+            ->when($warehouseIds !== null, fn($q) => $q->whereIn('warehouse_id', $warehouseIds))
             ->with('lines')
             ->first();
 

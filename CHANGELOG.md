@@ -3,6 +3,30 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔒 Sécurité : warehouse-scoping des GET unitaires (Sprint 20) (2026-06-09)
+
+Branche `feature/sec-warehouse-scoping` (release `v1.0.0` → `rc.86`).
+
+### Sécurité (bloquant Go/No-Go levé)
+- **Fuite par UUID connu fermée** : les accès à une ressource unique (`GET /api/orders/{id}`,
+  `GET /api/payments/{id}`, `GET /api/orders/{orderId}/payments`) étaient **tenant-scopés mais pas
+  warehouse-scopés** — un opérateur restreint à l'agence A pouvait ouvrir une commande/paiement de
+  l'agence B en devinant/connaissant son UUID. Désormais le scoping par agence (`user_warehouses`)
+  s'applique aussi aux ressources unitaires, à l'identique des listes (`index`/`paginate`).
+- `OrderService::findById()` et `PaymentService::findOrFail()` acceptent un paramètre
+  `?array $warehouseIds` (null = admin/manager non restreints ; `[]` = refus). Les contrôleurs passent
+  `WarehouseScope::resolve($user, null)`. Les mutations `confirm`/`fulfill`/`cancel` (déjà gated
+  `orders.manage`) sont aussi scopées par défense en profondeur (un rôle custom restreint resterait
+  borné à ses agences). Réponse **404** (jamais de fuite d'existence), cohérente avec le reste.
+
+### Tests
+- **+4 tests** dans `WarehouseAccessScopingTest` (HTTP) : un opérateur restreint ne peut PAS afficher
+  la commande / le paiement / les paiements de commande d'un autre site (404) mais voit les siens
+  (200) ; un manager voit tout. Backend **648 tests** (645 ✅ / 2 skipped) après ajout.
+- ⚠️ 1 échec **pré-existant et hors périmètre** : `ImportModuleTest::customer_import_stores_address_string_and_notes`
+  (normalisation d'adresse client string vs array, issu du travail concurrent `1dd3af3`) — reproduit en
+  isolation, sans rapport avec ce correctif. Suivi séparément.
+
 ## [Non publié] — 🎉 i18n : module Customers — COUVERTURE 100 % (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-customers` (release `v1.0.0` → `rc.85`).

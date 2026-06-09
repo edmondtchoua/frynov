@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Billing\Models\Plan;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Orders\Models\Order;
+use App\Modules\Payments\Models\Payment;
 use App\Modules\Tenants\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -80,6 +81,14 @@ class WarehouseAccessScopingTest extends TestCase
         ]);
     }
 
+    private function payment(string $warehouseId): Payment
+    {
+        return Payment::withoutTenantScope()->create([
+            'tenant_id' => $this->tenant->id, 'warehouse_id' => $warehouseId,
+            'amount_cents' => 5000, 'currency' => 'XOF', 'method' => 'cash', 'paid_at' => now(),
+        ]);
+    }
+
     #[Test]
     public function a_manager_can_assign_an_operators_warehouses_via_the_endpoint(): void
     {
@@ -127,5 +136,46 @@ class WarehouseAccessScopingTest extends TestCase
         $this->withToken($this->operatorToken)
             ->putJson("/api/workspace/users/{$this->manager->id}/warehouses", ['warehouse_ids' => [$this->whA->id]])
             ->assertStatus(403);
+    }
+
+    // ── GET unitaires (Sprint 20 — fermeture de la fuite par UUID connu) ──────────
+
+    #[Test]
+    public function a_restricted_operator_cannot_show_another_sites_order(): void
+    {
+        $this->assignToWarehouse($this->operator, $this->whA);
+
+        // Sa propre agence : OK.
+        $this->withToken($this->operatorToken)->getJson("/api/orders/{$this->orderA->id}")->assertOk();
+        // Agence d'un autre site via UUID connu : 404 (pas de fuite, pas de 200).
+        $this->withToken($this->operatorToken)->getJson("/api/orders/{$this->orderB->id}")->assertStatus(404);
+    }
+
+    #[Test]
+    public function a_manager_can_show_any_sites_order(): void
+    {
+        // Les managers ne sont jamais restreints par agence.
+        $this->withToken($this->managerToken)->getJson("/api/orders/{$this->orderA->id}")->assertOk();
+        $this->withToken($this->managerToken)->getJson("/api/orders/{$this->orderB->id}")->assertOk();
+    }
+
+    #[Test]
+    public function a_restricted_operator_cannot_show_another_sites_payment(): void
+    {
+        $this->assignToWarehouse($this->operator, $this->whA);
+        $payA = $this->payment($this->whA->id);
+        $payB = $this->payment($this->whB->id);
+
+        $this->withToken($this->operatorToken)->getJson("/api/payments/{$payA->id}")->assertOk();
+        $this->withToken($this->operatorToken)->getJson("/api/payments/{$payB->id}")->assertStatus(404);
+    }
+
+    #[Test]
+    public function a_restricted_operator_cannot_list_another_sites_order_payments(): void
+    {
+        $this->assignToWarehouse($this->operator, $this->whA);
+
+        $this->withToken($this->operatorToken)->getJson("/api/orders/{$this->orderA->id}/payments")->assertOk();
+        $this->withToken($this->operatorToken)->getJson("/api/orders/{$this->orderB->id}/payments")->assertStatus(404);
     }
 }

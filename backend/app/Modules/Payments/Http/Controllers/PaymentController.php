@@ -91,7 +91,11 @@ class PaymentController extends Controller
     public function show(Request $request, string $id): JsonResponse
     {
         try {
-            $payment = $this->service->findOrFail($id, $request->user()->tenant_id);
+            $payment = $this->service->findOrFail(
+                $id,
+                $request->user()->tenant_id,
+                WarehouseScope::resolve($request->user(), null),
+            );
         } catch (ModelNotFoundException) {
             return response()->json(['message' => 'Paiement introuvable.'], 404);
         }
@@ -115,7 +119,11 @@ class PaymentController extends Controller
         }
 
         try {
-            $payment = $this->service->findOrFail($id, $request->user()->tenant_id);
+            $payment = $this->service->findOrFail(
+                $id,
+                $request->user()->tenant_id,
+                WarehouseScope::resolve($request->user(), null),
+            );
         } catch (ModelNotFoundException) {
             return response()->json(['message' => 'Paiement introuvable.'], 404);
         }
@@ -130,7 +138,10 @@ class PaymentController extends Controller
     public function forOrder(Request $request, string $orderId): JsonResponse
     {
         try {
-            $order = Order::where('tenant_id', $request->user()->tenant_id)->findOrFail($orderId);
+            $warehouseIds = WarehouseScope::resolve($request->user(), null);
+            $order = Order::where('tenant_id', $request->user()->tenant_id)
+                ->when($warehouseIds !== null, fn($q) => $q->whereIn('warehouse_id', $warehouseIds))
+                ->findOrFail($orderId);
         } catch (ModelNotFoundException) {
             return response()->json(['message' => 'Commande introuvable.'], 404);
         }

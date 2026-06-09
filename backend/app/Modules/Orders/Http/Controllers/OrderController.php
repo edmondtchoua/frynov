@@ -34,7 +34,11 @@ class OrderController extends Controller
     public function show(Request $request, string $id): JsonResponse
     {
         try {
-            $order = $this->orderService->findById($id, $request->user()->tenant_id);
+            $order = $this->orderService->findById(
+                $id,
+                $request->user()->tenant_id,
+                WarehouseScope::resolve($request->user(), null),
+            );
         } catch (OrderNotFoundException $e) {
             return response()->json(['message' => $e->getMessage()], 404);
         }
@@ -58,7 +62,7 @@ class OrderController extends Controller
     public function confirm(Request $request, string $id): JsonResponse
     {
         try {
-            $order = $this->orderService->findById($id, $request->user()->tenant_id);
+            $order = $this->orderService->findById($id, $request->user()->tenant_id, WarehouseScope::resolve($request->user(), null));
             $order = $this->orderService->confirm($order, $request->user()->id);
         } catch (OrderNotFoundException $e) {
             return response()->json(['message' => $e->getMessage()], 404);
@@ -77,7 +81,7 @@ class OrderController extends Controller
     public function fulfill(Request $request, string $id): JsonResponse
     {
         try {
-            $order = $this->orderService->findById($id, $request->user()->tenant_id);
+            $order = $this->orderService->findById($id, $request->user()->tenant_id, WarehouseScope::resolve($request->user(), null));
             $order = $this->orderService->fulfill($order, $request->user()->id);
         } catch (OrderNotFoundException $e) {
             return response()->json(['message' => $e->getMessage()], 404);
@@ -96,7 +100,7 @@ class OrderController extends Controller
     public function cancel(Request $request, string $id): JsonResponse
     {
         try {
-            $order = $this->orderService->findById($id, $request->user()->tenant_id);
+            $order = $this->orderService->findById($id, $request->user()->tenant_id, WarehouseScope::resolve($request->user(), null));
             $order = $this->orderService->cancel($order, $request->user()->id);
         } catch (OrderNotFoundException $e) {
             return response()->json(['message' => $e->getMessage()], 404);

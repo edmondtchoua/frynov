@@ -1,6 +1,6 @@
 # Couverture i18n — tracker vivant (UX-13)
 
-> **Mise à jour : 2026-06-09 (rc.71).** Source de vérité de l'avancement i18n, vue par vue.
+> **Mise à jour : 2026-06-09 (rc.72).** Source de vérité de l'avancement i18n, vue par vue.
 > Remplace les estimations « par zone » de l'état-des-lieux par un **décompte réel par vue**
 > (audit multi-agents du 2026-06-09). Le français reste la **source de vérité** ; l'anglais suit.
 
@@ -25,23 +25,24 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 
 | État | Vues | % |
 |---|---|---|
-| ✅ **Complet** | 26 | 54 % |
+| ✅ **Complet** | 28 | 58 % |
 | 🟡 **Partiel** | 0 | 0 % |
-| ⬜ **À faire** (non câblé) | 22 | 46 % |
-| **Câblées i18n (toutes complètes)** | **26** | **54 %** |
+| ⬜ **À faire** (non câblé) | 20 | 42 % |
+| **Câblées i18n (toutes complètes)** | **28** | **58 %** |
 
-> ✅ **rc.70** : les 26 vues câblées sont **toutes complètes** — tous les reliquats connus soldés
-> (pagination unifiée via `common.pageOf`, prev/next, erreurs, confirm transfert). Reste les **22 vues
-> non câblées**. La **garde automatisée** (gate CI dur, prochaine RC) confirmera l'exhaustivité.
+> ✅ **rc.72** : **28 vues complètes** (+ Catalogue `AttributesView`/`VariantsView`). Aucune vue câblée
+> sans reliquat — **garde CI dure active depuis rc.71**. Reste **20 vues non câblées** (cf. ⬜ ci-dessous).
 
 > ⚠️ Le module **Customers** (`CustomerListView`, `CustomerDetailView`) est géré par une **session
 > concurrente** → ne pas y toucher tant que ce verrou n'est pas levé.
 
-## ✅ Complètes (26)
+## ✅ Complètes (28)
 
 | Module | Vue | Namespace | RC |
 |---|---|---|---|
 | catalog | `ProductFormView` | `catalog.productForm.*` | rc.69 |
+| catalog | `AttributesView` | `catalog.attributes.*` | rc.72 |
+| catalog | `VariantsView` | `catalog.variants.*` | rc.72 |
 | catalog | `ProductListView` | `catalog.*` | rc.44 |
 | catalog | `CategoryListView` | `catalog.*` | rc.45 |
 | admin | `PlanListView` | `admin.*` | rc.68 |
@@ -95,7 +96,7 @@ Les 11 vues câblées qui conservaient des reliquats ont été **finalisées en 
 |---|---|
 | admin | `AdminDashboardView`, `AuditLogView`, `ModuleListView` |
 | billing | `BillingView`, `UpgradeView` |
-| catalog | `AttributesView`, `VariantsView`, `LabelPrintView`, `ProductShowPage` |
+| catalog | `LabelPrintView`, `ProductShowPage` |
 | inventory | `BatchDeliveryView`, `MovementHistoryView` |
 | orders | `OrderCreateView`, `OrderDetailView`, `ReturnsView` |
 | onboarding | `OnboardingView` |

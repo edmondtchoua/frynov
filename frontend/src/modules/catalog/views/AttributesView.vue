@@ -3,8 +3,8 @@
     <CatalogTabNav />
     <div class="page-header">
       <div>
-        <h1 class="page-title">Attributs produit</h1>
-        <p class="page-subtitle">Axes de variation configurés sur les produits avec déclinaisons</p>
+        <h1 class="page-title">{{ $t('catalog.attributes.title') }}</h1>
+        <p class="page-subtitle">{{ $t('catalog.attributes.subtitle') }}</p>
       </div>
     </div>
 
@@ -17,9 +17,9 @@
         <rect x="4" y="4" width="32" height="32" rx="8" fill="var(--brand-primary-bg)"/>
         <path d="M10 20h20M20 10v10l4 4" stroke="var(--brand-primary)" stroke-width="2" stroke-linecap="round"/>
       </svg>
-      <h3>Aucun attribut défini</h3>
-      <p>Activez les déclinaisons sur un produit puis configurez ses axes de variation.</p>
-      <router-link to="/catalog" class="btn btn-primary">Voir les produits</router-link>
+      <h3>{{ $t('catalog.attributes.empty') }}</h3>
+      <p>{{ $t('catalog.attributes.emptyHint') }}</p>
+      <router-link to="/catalog" class="btn btn-primary">{{ $t('catalog.viewProductsList') }}</router-link>
     </div>
 
     <div v-else class="products-grid">
@@ -35,10 +35,10 @@
           <div class="card-actions">
             <!-- variants_count from withCount(), fallback to variants array length -->
             <span class="variants-count">
-              {{ product.variants_count ?? product.variants?.length ?? 0 }} déclinaison(s)
+              {{ $t('catalog.attributes.declinationCount', { count: product.variants_count ?? product.variants?.length ?? 0 }) }}
             </span>
             <router-link :to="`/catalog/products/${product.id}`" class="btn btn-ghost btn-sm">
-              Voir la fiche
+              {{ $t('catalog.viewProduct') }}
             </router-link>
           </div>
         </div>
@@ -57,8 +57,8 @@
         </div>
 
         <p v-else class="no-attrs-hint">
-          Aucun attribut configuré — les axes se définissent depuis
-          <router-link :to="`/catalog/products/${product.id}/edit`">la fiche produit</router-link>.
+          {{ $t('catalog.attributes.noAttrsHint1') }}
+          <router-link :to="`/catalog/products/${product.id}/edit`">{{ $t('catalog.attributes.productSheet') }}</router-link>.
         </p>
       </div>
     </div>

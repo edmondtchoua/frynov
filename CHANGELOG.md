@@ -3,6 +3,19 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : fiche tenant (back-office Admin) (UX-13) (2026-06-08)
+
+Branche `feature/ux-i18n-tenantdetail` (release `v1.0.0` → `rc.65`).
+
+### UX (i18n)
+- **`TenantDetailView`** internationalisé : en-tête (statut via `statusLabel`, suspendre/réactiver),
+  cartes **Informations** + **Abonnement** (changement de plan), **Utilisateurs**, **Modules ERP**
+  (activer/désactiver, Core). Étend `admin.*` ; réutilise `common.*` (name, email, status, createdAt,
+  active/inactive, loading).
+
+### Tests
+- Frontend **254** inchangé · `vue-tsc` propre.
+
 ## [Non publié] — i18n : back-office Admin — liste des tenants (UX-13) (2026-06-08)
 
 Branche `feature/ux-i18n-tenants` (release `v1.0.0` → `rc.64`).

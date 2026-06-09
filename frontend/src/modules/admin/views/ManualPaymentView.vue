@@ -32,14 +32,14 @@
       <table class="admin-table" v-if="!loading && payments.length">
         <thead>
           <tr>
-            <th>Tenant</th>
-            <th>Plan demandé</th>
-            <th>Montant</th>
-            <th>Méthode</th>
-            <th>Preuve</th>
-            <th>Date</th>
-            <th>Statut</th>
-            <th>Actions</th>
+            <th>{{ $t('admin.colTenant') }}</th>
+            <th>{{ $t('admin.planRequested') }}</th>
+            <th>{{ $t('common.amount') }}</th>
+            <th>{{ $t('admin.method') }}</th>
+            <th>{{ $t('admin.proof') }}</th>
+            <th>{{ $t('common.date') }}</th>
+            <th>{{ $t('common.status') }}</th>
+            <th>{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -55,7 +55,7 @@
             <td>
               <a v-if="p.proof_url" :href="p.proof_url" target="_blank" class="proof-link">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 12V3l3-1.5h5L12 3v9H2z" stroke="currentColor" stroke-width="1.2"/><path d="M5 6h4M5 8h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-                {{ p.proof_original_filename ?? 'Voir' }}
+                {{ p.proof_original_filename ?? $t('common.view') }}
               </a>
               <span v-else class="dim">—</span>
             </td>
@@ -66,8 +66,8 @@
             </td>
             <td>
               <div v-if="p.status === 'pending'" class="action-group">
-                <button class="btn-sm btn-sm--ok" @click="doApprove(p)">Approuver</button>
-                <button class="btn-sm btn-sm--warn" @click="openReject(p)">Rejeter</button>
+                <button class="btn-sm btn-sm--ok" @click="doApprove(p)">{{ $t('admin.approve') }}</button>
+                <button class="btn-sm btn-sm--warn" @click="openReject(p)">{{ $t('admin.reject') }}</button>
               </div>
               <span v-else class="dim">—</span>
             </td>
@@ -75,31 +75,31 @@
         </tbody>
       </table>
       <StateBlock v-else-if="loading" variant="loading" />
-      <StateBlock v-else variant="empty" :title="statusFilter ? 'Aucun paiement avec ce statut' : 'Aucun paiement'" />
+      <StateBlock v-else variant="empty" :title="statusFilter ? $t('admin.noPaymentsStatus') : $t('admin.noPayments')" />
     </div>
 
     <!-- Pagination -->
     <div class="pagination" v-if="meta && meta.last_page > 1">
-      <button :disabled="page === 1" @click="page--; load()">← Précédent</button>
-      <span>Page {{ meta.current_page }} / {{ meta.last_page }}</span>
-      <button :disabled="page === meta.last_page" @click="page++; load()">Suivant →</button>
+      <button :disabled="page === 1" @click="page--; load()">← {{ $t('common.previous') }}</button>
+      <span>{{ $t('admin.pageOf', { current: meta.current_page, total: meta.last_page }) }}</span>
+      <button :disabled="page === meta.last_page" @click="page++; load()">{{ $t('common.next') }} →</button>
     </div>
 
     <!-- Reject modal (shared BaseModal — UX-03) -->
-    <BaseModal v-model="rejectModal.open" size="sm" title="Rejeter le paiement" :subtitle="rejectModal.payment?.tenant_name">
-      <p class="modal-desc">Indiquez la raison du rejet de ce paiement.</p>
+    <BaseModal v-model="rejectModal.open" size="sm" :title="$t('admin.rejectPayment')" :subtitle="rejectModal.payment?.tenant_name">
+      <p class="modal-desc">{{ $t('admin.rejectReasonPrompt') }}</p>
       <textarea
         v-model="rejectModal.reason"
         class="form-textarea"
-        placeholder="Ex: Montant incorrect, preuve illisible, etc."
+        :placeholder="$t('admin.rejectReasonPlaceholder')"
         rows="3"
       ></textarea>
       <div v-if="rejectModal.error" class="form-error">{{ rejectModal.error }}</div>
 
       <template #footer>
-        <button class="btn-cancel" @click="rejectModal.open = false">Annuler</button>
+        <button class="btn-cancel" @click="rejectModal.open = false">{{ $t('common.cancel') }}</button>
         <button class="btn-reject" :disabled="rejectModal.saving || !rejectModal.reason" @click="confirmReject">
-          {{ rejectModal.saving ? '…' : 'Confirmer le rejet' }}
+          {{ rejectModal.saving ? '…' : $t('admin.confirmReject') }}
         </button>
       </template>
     </BaseModal>
@@ -108,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { formatDate } from '@/shared/utils/date'
 import { RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
@@ -116,6 +116,7 @@ import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { adminService, type AdminManualPayment } from '../services/adminService'
+import { t } from '@/i18n'
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const payments     = ref<AdminManualPayment[]>([])
@@ -125,12 +126,12 @@ const page         = ref(1)
 const statusFilter = ref('pending')
 const pendingCount = ref(0)
 
-const statusTabs = [
-  { value: 'pending',  label: 'En attente' },
-  { value: 'approved', label: 'Approuvés' },
-  { value: 'rejected', label: 'Rejetés' },
-  { value: '',         label: 'Tous' },
-]
+const statusTabs = computed(() => [
+  { value: 'pending',  label: t('admin.paymentTabs.pending') },
+  { value: 'approved', label: t('admin.paymentTabs.approved') },
+  { value: 'rejected', label: t('admin.paymentTabs.rejected') },
+  { value: '',         label: t('admin.all') },
+])
 
 // ── Reject modal ──────────────────────────────────────────────────────────────
 const rejectModal = reactive({
@@ -168,15 +169,15 @@ const { confirm } = useConfirm()
 
 async function doApprove(p: AdminManualPayment) {
   if (!(await confirm({
-    title: 'Approuver le paiement',
-    message: `Approuver le paiement de ${p.tenant_name} (plan ${p.plan_code}) ?`,
-    confirmLabel: 'Approuver',
+    title: t('admin.approvePayment'),
+    message: t('admin.approveConfirm', { name: p.tenant_name, plan: p.plan_code }),
+    confirmLabel: t('admin.approve'),
   }))) return
   actionError.value = ''
   try {
     await adminService.approveManualPayment(p.id)
   } catch (err: any) {
-    actionError.value = err?.response?.data?.message ?? 'Erreur lors de l\'approbation.'
+    actionError.value = err?.response?.data?.message ?? t('admin.approveError')
   } finally {
     // Toujours rafraîchir le tableau — succès ou échec
     await Promise.all([load(), loadPendingCount()])
@@ -191,14 +192,14 @@ function openReject(p: AdminManualPayment) {
 }
 
 async function confirmReject() {
-  if (!rejectModal.reason) { rejectModal.error = 'La raison est obligatoire.'; return }
+  if (!rejectModal.reason) { rejectModal.error = t('admin.reasonRequired'); return }
   rejectModal.saving = true
   try {
     await adminService.rejectManualPayment(rejectModal.payment!.id, rejectModal.reason)
     rejectModal.open = false
     await Promise.all([load(), loadPendingCount()])
   } catch (err: any) {
-    rejectModal.error = err?.response?.data?.message ?? 'Erreur.'
+    rejectModal.error = err?.response?.data?.message ?? t('common.genericError')
   } finally {
     rejectModal.saving = false
   }
@@ -213,7 +214,7 @@ function methodLabel(method: string): string {
   const m: Record<string, string> = {
     orange_money:   'Orange Money',
     wave:           'Wave',
-    bank_transfer:  'Virement',
+    bank_transfer:  t('admin.bankTransfer'),
     mtn_money:      'MTN Money',
     moov_money:     'Moov Money',
   }
@@ -222,9 +223,9 @@ function methodLabel(method: string): string {
 
 function statusLabel(status: string): string {
   const m: Record<string, string> = {
-    pending:  'En attente',
-    approved: 'Approuvé',
-    rejected: 'Rejeté',
+    pending:  t('admin.paymentStatus.pending'),
+    approved: t('admin.paymentStatus.approved'),
+    rejected: t('admin.paymentStatus.rejected'),
   }
   return m[status] ?? status
 }

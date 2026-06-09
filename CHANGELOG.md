@@ -3,6 +3,23 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Admin Plans & Paiements manuels (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-admin3` (release `v1.0.0` → `rc.68`). **Fin de l'internationalisation du back-office Admin.**
+
+### UX (i18n)
+- **`PlanListView`** internationalisé : cartes plan (visibilité Public/Privé, prix `/ mois`/Gratuit,
+  limites usagers/produits/commandes/essai), **modal d'édition des limites** (libellés Nom, utilisateurs
+  inclus, jours d'essai, produits, commandes, clients, boutiques, entrepôts, imports, appels API,
+  stockage ; cases Actif/Public) + erreur d'enregistrement. Étend `admin.*` ; réutilise `common.*`.
+- **`ManualPaymentView`** internationalisé : onglets de statut (En attente/Approuvés/Rejetés/Tous +
+  badge), table (colonnes, méthode dont Virement, statuts), pagination, actions Approuver/Rejeter,
+  **modal de rejet** (motif) + confirmation d'approbation & messages d'erreur. Étend `admin.*` ;
+  réutilise `common.*` (amount, date, status, actions, view, previous/next, cancel, genericError).
+
+### Tests
+- Frontend **254** inchangé · `vue-tsc` propre.
+
 ## [Non publié] — i18n : Admin Règles pays (UX-13) (2026-06-08)
 
 Branche `feature/ux-i18n-countryrule` (release `v1.0.0` → `rc.67`).

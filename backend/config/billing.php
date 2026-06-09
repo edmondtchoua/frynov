@@ -27,4 +27,18 @@ return [
     | ouverts et les secrets webhooks renseignés.
     */
     'gateways_enabled' => env('PAYMENT_GATEWAYS_ENABLED', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Flutterwave — adaptateur de référence (P6-4)
+    |--------------------------------------------------------------------------
+    | Couverture panafricaine (cartes + Mobile Money : Nigeria, Ghana, Kenya, UEMOA…).
+    | INERTE tant que `gateways_enabled` est false OU que `secret_key` est vide.
+    | Renseigner via .env pour activer. Vérifier le contrat contre la doc Flutterwave v3
+    | avant production.
+    */
+    'flutterwave' => [
+        'base_url'   => env('FLUTTERWAVE_BASE_URL', 'https://api.flutterwave.com'),
+        'secret_key' => env('FLUTTERWAVE_SECRET_KEY', ''),
+    ],
 ];

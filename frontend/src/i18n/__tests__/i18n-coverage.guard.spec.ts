@@ -21,8 +21,6 @@ const ALLOWLIST = new Set<string>([
   'admin/views/ModuleListView.vue',
   'billing/views/BillingView.vue',
   'billing/views/UpgradeView.vue',
-  'catalog/views/LabelPrintView.vue',
-  'catalog/views/ProductShowPage.vue',
   'inventory/views/BatchDeliveryView.vue',
   'inventory/views/MovementHistoryView.vue',
   'orders/views/OrderCreateView.vue',

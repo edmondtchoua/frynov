@@ -3,6 +3,27 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Catalogue Fiche produit & Étiquettes — module 100 % (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-catalog-show-label` (release `v1.0.0` → `rc.73`). **Module Catalogue entièrement internationalisé (7/7 vues).**
+
+### UX (i18n)
+- **`ProductShowPage`** internationalisé (vue dense ~1360 lignes) : en-tête (type/statut/actions), 4 onglets
+  (Vue d'ensemble, Variantes, Stock, Prix), cartes identification/prix, résumé & détail stock, table des
+  variantes & mouvements, **2 drawers** (entrée stock, ajustement) + validations & erreurs. Namespace
+  `catalog.productShow.*` ; réutilise `common.*`, `inventory.*`, `catalog.*`. Paramètres locaux `t`
+  (typeLabel/mvtTypeLabel) renommés `type` pour ne plus masquer la fonction i18n.
+- **`LabelPrintView`** internationalisé : sélection produits, configuration (format, options, copies),
+  résumé & impression. Namespace `catalog.labelPrint.*`.
+- **Ratchet garde** : les 2 vues retirées de l'`ALLOWLIST`. La garde a confirmé l'absence de texte FR
+  accentué résiduel sur ces 2 vues denses.
+
+### Avancement
+- Tracker [`i18n-coverage.md`](docs/recette/i18n-coverage.md) : **30 ✅ / 0 🟡 / 18 ⬜** (62 %). Catalogue 100 %.
+
+### Tests
+- Frontend **257** inchangé · `vue-tsc` propre · `npm run i18n:check` vert.
+
 ## [Non publié] — i18n : Catalogue Attributs & Déclinaisons (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-catalog-attrs-variants` (release `v1.0.0` → `rc.72`).

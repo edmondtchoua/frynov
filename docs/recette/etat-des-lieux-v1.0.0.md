@@ -1,6 +1,6 @@
 # État des lieux v1.0.0 — polish UX restant + suite de la recette finale
 
-> Mise à jour : 2026-06-09. Branche `release/v1.0.0` à **`v1.0.0-rc.83`** (cette session → `rc.84+`).
+> Mise à jour : 2026-06-09. Branche `release/v1.0.0` à **`v1.0.0-rc.84`** (cette session → `rc.85+`).
 > Complète (et actualise) `go-no-go-v1.0.0.md` (figé à rc.1). Depuis rc.1 ont été livrés :
 > RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13),
 > polish UX P1 — garde « modifications non enregistrées » sur la création de commande +
@@ -30,8 +30,9 @@
 > **Marketplace** (rc.79, `marketplace.*`), **Paramètres** (rc.80, `SettingsView` — `settings.*` + `geo.*`),
 > **Onboarding** (rc.81, `OnboardingView` — `onboarding.*` + `geo.timezone.*`),
 > **Billing** (rc.82, `BillingView` + `UpgradeView` — `billing.*`),
-> **Admin secondaire** (rc.83, `AdminDashboardView` + `AuditLogView` + `ModuleListView` — `admin.dash/audit/modules.*`)
-> **+ tracker i18n vivant** [`i18n-coverage.md`](i18n-coverage.md) — **avancement réel par vue : 44 ✅ / 0 🟡 / 4 ⬜ sur 48** (92 % ; reste 2 vues traduisibles — Inventaire — + 2 Customers exclues) — & **Definition of Done i18n** (toute vue créée/modifiée livre FR+EN).
+> **Admin secondaire** (rc.83, `AdminDashboardView` + `AuditLogView` + `ModuleListView` — `admin.dash/audit/modules.*`),
+> **Inventaire restant** (rc.84, `BatchDeliveryView` + `MovementHistoryView` — `inventory.delivery/history.*`)
+> **+ tracker i18n vivant** [`i18n-coverage.md`](i18n-coverage.md) — 🎉 **objectif traduisible ATTEINT : 46 ✅ / 0 🟡 / 2 ⬜ sur 48** (96 % ; les 2 ⬜ = module Customers exclu, session concurrente → clôture 100 % à la levée du verrou) — & **Definition of Done i18n** (toute vue créée/modifiée livre FR+EN).
 > **garde i18n CI dure** (rc.71 : `npm run i18n:check` — parité FR/EN + texte FR en dur, ratchet allowlist).
 > Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 257** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.

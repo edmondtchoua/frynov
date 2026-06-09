@@ -3,6 +3,31 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Inventaire restant — objectif traduisible atteint (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-inventory-rest` (release `v1.0.0` → `rc.84`).
+
+### UX (i18n)
+- **Inventaire à 100 %** : `BatchDeliveryView` (réception multi-produits : référence, recherche
+  produit, quantités, validation, succès/erreur) et `MovementHistoryView` (carte résumé stock,
+  filtre par type, timeline des mouvements, pagination).
+- Extension `inventory.*` : `delivery.*` (formulaire de réception, pluriels `{count} article(s)`,
+  message de succès `{count} mouvement(s)`) et `history.*` (titre, types `in/out/adjustment/return`,
+  motifs `delivery/sale/return/loss/count/manual`, états vides). Réutilise les libellés stock
+  existants (`quantity/reserved/available/lowThreshold/lowStock/backToStock`) et `common.*`
+  (pageOf/previous/next/saving/delete). Maps `typeLabel`/`reasonLabel` converties via `t()`.
+
+### 🎉 Jalon — objectif i18n traduisible atteint
+- **46/48 vues internationalisées FR+EN (96 %).** Les 2 seules vues restantes (`CustomerListView`,
+  `CustomerDetailView`) sont **exclues** (module Customers sous session concurrente). L'`ALLOWLIST`
+  de la garde CI ne contient plus que ces 2 vues. Clôture à 100 % conditionnée à la levée du verrou.
+
+### Avancement
+- Tracker [`i18n-coverage.md`](docs/recette/i18n-coverage.md) : **46 ✅ / 0 🟡 / 2 ⬜ (exclues)** (96 %).
+
+### Tests
+- Frontend **257** inchangé · `vue-tsc` propre · `npm run i18n:check` vert.
+
 ## [Non publié] — i18n : Admin secondaire (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-admin-secondary` (release `v1.0.0` → `rc.83`).

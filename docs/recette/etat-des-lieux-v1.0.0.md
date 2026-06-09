@@ -37,7 +37,9 @@
 > **garde i18n CI dure** (rc.71 : `npm run i18n:check` — parité FR/EN + texte FR en dur, ratchet allowlist).
 > **🔒 Sécurité — warehouse-scoping des GET unitaires** (rc.86) : commande/paiement d'un autre site
 > inaccessibles via UUID connu (`findById`/`findOrFail` + `WarehouseScope`) → **zone d'ombre Sprint 20 levée** (+4 tests HTTP).
-> Tests : **backend 648** (645 ✅ / 2 skipped / **1 échec pré-existant hors périmètre** : `ImportModuleTest` adresse client) · **frontend 257** · `vue-tsc` propre ·
+> **🧬 Catalogue — duplication produit/catégorie backend** (rc.89) : `ProductDuplicationService` (SKU/identifiants
+> régénérés, stock/identifiants jamais copiés, status draft, transactionnel) + endpoints + 8 tests ; wizard front → rc.90.
+> Tests : **backend 656** (653 ✅ / 2 skipped / **1 échec pré-existant hors périmètre** : `ImportModuleTest` adresse client) · **frontend 257** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 
 ---

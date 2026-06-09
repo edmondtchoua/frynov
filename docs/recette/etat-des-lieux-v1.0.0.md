@@ -1,6 +1,6 @@
 # État des lieux v1.0.0 — polish UX restant + suite de la recette finale
 
-> Mise à jour : 2026-06-09. Branche `release/v1.0.0` à **`v1.0.0-rc.81`** (cette session → `rc.82+`).
+> Mise à jour : 2026-06-09. Branche `release/v1.0.0` à **`v1.0.0-rc.82`** (cette session → `rc.83+`).
 > Complète (et actualise) `go-no-go-v1.0.0.md` (figé à rc.1). Depuis rc.1 ont été livrés :
 > RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13),
 > polish UX P1 — garde « modifications non enregistrées » sur la création de commande +
@@ -28,8 +28,9 @@
 > **Ventes complet** (rc.74→75 : Détail, Retours, Création — `orders.*`), **POS** (rc.76, `pos.*`),
 > **Import/Export complet** (rc.77→78 : Historique, Assistant — `importExport.*`),
 > **Marketplace** (rc.79, `marketplace.*`), **Paramètres** (rc.80, `SettingsView` — `settings.*` + `geo.*`),
-> **Onboarding** (rc.81, `OnboardingView` — `onboarding.*` + `geo.timezone.*`)
-> **+ tracker i18n vivant** [`i18n-coverage.md`](i18n-coverage.md) — **avancement réel par vue : 39 ✅ / 0 🟡 / 9 ⬜ sur 48** (81 % ; reste 7 vues traduisibles + 2 Customers exclues) — & **Definition of Done i18n** (toute vue créée/modifiée livre FR+EN).
+> **Onboarding** (rc.81, `OnboardingView` — `onboarding.*` + `geo.timezone.*`),
+> **Billing** (rc.82, `BillingView` + `UpgradeView` — `billing.*`)
+> **+ tracker i18n vivant** [`i18n-coverage.md`](i18n-coverage.md) — **avancement réel par vue : 41 ✅ / 0 🟡 / 7 ⬜ sur 48** (85 % ; reste 5 vues traduisibles + 2 Customers exclues) — & **Definition of Done i18n** (toute vue créée/modifiée livre FR+EN).
 > **garde i18n CI dure** (rc.71 : `npm run i18n:check` — parité FR/EN + texte FR en dur, ratchet allowlist).
 > Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 257** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.

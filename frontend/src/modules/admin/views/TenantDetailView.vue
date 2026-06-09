@@ -5,7 +5,7 @@
     <div class="detail-header">
       <RouterLink to="/admin/tenants" class="back-link">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Tous les tenants
+        {{ $t('admin.allTenants') }}
       </RouterLink>
 
       <div class="detail-title-row">
@@ -14,15 +14,15 @@
           <span class="detail-slug">{{ tenant?.slug }}</span>
         </div>
         <div class="header-actions" v-if="tenant">
-          <span :class="`status-badge status-badge--${tenant.status}`">{{ tenant.status }}</span>
-          <button v-if="tenant.status === 'active'"    class="btn-action btn-warn" @click="doSuspend">Suspendre</button>
-          <button v-if="tenant.status === 'suspended'" class="btn-action btn-ok"   @click="doReactivate">Réactiver</button>
+          <span :class="`status-badge status-badge--${tenant.status}`">{{ statusLabel(tenant.status) }}</span>
+          <button v-if="tenant.status === 'active'"    class="btn-action btn-warn" @click="doSuspend">{{ $t('admin.suspend') }}</button>
+          <button v-if="tenant.status === 'suspended'" class="btn-action btn-ok"   @click="doReactivate">{{ $t('admin.reactivate') }}</button>
         </div>
       </div>
     </div>
 
     <!-- Loading splash -->
-    <div v-if="loading" class="state-msg">Chargement…</div>
+    <div v-if="loading" class="state-msg">{{ $t('common.loading') }}</div>
 
     <template v-else>
 
@@ -31,31 +31,31 @@
 
         <!-- Tenant info -->
         <div class="detail-card">
-          <div class="detail-card-title">Informations</div>
+          <div class="detail-card-title">{{ $t('admin.information') }}</div>
           <dl class="info-dl">
-            <dt>Nom</dt>           <dd>{{ tenant!.name }}</dd>
-            <dt>Slug</dt>          <dd class="mono">{{ tenant!.slug }}</dd>
-            <dt>Domaine</dt>       <dd>{{ tenant!.domain ?? '—' }}</dd>
-            <dt>Plan</dt>          <dd><span class="plan-chip">{{ tenant!.plan }}</span></dd>
-            <dt>Créé le</dt>       <dd>{{ fmtDate(tenant!.created_at) }}</dd>
+            <dt>{{ $t('common.name') }}</dt>           <dd>{{ tenant!.name }}</dd>
+            <dt>{{ $t('admin.slug') }}</dt>          <dd class="mono">{{ tenant!.slug }}</dd>
+            <dt>{{ $t('admin.domain') }}</dt>       <dd>{{ tenant!.domain ?? '—' }}</dd>
+            <dt>{{ $t('admin.colPlan') }}</dt>          <dd><span class="plan-chip">{{ tenant!.plan }}</span></dd>
+            <dt>{{ $t('common.createdAt') }}</dt>       <dd>{{ fmtDate(tenant!.created_at) }}</dd>
           </dl>
         </div>
 
         <!-- Subscription + change plan -->
         <div class="detail-card">
-          <div class="detail-card-title">Abonnement</div>
+          <div class="detail-card-title">{{ $t('admin.colSubscription') }}</div>
 
           <div v-if="subscription">
             <dl class="info-dl">
-              <dt>Plan</dt>
+              <dt>{{ $t('admin.colPlan') }}</dt>
               <dd>{{ subscription.plan?.name ?? tenant!.plan }}</dd>
-              <dt>Statut</dt>
+              <dt>{{ $t('common.status') }}</dt>
               <dd><span :class="`sub-badge sub-badge--${subscription.status}`">{{ subscription.status }}</span></dd>
               <template v-if="subscription.trial_ends_at">
-                <dt>Fin essai</dt><dd>{{ fmtDate(subscription.trial_ends_at) }}</dd>
+                <dt>{{ $t('admin.trialEnd') }}</dt><dd>{{ fmtDate(subscription.trial_ends_at) }}</dd>
               </template>
               <template v-if="subscription.current_period_end">
-                <dt>Période</dt><dd>{{ fmtDate(subscription.current_period_end) }}</dd>
+                <dt>{{ $t('admin.period') }}</dt><dd>{{ fmtDate(subscription.current_period_end) }}</dd>
               </template>
             </dl>
 
@@ -68,12 +68,12 @@
                 :disabled="changingPlan || selectedPlanCode === tenant!.plan"
                 @click="doChangePlan"
               >
-                {{ changingPlan ? '…' : 'Changer' }}
+                {{ changingPlan ? '…' : $t('admin.change') }}
               </button>
             </div>
           </div>
 
-          <div v-else class="no-data">Aucun abonnement trouvé.</div>
+          <div v-else class="no-data">{{ $t('admin.noSubscription') }}</div>
         </div>
 
       </div>
@@ -81,15 +81,15 @@
       <!-- Users -->
       <div class="detail-card full-width">
         <div class="detail-card-title">
-          Utilisateurs
+          {{ $t('admin.users') }}
           <span class="count-chip">{{ users.length }}</span>
         </div>
         <table class="mini-table" v-if="users.length">
           <thead>
             <tr>
-              <th>Nom</th>
-              <th>Email</th>
-              <th>Super admin</th>
+              <th>{{ $t('common.name') }}</th>
+              <th>{{ $t('common.email') }}</th>
+              <th>{{ $t('admin.superAdminCol') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -100,17 +100,17 @@
             </tr>
           </tbody>
         </table>
-        <div v-else class="no-data">Aucun utilisateur.</div>
+        <div v-else class="no-data">{{ $t('admin.noUsers') }}</div>
       </div>
 
       <!-- Modules -->
       <div class="detail-card full-width">
         <div class="detail-card-title">
-          Modules ERP
+          {{ $t('admin.erpModules') }}
           <span class="count-chip">{{ modules.length }}</span>
         </div>
 
-        <div v-if="loadingModules" class="state-msg">Chargement…</div>
+        <div v-if="loadingModules" class="state-msg">{{ $t('common.loading') }}</div>
 
         <div v-else class="modules-grid">
           <div v-for="mod in modules" :key="mod.code" class="mod-row">
@@ -120,16 +120,16 @@
             </div>
             <div class="mod-actions">
               <span class="mod-badge" :class="mod.tenant_active ? 'mod-badge--on' : 'mod-badge--off'">
-                {{ mod.tenant_active ? 'Actif' : 'Inactif' }}
+                {{ mod.tenant_active ? $t('common.active') : $t('common.inactive') }}
               </span>
-              <span v-if="mod.is_core" class="core-chip">Core</span>
+              <span v-if="mod.is_core" class="core-chip">{{ $t('admin.core') }}</span>
               <button
                 v-else
                 class="btn-action btn-xs"
                 :class="mod.tenant_active ? 'btn-warn' : 'btn-ok'"
                 @click="toggleModule(mod)"
               >
-                {{ mod.tenant_active ? 'Désactiver' : 'Activer' }}
+                {{ mod.tenant_active ? $t('admin.deactivate') : $t('admin.activate') }}
               </button>
             </div>
           </div>
@@ -143,6 +143,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useConfirm } from '@/composables/useConfirm'
+import { t } from '@/i18n'
 import { formatDate } from '@/shared/utils/date'
 import { useRoute, RouterLink } from 'vue-router'
 import { adminService, type AdminTenant, type AdminPlan } from '../services/adminService'
@@ -196,9 +197,9 @@ const { confirm } = useConfirm()
 
 async function doSuspend() {
   if (!(await confirm({
-    title: 'Suspendre',
-    message: `Suspendre "${tenant.value?.name}" ?`,
-    confirmLabel: 'Suspendre',
+    title: t('admin.suspend'),
+    message: t('admin.suspendConfirm', { name: tenant.value?.name ?? '' }),
+    confirmLabel: t('admin.suspend'),
     danger: true,
   }))) return
   await adminService.suspendTenant(id)
@@ -231,6 +232,10 @@ async function toggleModule(mod: ErpModule) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+function statusLabel(s: string): string {
+  return t(`admin.tenantStatus.${s}`)
+}
+
 const fmtDate = formatDate
 
 onMounted(() => Promise.all([load(), loadModules()]))

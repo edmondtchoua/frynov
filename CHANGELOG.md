@@ -3,6 +3,25 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Import/Export — Assistant — module 100 % (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-import-wizard` (release `v1.0.0` → `rc.78`). **Module Import/Export entièrement internationalisé (2/2 vues).**
+
+### UX (i18n)
+- **`ImportWizardView`** internationalisé (assistant 5 étapes) : choix type & mode, téléchargement
+  modèle (colonnes par entité), upload fichier, **mapping des colonnes** (champs ERP par entité),
+  **prévisualisation/approbation** (stats, filtres de lignes, table, résumé, résultat) + erreurs.
+  Étend `importExport.wizard.*` (steps, entityType, modeOpt, templateCols, fields, rowFilter, action,
+  rowStatus) ; consts FR `entityTypes`/`importModes`/`templateColumns`/`availableFields`/`rowFilters`
+  converties en `computed` via `t()`.
+- Ratchet : vue retirée de l'`ALLOWLIST` → **module Import/Export complet**.
+
+### Avancement
+- Tracker [`i18n-coverage.md`](docs/recette/i18n-coverage.md) : **36 ✅ / 0 🟡 / 12 ⬜** (75 %).
+
+### Tests
+- Frontend **257** inchangé · `vue-tsc` propre · `npm run i18n:check` vert.
+
 ## [Non publié] — i18n : Import/Export — Historique (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-import-history` (release `v1.0.0` → `rc.77`).

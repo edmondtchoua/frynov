@@ -4,8 +4,8 @@
     <!-- ── Page Header ───────────────────────────────────────────────────── -->
     <div class="page-header">
       <div class="page-title">
-        <button class="back-btn" @click="$router.push('/import/history')">← Historique</button>
-        <h1>Assistant d'import</h1>
+        <button class="back-btn" @click="$router.push('/import/history')">← {{ $t('importExport.wizard.backHistory') }}</button>
+        <h1>{{ $t('importExport.wizard.title') }}</h1>
       </div>
     </div>
 
@@ -26,8 +26,8 @@
 
       <!-- ══ STEP 0: Choose type ══════════════════════════════════════════ -->
       <div v-if="currentStep === 0" class="step-panel">
-        <h2>Que souhaitez-vous importer ?</h2>
-        <p class="step-desc">Choisissez le type de données à importer dans Frynov ERP.</p>
+        <h2>{{ $t('importExport.wizard.step0Title') }}</h2>
+        <p class="step-desc">{{ $t('importExport.wizard.step0Desc') }}</p>
 
         <div class="type-grid">
           <button v-for="t in entityTypes" :key="t.value" class="type-card" :class="{ selected: selectedType === t.value }" @click="selectedType = t.value">
@@ -41,7 +41,7 @@
         </div>
 
         <div class="mode-section">
-          <h3>Mode d'import</h3>
+          <h3>{{ $t('importExport.wizard.importMode') }}</h3>
           <div class="mode-grid">
             <label v-for="m in importModes" :key="m.value" class="mode-card" :class="{ selected: selectedMode === m.value }">
               <input v-model="selectedMode" type="radio" :value="m.value" class="mode-radio" />
@@ -52,54 +52,54 @@
             </label>
           </div>
           <div v-if="selectedMode === 'simulate'" class="simulate-hint">
-            ℹ️ La simulation analyse le fichier sans écrire de données. Recommandé avant tout import important.
+            {{ $t('importExport.wizard.simulateHint') }}
           </div>
         </div>
 
         <div class="step-actions">
           <button class="btn btn-primary" :disabled="!selectedType" @click="nextStep">
-            Continuer →
+            {{ $t('importExport.wizard.continue') }}
           </button>
         </div>
       </div>
 
       <!-- ══ STEP 1: Download template ════════════════════════════════════ -->
       <div v-if="currentStep === 1" class="step-panel">
-        <h2>Téléchargez le modèle de fichier</h2>
-        <p class="step-desc">Utilisez notre modèle Excel pour garantir un import sans erreur.</p>
+        <h2>{{ $t('importExport.wizard.step1Title') }}</h2>
+        <p class="step-desc">{{ $t('importExport.wizard.step1Desc') }}</p>
 
         <div class="template-card">
           <div class="template-icon">📊</div>
           <div class="template-info">
-            <span class="template-name">Modèle {{ entityTypeLabel }} — Frynov ERP</span>
-            <span class="template-desc">Fichier Excel avec colonnes, exemples et consignes de remplissage.</span>
+            <span class="template-name">{{ $t('importExport.wizard.templateName', { entity: entityTypeLabel }) }}</span>
+            <span class="template-desc">{{ $t('importExport.wizard.templateDesc') }}</span>
           </div>
           <button class="btn btn-outline" @click="downloadTemplate">
-            ⬇️ Télécharger le modèle
+            {{ $t('importExport.wizard.downloadTemplate') }}
           </button>
         </div>
 
         <div class="template-columns">
-          <h4>Colonnes du modèle :</h4>
+          <h4>{{ $t('importExport.wizard.templateColumns') }}</h4>
           <div class="column-tags">
             <span v-for="col in templateColumns" :key="col.name" class="col-tag" :class="{ required: col.required }">
               {{ col.name }}
               <small v-if="col.required">*</small>
             </span>
           </div>
-          <p class="legend-note">* Champ obligatoire</p>
+          <p class="legend-note">{{ $t('importExport.wizard.requiredField') }}</p>
         </div>
 
         <div class="step-actions">
-          <button class="btn btn-ghost" @click="prevStep">← Retour</button>
-          <button class="btn btn-primary" @click="nextStep">J'ai préparé mon fichier →</button>
+          <button class="btn btn-ghost" @click="prevStep">← {{ $t('common.back') }}</button>
+          <button class="btn btn-primary" @click="nextStep">{{ $t('importExport.wizard.filePrepared') }}</button>
         </div>
       </div>
 
       <!-- ══ STEP 2: Upload file ═══════════════════════════════════════════ -->
       <div v-if="currentStep === 2" class="step-panel">
-        <h2>Chargez votre fichier</h2>
-        <p class="step-desc">Fichier Excel accepté (.xlsx, .xls). Taille max : 10 Mo.</p>
+        <h2>{{ $t('importExport.wizard.step2Title') }}</h2>
+        <p class="step-desc">{{ $t('importExport.wizard.step2Desc') }}</p>
 
         <div class="upload-zone" :class="{ dragover: isDragging, 'has-file': selectedFile }"
              @dragover.prevent="isDragging = true"
@@ -107,12 +107,12 @@
              @drop.prevent="onDrop">
           <div v-if="!selectedFile" class="upload-empty">
             <div class="upload-icon">📁</div>
-            <p class="upload-hint">Glissez votre fichier ici ou</p>
+            <p class="upload-hint">{{ $t('importExport.wizard.dragHere') }}</p>
             <label class="btn btn-outline btn-sm">
-              Parcourir
+              {{ $t('importExport.wizard.browse') }}
               <input type="file" accept=".xlsx,.xls,.csv" class="file-input" @change="onFileSelect" />
             </label>
-            <p class="upload-formats">Formats : .xlsx, .xls, .csv</p>
+            <p class="upload-formats">{{ $t('importExport.wizard.formats') }}</p>
           </div>
           <div v-else class="upload-file-info">
             <span class="file-icon">📄</span>
@@ -129,35 +129,34 @@
         </div>
 
         <div class="step-actions">
-          <button class="btn btn-ghost" @click="prevStep">← Retour</button>
+          <button class="btn btn-ghost" @click="prevStep">← {{ $t('common.back') }}</button>
           <button class="btn btn-primary" :disabled="!selectedFile || uploading" @click="uploadFile">
             <span v-if="uploading" class="spinner-sm"></span>
-            {{ uploading ? 'Analyse en cours…' : 'Analyser le fichier →' }}
+            {{ uploading ? $t('importExport.wizard.analyzing') : $t('importExport.wizard.analyzeFile') }}
           </button>
         </div>
       </div>
 
       <!-- ══ STEP 3: Column mapping ════════════════════════════════════════ -->
       <div v-if="currentStep === 3 && session" class="step-panel">
-        <h2>Vérifiez le mapping des colonnes</h2>
+        <h2>{{ $t('importExport.wizard.step3Title') }}</h2>
         <p class="step-desc">
-          Le système a détecté automatiquement vos colonnes.
-          Corrigez si nécessaire avant de valider.
+          {{ $t('importExport.wizard.step3Desc') }}
         </p>
 
         <div v-if="session.status === 'analyzing'" class="analyzing-state">
           <div class="spinner"></div>
-          <p>Analyse du fichier en cours…</p>
-          <p class="text-muted">Actualisation automatique toutes les 2 secondes.</p>
+          <p>{{ $t('importExport.wizard.analyzingFile') }}</p>
+          <p class="text-muted">{{ $t('importExport.wizard.autoRefresh') }}</p>
         </div>
 
         <div v-else class="mapping-table-wrapper">
           <table class="mapping-table">
             <thead>
               <tr>
-                <th>Colonne du fichier</th>
-                <th>→ Champ Frynov ERP</th>
-                <th>Statut</th>
+                <th>{{ $t('importExport.wizard.colFileColumn') }}</th>
+                <th>{{ $t('importExport.wizard.colErpField') }}</th>
+                <th>{{ $t('common.status') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -165,13 +164,13 @@
                 <td class="file-col-name">{{ fileCol }}</td>
                 <td>
                   <select v-model="localMapping[fileCol]" class="mapping-select">
-                    <option value="">— Ignorer cette colonne —</option>
+                    <option value="">{{ $t('importExport.wizard.ignoreColumn') }}</option>
                     <option v-for="f in availableFields" :key="f.value" :value="f.value">{{ f.label }}</option>
                   </select>
                 </td>
                 <td>
-                  <span v-if="localMapping[fileCol]" class="map-badge map-ok">✓ Mappé</span>
-                  <span v-else class="map-badge map-skip">Ignoré</span>
+                  <span v-if="localMapping[fileCol]" class="map-badge map-ok">{{ $t('importExport.wizard.mapped') }}</span>
+                  <span v-else class="map-badge map-skip">{{ $t('importExport.wizard.ignored') }}</span>
                 </td>
               </tr>
             </tbody>
@@ -179,43 +178,43 @@
         </div>
 
         <div class="step-actions">
-          <button class="btn btn-ghost" @click="prevStep">← Retour</button>
+          <button class="btn btn-ghost" @click="prevStep">← {{ $t('common.back') }}</button>
           <button class="btn btn-outline" @click="applyMapping" :disabled="mappingLoading">
-            {{ mappingLoading ? 'Ré-analyse…' : '↻ Appliquer le mapping' }}
+            {{ mappingLoading ? $t('importExport.wizard.reanalyzing') : $t('importExport.wizard.applyMapping') }}
           </button>
           <button class="btn btn-primary" :disabled="session.status === 'analyzing'" @click="nextStep">
-            Voir la prévisualisation →
+            {{ $t('importExport.wizard.seePreview') }}
           </button>
         </div>
       </div>
 
       <!-- ══ STEP 4: Preview + Validation + Approval ══════════════════════ -->
       <div v-if="currentStep === 4 && session" class="step-panel">
-        <h2>Prévisualisation et approbation</h2>
+        <h2>{{ $t('importExport.wizard.step4Title') }}</h2>
 
         <!-- Stats bar -->
         <div class="stats-bar">
           <div class="stat-pill total">
             <span class="stat-value">{{ session.total_rows }}</span>
-            <span class="stat-label">Lignes total</span>
+            <span class="stat-label">{{ $t('importExport.wizard.totalRows') }}</span>
           </div>
           <div class="stat-pill valid">
             <span class="stat-value">{{ session.valid_rows }}</span>
-            <span class="stat-label">Valides</span>
+            <span class="stat-label">{{ $t('importExport.history.valid') }}</span>
           </div>
           <div class="stat-pill warning">
             <span class="stat-value">{{ session.warning_rows }}</span>
-            <span class="stat-label">Avertissements</span>
+            <span class="stat-label">{{ $t('importExport.wizard.warnings') }}</span>
           </div>
           <div class="stat-pill error">
             <span class="stat-value">{{ session.error_rows }}</span>
-            <span class="stat-label">Erreurs</span>
+            <span class="stat-label">{{ $t('importExport.history.errors') }}</span>
           </div>
         </div>
 
         <!-- Mode indicator -->
         <div v-if="session.mode === 'simulate'" class="simulate-banner">
-          🔬 Mode Simulation — aucune donnée ne sera écrite en base.
+          {{ $t('importExport.wizard.simulateBanner') }}
         </div>
 
         <!-- Row filter -->
@@ -232,15 +231,15 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>Entité</th>
-                <th>Action</th>
-                <th>Statut</th>
-                <th>Problèmes</th>
+                <th>{{ $t('importExport.wizard.colEntity') }}</th>
+                <th>{{ $t('importExport.wizard.colAction') }}</th>
+                <th>{{ $t('common.status') }}</th>
+                <th>{{ $t('importExport.wizard.colIssues') }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="filteredRows.length === 0">
-                <td colspan="5" class="empty-rows">Aucune ligne dans ce filtre.</td>
+                <td colspan="5" class="empty-rows">{{ $t('importExport.wizard.noRows') }}</td>
               </tr>
               <tr v-for="row in filteredRows" :key="row.id" :class="`row-${row.status}`">
                 <td class="row-num">{{ row.row_number }}</td>
@@ -270,28 +269,28 @@
         <!-- Approval section -->
         <div v-if="canExecute" class="approval-section">
           <div class="approval-summary">
-            <h3>Résumé de l'import</h3>
+            <h3>{{ $t('importExport.wizard.importSummary') }}</h3>
             <ul class="summary-list">
               <li>
-                <strong>{{ session.valid_rows + session.warning_rows }}</strong> ligne(s) seront traitées
-                <span v-if="session.mode === 'simulate'"> (simulation)</span>
+                <strong>{{ session.valid_rows + session.warning_rows }}</strong> {{ $t('importExport.wizard.rowsProcessed', { count: session.valid_rows + session.warning_rows }) }}
+                <span v-if="session.mode === 'simulate'"> {{ $t('importExport.wizard.simulationParenthetical') }}</span>
               </li>
               <li v-if="session.error_rows > 0">
-                <span class="text-error">{{ session.error_rows }} erreur(s) bloquante(s)</span> — ces lignes seront ignorées
+                <span class="text-error">{{ $t('importExport.wizard.blockingErrors', { count: session.error_rows }) }}</span>
               </li>
-              <li>Type : <strong>{{ entityTypeLabel }}</strong></li>
-              <li>Mode : <strong>{{ modeLabel }}</strong></li>
+              <li>{{ $t('importExport.wizard.typeLabel') }} <strong>{{ entityTypeLabel }}</strong></li>
+              <li>{{ $t('importExport.wizard.modeLabel') }} <strong>{{ modeLabel }}</strong></li>
             </ul>
           </div>
 
           <div v-if="executeError" class="error-banner">⚠️ {{ executeError }}</div>
 
           <div class="approval-actions">
-            <button class="btn btn-ghost" @click="prevStep">← Retour</button>
-            <button class="btn btn-danger" @click="cancelSession">Annuler l'import</button>
+            <button class="btn btn-ghost" @click="prevStep">← {{ $t('common.back') }}</button>
+            <button class="btn btn-danger" @click="cancelSession">{{ $t('importExport.history.cancelTitle') }}</button>
             <button class="btn btn-primary" :disabled="executing" @click="executeImport">
               <span v-if="executing" class="spinner-sm"></span>
-              {{ executing ? 'Import en cours…' : session.mode === 'simulate' ? '▶ Lancer la simulation' : '▶ Confirmer et importer' }}
+              {{ executing ? $t('importExport.wizard.importing') : session.mode === 'simulate' ? $t('importExport.wizard.runSimulation') : $t('importExport.wizard.confirmImport') }}
             </button>
           </div>
         </div>
@@ -301,17 +300,16 @@
           <div :class="['result-card', `result-${session.status}`]">
             <div class="result-icon">{{ resultIcon }}</div>
             <div class="result-info">
-              <h3>{{ STATUS_LABELS[session.status as ImportStatus] }}</h3>
+              <h3>{{ statusLabel(session.status) }}</h3>
               <p v-if="session.summary">
-                {{ session.summary.created }} créé(s) · {{ session.summary.updated }} mis à jour ·
-                {{ session.summary.skipped }} ignoré(s) · {{ session.summary.errors }} erreur(s)
+                {{ $t('importExport.wizard.resultSummary', { created: session.summary.created, updated: session.summary.updated, skipped: session.summary.skipped, errors: session.summary.errors }) }}
               </p>
               <p v-if="session.error_message" class="error-msg">{{ session.error_message }}</p>
             </div>
           </div>
           <div class="result-actions">
-            <button class="btn btn-outline" @click="importExportService.downloadReport(session!.id)">📄 Télécharger le rapport PDF</button>
-            <button class="btn btn-primary" @click="$router.push('/import/history')">Voir l'historique</button>
+            <button class="btn btn-outline" @click="importExportService.downloadReport(session!.id)">{{ $t('importExport.wizard.downloadReport') }}</button>
+            <button class="btn btn-primary" @click="$router.push('/import/history')">{{ $t('importExport.wizard.viewHistory') }}</button>
           </div>
         </div>
       </div>
@@ -326,13 +324,16 @@ import { useConfirm } from '@/composables/useConfirm'
 import { pushToast } from '@/composables/useNotifications'
 import { useRouter } from 'vue-router'
 import { importExportService } from '../services/importExportService'
-import type { ImportEntityType, ImportMode, ImportSession, ImportRow, ImportStatus, RowAction, RowStatus } from '../types'
-import { ENTITY_LABELS, MODE_LABELS, STATUS_LABELS } from '../types'
+import type { ImportEntityType, ImportMode, ImportSession, ImportRow, RowAction, RowStatus } from '../types'
+import { t } from '@/i18n'
 
 const router = useRouter()
 
 // ── Wizard State ─────────────────────────────────────────────────────────────
-const steps = ['Type & mode', 'Modèle', 'Fichier', 'Mapping', 'Validation']
+const steps = computed(() => [
+  t('importExport.wizard.steps.typeMode'), t('importExport.wizard.steps.template'),
+  t('importExport.wizard.steps.file'), t('importExport.wizard.steps.mapping'), t('importExport.wizard.steps.validation'),
+])
 const currentStep = ref(0)
 
 // Step 0
@@ -357,63 +358,38 @@ const executing   = ref(false)
 const executeError = ref('')
 
 // ── Computed ─────────────────────────────────────────────────────────────────
-const entityTypeLabel = computed(() => ENTITY_LABELS[selectedType.value])
-const modeLabel       = computed(() => MODE_LABELS[selectedMode.value])
+const entityTypeLabel = computed(() => t(`importExport.entity.${selectedType.value}`))
+const modeLabel       = computed(() => t(`importExport.mode.${selectedMode.value}`))
 
-const entityTypes = [
-  { value: 'products',  label: 'Produits',     icon: '📦', description: 'Catalogue produit, prix, catégories, fournisseurs.' },
-  { value: 'customers', label: 'Clients',       icon: '👥', description: 'Base client, contacts, emails, téléphones.' },
-  { value: 'suppliers', label: 'Fournisseurs',  icon: '🏭', description: 'Fournisseurs, contacts et conditions de paiement.' },
-] as const
+const entityTypes = computed(() => ([
+  { value: 'products'  as ImportEntityType, icon: '📦', label: t('importExport.wizard.entityType.products.label'),  description: t('importExport.wizard.entityType.products.description') },
+  { value: 'customers' as ImportEntityType, icon: '👥', label: t('importExport.wizard.entityType.customers.label'), description: t('importExport.wizard.entityType.customers.description') },
+  { value: 'suppliers' as ImportEntityType, icon: '🏭', label: t('importExport.wizard.entityType.suppliers.label'), description: t('importExport.wizard.entityType.suppliers.description') },
+]))
 
-const importModes = [
-  { value: 'create_update', label: 'Création + Mise à jour',   description: 'Crée les nouveaux, met à jour les existants.' },
-  { value: 'create_only',   label: 'Création uniquement',       description: 'Ignore les données déjà existantes.' },
-  { value: 'update_only',   label: 'Mise à jour uniquement',    description: 'Ignore les nouvelles données.' },
-  { value: 'simulate',      label: 'Simulation',                description: 'Analyse sans écrire. Recommandé avant un import important.' },
-] as const
+const importModes = computed(() => ([
+  { value: 'create_update' as ImportMode, label: t('importExport.wizard.modeOpt.create_update.label'), description: t('importExport.wizard.modeOpt.create_update.description') },
+  { value: 'create_only'   as ImportMode, label: t('importExport.wizard.modeOpt.create_only.label'),   description: t('importExport.wizard.modeOpt.create_only.description') },
+  { value: 'update_only'   as ImportMode, label: t('importExport.wizard.modeOpt.update_only.label'),   description: t('importExport.wizard.modeOpt.update_only.description') },
+  { value: 'simulate'      as ImportMode, label: t('importExport.wizard.modeOpt.simulate.label'),      description: t('importExport.wizard.modeOpt.simulate.description') },
+]))
 
 const templateColumns = computed(() => {
-  const cols: Record<string, Array<{ name: string; required: boolean }>> = {
-    products:  [
-      { name: 'SKU', required: true }, { name: 'Nom Produit', required: true }, { name: 'Prix', required: true },
-      { name: 'Description', required: false }, { name: 'Coût', required: false }, { name: 'Code Barre', required: false },
-      { name: 'Catégorie', required: false }, { name: 'Fournisseur', required: false }, { name: 'Statut', required: false },
-    ],
-    customers: [
-      { name: 'Nom', required: true }, { name: 'Email', required: false },
-      { name: 'Téléphone', required: false }, { name: 'Adresse', required: false }, { name: 'Notes', required: false },
-    ],
-    suppliers: [
-      { name: 'Nom', required: true }, { name: 'Code Fournisseur', required: false },
-      { name: 'Email', required: false }, { name: 'Téléphone', required: false },
-      { name: 'Contact', required: false }, { name: 'Conditions Paiement', required: false }, { name: 'Statut', required: false },
-    ],
+  const cols: Record<string, Array<[string, boolean]>> = {
+    products:  [['sku',true],['name',true],['price',true],['description',false],['cost',false],['barcode',false],['category',false],['supplier',false],['status',false]],
+    customers: [['name',true],['email',false],['phone',false],['address',false],['notes',false]],
+    suppliers: [['name',true],['code',false],['email',false],['phone',false],['contact',false],['payment',false],['status',false]],
   }
-  return cols[selectedType.value] ?? []
+  return (cols[selectedType.value] ?? []).map(([k, required]) => ({ name: t(`importExport.wizard.templateCols.${selectedType.value}.${k}`), required }))
 })
 
 const availableFields = computed(() => {
-  const fields: Record<string, Array<{ value: string; label: string }>> = {
-    products:  [
-      { value: 'sku', label: 'SKU / Référence' }, { value: 'name', label: 'Nom du produit' },
-      { value: 'price', label: 'Prix de vente' }, { value: 'cost', label: "Prix d'achat" },
-      { value: 'description', label: 'Description' }, { value: 'barcode', label: 'Code-barres' },
-      { value: 'category', label: 'Catégorie' }, { value: 'supplier', label: 'Fournisseur' },
-      { value: 'weight_kg', label: 'Poids (kg)' }, { value: 'status', label: 'Statut' },
-    ],
-    customers: [
-      { value: 'name', label: 'Nom' }, { value: 'email', label: 'Email' },
-      { value: 'phone', label: 'Téléphone' }, { value: 'address', label: 'Adresse' }, { value: 'notes', label: 'Notes' },
-    ],
-    suppliers: [
-      { value: 'name', label: 'Nom' }, { value: 'code', label: 'Code fournisseur' },
-      { value: 'email', label: 'Email' }, { value: 'phone', label: 'Téléphone' },
-      { value: 'contact_name', label: 'Contact principal' }, { value: 'payment_terms', label: 'Conditions paiement' },
-      { value: 'notes', label: 'Notes' }, { value: 'status', label: 'Statut' },
-    ],
+  const fields: Record<string, string[]> = {
+    products:  ['sku','name','price','cost','description','barcode','category','supplier','weight_kg','status'],
+    customers: ['name','email','phone','address','notes'],
+    suppliers: ['name','code','email','phone','contact_name','payment_terms','notes','status'],
   }
-  return fields[selectedType.value] ?? []
+  return (fields[selectedType.value] ?? []).map(v => ({ value: v, label: t(`importExport.wizard.fields.${selectedType.value}.${v}`) }))
 })
 
 const filteredRows = computed(() => {
@@ -438,14 +414,15 @@ const resultIcon = computed(() => {
   return { completed: '✅', partial: '⚠️', failed: '❌', cancelled: '🚫' }[session.value.status] ?? ''
 })
 
-const rowFilters = [
-  { value: 'all',     label: 'Toutes' },
-  { value: 'valid',   label: 'Valides' },
-  { value: 'error',   label: 'Erreurs' },
-  { value: 'warning', label: 'Avertissements' },
-  { value: 'create',  label: 'Nouvelles données' },
-  { value: 'update',  label: 'Mises à jour' },
-]
+const rowFilters = computed(() => ([
+  { value: 'all',     label: t('importExport.wizard.rowFilter.all') },
+  { value: 'valid',   label: t('importExport.wizard.rowFilter.valid') },
+  { value: 'error',   label: t('importExport.wizard.rowFilter.error') },
+  { value: 'warning', label: t('importExport.wizard.rowFilter.warning') },
+  { value: 'create',  label: t('importExport.wizard.rowFilter.create') },
+  { value: 'update',  label: t('importExport.wizard.rowFilter.update') },
+]))
+const statusLabel = (s: string) => t(`importExport.status.${s}`)
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function nextStep() { currentStep.value++ }
@@ -481,7 +458,7 @@ async function uploadFile() {
     // If still analyzing, start polling
     if (s.status === 'analyzing') startPolling()
   } catch (e: any) {
-    uploadError.value = e?.response?.data?.message ?? 'Erreur lors de l\'upload.'
+    uploadError.value = e?.response?.data?.message ?? t('importExport.wizard.uploadError')
   } finally {
     uploading.value = false
   }
@@ -530,7 +507,7 @@ async function executeImport() {
     session.value = s
     if (s.status === 'importing') startPolling()
   } catch (e: any) {
-    executeError.value = e?.response?.data?.message ?? 'Erreur lors de l\'import.'
+    executeError.value = e?.response?.data?.message ?? t('importExport.wizard.executeError')
   } finally {
     executing.value = false
   }
@@ -541,16 +518,16 @@ const { confirm } = useConfirm()
 async function cancelSession() {
   if (!session.value) return
   if (!(await confirm({
-    title: 'Annuler l\'import',
-    message: 'Annuler cet import ?',
-    confirmLabel: 'Annuler l\'import',
+    title: t('importExport.history.cancelTitle'),
+    message: t('importExport.wizard.cancelConfirm'),
+    confirmLabel: t('importExport.history.cancelTitle'),
     danger: true,
   }))) return
   try {
     await importExportService.cancel(session.value.id)
     router.push('/import/history')
   } catch (e: any) {
-    pushToast(e?.response?.data?.message ?? 'Annulation impossible.')
+    pushToast(e?.response?.data?.message ?? t('importExport.history.cancelError'))
   }
 }
 
@@ -562,17 +539,18 @@ function formatFileSize(bytes: number): string {
 }
 
 function rowEntityName(row: ImportRow): string {
+  const fallback = t('importExport.wizard.rowFallback', { n: row.row_number })
   const d = row.mapped_data
-  if (!d) return `Ligne ${row.row_number}`
-  return d.name ?? d.sku ?? d.code ?? `Ligne ${row.row_number}`
+  if (!d) return fallback
+  return d.name ?? d.sku ?? d.code ?? fallback
 }
 
 function actionLabel(action: RowAction | null): string {
-  return { create: 'Créer', update: 'Mettre à jour', skip: 'Ignorer' }[action ?? ''] ?? '—'
+  return action ? t(`importExport.wizard.action.${action}`) : '—'
 }
 
 function rowStatusLabel(status: RowStatus): string {
-  return { valid: 'Valide', error: 'Erreur', warning: 'Avert.', imported: 'Importé', skipped: 'Ignoré', pending: 'En attente' }[status] ?? status
+  return t(`importExport.wizard.rowStatus.${status}`)
 }
 
 function rowCount(filter: string): number {

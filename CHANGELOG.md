@@ -3,6 +3,29 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Admin secondaire (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-admin-secondary` (release `v1.0.0` → `rc.83`).
+
+### UX (i18n)
+- **Admin secondaire internationalisé à 100 %** : `AdminDashboardView` (KPIs tenants/utilisateurs/
+  modules, abonnements par statut, répartition par plan, derniers tenants, activité récente),
+  `AuditLogView` (table du journal d'audit + pagination), `ModuleListView` (cartes modules, statuts,
+  activations, actions afficher/masquer + sélecteur de statut).
+- Extension du namespace `admin.*` : `dash.*` (KPIs, colonnes, libellés), `audit.*` (colonnes, vide),
+  `modules.*` (activations, core, afficher/masquer, vide) et `moduleStatus.*` (active/beta/coming_soon/
+  maintenance/disabled). Réutilise `admin.tenantStatus`, `billing.subStatus` et `common.*`
+  (pageOf/previous/next/date/status/name/loading).
+- Pluriels factorisés en `{count} activation(s)` ; statuts d'abonnement/tenant/module rendus via `$t`.
+  Ratchet : 3 vues retirées de l'`ALLOWLIST`.
+
+### Avancement
+- Tracker [`i18n-coverage.md`](docs/recette/i18n-coverage.md) : **44 ✅ / 0 🟡 / 4 ⬜** (92 %).
+  Reste **2 vues traduisibles** (Inventaire : `BatchDeliveryView`, `MovementHistoryView`) + 2 Customers exclues.
+
+### Tests
+- Frontend **257** inchangé · `vue-tsc` propre · `npm run i18n:check` vert.
+
 ## [Non publié] — i18n : module Billing (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-billing` (release `v1.0.0` → `rc.82`).

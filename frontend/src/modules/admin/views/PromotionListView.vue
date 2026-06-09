@@ -4,9 +4,9 @@
     <!-- Toolbar -->
     <div class="toolbar">
       <div class="toolbar-left">
-        <span class="total-chip">{{ meta?.total ?? 0 }} promotion{{ (meta?.total ?? 0) !== 1 ? 's' : '' }}</span>
+        <span class="total-chip">{{ $t('admin.promoCount', { count: meta?.total ?? 0 }) }}</span>
       </div>
-      <button class="btn-create" @click="openCreate">+ Nouvelle promotion</button>
+      <button class="btn-create" @click="openCreate">+ {{ $t('admin.newPromo') }}</button>
     </div>
 
     <!-- Table -->
@@ -14,14 +14,14 @@
       <table class="admin-table" v-if="!loading && promos.length">
         <thead>
           <tr>
-            <th>Code</th>
-            <th>Type</th>
-            <th>Remise</th>
-            <th>Plans</th>
-            <th>Validité</th>
-            <th>Utilisations</th>
-            <th>Statut</th>
-            <th>Actions</th>
+            <th>{{ $t('admin.code') }}</th>
+            <th>{{ $t('admin.type') }}</th>
+            <th>{{ $t('admin.discount') }}</th>
+            <th>{{ $t('admin.plans') }}</th>
+            <th>{{ $t('admin.validity') }}</th>
+            <th>{{ $t('admin.uses') }}</th>
+            <th>{{ $t('common.status') }}</th>
+            <th>{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -30,12 +30,12 @@
               <span class="promo-code">{{ p.code }}</span>
               <div v-if="p.description" class="promo-desc">{{ p.description }}</div>
             </td>
-            <td class="dim">{{ p.discount_type === 'percent' ? 'Pourcentage' : 'Montant fixe' }}</td>
+            <td class="dim">{{ p.discount_type === 'percent' ? $t('admin.discountType.percent') : $t('admin.discountType.fixed') }}</td>
             <td class="bold">
               {{ p.discount_type === 'percent' ? p.discount_value + ' %' : formatCents(p.discount_value) }}
             </td>
             <td class="dim">
-              {{ p.applicable_plans?.length ? p.applicable_plans.join(', ') : 'Tous' }}
+              {{ p.applicable_plans?.length ? p.applicable_plans.join(', ') : $t('admin.all') }}
             </td>
             <td class="dim">
               <template v-if="p.valid_from || p.valid_until">
@@ -49,18 +49,18 @@
               <span class="uses-chip">{{ p.current_uses }}{{ p.max_uses ? ' / ' + p.max_uses : '' }}</span>
             </td>
             <td>
-              <span :class="p.is_active ? 'badge-on' : 'badge-off'">{{ p.is_active ? 'Actif' : 'Inactif' }}</span>
+              <span :class="p.is_active ? 'badge-on' : 'badge-off'">{{ p.is_active ? $t('common.active') : $t('common.inactive') }}</span>
             </td>
             <td>
               <div class="action-group">
-                <button class="btn-sm" @click="openEdit(p)">Modifier</button>
+                <button class="btn-sm" @click="openEdit(p)">{{ $t('common.edit') }}</button>
                 <button
                   class="btn-sm"
                   :class="p.is_active ? 'btn-sm--warn' : 'btn-sm--ok'"
                   @click="toggleActive(p)"
-                >{{ p.is_active ? 'Désactiver' : 'Activer' }}</button>
+                >{{ p.is_active ? $t('admin.deactivate') : $t('admin.activate') }}</button>
                 <button class="btn-sm btn-sm--danger" @click="doDelete(p)" v-if="p.current_uses === 0">
-                  Suppr.
+                  {{ $t('admin.deleteShort') }}
                 </button>
               </div>
             </td>
@@ -68,43 +68,43 @@
         </tbody>
       </table>
       <StateBlock v-else-if="loading" variant="loading" />
-      <StateBlock v-else variant="empty" title="Aucune promotion créée" />
+      <StateBlock v-else variant="empty" :title="$t('admin.noPromos')" />
     </div>
 
     <!-- Pagination -->
     <div class="pagination" v-if="meta && meta.last_page > 1">
-      <button :disabled="page === 1" @click="page--; load()">← Précédent</button>
+      <button :disabled="page === 1" @click="page--; load()">← {{ $t('common.previous') }}</button>
       <span>Page {{ meta.current_page }} / {{ meta.last_page }}</span>
-      <button :disabled="page === meta.last_page" @click="page++; load()">Suivant →</button>
+      <button :disabled="page === meta.last_page" @click="page++; load()">{{ $t('common.next') }} →</button>
     </div>
 
     <!-- ── Create / Edit modal (shared BaseModal — UX-03) ──────────────────── -->
-    <BaseModal v-model="modal.open" size="lg" :title="modal.editing ? 'Modifier la promotion' : 'Nouvelle promotion'" :subtitle="modal.editing ? form.code : ''">
+    <BaseModal v-model="modal.open" size="lg" :title="modal.editing ? $t('admin.editPromo') : $t('admin.newPromo')" :subtitle="modal.editing ? form.code : ''">
       <div class="promo-modal-body">
           <div class="form-row">
-            <label>Code *</label>
+            <label>{{ $t('admin.code') }} *</label>
             <input
               v-model="form.code"
               :disabled="!!modal.editing"
               class="form-input"
-              placeholder="ex. PROMO20"
+              :placeholder="$t('admin.codePlaceholder')"
               style="text-transform:uppercase"
             />
           </div>
           <div class="form-row">
-            <label>Description</label>
-            <input v-model="form.description" class="form-input" placeholder="Description courte (optionnel)" />
+            <label>{{ $t('common.description') }}</label>
+            <input v-model="form.description" class="form-input" :placeholder="$t('admin.descPlaceholder')" />
           </div>
           <div class="form-row-2">
             <div class="form-row">
-              <label>Type de remise *</label>
+              <label>{{ $t('admin.discountTypeLabel') }} *</label>
               <select v-model="form.discount_type" class="form-select">
-                <option value="percent">Pourcentage (%)</option>
-                <option value="fixed_cents">Montant fixe (centimes)</option>
+                <option value="percent">{{ $t('admin.discountOpt.percent') }}</option>
+                <option value="fixed_cents">{{ $t('admin.discountOpt.fixed') }}</option>
               </select>
             </div>
             <div class="form-row">
-              <label>Valeur *</label>
+              <label>{{ $t('admin.value') }} *</label>
               <div class="input-affix">
                 <input
                   v-model.number="form.discount_value"
@@ -116,40 +116,40 @@
             </div>
           </div>
           <div class="form-row">
-            <label>Plans applicables <span class="hint">(vide = tous)</span></label>
+            <label>{{ $t('admin.applicablePlans') }} <span class="hint">{{ $t('admin.emptyAllHint') }}</span></label>
             <input
               v-model="form.applicable_plans_raw"
               class="form-input"
-              placeholder="ex. starter,pro (séparés par virgules)"
+              :placeholder="$t('admin.plansPlaceholder')"
             />
           </div>
           <div class="form-row-2">
             <div class="form-row">
-              <label>Valide à partir du</label>
+              <label>{{ $t('admin.validFrom') }}</label>
               <input v-model="form.valid_from" type="datetime-local" class="form-input" />
             </div>
             <div class="form-row">
-              <label>Valide jusqu'au</label>
+              <label>{{ $t('admin.validUntil') }}</label>
               <input v-model="form.valid_until" type="datetime-local" class="form-input" />
             </div>
           </div>
           <div class="form-row">
-            <label>Utilisations max <span class="hint">(vide = illimité)</span></label>
+            <label>{{ $t('admin.maxUses') }} <span class="hint">{{ $t('admin.emptyUnlimitedHint') }}</span></label>
             <input v-model.number="form.max_uses" type="number" min="1" class="form-input" />
           </div>
           <div class="form-row form-row-check">
             <label>
               <input v-model="form.is_active" type="checkbox" />
-              Activer immédiatement
+              {{ $t('admin.activateNow') }}
             </label>
           </div>
           <div v-if="modal.error" class="form-error">{{ modal.error }}</div>
       </div>
 
       <template #footer>
-        <button class="btn-cancel" @click="modal.open = false">Annuler</button>
+        <button class="btn-cancel" @click="modal.open = false">{{ $t('common.cancel') }}</button>
         <button class="btn-submit" :disabled="modal.saving" @click="savePromo">
-          {{ modal.saving ? 'Enregistrement…' : (modal.editing ? 'Mettre à jour' : 'Créer') }}
+          {{ modal.saving ? $t('common.saving') : (modal.editing ? $t('common.update') : $t('common.create')) }}
         </button>
       </template>
     </BaseModal>
@@ -164,6 +164,7 @@ import { adminService, type AdminPromotion } from '../services/adminService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
+import { t } from '@/i18n'
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const promos  = ref<AdminPromotion[]>([])
@@ -233,8 +234,8 @@ function openEdit(p: AdminPromotion) {
 }
 
 async function savePromo() {
-  if (!form.code && !modal.editing) { modal.error = 'Le code est obligatoire.'; return }
-  if (!form.discount_value)         { modal.error = 'La valeur de remise est obligatoire.'; return }
+  if (!form.code && !modal.editing) { modal.error = t('admin.codeRequired'); return }
+  if (!form.discount_value)         { modal.error = t('admin.valueRequired'); return }
 
   modal.saving = true
   modal.error  = ''
@@ -262,7 +263,7 @@ async function savePromo() {
     modal.open = false
     await load()
   } catch (err: any) {
-    modal.error = err?.response?.data?.message ?? 'Une erreur est survenue.'
+    modal.error = err?.response?.data?.message ?? t('common.genericError')
   } finally {
     modal.saving = false
   }
@@ -277,9 +278,9 @@ const { confirm } = useConfirm()
 
 async function doDelete(p: AdminPromotion) {
   if (!(await confirm({
-    title: 'Supprimer',
-    message: `Supprimer la promotion "${p.code}" ?`,
-    confirmLabel: 'Supprimer',
+    title: t('common.delete'),
+    message: t('admin.deletePromoConfirm', { code: p.code }),
+    confirmLabel: t('common.delete'),
     danger: true,
   }))) return
   await adminService.deletePromotion(p.id)

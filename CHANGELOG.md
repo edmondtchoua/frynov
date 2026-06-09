@@ -3,6 +3,19 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Admin Promotions (UX-13) (2026-06-08)
+
+Branche `feature/ux-i18n-admin2` (release `v1.0.0` → `rc.66`).
+
+### UX (i18n)
+- **`PromotionListView`** internationalisé : toolbar (compteur), table (colonnes, type de remise,
+  statut, actions), pagination, et **modal créer/éditer** (code, description, type/valeur de remise,
+  plans applicables, validité, utilisations max, activation) + validations & confirmation de
+  suppression. Étend `admin.*` ; réutilise `common.*`.
+
+### Tests
+- Frontend **254** inchangé · `vue-tsc` propre.
+
 ## [Non publié] — i18n : fiche tenant (back-office Admin) (UX-13) (2026-06-08)
 
 Branche `feature/ux-i18n-tenantdetail` (release `v1.0.0` → `rc.65`).

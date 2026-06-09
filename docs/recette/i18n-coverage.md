@@ -1,6 +1,6 @@
 # Couverture i18n — tracker vivant (UX-13)
 
-> **Mise à jour : 2026-06-09 (rc.80).** Source de vérité de l'avancement i18n, vue par vue.
+> **Mise à jour : 2026-06-09 (rc.81).** Source de vérité de l'avancement i18n, vue par vue.
 > Remplace les estimations « par zone » de l'état-des-lieux par un **décompte réel par vue**
 > (audit multi-agents du 2026-06-09). Le français reste la **source de vérité** ; l'anglais suit.
 
@@ -25,19 +25,20 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 
 | État | Vues | % |
 |---|---|---|
-| ✅ **Complet** | 38 | 79 % |
+| ✅ **Complet** | 39 | 81 % |
 | 🟡 **Partiel** | 0 | 0 % |
-| ⬜ **À faire** (non câblé) | 10 | 21 % |
-| **Câblées i18n (toutes complètes)** | **38** | **79 %** |
+| ⬜ **À faire** (non câblé) | 9 | 19 % |
+| **Câblées i18n (toutes complètes)** | **39** | **81 %** |
 
-> ✅ **rc.80** : **38 vues complètes** (+ `SettingsView`, gros écran 6 onglets/4 modals). Namespace
-> partagé **`geo.*`** (pays par ISO) + `common.currencyName` étendu, réutilisables par Onboarding.
-> Aucune vue câblée sans reliquat (garde CI dure depuis rc.71). Reste **10 vues non câblées**.
+> ✅ **rc.81** : **39 vues complètes** (+ `OnboardingView`, assistant 6 étapes). Ajout du namespace
+> partagé **`geo.timezone.*`** (15 fuseaux) ; réutilisation de `geo.country` (29 pays) et
+> `common.currencyName` (17 devises) déjà mutualisés en rc.80. Aucune vue câblée sans reliquat
+> (garde CI dure depuis rc.71). Reste **9 vues non câblées** (dont 2 Customers exclues).
 
 > ⚠️ Le module **Customers** (`CustomerListView`, `CustomerDetailView`) est géré par une **session
 > concurrente** → ne pas y toucher tant que ce verrou n'est pas levé.
 
-## ✅ Complètes (38)
+## ✅ Complètes (39)
 
 | Module | Vue | Namespace | RC |
 |---|---|---|---|
@@ -77,6 +78,7 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 | import-export | `ImportWizardView` | `importExport.wizard.*` | rc.78 |
 | marketplace | `MarketplaceListingsView` | `marketplace.*` | rc.79 |
 | settings | `SettingsView` | `settings.*` + `geo.*` | rc.80 |
+| onboarding | `OnboardingView` | `onboarding.*` + `geo.country/timezone` + `common.currencyName` | rc.81 |
 | deliveries | `DeliveryListView` | `deliveries.*` + `common.pageOf/prev/next` | rc.26 / rc.70 |
 | reports | `SalesReportView` / `StockReportView` | `reports.*` (+ `top10`) | rc.30 / rc.70 |
 
@@ -101,15 +103,17 @@ Les 11 vues câblées qui conservaient des reliquats ont été **finalisées en 
 > Toute nouvelle liste paginée doit l'utiliser (cf. Definition of Done) ; les vues ⬜ ci-dessous
 > l'adopteront lors de leur traduction.
 
-## ⬜ À faire — non câblées (22)
+## ⬜ À faire — non câblées (9)
 
 | Module | Vues |
 |---|---|
 | admin | `AdminDashboardView`, `AuditLogView`, `ModuleListView` |
 | billing | `BillingView`, `UpgradeView` |
 | inventory | `BatchDeliveryView`, `MovementHistoryView` |
-| onboarding | `OnboardingView` |
 | customers ⚠️ | `CustomerListView`, `CustomerDetailView` *(session concurrente — exclu)* |
+
+> **7 vues traduisibles restantes** (hors 2 Customers exclues). Prochaine cible recommandée :
+> **Billing** (`BillingView`, `UpgradeView`) — réutilise `common.currencyName`/`common.pageOf`.
 
 ## 🛣️ Ordre de bascule recommandé (prochaines RC)
 
@@ -118,9 +122,10 @@ Les 11 vues câblées qui conservaient des reliquats ont été **finalisées en 
 2. **Catalogue restant** — `ProductShowPage`, `LabelPrintView`, `AttributesView`, `VariantsView`.
 3. **Ventes** — `OrderCreateView`, `OrderDetailView`, `ReturnsView`.
 4. **POS** — `PosView` (vue dense, prévoir un namespace `pos.*`).
-5. **Import/Export**, **Marketplace**, **Settings**, **Onboarding**, **Billing**.
+5. ~~**Import/Export**, **Marketplace**, **Settings**, **Onboarding**~~ ✅ rc.77–81. Reste **Billing**.
 6. **Admin secondaire** — `AdminDashboardView`, `AuditLogView`, `ModuleListView`.
-7. **Customers** — dès que le verrou de session concurrente est levé.
+7. **Inventaire restant** — `BatchDeliveryView`, `MovementHistoryView`.
+8. **Customers** — dès que le verrou de session concurrente est levé.
 
 ## 🤖 Garde automatisée — ✅ livrée (rc.71)
 
@@ -136,8 +141,9 @@ suite vitest (`npm run coverage`). Échoue si :
   positifs quasi nuls.
 - **(c) Anti-bitrot** — l'allowlist ne référence que des vues réellement présentes.
 
-**Ratchet** : l'`ALLOWLIST` du spec liste les 22 vues non encore traduites. On **retire une entrée**
-dès qu'une vue est traduite (sinon la garde ne la protège pas). Objectif : allowlist vide.
+**Ratchet** : l'`ALLOWLIST` du spec liste les **9 vues** non encore traduites (dont 2 Customers
+exclues). On **retire une entrée** dès qu'une vue est traduite (sinon la garde ne la protège pas).
+Objectif : allowlist vide (hors verrou Customers).
 
 **Validation à la livraison** : la garde a immédiatement débusqué un reliquat manqué par l'audit
 (`WarehouseView` — libellés de devises en dur), corrigé via le nouveau `common.currencyName.*`

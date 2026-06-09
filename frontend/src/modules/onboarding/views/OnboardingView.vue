@@ -7,7 +7,7 @@
         <FrynovLogo variant="light" />
       </RouterLink>
       <RouterLink to="/login" class="btn btn-ghost btn-sm" style="color: var(--gray-500);">
-        Déjà inscrit ? Connexion
+        {{ $t('onboarding.alreadyRegistered') }}
       </RouterLink>
     </header>
 
@@ -22,7 +22,7 @@
 
         <!-- Step indicator -->
         <div class="step-indicator">
-          <span class="step-count">Étape {{ step }} sur {{ totalSteps }}</span>
+          <span class="step-count">{{ $t('onboarding.stepCount', { step, total: totalSteps }) }}</span>
           <div class="step-dots">
             <div
               v-for="s in totalSteps"
@@ -36,8 +36,8 @@
         <!-- ── STEP 1 — Business type ──────────────────── -->
         <Transition name="slide" mode="out-in">
           <div v-if="step === 1" key="step1" class="step-content">
-            <h2>Quel type d'entreprise gérez-vous ?</h2>
-            <p class="step-subtitle">Frynov adaptera automatiquement l'espace à votre activité.</p>
+            <h2>{{ $t('onboarding.step1Title') }}</h2>
+            <p class="step-subtitle">{{ $t('onboarding.step1Sub') }}</p>
 
             <div class="choice-grid">
               <button
@@ -63,8 +63,8 @@
         <!-- ── STEP 2 — Team size ─────────────────────── -->
         <Transition name="slide" mode="out-in">
           <div v-if="step === 2" key="step2" class="step-content">
-            <h2>Quelle est la taille de votre équipe ?</h2>
-            <p class="step-subtitle">Cela nous aide à configurer les permissions et les workflows.</p>
+            <h2>{{ $t('onboarding.step2Title') }}</h2>
+            <p class="step-subtitle">{{ $t('onboarding.step2Sub') }}</p>
 
             <div class="choice-grid choice-grid--row">
               <button
@@ -90,10 +90,8 @@
         <!-- ── STEP 3 — Modules ───────────────────────── -->
         <Transition name="slide" mode="out-in">
           <div v-if="step === 3" key="step3" class="step-content">
-            <h2>Quels modules souhaitez-vous activer ?</h2>
-            <p class="step-subtitle">
-              Sélection suggérée pour <strong>{{ selectedTypeName }}</strong> — vous pouvez modifier à tout moment.
-            </p>
+            <h2>{{ $t('onboarding.step3Title') }}</h2>
+            <p class="step-subtitle">{{ $t('onboarding.step3Sub', { type: selectedTypeName }) }}</p>
 
             <div class="modules-grid">
               <button
@@ -107,7 +105,7 @@
                 <div class="module-toggle-body">
                   <div class="module-toggle-label">
                     {{ mod.label }}
-                    <span v-if="mod.recommended" class="module-badge">Recommandé</span>
+                    <span v-if="mod.recommended" class="module-badge">{{ $t('onboarding.recommended') }}</span>
                   </div>
                   <div class="module-toggle-desc">{{ mod.desc }}</div>
                 </div>
@@ -124,16 +122,16 @@
         <!-- ── STEP 4 — Vos besoins ───────────────────── -->
         <Transition name="slide" mode="out-in">
           <div v-if="step === 4" key="step4" class="step-content">
-            <h2>Vos besoins opérationnels</h2>
-            <p class="step-subtitle">Activez les fonctionnalités dont vous avez besoin. Tout peut être modifié dans les paramètres.</p>
+            <h2>{{ $t('onboarding.step4Title') }}</h2>
+            <p class="step-subtitle">{{ $t('onboarding.step4Sub') }}</p>
 
             <div class="needs-list">
               <div class="needs-item">
                 <div class="needs-item-body">
                   <div class="needs-item-icon">📦</div>
                   <div>
-                    <div class="needs-item-label">Gestion du stock</div>
-                    <div class="needs-item-desc">Suivi des niveaux, alertes de réapprovisionnement</div>
+                    <div class="needs-item-label">{{ $t('onboarding.needs.stock.label') }}</div>
+                    <div class="needs-item-desc">{{ $t('onboarding.needs.stock.desc') }}</div>
                   </div>
                 </div>
                 <button
@@ -150,8 +148,8 @@
                 <div class="needs-item-body">
                   <div class="needs-item-icon">🖥️</div>
                   <div>
-                    <div class="needs-item-label">Caisse / POS</div>
-                    <div class="needs-item-desc">Encaissement en point de vente physique</div>
+                    <div class="needs-item-label">{{ $t('onboarding.needs.pos.label') }}</div>
+                    <div class="needs-item-desc">{{ $t('onboarding.needs.pos.desc') }}</div>
                   </div>
                 </div>
                 <button
@@ -168,8 +166,8 @@
                 <div class="needs-item-body">
                   <div class="needs-item-icon">🚚</div>
                   <div>
-                    <div class="needs-item-label">Livraison</div>
-                    <div class="needs-item-desc">Gestion des livraisons et transporteurs</div>
+                    <div class="needs-item-label">{{ $t('onboarding.needs.delivery.label') }}</div>
+                    <div class="needs-item-desc">{{ $t('onboarding.needs.delivery.desc') }}</div>
                   </div>
                 </div>
                 <button
@@ -186,8 +184,8 @@
                 <div class="needs-item-body">
                   <div class="needs-item-icon">🛍️</div>
                   <div>
-                    <div class="needs-item-label">E-commerce</div>
-                    <div class="needs-item-desc">Boutique en ligne, catalogue public</div>
+                    <div class="needs-item-label">{{ $t('onboarding.needs.ecommerce.label') }}</div>
+                    <div class="needs-item-desc">{{ $t('onboarding.needs.ecommerce.desc') }}</div>
                   </div>
                 </div>
                 <button
@@ -204,8 +202,8 @@
                 <div class="needs-item-body">
                   <div class="needs-item-icon">📵</div>
                   <div>
-                    <div class="needs-item-label">Mode hors-ligne</div>
-                    <div class="needs-item-desc">Continuer à travailler sans connexion Internet</div>
+                    <div class="needs-item-label">{{ $t('onboarding.needs.offline.label') }}</div>
+                    <div class="needs-item-desc">{{ $t('onboarding.needs.offline.desc') }}</div>
                   </div>
                 </div>
                 <button
@@ -222,7 +220,7 @@
             <!-- nb_branches slider -->
             <div class="form-group" style="margin-top: 1.5rem; margin-bottom: 0;">
               <label class="form-label">
-                Nombre de points de vente
+                {{ $t('onboarding.nbBranches') }}
                 <strong class="branch-count">{{ needs.nb_branches }}</strong>
               </label>
               <div class="slider-row">
@@ -247,53 +245,53 @@
         <!-- ── STEP 5 — Company info ──────────────────── -->
         <Transition name="slide" mode="out-in">
           <div v-if="step === 5" key="step5" class="step-content">
-            <h2>Parlez-nous de votre entreprise</h2>
-            <p class="step-subtitle">Ces informations apparaîtront sur vos documents et factures.</p>
+            <h2>{{ $t('onboarding.step5Title') }}</h2>
+            <p class="step-subtitle">{{ $t('onboarding.step5Sub') }}</p>
 
             <div class="form-group">
-              <label class="form-label" for="companyName">Nom de l'entreprise *</label>
+              <label class="form-label" for="companyName">{{ $t('onboarding.companyName') }} *</label>
               <input
                 id="companyName"
                 v-model="answers.company"
                 type="text"
                 class="form-input"
                 :class="{ error: step5Errors.company }"
-                placeholder="Acme SAS"
+                :placeholder="$t('onboarding.companyNamePlaceholder')"
               />
               <span v-if="step5Errors.company" class="form-error">{{ step5Errors.company }}</span>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
               <div class="form-group">
-                <label class="form-label" for="country">Pays</label>
+                <label class="form-label" for="country">{{ $t('onboarding.country') }}</label>
                 <select id="country" v-model="answers.country" class="form-input" @change="onCountryChange">
-                  <option v-for="c in countries" :key="c.code" :value="c.code">{{ c.flag }} {{ c.name }}</option>
+                  <option v-for="c in countries" :key="c.code" :value="c.code">{{ c.flag }} {{ $t('geo.country.' + c.code) }}</option>
                 </select>
               </div>
 
               <div class="form-group">
-                <label class="form-label" for="currency">Devise</label>
+                <label class="form-label" for="currency">{{ $t('onboarding.currency') }}</label>
                 <select id="currency" v-model="answers.currency" class="form-input">
-                  <option v-for="cur in currencies" :key="cur.code" :value="cur.code">{{ cur.code }} — {{ cur.name }}</option>
+                  <option v-for="cur in currencies" :key="cur.code" :value="cur.code">{{ cur.code }} — {{ $t('common.currencyName.' + cur.code) }}</option>
                 </select>
               </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label" for="timezone">Fuseau horaire</label>
+              <label class="form-label" for="timezone">{{ $t('onboarding.timezone') }}</label>
               <select id="timezone" v-model="answers.timezone" class="form-input">
-                <option v-for="tz in timezones" :key="tz.value" :value="tz.value">{{ tz.label }}</option>
+                <option v-for="tz in timezones" :key="tz.value" :value="tz.value">{{ $t('geo.timezone.' + tz.value) }}</option>
               </select>
             </div>
 
             <!-- UX-08 — "Ce qui sera configuré" : récap avant le provisionnement -->
-            <div class="onboard-recap" aria-label="Ce qui sera configuré">
-              <p class="onboard-recap__title">Ce qui sera configuré</p>
+            <div class="onboard-recap" :aria-label="$t('onboarding.recapTitle')">
+              <p class="onboard-recap__title">{{ $t('onboarding.recapTitle') }}</p>
               <ul class="onboard-recap__list">
-                <li><span>Entreprise</span><strong>{{ answers.company || '—' }}</strong></li>
-                <li><span>Devise</span><strong>{{ answers.currency }}</strong></li>
-                <li><span>Pays · fuseau</span><strong>{{ answers.country }} · {{ answers.timezone }}</strong></li>
-                <li><span>Modules</span><strong>{{ answers.modules.length }} activé{{ answers.modules.length > 1 ? 's' : '' }}</strong></li>
+                <li><span>{{ $t('onboarding.recapCompany') }}</span><strong>{{ answers.company || '—' }}</strong></li>
+                <li><span>{{ $t('onboarding.recapCurrency') }}</span><strong>{{ answers.currency }}</strong></li>
+                <li><span>{{ $t('onboarding.recapCountryTz') }}</span><strong>{{ answers.country }} · {{ answers.timezone }}</strong></li>
+                <li><span>{{ $t('onboarding.recapModules') }}</span><strong>{{ $t('onboarding.modulesEnabled', { count: answers.modules.length }) }}</strong></li>
               </ul>
               <div v-if="answers.modules.length" class="onboard-recap__chips">
                 <span v-for="mid in answers.modules" :key="mid" class="summary-chip">
@@ -309,7 +307,7 @@
           <div v-if="step === 6" key="step6" class="step-content step-content--center">
             <div v-if="provisioning" class="provisioning-state">
               <div class="spinner"></div>
-              <p class="step-subtitle" style="margin-top: 1rem;">Configuration de votre espace en cours…</p>
+              <p class="step-subtitle" style="margin-top: 1rem;">{{ $t('onboarding.provisioning') }}</p>
             </div>
 
             <template v-else-if="provisionError">
@@ -319,9 +317,9 @@
                   <path d="M13 13l10 10M23 13l-10 10" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
                 </svg>
               </div>
-              <h2>Une erreur est survenue</h2>
+              <h2>{{ $t('onboarding.errorTitle') }}</h2>
               <p class="step-subtitle">{{ provisionError }}</p>
-              <button class="btn btn-primary" @click="submitOnboarding">Réessayer</button>
+              <button class="btn btn-primary" @click="submitOnboarding">{{ $t('common.retry') }}</button>
             </template>
 
             <template v-else>
@@ -339,11 +337,10 @@
                   </defs>
                 </svg>
               </div>
-              <h2>Votre espace est prêt !</h2>
+              <h2>{{ $t('onboarding.ready') }}</h2>
               <p class="step-subtitle">
-                <strong>{{ answers.company || 'Votre entreprise' }}</strong> est configurée avec
-                {{ answers.modules.length }} module{{ answers.modules.length > 1 ? 's' : '' }} activé{{ answers.modules.length > 1 ? 's' : '' }}.
-                Vous pouvez tout modifier dans les paramètres.
+                <strong>{{ answers.company || $t('onboarding.yourCompany') }}</strong>
+                {{ $t('onboarding.readyDescTail', { count: answers.modules.length }) }}
               </p>
 
               <div class="summary-chips">
@@ -354,12 +351,12 @@
 
               <!-- UX-08: concrete next actions instead of a dead-end success screen. -->
               <div class="next-steps">
-                <p class="next-steps__title">Prochaines étapes</p>
+                <p class="next-steps__title">{{ $t('onboarding.nextSteps') }}</p>
                 <div class="next-steps__grid">
-                  <RouterLink to="/catalog/products/create" class="next-step"><span aria-hidden="true">➕</span> Ajouter un produit</RouterLink>
-                  <RouterLink to="/import/history" class="next-step"><span aria-hidden="true">📥</span> Importer vos données</RouterLink>
-                  <RouterLink to="/orders" class="next-step"><span aria-hidden="true">🧾</span> Créer une commande</RouterLink>
-                  <RouterLink to="/settings" class="next-step"><span aria-hidden="true">👥</span> Inviter votre équipe</RouterLink>
+                  <RouterLink to="/catalog/products/create" class="next-step"><span aria-hidden="true">➕</span> {{ $t('onboarding.nextAddProduct') }}</RouterLink>
+                  <RouterLink to="/import/history" class="next-step"><span aria-hidden="true">📥</span> {{ $t('onboarding.nextImport') }}</RouterLink>
+                  <RouterLink to="/orders" class="next-step"><span aria-hidden="true">🧾</span> {{ $t('onboarding.nextOrder') }}</RouterLink>
+                  <RouterLink to="/settings" class="next-step"><span aria-hidden="true">👥</span> {{ $t('onboarding.nextInvite') }}</RouterLink>
                 </div>
               </div>
             </template>
@@ -373,7 +370,7 @@
             class="btn btn-secondary"
             @click="step--"
           >
-            ← Retour
+            {{ $t('onboarding.back') }}
           </button>
           <div v-else style="flex: 1;"></div>
 
@@ -384,7 +381,7 @@
             :disabled="!canProceed"
             @click="nextStep"
           >
-            Continuer →
+            {{ $t('onboarding.continue') }}
           </button>
 
           <!-- Step 4 : needs (always valid, slider defaults to 1) -->
@@ -393,7 +390,7 @@
             class="btn btn-primary"
             @click="step++"
           >
-            Continuer →
+            {{ $t('onboarding.continue') }}
           </button>
 
           <!-- Step 5 : form validation -->
@@ -402,7 +399,7 @@
             class="btn btn-primary"
             @click="submitStep5"
           >
-            Finaliser la configuration →
+            {{ $t('onboarding.finalize') }}
           </button>
 
           <!-- Step 6 : go to dashboard (only shown after success) -->
@@ -411,7 +408,7 @@
             class="btn btn-primary btn-lg"
             @click="router.push('/dashboard')"
           >
-            Accéder à mon tableau de bord →
+            {{ $t('onboarding.goDashboard') }}
           </button>
         </div>
 
@@ -426,6 +423,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import FrynovLogo from '@/shared/components/FrynovLogo.vue'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
+import { t } from '@/i18n'
 
 const router = useRouter()
 const auth   = useAuthStore()
@@ -459,36 +457,36 @@ const step5Errors = reactive({ company: '' })
 const provisioning  = ref(false)
 const provisionError = ref('')
 
-// ── Step 1 — Business types ────────────────────────────────
-const businessTypes = [
-  { value: 'commerce',      icon: '🏪', label: 'Commerce & Retail',      desc: 'Boutiques, e-commerce, points de vente' },
-  { value: 'distribution',  icon: '📦', label: 'Distribution',           desc: 'Grossistes, logistique, approvisionnement' },
-  { value: 'services',      icon: '💼', label: 'Services & Consulting',   desc: 'Agences, prestataires, cabinets' },
-  { value: 'industrie',     icon: '🏭', label: 'Industrie & Production',  desc: 'Fabrication, artisanat, production' },
-  { value: 'restauration',  icon: '🍽️', label: 'Restauration & Traiteur', desc: 'Restaurants, fast-foods, livraison repas' },
-  { value: 'agriculture',   icon: '🌾', label: 'Agriculture',             desc: 'Production agricole, élevage, agroalimentaire' },
-  { value: 'immobilier',    icon: '🏘️', label: 'Immobilier',              desc: 'Agences, promoteurs, gestion locative' },
-  { value: 'pharmacie',     icon: '💊', label: 'Pharmacie / Santé',       desc: 'Officines, cliniques, dispensaires' },
-]
+// ── Step 1 — Business types (libellés i18n) ────────────────
+const businessTypes = computed(() => [
+  { value: 'commerce',      icon: '🏪', label: t('onboarding.businessType.commerce.label'),     desc: t('onboarding.businessType.commerce.desc') },
+  { value: 'distribution',  icon: '📦', label: t('onboarding.businessType.distribution.label'), desc: t('onboarding.businessType.distribution.desc') },
+  { value: 'services',      icon: '💼', label: t('onboarding.businessType.services.label'),     desc: t('onboarding.businessType.services.desc') },
+  { value: 'industrie',     icon: '🏭', label: t('onboarding.businessType.industrie.label'),    desc: t('onboarding.businessType.industrie.desc') },
+  { value: 'restauration',  icon: '🍽️', label: t('onboarding.businessType.restauration.label'), desc: t('onboarding.businessType.restauration.desc') },
+  { value: 'agriculture',   icon: '🌾', label: t('onboarding.businessType.agriculture.label'),  desc: t('onboarding.businessType.agriculture.desc') },
+  { value: 'immobilier',    icon: '🏘️', label: t('onboarding.businessType.immobilier.label'),    desc: t('onboarding.businessType.immobilier.desc') },
+  { value: 'pharmacie',     icon: '💊', label: t('onboarding.businessType.pharmacie.label'),     desc: t('onboarding.businessType.pharmacie.desc') },
+])
 
-// ── Step 2 — Team sizes ────────────────────────────────────
-const teamSizes = [
-  { value: 'solo',   icon: '🙋', label: 'Juste moi',  desc: 'Entrepreneur individuel' },
-  { value: 'small',  icon: '👥', label: '2 – 10',     desc: 'Petite équipe' },
-  { value: 'medium', icon: '🏢', label: '11 – 100',   desc: 'Équipe intermédiaire' },
-  { value: 'large',  icon: '🏬', label: '100+',       desc: 'Grande organisation' },
-]
+// ── Step 2 — Team sizes (libellés i18n) ────────────────────
+const teamSizes = computed(() => [
+  { value: 'solo',   icon: '🙋', label: t('onboarding.teamSize.solo.label'),   desc: t('onboarding.teamSize.solo.desc') },
+  { value: 'small',  icon: '👥', label: t('onboarding.teamSize.small.label'),  desc: t('onboarding.teamSize.small.desc') },
+  { value: 'medium', icon: '🏢', label: t('onboarding.teamSize.medium.label'), desc: t('onboarding.teamSize.medium.desc') },
+  { value: 'large',  icon: '🏬', label: t('onboarding.teamSize.large.label'),  desc: t('onboarding.teamSize.large.desc') },
+])
 
-// ── Step 3 — Modules ───────────────────────────────────────
-const allModules = [
-  { id: 'catalog',   icon: '📦', label: 'Catalogue produits',   desc: 'Produits, variantes, prix, codes-barres' },
-  { id: 'inventory', icon: '🏪', label: 'Inventaire & Stock',   desc: 'Suivi des stocks, alertes, mouvements' },
-  { id: 'orders',    icon: '🛒', label: 'Commandes & Ventes',   desc: 'Cycle de vente complet' },
-  { id: 'customers', icon: '👥', label: 'Clients & CRM',        desc: 'Gestion des clients et historique' },
-  { id: 'payments',  icon: '💳', label: 'Paiements',            desc: 'Cash, mobile money, carte' },
-  { id: 'delivery',  icon: '🚚', label: 'Livraisons',           desc: 'Suivi des livraisons et transporteurs' },
-  { id: 'reports',   icon: '📊', label: 'Rapports & Analytics', desc: 'Tableaux de bord et exports' },
-]
+// ── Step 3 — Modules (libellés i18n) ───────────────────────
+const allModules = computed(() => [
+  { id: 'catalog',   icon: '📦', label: t('onboarding.module.catalog.label'),   desc: t('onboarding.module.catalog.desc') },
+  { id: 'inventory', icon: '🏪', label: t('onboarding.module.inventory.label'), desc: t('onboarding.module.inventory.desc') },
+  { id: 'orders',    icon: '🛒', label: t('onboarding.module.orders.label'),    desc: t('onboarding.module.orders.desc') },
+  { id: 'customers', icon: '👥', label: t('onboarding.module.customers.label'), desc: t('onboarding.module.customers.desc') },
+  { id: 'payments',  icon: '💳', label: t('onboarding.module.payments.label'),  desc: t('onboarding.module.payments.desc') },
+  { id: 'delivery',  icon: '🚚', label: t('onboarding.module.delivery.label'),  desc: t('onboarding.module.delivery.desc') },
+  { id: 'reports',   icon: '📊', label: t('onboarding.module.reports.label'),   desc: t('onboarding.module.reports.desc') },
+])
 
 const modulesSuggestion: Record<string, string[]> = {
   commerce:     ['catalog', 'inventory', 'orders', 'customers', 'payments', 'reports'],
@@ -508,7 +506,7 @@ watch(() => answers.type, (type) => {
 })
 
 const availableModules = computed(() =>
-  allModules.map(m => ({
+  allModules.value.map(m => ({
     ...m,
     recommended: (modulesSuggestion[answers.type] ?? []).includes(m.id),
   })).sort((a, b) => (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0)),
@@ -521,7 +519,7 @@ function toggleModule(id: string) {
 }
 
 const selectedTypeName = computed(
-  () => businessTypes.find(t => t.value === answers.type)?.label ?? answers.type,
+  () => businessTypes.value.find(bt => bt.value === answers.type)?.label ?? answers.type,
 )
 
 // ── Navigation ─────────────────────────────────────────────
@@ -539,7 +537,7 @@ function nextStep() {
 function submitStep5() {
   step5Errors.company = ''
   if (!answers.company.trim()) {
-    step5Errors.company = "Le nom de l'entreprise est requis"
+    step5Errors.company = t('onboarding.companyRequired')
     return
   }
   step.value = 6
@@ -572,7 +570,7 @@ async function submitOnboarding() {
     await auth.fetchCurrentUser()
   } catch (err: any) {
     provisionError.value =
-      err?.response?.data?.message ?? 'Une erreur inattendue est survenue. Veuillez réessayer.'
+      err?.response?.data?.message ?? t('onboarding.provisionError')
   } finally {
     provisioning.value = false
   }

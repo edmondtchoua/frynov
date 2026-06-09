@@ -3,6 +3,30 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : module Billing (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-billing` (release `v1.0.0` → `rc.82`).
+
+### UX (i18n)
+- **Module Billing internationalisé à 100 %** : `BillingView` (abonnement, prix mensuel/annuel,
+  essai/renouvellement, bandeaux essai & suspension, jauges d'usage utilisateurs/produits/commandes,
+  table des paiements manuels) et `UpgradeView` (sélecteur de devise, 4 plans
+  Découverte/Essentiel/Croissance/Business avec quotas et fonctionnalités, prix localisés, CTA).
+- Nouveau namespace `billing.*` (FR+EN) : libellés de plan/quota/prix, maps `subStatus`/`method`/
+  `payStatus`, `plan.{code}.{name,desc,f2..f5}`, note de bas de page. Mutualise `common.currencyName`
+  et les libellés génériques `common.*` (date/amount/status/notes/loading/retry).
+- Données de plans (`name`/`description`/`features`) et maps de statut converties via `t()` pour rester
+  réactives au changement de langue. Corrige au passage 2 libellés FR sans accent (`Recommande`,
+  `Illimite`) que la garde ne détectait pas. Ratchet : 2 vues retirées de l'`ALLOWLIST`.
+
+### Avancement
+- Tracker [`i18n-coverage.md`](docs/recette/i18n-coverage.md) : **41 ✅ / 0 🟡 / 7 ⬜** (85 %).
+  Reste **5 vues traduisibles** (Admin secondaire ×3, Inventaire ×2) + 2 Customers exclues.
+
+### Tests
+- Frontend **257** inchangé (dont `UpgradeView.spec` — rendu FR identique) · `vue-tsc` propre ·
+  `npm run i18n:check` vert.
+
 ## [Non publié] — i18n : Onboarding + namespace partagé geo.timezone.* (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-onboarding` (release `v1.0.0` → `rc.81`).

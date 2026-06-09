@@ -8,13 +8,13 @@
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          Retour à la facturation
+          {{ $t('billing.backToBilling') }}
         </router-link>
       </div>
-      <h2>Choisir un plan</h2>
-      <p class="page-subtitle">Tous les modules métier sont inclus. Les plans limitent surtout utilisateurs, volumes, boutiques et support.</p>
+      <h2>{{ $t('billing.choosePlanTitle') }}</h2>
+      <p class="page-subtitle">{{ $t('billing.choosePlanSubtitle') }}</p>
       <label class="market-selector" for="upgrade-market-select">
-        <span>Devise</span>
+        <span>{{ $t('billing.currency') }}</span>
         <select id="upgrade-market-select" v-model="selectedMarket">
           <option v-for="m in selectableMarkets" :key="m.code" :value="m.code">{{ m.label }}</option>
         </select>
@@ -22,12 +22,12 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="loading" class="state-loading">Chargement…</div>
+    <div v-if="loading" class="state-loading">{{ $t('common.loading') }}</div>
 
     <!-- Error -->
     <div v-else-if="error" class="state-error">
       <p>{{ error }}</p>
-      <button class="btn btn-secondary" @click="fetchSubscription">Réessayer</button>
+      <button class="btn btn-secondary" @click="fetchSubscription">{{ $t('common.retry') }}</button>
     </div>
 
     <!-- Plans grid -->
@@ -44,8 +44,8 @@
       >
         <!-- Badges -->
         <div class="plan-badges">
-          <span v-if="plan.recommended" class="badge badge--recommended">Recommande</span>
-          <span v-if="currentPlanCode === plan.code" class="badge badge--current">Plan actuel</span>
+          <span v-if="plan.recommended" class="badge badge--recommended">{{ $t('billing.recommended') }}</span>
+          <span v-if="currentPlanCode === plan.code" class="badge badge--current">{{ $t('billing.currentPlan') }}</span>
         </div>
 
         <!-- Plan header -->
@@ -61,13 +61,13 @@
         <div class="plan-price">
           <template v-if="plan.price !== null">
             <span class="price-amount">{{ formatPrice(plan.price) }}</span>
-            <span class="price-period">/mois</span>
+            <span class="price-period">{{ $t('billing.perMonth') }}</span>
           </template>
           <template v-else>
-            <span class="price-custom">Sur devis</span>
+            <span class="price-custom">{{ $t('billing.onQuote') }}</span>
           </template>
-          <p v-if="plan.price === 0" class="price-note">Gratuit pour toujours</p>
-          <p v-else-if="plan.price !== null" class="price-note">Facturation mensuelle en {{ market.currency }}</p>
+          <p v-if="plan.price === 0" class="price-note">{{ $t('billing.freeForever') }}</p>
+          <p v-else-if="plan.price !== null" class="price-note">{{ $t('billing.monthlyBillingIn', { currency: market.currency }) }}</p>
         </div>
 
         <!-- Quotas -->
@@ -77,8 +77,8 @@
               <path d="M8 1a3 3 0 1 1 0 6 3 3 0 0 1 0-6ZM2 13c0-2.76 2.69-5 6-5s6 2.24 6 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
             </svg>
             <span>
-              <strong>{{ plan.quotas.max_users === null ? 'Illimite' : plan.quotas.max_users }}</strong>
-              utilisateur{{ plan.quotas.max_users !== 1 ? 's' : '' }}
+              <strong>{{ plan.quotas.max_users === null ? $t('billing.unlimited') : plan.quotas.max_users }}</strong>
+              {{ $t('billing.usersUnit') }}
             </span>
           </div>
           <div class="quota-item">
@@ -89,8 +89,8 @@
               <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/>
             </svg>
             <span>
-              <strong>{{ plan.quotas.max_agents === null ? 'Illimite' : plan.quotas.max_agents }}</strong>
-              agent{{ plan.quotas.max_agents !== 1 ? 's' : '' }} IA
+              <strong>{{ plan.quotas.max_agents === null ? $t('billing.unlimited') : plan.quotas.max_agents }}</strong>
+              {{ $t('billing.aiAgentsUnit') }}
             </span>
           </div>
           <div class="quota-item">
@@ -98,8 +98,8 @@
               <path d="M2 5h12M2 8h12M2 11h12M5 2v12M11 2v12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
             </svg>
             <span>
-              <strong>{{ plan.quotas.max_warehouses === null ? 'Illimite' : plan.quotas.max_warehouses }}</strong>
-              entrepot{{ plan.quotas.max_warehouses !== 1 ? 's' : '' }}
+              <strong>{{ plan.quotas.max_warehouses === null ? $t('billing.unlimited') : plan.quotas.max_warehouses }}</strong>
+              {{ $t('billing.warehousesUnit') }}
             </span>
           </div>
         </div>
@@ -121,14 +121,14 @@
             class="btn btn-plan btn-plan--current"
             disabled
           >
-            Plan actuel
+            {{ $t('billing.currentPlan') }}
           </button>
           <button
             v-else-if="plan.code === 'enterprise'"
             class="btn btn-plan btn-plan--enterprise"
             @click="chooseEnterprise"
           >
-            Nous contacter
+            {{ $t('billing.contactUs') }}
           </button>
           <button
             v-else
@@ -136,7 +136,7 @@
             :class="plan.recommended ? 'btn-plan--primary' : 'btn-plan--secondary'"
             @click="choosePlan(plan)"
           >
-            Choisir ce plan
+            {{ $t('billing.chooseThisPlan') }}
           </button>
         </div>
       </div>
@@ -144,8 +144,7 @@
 
     <!-- Footer note -->
     <p class="upgrade-note">
-      Les prix affichés utilisent {{ market.currency }} pour {{ market.label }}.
-      Vous pouvez changer de zone si votre IP ou votre VPN ne reflète pas votre pays de facturation.
+      {{ $t('billing.priceFootnote', { currency: market.currency, market: market.label }) }}
     </p>
 
   </div>
@@ -158,6 +157,7 @@ import { authService } from '@/modules/auth/services/authService'
 import { useGeoContent } from '@/composables/useGeoContent'
 import { fetchPublicPricing, type PublicPlan } from '@/services/publicPricingService'
 import type { Subscription } from '@/modules/auth/types'
+import { t } from '@/i18n'
 
 const router = useRouter()
 const { market, selectableMarkets, selectedMarket } = useGeoContent()
@@ -237,43 +237,43 @@ function planPrice(code: string, fallback: number): number {
 const plans = computed<UpgradePlan[]>(() => [
   {
     code: 'starter',
-    name: 'Découverte',
-    description: 'Pour tester Frynov sans engagement.',
+    name: t('billing.plan.starter.name'),
+    description: t('billing.plan.starter.desc'),
     price: planPrice('starter', priceBook.value.starter),
     recommended: false,
     icon: IconStarter,
     quotas: { max_users: 1, max_agents: 1, max_warehouses: 1 },
-    features: ['Tous les modules métier', '100 produits', '50 commandes/mois', '1 boutique / entrepôt', 'Support communauté'],
+    features: [t('billing.allBusinessModules'), t('billing.plan.starter.f2'), t('billing.plan.starter.f3'), t('billing.plan.starter.f4'), t('billing.plan.starter.f5')],
   },
   {
     code: 'essential',
-    name: 'Essentiel',
-    description: 'Pour une boutique active qui veut tout gérer au quotidien.',
+    name: t('billing.plan.essential.name'),
+    description: t('billing.plan.essential.desc'),
     price: planPrice('essential', priceBook.value.essential),
     recommended: false,
     icon: IconStarter,
     quotas: { max_users: 2, max_agents: 2, max_warehouses: 1 },
-    features: ['Tous les modules métier', '500 produits', '300 commandes/mois', 'Paiements & livraisons', 'Support email'],
+    features: [t('billing.allBusinessModules'), t('billing.plan.essential.f2'), t('billing.plan.essential.f3'), t('billing.plan.essential.f4'), t('billing.plan.essential.f5')],
   },
   {
     code: 'pro',
-    name: 'Croissance',
-    description: 'Pour les PME en croissance avec automatisation et rapports avancés.',
+    name: t('billing.plan.pro.name'),
+    description: t('billing.plan.pro.desc'),
     price: planPrice('pro', priceBook.value.pro),
     recommended: true,
     icon: IconPro,
     quotas: { max_users: 5, max_agents: 5, max_warehouses: 3 },
-    features: ['Tous les modules métier', '5 000 produits · 2 000 commandes/mois', 'Rapports avancés', 'Marketplace', 'Support prioritaire'],
+    features: [t('billing.allBusinessModules'), t('billing.plan.pro.f2'), t('billing.plan.pro.f3'), t('billing.plan.pro.f4'), t('billing.plan.pro.f5')],
   },
   {
     code: 'enterprise',
-    name: 'Business / Enterprise',
-    description: 'Pour les groupes, grossistes et opérations multi-sites.',
+    name: t('billing.plan.enterprise.name'),
+    description: t('billing.plan.enterprise.desc'),
     price: planPrice('enterprise', priceBook.value.enterprise),
     recommended: false,
     icon: IconEnterprise,
     quotas: { max_users: 10, max_agents: 10, max_warehouses: null },
-    features: ['Tous les modules métier', 'Volumes élevés ou sur devis', 'Multi-sites', 'API & intégrations', 'SLA et onboarding dédié'],
+    features: [t('billing.allBusinessModules'), t('billing.plan.enterprise.f2'), t('billing.plan.enterprise.f3'), t('billing.plan.enterprise.f4'), t('billing.plan.enterprise.f5')],
   },
 ])
 
@@ -292,7 +292,7 @@ async function fetchSubscription(): Promise<void> {
       currentPlanCode.value = subscription.plan_code
     }
   } catch (err: any) {
-    error.value = err?.response?.data?.message ?? 'Impossible de charger votre abonnement.'
+    error.value = err?.response?.data?.message ?? t('billing.loadError')
   } finally {
     loading.value = false
   }

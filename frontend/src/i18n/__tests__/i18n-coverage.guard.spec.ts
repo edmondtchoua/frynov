@@ -19,8 +19,6 @@ const ALLOWLIST = new Set<string>([
   'admin/views/AdminDashboardView.vue',
   'admin/views/AuditLogView.vue',
   'admin/views/ModuleListView.vue',
-  'billing/views/BillingView.vue',
-  'billing/views/UpgradeView.vue',
   'inventory/views/BatchDeliveryView.vue',
   'inventory/views/MovementHistoryView.vue',
   // Customers — session concurrente, exclu tant que le verrou n'est pas levé.

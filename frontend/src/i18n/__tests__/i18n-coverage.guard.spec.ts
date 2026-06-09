@@ -23,7 +23,6 @@ const ALLOWLIST = new Set<string>([
   'billing/views/UpgradeView.vue',
   'inventory/views/BatchDeliveryView.vue',
   'inventory/views/MovementHistoryView.vue',
-  'onboarding/views/OnboardingView.vue',
   // Customers — session concurrente, exclu tant que le verrou n'est pas levé.
   'customers/views/CustomerListView.vue',
   'customers/views/CustomerDetailView.vue',

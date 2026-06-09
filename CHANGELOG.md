@@ -3,6 +3,31 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Onboarding + namespace partagé geo.timezone.* (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-onboarding` (release `v1.0.0` → `rc.81`).
+
+### UX (i18n)
+- **`OnboardingView`** internationalisé (assistant 6 étapes : type d'entreprise, taille d'équipe,
+  modules, besoins opérationnels, infos entreprise, confirmation). Nouveau namespace `onboarding.*`
+  (FR+EN) : titres/sous-titres d'étapes, maps `businessType` (8), `teamSize` (4), `module` (7),
+  `needs` (5), récap « Ce qui sera configuré », écrans provisionnement/erreur/succès, boutons de
+  navigation et messages d'erreur.
+- **Namespace partagé `geo.timezone.*`** (15 fuseaux, FR+EN) ajouté à `geo.*`. La vue **réutilise**
+  `geo.country` (29 pays) et `common.currencyName` (17 devises) déjà mutualisés en rc.80 — zéro
+  duplication des données pays/devise/fuseau.
+- Les tableaux de données (`businessTypes`/`teamSizes`/`allModules`) convertis en `computed` via `t()`
+  pour rester réactifs au changement de langue ; selects pays/devise/fuseau liés à `geo.*`/`common.*`.
+  Paramètre local `t` (dans `selectedTypeName`) renommé `bt` pour ne plus masquer la fonction i18n `t`.
+- Ratchet : `OnboardingView` retirée de l'`ALLOWLIST` de la garde.
+
+### Avancement
+- Tracker [`i18n-coverage.md`](docs/recette/i18n-coverage.md) : **39 ✅ / 0 🟡 / 9 ⬜** (81 %).
+  Reste **7 vues traduisibles** (Billing ×2, Admin secondaire ×3, Inventaire ×2) + 2 Customers exclues.
+
+### Tests
+- Frontend **257** inchangé · `vue-tsc` propre · `npm run i18n:check` vert.
+
 ## [Non publié] — i18n : Paramètres + namespace partagé geo.* (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-settings` (release `v1.0.0` → `rc.80`).

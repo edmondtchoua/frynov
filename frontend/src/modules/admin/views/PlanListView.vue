@@ -8,25 +8,25 @@
             <div class="plan-code">{{ plan.code }}</div>
           </div>
           <span class="plan-vis-badge" :class="plan.is_public ? 'plan-vis-badge--public' : 'plan-vis-badge--private'">
-            {{ plan.is_public ? 'Public' : 'Privé' }}
+            {{ plan.is_public ? $t('admin.public') : $t('admin.private') }}
           </span>
         </div>
 
         <div class="plan-price">
           <template v-if="plan.price_monthly_cents > 0">
             <span class="plan-price__amount">{{ formatPrice(plan.price_monthly_cents) }}</span>
-            <span class="plan-price__period">/ mois</span>
+            <span class="plan-price__period">{{ $t('admin.perMonth') }}</span>
           </template>
           <template v-else>
-            <span class="plan-price__free">Gratuit</span>
+            <span class="plan-price__free">{{ $t('admin.free') }}</span>
           </template>
         </div>
 
         <div class="plan-limits">
-          <span>{{ plan.max_users || '∞' }} utilisateurs</span>
-          <span>{{ plan.max_products || '∞' }} produits</span>
-          <span>{{ plan.max_monthly_orders || '∞' }} commandes/mois</span>
-          <span>{{ plan.trial_days }}j d'essai</span>
+          <span>{{ plan.max_users || '∞' }} {{ $t('admin.usersUnit') }}</span>
+          <span>{{ plan.max_products || '∞' }} {{ $t('admin.productsUnit') }}</span>
+          <span>{{ plan.max_monthly_orders || '∞' }} {{ $t('admin.ordersPerMonthUnit') }}</span>
+          <span>{{ plan.trial_days }}{{ $t('admin.trialDaysUnit') }}</span>
         </div>
 
         <ul class="plan-features">
@@ -38,37 +38,37 @@
           </li>
         </ul>
 
-        <button class="btn-edit-plan" @click="openEdit(plan)">Éditer les limites</button>
+        <button class="btn-edit-plan" @click="openEdit(plan)">{{ $t('admin.editLimits') }}</button>
       </div>
     </div>
-    <div v-else-if="loading" class="state-msg">Chargement…</div>
-    <div v-else class="state-msg">Aucun plan trouvé.</div>
+    <div v-else-if="loading" class="state-msg">{{ $t('common.loading') }}</div>
+    <div v-else class="state-msg">{{ $t('admin.noPlans') }}</div>
 
     <!-- Edit limits modal (shared BaseModal — UX-03) -->
-    <BaseModal v-model="modal.open" size="lg" :title="`Éditer — ${form.name}`">
+    <BaseModal v-model="modal.open" size="lg" :title="$t('admin.editPlan', { name: form.name })">
       <div v-if="modal.error" class="form-error">{{ modal.error }}</div>
-      <p class="hint">Laisser un champ de limite <strong>vide = illimité (∞)</strong>. Source canonique : <code>plan_limits</code>.</p>
+      <p class="hint">{{ $t('admin.limitHint1') }} <strong>{{ $t('admin.limitHint2') }}</strong>. {{ $t('admin.limitHint3') }} <code>plan_limits</code>.</p>
       <div class="grid2">
-            <label>Nom<input v-model="form.name" class="form-input" /></label>
-            <label>Utilisateurs inclus<input v-model.number="form.max_users" type="number" min="0" class="form-input" /></label>
-            <label>Jours d'essai<input v-model.number="form.trial_days" type="number" min="0" class="form-input" /></label>
-            <label>Produits<input v-model="limits.max_products" type="number" min="0" class="form-input" placeholder="∞" /></label>
-            <label>Commandes / mois<input v-model="limits.max_monthly_orders" type="number" min="0" class="form-input" placeholder="∞" /></label>
-            <label>Clients<input v-model="limits.max_customers" type="number" min="0" class="form-input" placeholder="∞" /></label>
-            <label>Boutiques<input v-model="limits.max_branches" type="number" min="0" class="form-input" placeholder="∞" /></label>
-            <label>Entrepôts<input v-model="limits.max_warehouses" type="number" min="0" class="form-input" placeholder="∞" /></label>
-            <label>Imports / mois<input v-model="limits.max_imports_per_month" type="number" min="0" class="form-input" placeholder="∞" /></label>
-            <label>Appels API / mois<input v-model="limits.max_api_calls_per_month" type="number" min="0" class="form-input" placeholder="∞" /></label>
-            <label>Stockage (Mo)<input v-model="limits.storage_mb" type="number" min="0" class="form-input" placeholder="∞" /></label>
+            <label>{{ $t('common.name') }}<input v-model="form.name" class="form-input" /></label>
+            <label>{{ $t('admin.includedUsers') }}<input v-model.number="form.max_users" type="number" min="0" class="form-input" /></label>
+            <label>{{ $t('admin.trialDaysLabel') }}<input v-model.number="form.trial_days" type="number" min="0" class="form-input" /></label>
+            <label>{{ $t('admin.products') }}<input v-model="limits.max_products" type="number" min="0" class="form-input" placeholder="∞" /></label>
+            <label>{{ $t('admin.ordersPerMonth') }}<input v-model="limits.max_monthly_orders" type="number" min="0" class="form-input" placeholder="∞" /></label>
+            <label>{{ $t('admin.customers') }}<input v-model="limits.max_customers" type="number" min="0" class="form-input" placeholder="∞" /></label>
+            <label>{{ $t('admin.branches') }}<input v-model="limits.max_branches" type="number" min="0" class="form-input" placeholder="∞" /></label>
+            <label>{{ $t('admin.warehouses') }}<input v-model="limits.max_warehouses" type="number" min="0" class="form-input" placeholder="∞" /></label>
+            <label>{{ $t('admin.importsPerMonth') }}<input v-model="limits.max_imports_per_month" type="number" min="0" class="form-input" placeholder="∞" /></label>
+            <label>{{ $t('admin.apiCallsPerMonth') }}<input v-model="limits.max_api_calls_per_month" type="number" min="0" class="form-input" placeholder="∞" /></label>
+            <label>{{ $t('admin.storageMb') }}<input v-model="limits.storage_mb" type="number" min="0" class="form-input" placeholder="∞" /></label>
           </div>
       <div class="checks">
-        <label><input v-model="form.is_active" type="checkbox" /> Actif</label>
-        <label><input v-model="form.is_public" type="checkbox" /> Public</label>
+        <label><input v-model="form.is_active" type="checkbox" /> {{ $t('common.active') }}</label>
+        <label><input v-model="form.is_public" type="checkbox" /> {{ $t('admin.public') }}</label>
       </div>
 
       <template #footer>
-        <button class="btn btn-secondary" @click="modal.open = false">Annuler</button>
-        <button class="btn btn-primary" :disabled="modal.saving" @click="save">{{ modal.saving ? 'Enregistrement…' : 'Enregistrer' }}</button>
+        <button class="btn btn-secondary" @click="modal.open = false">{{ $t('common.cancel') }}</button>
+        <button class="btn btn-primary" :disabled="modal.saving" @click="save">{{ modal.saving ? $t('common.saving') : $t('common.save') }}</button>
       </template>
     </BaseModal>
   </div>
@@ -79,6 +79,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { formatMoney } from '@/shared/utils/money'
 import { adminService, type AdminPlan } from '../services/adminService'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import { t } from '@/i18n'
 
 const plans   = ref<AdminPlan[]>([])
 const loading = ref(true)
@@ -136,7 +137,7 @@ async function save() {
   } catch (e: any) {
     modal.error = e?.response?.data?.message
       ?? (Object.values(e?.response?.data?.errors ?? {})?.[0] as string[] | undefined)?.[0]
-      ?? 'Enregistrement impossible.'
+      ?? t('admin.savePlanError')
   } finally {
     modal.saving = false
   }

@@ -2,25 +2,25 @@
   <div>
     <div class="page-header">
       <div>
-        <h2>Règles pays</h2>
-        <p class="page-subtitle">Inscription par pays : devise/fuseau par défaut, approbation manuelle, blocage et plans autorisés.</p>
+        <h2>{{ $t('admin.countryRulesTitle') }}</h2>
+        <p class="page-subtitle">{{ $t('admin.countryRulesSubtitle') }}</p>
       </div>
-      <button class="btn btn-primary" @click="openCreate">+ Nouvelle règle</button>
+      <button class="btn btn-primary" @click="openCreate">+ {{ $t('admin.newRule') }}</button>
     </div>
 
     <StateBlock v-if="loading" variant="loading" />
 
     <StateBlock v-else-if="error" variant="error" :message="error">
       <template #action>
-        <button class="btn btn-secondary" @click="load">Réessayer</button>
+        <button class="btn btn-secondary" @click="load">{{ $t('common.retry') }}</button>
       </template>
     </StateBlock>
 
     <StateBlock
       v-else-if="!rules.length"
       variant="empty"
-      title="Aucune règle pays"
-      message="Ajoutez une règle pour personnaliser l'inscription d'un pays."
+      :title="$t('admin.noRules')"
+      :message="$t('admin.noRulesHint')"
     />
 
     <div v-else class="card" style="padding:0; overflow:hidden;">
@@ -28,12 +28,12 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>Pays</th>
-              <th>Devise</th>
-              <th>Fuseau</th>
-              <th>Statut</th>
-              <th>Approbation</th>
-              <th>Plans autorisés</th>
+              <th>{{ $t('admin.country') }}</th>
+              <th>{{ $t('admin.currency') }}</th>
+              <th>{{ $t('admin.timezone') }}</th>
+              <th>{{ $t('common.status') }}</th>
+              <th>{{ $t('admin.approval') }}</th>
+              <th>{{ $t('admin.allowedPlans') }}</th>
               <th></th>
             </tr>
           </thead>
@@ -43,16 +43,16 @@
               <td>{{ r.default_currency || '—' }}</td>
               <td>{{ r.default_timezone || '—' }}</td>
               <td>
-                <span v-if="r.is_blocked" class="tag tag--blocked">Bloqué</span>
-                <span v-else-if="r.is_active" class="tag tag--ok">Actif</span>
-                <span v-else class="tag tag--off">Inactif</span>
+                <span v-if="r.is_blocked" class="tag tag--blocked">{{ $t('admin.blocked') }}</span>
+                <span v-else-if="r.is_active" class="tag tag--ok">{{ $t('common.active') }}</span>
+                <span v-else class="tag tag--off">{{ $t('common.inactive') }}</span>
               </td>
-              <td>{{ r.requires_approval ? 'Requise' : 'Auto' }}</td>
-              <td>{{ r.allowed_plans?.length ? r.allowed_plans.join(', ') : 'Tous' }}</td>
+              <td>{{ r.requires_approval ? $t('admin.required') : $t('admin.auto') }}</td>
+              <td>{{ r.allowed_plans?.length ? r.allowed_plans.join(', ') : $t('admin.all') }}</td>
               <td>
                 <div class="actions">
-                  <button class="btn btn-sm btn-secondary" @click="openEdit(r)">Éditer</button>
-                  <button class="btn btn-sm btn-danger" @click="remove(r)">Suppr.</button>
+                  <button class="btn btn-sm btn-secondary" @click="openEdit(r)">{{ $t('common.edit') }}</button>
+                  <button class="btn btn-sm btn-danger" @click="remove(r)">{{ $t('admin.deleteShort') }}</button>
                 </div>
               </td>
             </tr>
@@ -64,32 +64,32 @@
     <!-- Create / edit modal (shared BaseModal — UX-03) -->
     <BaseModal
       v-model="modal.open"
-      :title="modal.editing ? `Modifier — ${form.country_code}` : 'Nouvelle règle pays'"
+      :title="modal.editing ? $t('admin.editRule', { code: form.country_code }) : $t('admin.newRuleTitle')"
     >
       <div v-if="modal.error" class="form-error">{{ modal.error }}</div>
 
-      <label class="form-label">Code pays (ISO 2 lettres) *</label>
+      <label class="form-label">{{ $t('admin.countryCode') }} *</label>
       <input v-model="form.country_code" :disabled="modal.editing" maxlength="2" class="form-input" placeholder="SN" style="text-transform:uppercase" />
 
-      <label class="form-label">Devise par défaut (ISO 3)</label>
+      <label class="form-label">{{ $t('admin.defaultCurrency') }}</label>
       <input v-model="form.default_currency" maxlength="3" class="form-input" placeholder="XOF" style="text-transform:uppercase" />
 
-      <label class="form-label">Fuseau horaire</label>
+      <label class="form-label">{{ $t('admin.timezoneLabel') }}</label>
       <input v-model="form.default_timezone" class="form-input" placeholder="Africa/Dakar" />
 
-      <label class="form-label">Plans autorisés (séparés par des virgules — vide = tous)</label>
+      <label class="form-label">{{ $t('admin.allowedPlansLabel') }}</label>
       <input v-model="form.allowed_plans" class="form-input" placeholder="starter, pro" />
 
       <div class="form-checks">
-        <label class="check"><input v-model="form.is_active" type="checkbox" /> Actif</label>
-        <label class="check"><input v-model="form.requires_approval" type="checkbox" /> Approbation manuelle requise</label>
-        <label class="check"><input v-model="form.is_blocked" type="checkbox" /> Bloqué (inscription interdite)</label>
+        <label class="check"><input v-model="form.is_active" type="checkbox" /> {{ $t('common.active') }}</label>
+        <label class="check"><input v-model="form.requires_approval" type="checkbox" /> {{ $t('admin.requiresApproval') }}</label>
+        <label class="check"><input v-model="form.is_blocked" type="checkbox" /> {{ $t('admin.blockedRegistration') }}</label>
       </div>
 
       <template #footer>
-        <button class="btn btn-secondary" @click="closeModal">Annuler</button>
+        <button class="btn btn-secondary" @click="closeModal">{{ $t('common.cancel') }}</button>
         <button class="btn btn-primary" :disabled="modal.saving" @click="save">
-          {{ modal.saving ? 'Enregistrement…' : 'Enregistrer' }}
+          {{ modal.saving ? $t('common.saving') : $t('common.save') }}
         </button>
       </template>
     </BaseModal>
@@ -102,6 +102,7 @@ import { adminService, type AdminCountryRule } from '../services/adminService'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
+import { t } from '@/i18n'
 
 const rules   = ref<AdminCountryRule[]>([])
 const loading = ref(true)
@@ -124,7 +125,7 @@ async function load() {
   try {
     rules.value = (await adminService.getCountryRules()).data
   } catch {
-    error.value = 'Impossible de charger les règles pays.'
+    error.value = t('admin.loadRulesError')
   } finally {
     loading.value = false
   }
@@ -192,7 +193,7 @@ async function save() {
   } catch (e: any) {
     modal.error = e?.response?.data?.message
       ?? (Object.values(e?.response?.data?.errors ?? {})?.[0] as string[] | undefined)?.[0]
-      ?? 'Enregistrement impossible.'
+      ?? t('admin.saveRuleError')
   } finally {
     modal.saving = false
   }
@@ -202,9 +203,9 @@ const { confirm } = useConfirm()
 
 async function remove(r: AdminCountryRule) {
   if (!(await confirm({
-    title: 'Supprimer',
-    message: `Supprimer la règle pour ${r.country_code} ?`,
-    confirmLabel: 'Supprimer',
+    title: t('common.delete'),
+    message: t('admin.deleteRuleConfirm', { code: r.country_code }),
+    confirmLabel: t('common.delete'),
     danger: true,
   }))) return
   try {

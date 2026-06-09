@@ -24,7 +24,6 @@ const ALLOWLIST = new Set<string>([
   'inventory/views/BatchDeliveryView.vue',
   'inventory/views/MovementHistoryView.vue',
   'onboarding/views/OnboardingView.vue',
-  'pos/views/PosView.vue',
   'import-export/views/ImportHistoryView.vue',
   'import-export/views/ImportWizardView.vue',
   'marketplace/views/MarketplaceListingsView.vue',

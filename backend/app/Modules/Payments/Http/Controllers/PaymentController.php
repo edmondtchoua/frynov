@@ -53,11 +53,21 @@ class PaymentController extends Controller
             'order_id'     => ['nullable', 'uuid'],
             'amount_cents' => ['required', 'integer', 'min:1'],
             'currency'     => ['required', 'string', 'size:3'],
-            'method'       => ['required', 'in:cash,mobile_money,card,transfer,cheque'],
+            // `method` (catégorie canonique) OU `provider` (moyen spécifique du marché, P6) — au moins un.
+            'method'       => ['required_without:provider', 'in:cash,mobile_money,card,transfer,cheque'],
+            'provider'     => ['nullable', 'in:wave,orange_money,mtn_money,mpesa,bank_transfer,card,cash'],
             'reference'    => ['nullable', 'string', 'max:100'],
             'note'         => ['nullable', 'string'],
             'paid_at'      => ['nullable', 'date'],
         ]);
+
+        // P6 — un moyen spécifique (provider) dérive la catégorie canonique Payment.method et
+        // trace le provider en référence (si vide). L'enum Payment.method reste inchangé.
+        if (! empty($data['provider'])) {
+            $data['method']    = \App\Modules\Payments\Support\PaymentMethodCatalog::categoryFor($data['provider']);
+            $data['reference'] = $data['reference'] ?? $data['provider'];
+            unset($data['provider']);
+        }
 
         // Verify order belongs to tenant when provided
         if (! empty($data['order_id'])) {

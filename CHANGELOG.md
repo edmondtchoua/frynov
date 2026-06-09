@@ -3,6 +3,27 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 💳 P6 : sélecteur de paiement par marché au checkout commercial (frontend) (2026-06-09)
+
+Branche `feature/p6-commercial-selector` (release `v1.0.0` → `rc.97`).
+
+### UX (paiements) — P6-2 commercial complet (front + back)
+- **`OrderDetailView`** — modal « Enregistrer un paiement » : le sélecteur de méthode propose désormais
+  les **moyens spécifiques du marché** (Wave/Orange Money/MTN MoMo/M-Pesa/virement/carte…) avec leur
+  **mode** (validation manuelle / sur devis), récupérés via `fetchPublicPaymentMethods`. À la validation,
+  le moyen est posté en **`provider`** (le backend en dérive la catégorie canonique `Payment.method` —
+  rc.96). **Dégradation gracieuse** : si l'API est injoignable, le `<select>` canonique d'origine reste
+  affiché et fonctionnel (compat totale). Réutilise l'i18n `billing.payMethods.*` (aucune nouvelle clé).
+- `RecordPaymentPayload` : `method` rendu optionnel + champ `provider`.
+
+### Tests
+- Frontend **262** ✅ (OrderDetailView spec inclus, repli gracieux) · `vue-tsc` propre · `npm run i18n:check` vert.
+
+### Bilan P6
+- **P6-1→P6-4 livrés** : socle marché↔moyens, affichage abonnement + commercial (front+back), infra
+  passerelle + webhooks (inerte), adaptateur de référence Flutterwave. **Seule l'activation d'un PSP réel
+  reste une décision fondateur** (clé + flag). DoD « chaque devise = un flux ou une mention » satisfait.
+
 ## [Non publié] — 💳 P6 : checkout commercial — moyen spécifique par marché (backend) (2026-06-09)
 
 Branche `feature/p6-commercial-provider` (release `v1.0.0` → `rc.96`).

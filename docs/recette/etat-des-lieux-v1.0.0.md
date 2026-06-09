@@ -46,8 +46,10 @@
 > mention » matérialisé (+7 tests). **P6-3** (rc.94) : infra passerelle inerte (`config/billing.php`, interface
 > `PaymentGateway` + `ManualGateway` + manager, webhook signé flag-gated) — **aucun rail PSP réel** (+9 tests).
 > **P6-4** (rc.95) : **adaptateur de référence `FlutterwaveGateway`** (HTTP mocké, +5 tests) — **inerte** ;
-> activation = décision fondateur (clé + flag). **Checkout commercial backend** (rc.96) : `PaymentMethodCatalog`
-> (provider→catégorie) + `POST /api/payments` accepte `provider` (+5 tests). Cf. [`p6-cadrage.md`](decisions/p6-cadrage.md).
+> activation = décision fondateur (clé + flag). **Checkout commercial** (rc.96 back + rc.97 front) :
+> `PaymentMethodCatalog` (provider→catégorie) + `POST /api/payments` accepte `provider` + **sélecteur de
+> moyens par marché dans `OrderDetailView`** (repli gracieux). **P6 complet** (P6-1→P6-4) ; seule l'activation
+> d'un PSP réel reste une décision fondateur. Cf. [`p6-cadrage.md`](decisions/p6-cadrage.md).
 > Tests : **backend 680** (677 ✅ / 2 skipped / **1 échec pré-existant hors périmètre** : `ImportModuleTest` adresse client) · **frontend 262** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 

@@ -1,6 +1,6 @@
 # Couverture i18n — tracker vivant (UX-13)
 
-> **Mise à jour : 2026-06-09 (rc.70).** Source de vérité de l'avancement i18n, vue par vue.
+> **Mise à jour : 2026-06-09 (rc.71).** Source de vérité de l'avancement i18n, vue par vue.
 > Remplace les estimations « par zone » de l'état-des-lieux par un **décompte réel par vue**
 > (audit multi-agents du 2026-06-09). Le français reste la **source de vérité** ; l'anglais suit.
 
@@ -107,7 +107,8 @@ Les 11 vues câblées qui conservaient des reliquats ont été **finalisées en 
 
 ## 🛣️ Ordre de bascule recommandé (prochaines RC)
 
-1. **Quick win pagination** — `common.pageOf` + balayage des 11 partielles → **26/26 câblées = complètes**.
+1. ~~**Quick win pagination** — `common.pageOf` + balayage des 11 partielles → 26/26 câblées complètes.~~ ✅ **rc.70**
+1b. ~~**Garde automatisée** (gate CI dur).~~ ✅ **rc.71** (cf. section ci-dessous)
 2. **Catalogue restant** — `ProductShowPage`, `LabelPrintView`, `AttributesView`, `VariantsView`.
 3. **Ventes** — `OrderCreateView`, `OrderDetailView`, `ReturnsView`.
 4. **POS** — `PosView` (vue dense, prévoir un namespace `pos.*`).
@@ -115,11 +116,28 @@ Les 11 vues câblées qui conservaient des reliquats ont été **finalisées en 
 6. **Admin secondaire** — `AdminDashboardView`, `AuditLogView`, `ModuleListView`.
 7. **Customers** — dès que le verrou de session concurrente est levé.
 
-## 🤖 Garde automatisée (proposée)
+## 🤖 Garde automatisée — ✅ livrée (rc.71)
 
-Cible : `npm run i18n:check` (et job CI) qui échoue si —
-- **(a)** des clés existent dans `fr` mais pas `en` (ou inversement) — parité ;
-- **(b)** une vue `*.vue` contient du **texte FR en dur** hors `$t`/`t` (heuristique : nœuds texte
-  de template avec lettres accentuées ou mots FR, hors liste d'exceptions ci-dessus).
+`npm run i18n:check` (spec `src/i18n/__tests__/i18n-coverage.guard.spec.ts`) — **gate CI dur**, câblé
+dans `ci-feature.yml` (job *quality*) et `ci-develop.yml` (job *Build Frontend*), + exécuté dans la
+suite vitest (`npm run coverage`). Échoue si :
 
-Tant que la garde n'existe pas, ce tracker + la Definition of Done tiennent lieu de contrôle manuel.
+- **(a) Parité** — une clé existe dans `messages.fr` mais pas `messages.en` (ou inversement). Robuste,
+  zéro faux positif.
+- **(b) Texte FR en dur** — une vue `src/modules/**/views/*.vue` **hors allowlist** contient un
+  **caractère accenté** dans un nœud texte de `<template>` (hors `{{ }}`) ou un attribut statique
+  `placeholder`/`title`/`aria-label`/`alt`/`label`. Heuristique haute confiance (accent), faux
+  positifs quasi nuls.
+- **(c) Anti-bitrot** — l'allowlist ne référence que des vues réellement présentes.
+
+**Ratchet** : l'`ALLOWLIST` du spec liste les 22 vues non encore traduites. On **retire une entrée**
+dès qu'une vue est traduite (sinon la garde ne la protège pas). Objectif : allowlist vide.
+
+**Validation à la livraison** : la garde a immédiatement débusqué un reliquat manqué par l'audit
+(`WarehouseView` — libellés de devises en dur), corrigé via le nouveau `common.currencyName.*`
+(mutualisé entre `WarehouseView` et `ProductFormView`).
+
+**Limites connues** (couvertes par la Definition of Done, pas encore par la garde) : chaînes FR
+**sans accent** (`Nom`, `Statut`…), strings **côté `<script>`**, et le **chrome partagé** /
+`src/pages`. Extensions possibles : scan des littéraux script avec liste d'exceptions
+(`note:` d'audit), élargissement de la portée.

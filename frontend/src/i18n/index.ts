@@ -24,7 +24,7 @@ const STORAGE_KEY = 'frynov.locale'
 
 type Dict = { [key: string]: string | Dict }
 
-const messages: Record<Locale, Dict> = {
+export const messages: Record<Locale, Dict> = {
   fr: {
     common: {
       save: 'Enregistrer', cancel: 'Annuler', delete: 'Supprimer', edit: 'Modifier',
@@ -38,6 +38,7 @@ const messages: Record<Locale, Dict> = {
       allWarehouses: 'Tous les entrepôts', product: 'Produit', quantity: 'Qté', view: 'Voir',
       description: 'Description', update: 'Mettre à jour', confirm: 'Confirmer',
       pageOf: 'Page {current} / {total}', deleteFailed: 'Suppression impossible.',
+      currencyName: { XOF: 'Franc CFA (UEMOA)', XAF: 'Franc CFA (CEMAC)', GHS: 'Cedi Ghanéen', NGN: 'Naira Nigérian', MAD: 'Dirham Marocain', EUR: 'Euro', USD: 'Dollar US' },
     },
     nav: {
       dashboard: 'Tableau de bord', catalog: 'Catalogue', inventory: 'Stock',
@@ -186,7 +187,6 @@ const messages: Record<Locale, Dict> = {
         genError: 'Erreur lors de la génération. Vérifiez la console.',
         statusHint: { active: 'Visible et en vente.', draft: 'Invisible, en cours de création.', archived: 'Masqué, non disponible.' },
         axis: { size: 'Taille', color: 'Couleur', material: 'Matière', volume: 'Volume', ram: 'RAM', rom: 'ROM', storage: 'Stockage', power: 'Puissance', format: 'Format', model: 'Modèle' },
-        currencyName: { XOF: 'Franc CFA (UEMOA)', XAF: 'Franc CFA (CEMAC)', GHS: 'Cedi Ghanéen', NGN: 'Naira Nigérian', MAD: 'Dirham Marocain', EUR: 'Euro', USD: 'Dollar US' },
       },
     },
     inventory: {
@@ -401,6 +401,7 @@ const messages: Record<Locale, Dict> = {
       allWarehouses: 'All warehouses', product: 'Product', quantity: 'Qty', view: 'View',
       description: 'Description', update: 'Update', confirm: 'Confirm',
       pageOf: 'Page {current} / {total}', deleteFailed: 'Delete failed.',
+      currencyName: { XOF: 'CFA Franc (UEMOA)', XAF: 'CFA Franc (CEMAC)', GHS: 'Ghanaian Cedi', NGN: 'Nigerian Naira', MAD: 'Moroccan Dirham', EUR: 'Euro', USD: 'US Dollar' },
     },
     nav: {
       dashboard: 'Dashboard', catalog: 'Catalog', inventory: 'Inventory',
@@ -549,7 +550,6 @@ const messages: Record<Locale, Dict> = {
         genError: 'Error during generation. Check the console.',
         statusHint: { active: 'Visible and on sale.', draft: 'Hidden, work in progress.', archived: 'Hidden, unavailable.' },
         axis: { size: 'Size', color: 'Color', material: 'Material', volume: 'Volume', ram: 'RAM', rom: 'ROM', storage: 'Storage', power: 'Power', format: 'Format', model: 'Model' },
-        currencyName: { XOF: 'CFA Franc (UEMOA)', XAF: 'CFA Franc (CEMAC)', GHS: 'Ghanaian Cedi', NGN: 'Nigerian Naira', MAD: 'Moroccan Dirham', EUR: 'Euro', USD: 'US Dollar' },
       },
     },
     inventory: {

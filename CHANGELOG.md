@@ -3,6 +3,24 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : garde CI dure (parité + texte FR en dur) (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-guard` (release `v1.0.0` → `rc.71`). **La Definition of Done i18n est désormais opposable automatiquement.**
+
+### Gouvernance i18n (garde automatisée)
+- **`npm run i18n:check`** + spec `src/i18n/__tests__/i18n-coverage.guard.spec.ts` — **gate CI dur**
+  (ajouté à `ci-feature.yml` job *quality* et `ci-develop.yml` *Build Frontend*, + exécuté dans la
+  suite vitest). Contrôles : **(a)** parité des clés `messages.fr`/`messages.en` ; **(b)** détection de
+  **texte FR en dur** (caractère accenté) dans les `<template>` des vues de module hors **allowlist
+  ratchet** (22 vues non traduites, à réduire) ; **(c)** anti-bitrot de l'allowlist.
+- `messages` est désormais **exporté** depuis `i18n/index.ts` (pour la garde).
+- **Reliquat débusqué immédiatement** par la garde : `WarehouseView` (libellés de devises en dur) →
+  corrigé via le nouveau **`common.currencyName.*`** mutualisé (`WarehouseView` + `ProductFormView`,
+  `catalog.productForm.currencyName` supprimé — déduplication).
+
+### Tests
+- Frontend **257** (254 + 3 specs de garde) · `vue-tsc` propre.
+
 ## [Non publié] — i18n : pagination unifiée + 11 vues partielles soldées (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-pagination` (release `v1.0.0` → `rc.70`). **Les 26 vues câblées i18n sont désormais toutes complètes** (0 reliquat connu).

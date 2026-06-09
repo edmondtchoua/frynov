@@ -99,12 +99,12 @@
           <div class="form-group">
             <label class="form-label">{{ $t('inventory.currency') }}</label>
             <select v-model="form.currency" class="form-input">
-              <option value="XOF">XOF — Franc CFA UEMOA</option>
-              <option value="XAF">XAF — Franc CFA CEMAC</option>
-              <option value="GHS">GHS — Cedi ghanéen</option>
-              <option value="NGN">NGN — Naira nigérian</option>
-              <option value="EUR">EUR — Euro</option>
-              <option value="USD">USD — Dollar US</option>
+              <option value="XOF">XOF — {{ $t('common.currencyName.XOF') }}</option>
+              <option value="XAF">XAF — {{ $t('common.currencyName.XAF') }}</option>
+              <option value="GHS">GHS — {{ $t('common.currencyName.GHS') }}</option>
+              <option value="NGN">NGN — {{ $t('common.currencyName.NGN') }}</option>
+              <option value="EUR">EUR — {{ $t('common.currencyName.EUR') }}</option>
+              <option value="USD">USD — {{ $t('common.currencyName.USD') }}</option>
             </select>
           </div>
         </div>

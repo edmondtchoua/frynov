@@ -119,7 +119,7 @@
               <div class="form-group">
                 <label class="form-label">{{ $t('catalog.productForm.currency') }}</label>
                 <select v-model="form.price_currency" class="form-input">
-                  <option v-for="c in CURRENCIES" :key="c" :value="c">{{ c }} — {{ $t('catalog.productForm.currencyName.' + c) }}</option>
+                  <option v-for="c in CURRENCIES" :key="c" :value="c">{{ c }} — {{ $t('common.currencyName.' + c) }}</option>
                 </select>
               </div>
             </div>

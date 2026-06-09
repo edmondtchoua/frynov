@@ -10,6 +10,7 @@
     "type-check": "vue-tsc --noEmit",
     "lint": "eslint . --ext .vue,.ts,.tsx --fix",
     "test:unit": "vitest run",
+    "i18n:check": "vitest run src/i18n/__tests__/i18n-coverage.guard.spec.ts",
     "test:landing": "vitest run src/pages/__tests__/LandingView.spec.ts",
     "test:landing:watch": "vitest src/pages/__tests__/LandingView.spec.ts",
     "test:watch": "vitest",

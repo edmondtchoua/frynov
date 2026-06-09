@@ -68,6 +68,10 @@ jobs:
         run: npm run type-check
         working-directory: frontend
 
+      - name: i18n guard (parité FR/EN + texte FR en dur)
+        run: npm run i18n:check
+        working-directory: frontend
+
   # ────────────────────────────────────────────
   #  TESTS UNITAIRES BACKEND
   # ────────────────────────────────────────────

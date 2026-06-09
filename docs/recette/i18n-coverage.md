@@ -1,6 +1,6 @@
 # Couverture i18n — tracker vivant (UX-13)
 
-> **Mise à jour : 2026-06-09 (rc.76).** Source de vérité de l'avancement i18n, vue par vue.
+> **Mise à jour : 2026-06-09 (rc.77).** Source de vérité de l'avancement i18n, vue par vue.
 > Remplace les estimations « par zone » de l'état-des-lieux par un **décompte réel par vue**
 > (audit multi-agents du 2026-06-09). Le français reste la **source de vérité** ; l'anglais suit.
 
@@ -25,18 +25,18 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 
 | État | Vues | % |
 |---|---|---|
-| ✅ **Complet** | 34 | 71 % |
+| ✅ **Complet** | 35 | 73 % |
 | 🟡 **Partiel** | 0 | 0 % |
-| ⬜ **À faire** (non câblé) | 14 | 29 % |
-| **Câblées i18n (toutes complètes)** | **34** | **71 %** |
+| ⬜ **À faire** (non câblé) | 13 | 27 % |
+| **Câblées i18n (toutes complètes)** | **35** | **73 %** |
 
-> ✅ **rc.76** : **34 vues complètes** (+ **POS** `PosView`). Aucune vue câblée sans reliquat
-> (garde CI dure depuis rc.71). Reste **14 vues non câblées** (cf. ⬜ ci-dessous).
+> ✅ **rc.77** : **35 vues complètes** (+ Import `ImportHistoryView`). Aucune vue câblée sans reliquat
+> (garde CI dure depuis rc.71). Reste **13 vues non câblées** (cf. ⬜ ci-dessous).
 
 > ⚠️ Le module **Customers** (`CustomerListView`, `CustomerDetailView`) est géré par une **session
 > concurrente** → ne pas y toucher tant que ce verrou n'est pas levé.
 
-## ✅ Complètes (34)
+## ✅ Complètes (35)
 
 | Module | Vue | Namespace | RC |
 |---|---|---|---|
@@ -72,6 +72,7 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 | orders | `ReturnsView` | `orders.returns.*` | rc.74 |
 | orders | `OrderCreateView` | `orders.create.*` | rc.75 |
 | pos | `PosView` | `pos.*` | rc.76 |
+| import-export | `ImportHistoryView` | `importExport.*` | rc.77 |
 | deliveries | `DeliveryListView` | `deliveries.*` + `common.pageOf/prev/next` | rc.26 / rc.70 |
 | reports | `SalesReportView` / `StockReportView` | `reports.*` (+ `top10`) | rc.30 / rc.70 |
 
@@ -104,7 +105,7 @@ Les 11 vues câblées qui conservaient des reliquats ont été **finalisées en 
 | billing | `BillingView`, `UpgradeView` |
 | inventory | `BatchDeliveryView`, `MovementHistoryView` |
 | onboarding | `OnboardingView` |
-| import-export | `ImportHistoryView`, `ImportWizardView` |
+| import-export | `ImportWizardView` |
 | marketplace | `MarketplaceListingsView` |
 | settings | `SettingsView` |
 | customers ⚠️ | `CustomerListView`, `CustomerDetailView` *(session concurrente — exclu)* |

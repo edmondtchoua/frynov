@@ -4,24 +4,24 @@
     <!-- ── Header ────────────────────────────────────────────────────────── -->
     <div class="page-header">
       <div class="page-title">
-        <h1>Historique des imports</h1>
-        <span class="count-badge">{{ meta.total }} session{{ meta.total !== 1 ? 's' : '' }}</span>
+        <h1>{{ $t('importExport.history.title') }}</h1>
+        <span class="count-badge">{{ $t('importExport.history.sessionsCount', { count: meta.total }) }}</span>
       </div>
       <div class="header-actions">
         <button class="btn btn-primary" @click="$router.push('/import/new')">
-          ⬆️ Nouvel import
+          ⬆️ {{ $t('importExport.history.newImport') }}
         </button>
         <div class="export-menu">
-          <span class="export-label">Modèles :</span>
-          <button class="btn btn-outline btn-sm" title="Télécharger le modèle d'import (XLSX)" @click="doTemplate('products')">📊 Produits</button>
-          <button class="btn btn-outline btn-sm" title="Télécharger le modèle d'import (XLSX)" @click="doTemplate('customers')">👥 Clients</button>
-          <button class="btn btn-outline btn-sm" title="Télécharger le modèle d'import (XLSX)" @click="doTemplate('suppliers')">🏭 Fournisseurs</button>
+          <span class="export-label">{{ $t('importExport.history.templates') }}</span>
+          <button class="btn btn-outline btn-sm" :title="$t('importExport.history.templateTooltip')" @click="doTemplate('products')">📊 {{ $t('importExport.entity.products') }}</button>
+          <button class="btn btn-outline btn-sm" :title="$t('importExport.history.templateTooltip')" @click="doTemplate('customers')">👥 {{ $t('importExport.entity.customers') }}</button>
+          <button class="btn btn-outline btn-sm" :title="$t('importExport.history.templateTooltip')" @click="doTemplate('suppliers')">🏭 {{ $t('importExport.entity.suppliers') }}</button>
         </div>
         <div class="export-menu">
-          <span class="export-label">Exporter :</span>
-          <button class="btn btn-outline btn-sm" @click="doExport('products')">📊 Produits</button>
-          <button class="btn btn-outline btn-sm" @click="doExport('customers')">👥 Clients</button>
-          <button class="btn btn-outline btn-sm" @click="doExport('suppliers')">🏭 Fournisseurs</button>
+          <span class="export-label">{{ $t('importExport.history.exportLabel') }}</span>
+          <button class="btn btn-outline btn-sm" @click="doExport('products')">📊 {{ $t('importExport.entity.products') }}</button>
+          <button class="btn btn-outline btn-sm" @click="doExport('customers')">👥 {{ $t('importExport.entity.customers') }}</button>
+          <button class="btn btn-outline btn-sm" @click="doExport('suppliers')">🏭 {{ $t('importExport.entity.suppliers') }}</button>
         </div>
       </div>
     </div>
@@ -31,19 +31,19 @@
     <!-- ── Filters ────────────────────────────────────────────────────────── -->
     <div class="filters-bar">
       <select v-model="typeFilter" class="filter-select" @change="load(1)">
-        <option value="">Tous les types</option>
-        <option value="products">Produits</option>
-        <option value="customers">Clients</option>
-        <option value="suppliers">Fournisseurs</option>
+        <option value="">{{ $t('importExport.history.allTypes') }}</option>
+        <option value="products">{{ $t('importExport.entity.products') }}</option>
+        <option value="customers">{{ $t('importExport.entity.customers') }}</option>
+        <option value="suppliers">{{ $t('importExport.entity.suppliers') }}</option>
       </select>
       <select v-model="statusFilter" class="filter-select" @change="load(1)">
-        <option value="">Tous les statuts</option>
-        <option value="completed">Terminé</option>
-        <option value="partial">Partiel</option>
-        <option value="awaiting_approval">En attente d'approbation</option>
-        <option value="analyzed">Analysé (erreurs)</option>
-        <option value="failed">Échoué</option>
-        <option value="cancelled">Annulé</option>
+        <option value="">{{ $t('common.allStatuses') }}</option>
+        <option value="completed">{{ $t('importExport.status.completed') }}</option>
+        <option value="partial">{{ $t('importExport.status.partial') }}</option>
+        <option value="awaiting_approval">{{ $t('importExport.status.awaiting_approval') }}</option>
+        <option value="analyzed">{{ $t('importExport.status.analyzed') }}</option>
+        <option value="failed">{{ $t('importExport.status.failed') }}</option>
+        <option value="cancelled">{{ $t('importExport.status.cancelled') }}</option>
       </select>
     </div>
 
@@ -54,42 +54,42 @@
       <StateBlock
         v-else-if="sessions.length === 0"
         variant="empty"
-        title="Aucun import trouvé"
+        :title="$t('importExport.history.empty')"
       >
         <template #action>
-          <button class="btn btn-primary btn-sm" @click="$router.push('/import/new')">Premier import</button>
+          <button class="btn btn-primary btn-sm" @click="$router.push('/import/new')">{{ $t('importExport.history.firstImport') }}</button>
         </template>
       </StateBlock>
 
       <table v-else class="data-table">
         <thead>
           <tr>
-            <th>Type</th>
-            <th>Fichier</th>
-            <th>Mode</th>
-            <th>Statut</th>
-            <th class="text-right">Total</th>
-            <th class="text-right">Importés</th>
-            <th class="text-right">Erreurs</th>
-            <th>Date</th>
-            <th>Actions</th>
+            <th>{{ $t('importExport.history.colType') }}</th>
+            <th>{{ $t('importExport.history.colFile') }}</th>
+            <th>{{ $t('importExport.history.colMode') }}</th>
+            <th>{{ $t('common.status') }}</th>
+            <th class="text-right">{{ $t('common.total') }}</th>
+            <th class="text-right">{{ $t('importExport.history.colImported') }}</th>
+            <th class="text-right">{{ $t('importExport.history.colErrors') }}</th>
+            <th>{{ $t('common.date') }}</th>
+            <th>{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="s in sessions" :key="s.id" class="table-row" @click="openDetail(s)" style="cursor:pointer">
             <td>
               <span :class="['type-badge', `type-${s.type}`]">
-                {{ TYPE_ICONS[s.type] }} {{ ENTITY_LABELS[s.type] }}
+                {{ TYPE_ICONS[s.type] }} {{ entityLabel(s.type) }}
               </span>
             </td>
             <td class="col-filename">
               <span class="filename">{{ s.original_filename }}</span>
             </td>
             <td>
-              <span class="mode-text">{{ MODE_SHORT[s.mode] }}</span>
+              <span class="mode-text">{{ modeShort(s.mode) }}</span>
             </td>
             <td>
-              <span :class="['status-badge', `status-${s.status}`]">{{ STATUS_LABELS[s.status] }}</span>
+              <span :class="['status-badge', `status-${s.status}`]">{{ statusLabel(s.status) }}</span>
             </td>
             <td class="text-right text-muted">{{ s.total_rows }}</td>
             <td class="text-right">
@@ -103,9 +103,9 @@
             <td class="text-muted date-col">{{ fmtDate(s.created_at) }}</td>
             <td @click.stop>
               <div class="action-group">
-                <button v-if="s.status === 'awaiting_approval'" class="btn-action btn-approve" title="Continuer" @click="continueSession(s)">▶</button>
-                <button v-if="['completed','partial'].includes(s.status)" class="btn-action btn-report" title="Rapport PDF" @click="doReport(s.id)">📄</button>
-                <button v-if="canCancel(s)" class="btn-action btn-delete" title="Annuler" @click.stop="cancelSession(s)">✕</button>
+                <button v-if="s.status === 'awaiting_approval'" class="btn-action btn-approve" :title="$t('importExport.history.continue')" @click="continueSession(s)">▶</button>
+                <button v-if="['completed','partial'].includes(s.status)" class="btn-action btn-report" :title="$t('importExport.history.reportPdf')" @click="doReport(s.id)">📄</button>
+                <button v-if="canCancel(s)" class="btn-action btn-delete" :title="$t('common.cancel')" @click.stop="cancelSession(s)">✕</button>
               </div>
             </td>
           </tr>
@@ -115,7 +115,7 @@
       <!-- Pagination -->
       <div v-if="meta.last_page > 1" class="pagination">
         <button class="page-btn" :disabled="meta.current_page === 1" @click="load(meta.current_page - 1)">←</button>
-        <span class="page-info">Page {{ meta.current_page }} / {{ meta.last_page }}</span>
+        <span class="page-info">{{ $t('common.pageOf', { current: meta.current_page, total: meta.last_page }) }}</span>
         <button class="page-btn" :disabled="meta.current_page === meta.last_page" @click="load(meta.current_page + 1)">→</button>
       </div>
     </div>
@@ -124,27 +124,27 @@
     <BaseModal
       :model-value="!!detailSession"
       size="lg"
-      title="Détail de l'import"
+      :title="$t('importExport.history.detailTitle')"
       @update:model-value="(v: boolean) => { if (!v) detailSession = null }"
     >
       <div v-if="detailSession" class="import-detail-body">
             <p class="modal-sub">{{ detailSession.original_filename }}</p>
             <!-- Summary stats -->
             <div class="detail-stats">
-              <div class="detail-stat"><span class="ds-value">{{ detailSession.total_rows }}</span><span class="ds-label">Total</span></div>
-              <div class="detail-stat valid"><span class="ds-value">{{ detailSession.valid_rows }}</span><span class="ds-label">Valides</span></div>
-              <div class="detail-stat warning"><span class="ds-value">{{ detailSession.warning_rows }}</span><span class="ds-label">Avert.</span></div>
-              <div class="detail-stat error"><span class="ds-value">{{ detailSession.error_rows }}</span><span class="ds-label">Erreurs</span></div>
-              <div class="detail-stat imported"><span class="ds-value">{{ detailSession.imported_rows }}</span><span class="ds-label">Importés</span></div>
-              <div class="detail-stat skipped"><span class="ds-value">{{ detailSession.skipped_rows }}</span><span class="ds-label">Ignorés</span></div>
+              <div class="detail-stat"><span class="ds-value">{{ detailSession.total_rows }}</span><span class="ds-label">{{ $t('common.total') }}</span></div>
+              <div class="detail-stat valid"><span class="ds-value">{{ detailSession.valid_rows }}</span><span class="ds-label">{{ $t('importExport.history.valid') }}</span></div>
+              <div class="detail-stat warning"><span class="ds-value">{{ detailSession.warning_rows }}</span><span class="ds-label">{{ $t('importExport.history.warningShort') }}</span></div>
+              <div class="detail-stat error"><span class="ds-value">{{ detailSession.error_rows }}</span><span class="ds-label">{{ $t('importExport.history.errors') }}</span></div>
+              <div class="detail-stat imported"><span class="ds-value">{{ detailSession.imported_rows }}</span><span class="ds-label">{{ $t('importExport.history.imported') }}</span></div>
+              <div class="detail-stat skipped"><span class="ds-value">{{ detailSession.skipped_rows }}</span><span class="ds-label">{{ $t('importExport.history.skipped') }}</span></div>
             </div>
 
             <!-- Summary breakdown -->
             <div v-if="detailSession.summary" class="summary-box">
-              <div class="summary-row"><span>Créés</span><strong>{{ detailSession.summary.created }}</strong></div>
-              <div class="summary-row"><span>Mis à jour</span><strong>{{ detailSession.summary.updated }}</strong></div>
-              <div class="summary-row"><span>Ignorés</span><strong>{{ detailSession.summary.skipped }}</strong></div>
-              <div class="summary-row"><span>Erreurs</span><strong class="text-error">{{ detailSession.summary.errors }}</strong></div>
+              <div class="summary-row"><span>{{ $t('importExport.history.created') }}</span><strong>{{ detailSession.summary.created }}</strong></div>
+              <div class="summary-row"><span>{{ $t('importExport.history.updated') }}</span><strong>{{ detailSession.summary.updated }}</strong></div>
+              <div class="summary-row"><span>{{ $t('importExport.history.skipped') }}</span><strong>{{ detailSession.summary.skipped }}</strong></div>
+              <div class="summary-row"><span>{{ $t('importExport.history.errors') }}</span><strong class="text-error">{{ detailSession.summary.errors }}</strong></div>
             </div>
 
             <div v-if="detailSession.error_message" class="error-banner">
@@ -152,23 +152,23 @@
             </div>
 
             <div class="meta-grid">
-              <div class="meta-item"><span>Type</span><strong>{{ ENTITY_LABELS[detailSession.type] }}</strong></div>
-              <div class="meta-item"><span>Mode</span><strong>{{ MODE_LABELS[detailSession.mode] }}</strong></div>
-              <div class="meta-item"><span>Statut</span><strong>{{ STATUS_LABELS[detailSession.status] }}</strong></div>
-              <div class="meta-item"><span>Créé le</span><strong>{{ fmtDate(detailSession.created_at) }}</strong></div>
-              <div v-if="detailSession.completed_at" class="meta-item"><span>Terminé le</span><strong>{{ fmtDate(detailSession.completed_at) }}</strong></div>
+              <div class="meta-item"><span>{{ $t('importExport.history.colType') }}</span><strong>{{ entityLabel(detailSession.type) }}</strong></div>
+              <div class="meta-item"><span>{{ $t('importExport.history.colMode') }}</span><strong>{{ modeLabel(detailSession.mode) }}</strong></div>
+              <div class="meta-item"><span>{{ $t('common.status') }}</span><strong>{{ statusLabel(detailSession.status) }}</strong></div>
+              <div class="meta-item"><span>{{ $t('importExport.history.createdAt') }}</span><strong>{{ fmtDate(detailSession.created_at) }}</strong></div>
+              <div v-if="detailSession.completed_at" class="meta-item"><span>{{ $t('importExport.history.completedAt') }}</span><strong>{{ fmtDate(detailSession.completed_at) }}</strong></div>
             </div>
       </div>
 
       <template #footer>
         <template v-if="detailSession">
           <button v-if="['completed','partial'].includes(detailSession.status)" class="btn btn-outline" @click="doReport(detailSession.id)">
-            📄 Rapport PDF
+            📄 {{ $t('importExport.history.reportPdf') }}
           </button>
           <button v-if="detailSession.status === 'awaiting_approval'" class="btn btn-primary" @click="continueSession(detailSession)">
-            ▶ Continuer l'import
+            ▶ {{ $t('importExport.history.continueImport') }}
           </button>
-          <button class="btn btn-ghost" @click="detailSession = null">Fermer</button>
+          <button class="btn btn-ghost" @click="detailSession = null">{{ $t('importExport.history.close') }}</button>
         </template>
       </template>
     </BaseModal>
@@ -186,7 +186,7 @@ import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { pushToast } from '@/composables/useNotifications'
 import type { ImportSession } from '../types'
-import { ENTITY_LABELS, MODE_LABELS, STATUS_LABELS } from '../types'
+import { t } from '@/i18n'
 
 const router = useRouter()
 
@@ -198,9 +198,10 @@ const statusFilter  = ref('')
 const detailSession = ref<ImportSession | null>(null)
 
 const TYPE_ICONS: Record<string, string> = { products: '📦', customers: '👥', suppliers: '🏭' }
-const MODE_SHORT: Record<string, string> = {
-  create_update: 'C+U', create_only: 'Créer', update_only: 'MàJ', simulate: 'Simu.'
-}
+const entityLabel = (e: string) => t(`importExport.entity.${e}`)
+const modeLabel   = (m: string) => t(`importExport.mode.${m}`)
+const modeShort   = (m: string) => t(`importExport.modeShort.${m}`)
+const statusLabel = (s: string) => t(`importExport.status.${s}`)
 
 async function load(page = 1) {
   loading.value = true
@@ -236,16 +237,16 @@ const { confirm } = useConfirm()
 
 async function cancelSession(s: ImportSession) {
   if (!(await confirm({
-    title: 'Annuler l\'import',
-    message: `Annuler l'import « ${s.original_filename} » ?`,
-    confirmLabel: 'Annuler l\'import',
+    title: t('importExport.history.cancelTitle'),
+    message: t('importExport.history.cancelConfirm', { name: s.original_filename }),
+    confirmLabel: t('importExport.history.cancelTitle'),
     danger: true,
   }))) return
   try {
     await importExportService.cancel(s.id)
     await load(meta.current_page)
   } catch (e: any) {
-    pushToast(e?.response?.data?.message ?? 'Annulation impossible.')
+    pushToast(e?.response?.data?.message ?? t('importExport.history.cancelError'))
   }
 }
 
@@ -258,7 +259,7 @@ async function runDownload(task: Promise<void>) {
   try {
     await task
   } catch (e: any) {
-    let msg = 'Téléchargement impossible.'
+    let msg = t('importExport.history.downloadError')
     const data = e?.response?.data
     if (data instanceof Blob) {
       try { msg = JSON.parse(await data.text())?.message ?? msg } catch { /* keep default */ }

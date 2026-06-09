@@ -3,6 +3,18 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Admin Règles pays (UX-13) (2026-06-08)
+
+Branche `feature/ux-i18n-countryrule` (release `v1.0.0` → `rc.67`).
+
+### UX (i18n)
+- **`CountryRuleListView`** internationalisé : en-tête, états (chargement/erreur/vide), table
+  (colonnes, statuts Bloqué/Actif/Inactif, approbation, plans), modal créer/éditer (code pays,
+  devise, fuseau, plans autorisés, cases) + erreurs & confirmation de suppression. Étend `admin.*`.
+
+### Tests
+- Frontend **254** inchangé · `vue-tsc` propre.
+
 ## [Non publié] — i18n : Admin Promotions (UX-13) (2026-06-08)
 
 Branche `feature/ux-i18n-admin2` (release `v1.0.0` → `rc.66`).

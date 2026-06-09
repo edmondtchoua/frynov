@@ -1,6 +1,6 @@
 # Couverture i18n — tracker vivant (UX-13)
 
-> **Mise à jour : 2026-06-09 (rc.79).** Source de vérité de l'avancement i18n, vue par vue.
+> **Mise à jour : 2026-06-09 (rc.80).** Source de vérité de l'avancement i18n, vue par vue.
 > Remplace les estimations « par zone » de l'état-des-lieux par un **décompte réel par vue**
 > (audit multi-agents du 2026-06-09). Le français reste la **source de vérité** ; l'anglais suit.
 
@@ -25,18 +25,19 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 
 | État | Vues | % |
 |---|---|---|
-| ✅ **Complet** | 37 | 77 % |
+| ✅ **Complet** | 38 | 79 % |
 | 🟡 **Partiel** | 0 | 0 % |
-| ⬜ **À faire** (non câblé) | 11 | 23 % |
-| **Câblées i18n (toutes complètes)** | **37** | **77 %** |
+| ⬜ **À faire** (non câblé) | 10 | 21 % |
+| **Câblées i18n (toutes complètes)** | **38** | **79 %** |
 
-> ✅ **rc.79** : **37 vues complètes** (+ Marketplace `MarketplaceListingsView`). Aucune vue câblée sans
-> reliquat (garde CI dure depuis rc.71). Reste **11 vues non câblées** (cf. ⬜ ci-dessous).
+> ✅ **rc.80** : **38 vues complètes** (+ `SettingsView`, gros écran 6 onglets/4 modals). Namespace
+> partagé **`geo.*`** (pays par ISO) + `common.currencyName` étendu, réutilisables par Onboarding.
+> Aucune vue câblée sans reliquat (garde CI dure depuis rc.71). Reste **10 vues non câblées**.
 
 > ⚠️ Le module **Customers** (`CustomerListView`, `CustomerDetailView`) est géré par une **session
 > concurrente** → ne pas y toucher tant que ce verrou n'est pas levé.
 
-## ✅ Complètes (37)
+## ✅ Complètes (38)
 
 | Module | Vue | Namespace | RC |
 |---|---|---|---|
@@ -75,6 +76,7 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 | import-export | `ImportHistoryView` | `importExport.*` | rc.77 |
 | import-export | `ImportWizardView` | `importExport.wizard.*` | rc.78 |
 | marketplace | `MarketplaceListingsView` | `marketplace.*` | rc.79 |
+| settings | `SettingsView` | `settings.*` + `geo.*` | rc.80 |
 | deliveries | `DeliveryListView` | `deliveries.*` + `common.pageOf/prev/next` | rc.26 / rc.70 |
 | reports | `SalesReportView` / `StockReportView` | `reports.*` (+ `top10`) | rc.30 / rc.70 |
 
@@ -107,7 +109,6 @@ Les 11 vues câblées qui conservaient des reliquats ont été **finalisées en 
 | billing | `BillingView`, `UpgradeView` |
 | inventory | `BatchDeliveryView`, `MovementHistoryView` |
 | onboarding | `OnboardingView` |
-| settings | `SettingsView` |
 | customers ⚠️ | `CustomerListView`, `CustomerDetailView` *(session concurrente — exclu)* |
 
 ## 🛣️ Ordre de bascule recommandé (prochaines RC)

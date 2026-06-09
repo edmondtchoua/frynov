@@ -45,8 +45,8 @@ Une table structurée, requêtable par API publique + admin, qui **matérialise 
 |---|---|---|---|
 | **P6-1** ✅ **LIVRÉ (rc.92)** | **Socle marché↔moyens + mention manuelle** | Table/modèle/migration/seeder `market_payment_methods` (10 marchés, tout `manual`/`quote`) + `GET /api/public/payment-methods`. **Zéro rail, zéro PSP.** +5 tests `PublicPaymentMethodsTest`. | ✅ |
 | **P6-2** 🟢 **partiel (rc.93)** | **Brancher le checkout déclaratif (approche A) + admin** | ✅ **Abonnement** : `UpgradeView` affiche les moyens par marché (badges manual/quote) via `fetchPublicPaymentMethods` + i18n + 2 tests. **Reste** : checkout **commercial** (sélecteurs `PosView`/commande + mapping fournisseur→`Payment.method`) + parcours admin ManualPayment côté client. | 🟢 |
-| **P6-3** | *(post-1.0)* **Infra webhook/PSP sans rail actif** | Créer `config/billing.php` ; routes webhook derrière `webhook.signature` (stub no-op + flag) ; interface `PaymentGateway` (initiate/verify/refund) + machine à états `Payment` derrière feature flag. Tests signature/anti-replay. | ❌ |
-| **P6-4** | *(post-1.0, par marché)* **Premier PSP réel** | 1 PSP sur 1 marché (Flutterwave/Paystack UEMOA-Nigeria **ou** Stripe Europe-Amérique du Nord, selon décision) : initiation, callback, webhook signé, réconciliation, remboursement. Bascule `mode` du marché `manual`→`auto`. Sprints isolés. | ❌ |
+| **P6-3** ✅ **LIVRÉ (rc.94)** | *(post-1.0)* **Infra webhook/PSP sans rail actif** | ✅ `config/billing.php` (secrets + flag `gateways_enabled`) ; interface `PaymentGateway` + `ManualGateway` (réf.) + `PaymentGatewayManager` ; webhook signé `PaymentWebhookController` + routes flag-gated. **Inerte** (flag off). +9 tests. | ❌ (post-1.0) |
+| **P6-4** ⛔ **bloqué décision fondateur** | *(post-1.0, par marché)* **Premier PSP réel** | Abstraction + adaptateur de référence **prêts** (P6-3). L'intégration **live** (Flutterwave/Paystack/Stripe) exige un **choix de PSP/marché + comptes marchands + secrets** → **non codable** sans ces décisions. Bascule `mode` `manual`→`auto` du marché quand activé. | ⛔ |
 
 ## 4. Arbitrages à trancher (recommandations)
 

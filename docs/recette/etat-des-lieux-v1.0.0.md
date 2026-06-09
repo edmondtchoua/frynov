@@ -43,8 +43,10 @@
 > **💳 P6-1/P6-2 — paiements par marché** (rc.92/93) : table `market_payment_methods` (10 marchés, tout
 > `manual`/`quote`, **zéro PSP**) + `GET /api/public/payment-methods` ; **`UpgradeView` affiche les moyens
 > par marché** (badges manual/quote) via `fetchPublicPaymentMethods` → DoD « chaque devise = un flux ou une
-> mention » matérialisé (+7 tests). Cf. [`p6-cadrage.md`](decisions/p6-cadrage.md).
-> Tests : **backend 661** (658 ✅ / 2 skipped / **1 échec pré-existant hors périmètre** : `ImportModuleTest` adresse client) · **frontend 262** · `vue-tsc` propre ·
+> mention » matérialisé (+7 tests). **P6-3** (rc.94) : infra passerelle inerte (`config/billing.php`, interface
+> `PaymentGateway` + `ManualGateway` + manager, webhook signé flag-gated) — **aucun rail PSP réel** (+9 tests).
+> **P6-4** (PSP live) bloqué décision fondateur. Cf. [`p6-cadrage.md`](decisions/p6-cadrage.md).
+> Tests : **backend 670** (667 ✅ / 2 skipped / **1 échec pré-existant hors périmètre** : `ImportModuleTest` adresse client) · **frontend 262** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 
 ---

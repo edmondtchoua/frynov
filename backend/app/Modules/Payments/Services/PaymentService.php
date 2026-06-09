@@ -123,10 +123,17 @@ class PaymentService
 
     /**
      * Find a payment for a tenant or fail.
+     *
+     * @param  array<int,string>|null  $warehouseIds  null = no site restriction (admin/manager);
+     *                                 array = the payment must belong to one of these warehouses
+     *                                 ([] = deny all). Mirrors list() scoping so a warehouse-restricted
+     *                                 operator can never reach another site's payment via a known UUID.
      */
-    public function findOrFail(string $id, string $tenantId): Payment
+    public function findOrFail(string $id, string $tenantId, ?array $warehouseIds = null): Payment
     {
-        return Payment::where('tenant_id', $tenantId)->findOrFail($id);
+        return Payment::where('tenant_id', $tenantId)
+            ->when($warehouseIds !== null, fn($q) => $q->whereIn('warehouse_id', $warehouseIds))
+            ->findOrFail($id);
     }
 
     /**

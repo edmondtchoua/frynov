@@ -645,11 +645,11 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 - ✅ **Rapports par site** : `GET /api/reports/sales?warehouse_id=` (CA, top produits, méthodes de paiement) et `/api/reports/stock?warehouse_id=` (valeur stock, ruptures, alertes, mouvements) scopés par entrepôt.
 - ✅ Tests : `OrderServiceTest` / `PaymentServiceTest` / `ReportServiceTest` (filtres par entrepôt), `useWarehouses.spec.ts` + `reportService.spec.ts` (forward du param).
 - ✅ **Scoping d'accès par agence** (`user_warehouses`) : un membre **non-manager** assigné à des entrepôts ne voit QUE leurs données (Commandes, Paiements, Stock, Rapports). Managers/admins jamais restreints ; aucun assignement = accès complet (rétrocompatible). `User::accessibleWarehouseIds()` + `WarehouseScope::resolve()` (centralisé, anti-fuite) appliqués aux **5 endpoints de liste**. Assignation : `PUT /api/workspace/users/{id}/warehouses` (manager/admin) + UI **Sites** dans Paramètres → Équipe.
-- ✅ Tests scoping : `WarehouseScopeTest` (5, logique) + `WarehouseAccessScopingTest` (5, **isolation HTTP end-to-end** : opérateur restreint ne voit pas l'autre site, manager voit tout, site interdit → vide, non-manager → 403) + `authService.warehouses.spec`.
+- ✅ Tests scoping : `WarehouseScopeTest` (5, logique) + `WarehouseAccessScopingTest` (**9**, **isolation HTTP end-to-end** : opérateur restreint ne voit pas l'autre site, manager voit tout, site interdit → vide, non-manager → 403 ; **+ GET unitaires commande/paiement/paiements-de-commande d'un autre site → 404**) + `authService.warehouses.spec`.
 
 **Reste Sprint 20**
 - Page Agences/Branches dédiée + métadonnées agence sur `Warehouse` (l'onglet **Entrepôts** CRUD existe déjà sous Stock ; l'assignation membre→sites est dans Paramètres → Équipe).
-- ⚠️ **Zone d'ombre** (à acter au Go/No-Go) : le scoping couvre les **listes** ; les GET de ressource unique (`/orders/{id}`, `/payments/{id}`…) restent **tenant**-scopés mais pas **warehouse**-scopés (un opérateur connaissant un UUID d'une autre agence pourrait l'ouvrir). À durcir si le besoin se confirme.
+- ✅ ~~**Zone d'ombre** : GET de ressource unique non warehouse-scopés~~ — **RÉSOLU (rc.86)** : `OrderService::findById` / `PaymentService::findOrFail` acceptent désormais le filtre d'agence (`WarehouseScope::resolve`), appliqué à `show`/`confirm`/`fulfill`/`cancel` (orders) et `show`/`destroy`/`forOrder` (payments) → 404 sur une ressource hors agence. Plus de fuite par UUID connu.
 
 ---
 

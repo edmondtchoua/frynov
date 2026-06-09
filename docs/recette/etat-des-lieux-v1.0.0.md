@@ -1,6 +1,6 @@
 # État des lieux v1.0.0 — polish UX restant + suite de la recette finale
 
-> Mise à jour : 2026-06-09. Branche `release/v1.0.0` à **`v1.0.0-rc.85`** (cette session → `rc.86+`).
+> Mise à jour : 2026-06-09. Branche `release/v1.0.0` à **`v1.0.0-rc.86`** (cette session → `rc.87+`).
 > Complète (et actualise) `go-no-go-v1.0.0.md` (figé à rc.1). Depuis rc.1 ont été livrés :
 > RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13),
 > polish UX P1 — garde « modifications non enregistrées » sur la création de commande +
@@ -35,7 +35,9 @@
 > **Customers** (rc.85, `CustomerListView` + `CustomerDetailView` — `customers.*`)
 > **+ tracker i18n vivant** [`i18n-coverage.md`](i18n-coverage.md) — 🎉🎉 **COUVERTURE i18n 100 % : 48 ✅ / 0 🟡 / 0 ⬜ sur 48** (`ALLOWLIST` de la garde vide ; tout le périmètre des vues de module est bilingue FR+EN) — & **Definition of Done i18n** (toute vue créée/modifiée livre FR+EN).
 > **garde i18n CI dure** (rc.71 : `npm run i18n:check` — parité FR/EN + texte FR en dur, ratchet allowlist).
-> Tests : **backend 642** (640 ✅ / 2 skipped) · **frontend 257** · `vue-tsc` propre ·
+> **🔒 Sécurité — warehouse-scoping des GET unitaires** (rc.86) : commande/paiement d'un autre site
+> inaccessibles via UUID connu (`findById`/`findOrFail` + `WarehouseScope`) → **zone d'ombre Sprint 20 levée** (+4 tests HTTP).
+> Tests : **backend 648** (645 ✅ / 2 skipped / **1 échec pré-existant hors périmètre** : `ImportModuleTest` adresse client) · **frontend 257** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 
 ---

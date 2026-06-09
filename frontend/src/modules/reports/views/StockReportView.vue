@@ -92,7 +92,7 @@
         <div class="card">
           <h3 class="section-title">
             {{ $t('reports.lowStockTitle') }}
-            <span v-if="data.low_stock_count > 10" class="text-muted" style="font-weight:400;font-size:var(--text-xs)"> (top 10)</span>
+            <span v-if="data.low_stock_count > 10" class="text-muted" style="font-weight:400;font-size:var(--text-xs)"> {{ $t('reports.top10') }}</span>
           </h3>
           <div v-if="!data.low_stock_items.length" class="empty-state">{{ $t('reports.noLowStock') }}</div>
           <div v-else class="alert-list">

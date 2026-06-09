@@ -242,13 +242,13 @@ async function createTransfer() {
 
 const { confirm } = useConfirm()
 
-async function ship(t: Transfer) {
+async function ship(tr: Transfer) {
   if (!(await confirm({
-    title: 'Expédier le transfert',
-    message: `Expédier le transfert ${t.number} ?`,
-    confirmLabel: 'Expédier',
+    title: t('inventory.shipTransferTitle'),
+    message: t('inventory.shipTransferConfirm', { number: tr.number }),
+    confirmLabel: t('inventory.ship'),
   }))) return
-  await api.post(`/inventory/transfers/${t.id}/ship`, {})
+  await api.post(`/inventory/transfers/${tr.id}/ship`, {})
   await load()
 }
 

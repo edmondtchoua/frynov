@@ -113,7 +113,7 @@
     <!-- Pagination -->
     <div v-if="meta.last_page > 1" class="pagination">
       <button class="btn btn-ghost btn-sm" :disabled="meta.current_page <= 1" @click="goToPage(meta.current_page - 1)">← {{ $t('common.previous') }}</button>
-      <span class="page-info">Page {{ meta.current_page }} / {{ meta.last_page }}</span>
+      <span class="page-info">{{ $t('common.pageOf', { current: meta.current_page, total: meta.last_page }) }}</span>
       <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goToPage(meta.current_page + 1)">{{ $t('common.next') }} →</button>
     </div>
 

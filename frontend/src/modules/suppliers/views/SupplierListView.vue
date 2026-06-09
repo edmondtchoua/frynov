@@ -95,7 +95,7 @@
       <!-- Pagination -->
       <div v-if="meta.last_page > 1" class="pagination">
         <button class="page-btn" :disabled="meta.current_page === 1" @click="load(meta.current_page - 1)">←</button>
-        <span class="page-info">Page {{ meta.current_page }} / {{ meta.last_page }}</span>
+        <span class="page-info">{{ $t('common.pageOf', { current: meta.current_page, total: meta.last_page }) }}</span>
         <button class="page-btn" :disabled="meta.current_page === meta.last_page" @click="load(meta.current_page + 1)">→</button>
       </div>
     </div>

@@ -631,6 +631,11 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 
 #### Sprint P6 — Paiements locaux & checkout
 
+> 📋 **Cadrage livré (2026-06-09)** : [`docs/decisions/p6-cadrage.md`](decisions/p6-cadrage.md) —
+> état du code vérifié, design `market_payment_methods`, plan incrémental P6-1 (socle, zéro PSP) →
+> P6-4 (PSP par marché, post-1.0). Approche A (manuel/sur-devis) recommandée pour v1.0.0. **En attente
+> de validation fondateur avant tout code de flux financier.**
+
 **Objectif** : brancher les rails de paiement selon marché.
 
 - Afrique : paiement manuel/Mobile Money selon pays et prestataire.

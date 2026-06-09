@@ -139,15 +139,19 @@ Arbitrages à valider avant implémentation : libellé du bouton, convention de 
 
 | Indicateur | Valeur |
 |---|---|
-| Tests backend | **638 ✅** (636 passed, 2 skipped, **0 incomplete**) — +RBAC A/B2/C + **remédiation audit sécurité (modules fail-closed, RBAC créations, hiérarchie rôles, isolation, preuves privées, chaîne d'audit)** |
-| Tests Vitest frontend | **191 / 191 ✅** (+gates sécurité : token mémoire, `ModuleIcon` anti-`v-html`) — couverture ~38 % |
-| Branche | `release/v1.0.0` — **RC `v1.0.0-rc.1`** (figée depuis `develop`) ; `develop` = intégration |
-| Dernière tag | `v0.8.0` (publiée sur `main`) → **`v1.0.0-rc.1`** candidat prod (cf. [Go/No-Go v1.0.0](recette/go-no-go-v1.0.0.md)) |
-| Dernière PR | #2 `feature/sprint-13` → `main` |
+| Tests backend | **648** : 645 ✅ / 2 skipped / **1 échec connu** (`ImportModuleTest` adresse client — pré-existant, hors périmètre, suivi à part) — RBAC A/B2/C + remédiation audit sécurité + warehouse-scoping unitaire (rc.86) |
+| Tests Vitest frontend | **257 ✅** (52 fichiers) — i18n FR+EN 48/48 vues + gates sécurité (token mémoire, anti-`v-html`) |
+| Branche | `release/v1.0.0` — **RC `v1.0.0-rc.86`** ; `develop` = intégration |
+| Dernière tag | **`v1.0.0-rc.86`** candidat prod (cf. [Go/No-Go v1.0.0](recette/go-no-go-v1.0.0.md)) |
+| i18n | **100 %** (48/48 vues FR+EN, garde CI dure, allowlist vide — cf. [i18n-coverage](recette/i18n-coverage.md)) |
 
-> ⚠️ **Note critique** : avant l'audit, la config `phpunit.xml` ne matchait que certains
-> suffixes → **121 tests (dont sécurité & multi-tenant) n'étaient jamais exécutés**.
-> Le « 374 passing » historique était trompeur. Désormais 501 tous exécutés.
+> ✅ **Compteurs à jour (rc.86, 2026-06-09).** Les valeurs ci-dessus sont la **source de vérité**.
+> Les chiffres cités plus bas dans des encarts par sprint (ex. « 568 », « 501 », « 154 », « 191 »,
+> « 106 ») sont des **instantanés historiques** datés de leur RC respective — conservés pour la
+> traçabilité, **non** représentatifs de l'état courant.
+>
+> *Historique :* avant l'audit, `phpunit.xml` ne matchait que certains suffixes → 121 tests (sécurité,
+> multi-tenant) jamais exécutés ; corrigé depuis (tous exécutés).
 
 ---
 
@@ -248,7 +252,7 @@ Les modules ou fonctions sensibles peuvent rester limités par **rôle**, **perm
 | Multi-sites | ✅ Quasi-complet | 10 | Filtres par site (listes + rapports) + **scoping d'accès par agence** (`user_warehouses`, isolation testée) ; reste : page Agences + scoping ressource-unique |
 | Sync | 🧪 Scaffold testé — **masqué (feature flag)** | 33 | Scaffold CRUD (HasTenant, `/api`, `tenant`, `role:manager\|admin`) + 33 tests. **Routes derrière `config('frynov.modules.sync')` = `FEATURE_SYNC` (off par défaut)** → invisible en prod, activé en test. Domaine métier : Phase 3 |
 
-**Total tests backend : 568 (2 skipped, 0 incomplete)**
+**Total tests backend : 568 (2 skipped, 0 incomplete)** — *instantané historique ; live ≈ 648, cf. État global.*
 
 ---
 
@@ -427,7 +431,7 @@ Tables clippées sur mobile (fix global `.data-table` scroll) · `OrderCreateVie
 
 ---
 
-### Sprint 18 — Dette technique frontend (priorité post-audit) — 🔄 en cours
+### Sprint 18 — Dette technique frontend (priorité post-audit) — ✅ livré
 
 > Issu de l'audit : la couverture Vitest était à 3.8 % (gate ratchet provisoire).
 
@@ -509,7 +513,7 @@ Reste recommandé (non bloquant) : aucun — les deux findings de l'audit approf
   - `regular_user_cannot_edit_plan_limits` — un utilisateur tenant ne peut **pas** relever ses propres quotas (403, limite inchangée).
   - `inviting_beyond_the_user_cap_is_blocked_with_402` — palier gratuit bloque la 2ᵉ invitation **de bout en bout** (HTTP → `EnforceQuota` → 402 `quota_exceeded`).
   - `paid_plan_with_unlimited_seats_allows_inviting_beyond_included` — plan payant (`max_users=null`) laisse inviter au-delà des sièges inclus (201) → fix sièges vérifié end-to-end.
-- **État `develop`** : backend **568 verts** (0 fatal, 0 incomplete) · frontend **154 verts** (couverture 38.7 %) · `vue-tsc` propre.
+- **État `develop`** *(instantané historique)* : backend **568 verts** · frontend **154 verts** — *live sur `release` ≈ 648 backend / 257 frontend, cf. État global.*
 
 ---
 
@@ -568,7 +572,7 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 
 > Règle : **ne plus livrer backend pricing + landing + upgrade + checkout dans une seule PR**. Chaque sprint ci-dessous doit être mergé séparément, avec tests ciblés et mise à jour documentaire.
 
-#### Sprint P0 — Documentation & décision produit
+#### Sprint P0 — Documentation & décision produit — ✅ livré
 
 **Objectif** : valider la stratégie pricing avant nouveau code applicatif.
 
@@ -577,18 +581,18 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 - DoD : tableau des plans validé, risques listés, ordre des PRs accepté.
 - Tests : contrôle markdown + relecture fichiers docs.
 
-#### Sprint P1 — Backend pricing foundation
+#### Sprint P1 — Backend pricing foundation — ✅ livré
 
-**Objectif** : stabiliser la source backend des prix et limites.
+**Objectif** : stabiliser la source backend des prix et limites. *(Preuve : `PlanLocalizationTest`, `QuotaServiceTest`, `SubscriptionServiceTest` verts ; plan_limits éditables super-admin.)*
 
 - Backend : valider ou corriger `plan_prices`, `plan_limits`, relations `Plan`, seeders idempotents.
 - Compatibilité : conserver anciens codes (`starter`, `pro`, `enterprise`) tant qu'une migration commerciale n'est pas validée.
 - Tests : `PlanLocalizationTest`, `QuotaServiceTest`, `SubscriptionServiceTest`, tests admin plans.
 - DoD : migrations propres, seeders répétables, aucune dépendance frontend.
 
-#### Sprint P2 — Stratégie d'accès modules
+#### Sprint P2 — Stratégie d'accès modules — ✅ livré
 
-**Objectif** : rendre cohérent “modules visibles” + “sécurité réelle”.
+**Objectif** : rendre cohérent “modules visibles” + “sécurité réelle”. *(Preuve : `ModuleGatingTest`, `ModuleRegistryServiceTest`, `QuotaServiceTest` verts ; module gating fail-closed.)*
 
 - Backend : vérifier `PlanModulesSeeder`, RBAC, guards tenant, quotas.
 - Frontend : préparer messages verrouillés/upgrade sans cacher arbitrairement.
@@ -637,7 +641,7 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 
 ---
 
-### Sprint 20 — Multi-sites : filtres par site — 🔄 en cours (filtres livrés 2026-06-06)
+### Sprint 20 — Multi-sites : filtres par site — ✅ livré (filtres 2026-06-06 ; scoping unitaire rc.86 ; reste : page Agences dédiée)
 
 **Livré — filtrage par entrepôt/site**
 - ✅ Backend : `GET /api/orders?warehouse_id=` (`OrderService::paginate`) et `GET /api/payments?warehouse_id=` (`PaymentService::list`) filtrent par site ; le stock (`GET /api/inventory?warehouse_id=`) le faisait déjà.
@@ -653,7 +657,7 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 
 ---
 
-### Sprint 21 — CountryRules UI + Onboarding — 🔄 (admin CountryRules livré 2026-06-06)
+### Sprint 21 — CountryRules UI + Onboarding — ✅ livré (admin CountryRules + onboarding ; reste : câbler nb_branches → entrepôts secondaires)
 
 **Livré — admin CountryRules (super-admin)**
 - ✅ Backend : `AdminCountryRuleController` CRUD complet sous `/api/admin/country-rules` (`auth:sanctum` + `RequireAdmin` → super-admin uniquement, audité). Code pays/devise normalisés en majuscules **avant** validation (unique insensible à la casse).
@@ -743,8 +747,8 @@ Recette d'acceptation sur `release/v0.8.0` (cf. [`docs/recette/recette-v0.8.0.md
 | ✅ **Quotas de plan corrects (Enterprise + downgrade)** | Audit livré |
 | ✅ **Convention money centralisée** | Audit : `money.ts` |
 | ❌ App POS offline | Phase 2 (Sprint 19) |
-| ✅ 350+ tests backend | **501 tests ✅** |
-| ✅ 50+ tests Vitest frontend | **106 actifs ✅** |
-| ✅ Tests composant des 4 vues critiques | 16 tests — couverture 16.5 % |
-| ⚠️ Billing self-service complet | Sprint 13 partiel |
-| ❌ CountryRules UI admin | Sprint 21 |
+| ✅ 350+ tests backend | **648** (645 ✅ / 2 skipped / 1 échec connu hors périmètre) |
+| ✅ 50+ tests Vitest frontend | **257 ✅** (52 fichiers) |
+| ✅ Tests composant des 4 vues critiques | livré (couverture élargie depuis) |
+| ⚠️ Billing self-service complet | Sprint 13 + pricing localisé P3→P5 livré ; reste checkout P6 |
+| ✅ CountryRules UI admin | **rc.66/67 livré** (`AdminCountryRuleController` + `CountryRuleListView`, audité) |

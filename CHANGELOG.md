@@ -3,6 +3,24 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Import/Export — Historique (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-import-history` (release `v1.0.0` → `rc.77`).
+
+### UX (i18n)
+- **`ImportHistoryView`** internationalisé : en-tête (compteur, nouvel import, modèles/export par
+  entité), filtres (type/statut), table, pagination, **modal de détail** (stats, résumé, méta) +
+  confirmation d'annulation & erreurs. Nouveau namespace `importExport.*` (FR+EN) avec maps
+  partagées **entity / mode / modeShort / status** (remplacent les constantes FR `ENTITY_LABELS`/
+  `MODE_LABELS`/`STATUS_LABELS` via helpers `t()`) + `history.*`.
+- Ratchet : vue retirée de l'`ALLOWLIST`. (`ImportWizardView` → prochaine RC, réutilisera les maps.)
+
+### Avancement
+- Tracker [`i18n-coverage.md`](docs/recette/i18n-coverage.md) : **35 ✅ / 0 🟡 / 13 ⬜** (73 %).
+
+### Tests
+- Frontend **257** inchangé · `vue-tsc` propre · `npm run i18n:check` vert.
+
 ## [Non publié] — i18n : Point de vente (POS) (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-pos` (release `v1.0.0` → `rc.76`).

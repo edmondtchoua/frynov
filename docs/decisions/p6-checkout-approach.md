@@ -3,6 +3,9 @@
 > **Statut : à décider.** Cette note compare les approches pour brancher un flux de
 > paiement par marché. Règle produit (plan.md) : *chaque devise affichée doit
 > correspondre à un flux de paiement OU à une mention « sur devis / paiement manuel ».*
+>
+> 👉 **Cadrage complet** (état du code vérifié, design `market_payment_methods`, plan incrémental
+> P6-1→P6-4) : [`p6-cadrage.md`](p6-cadrage.md).
 
 ## Le choix
 

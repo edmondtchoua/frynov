@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             // ── 1. Référentiel (idempotents — toujours exécutés) ────────────────
             RolesAndPermissionsSeeder::class, // rôles Spatie + permissions (admin/manager/member/viewer/agent/cashier/commercial/delivery)
             PlansSeeder::class,               // starter / pro / enterprise (avec quotas terrain: agents, branches, warehouses)
+            MarketPaymentMethodsSeeder::class, // P6-1: moyens de paiement par marché (manual/quote, zéro PSP)
             ErpModulesSeeder::class,          // 10 modules ERP
             PlanModulesSeeder::class,         // associations plan ↔ modules
             CountryRulesSeeder::class,        // règles inscription par pays (30+ marchés africains + globaux)

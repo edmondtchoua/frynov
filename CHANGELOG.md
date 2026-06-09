@@ -3,6 +3,30 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 💳 P6-1 : socle moyens de paiement par marché (zéro PSP) (2026-06-09)
+
+Branche `feature/p6-1-payment-methods` (release `v1.0.0` → `rc.92`).
+
+### Paiements (P6-1 — premier incrément, NO-GO respecté)
+- **Table `market_payment_methods`** (calquée sur `plan_prices`, référence plateforme) : `market_code`,
+  `country_code` (override, inutilisé au départ), `currency`, `method`, **`mode` = `auto`/`manual`/`quote`**,
+  `is_active`, `display_order`. Modèle `MarketPaymentMethod`.
+- **Seeder** des **10 marchés** (mêmes codes/devises que `PublicPricingController::MARKETS` — pas de 4ᵉ
+  source de vérité) — **tout en `manual`/`quote`, AUCUN rail PSP réel** (NO-GO commercial respecté).
+  Idempotent, branché dans `DatabaseSeeder`.
+- **`GET /api/public/payment-methods?market=…|country=…`** : résout le marché comme `/public/pricing`
+  (repli `global`) et renvoie les moyens + `has_auto` (faux à ce stade). **Matérialise le DoD** : chaque
+  devise renvoie ≥1 moyen (flux manuel OU mention sur devis).
+- L'endpoint réutilise `MARKETS`/`resolveMarket` du contrôleur pricing — source de vérité unique.
+
+### Tests
+- **+5 tests** `PublicPaymentMethodsTest` (chaque marché ≥1 moyen dans sa devise · `waemu`→wave+orange_money ·
+  résolution par pays · repli `global`/USD · **aucun `auto` à ce stade**). Backend **661 tests**
+  (658 ✅ / 2 skipped / 1 échec pré-existant hors périmètre). Billing suite 44 ✅.
+
+### Suite
+- P6-2 : brancher le checkout déclaratif (sélecteurs depuis l'API, mention manuel/sur-devis) + admin + i18n.
+
 ## [Non publié] — 🧬 Catalogue : duplication produit/catégorie — wizard frontend (P1, complet) (2026-06-09)
 
 Branche `feature/catalog-duplication-wizard` (release `v1.0.0` → `rc.90`).

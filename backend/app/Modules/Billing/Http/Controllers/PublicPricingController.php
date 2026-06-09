@@ -2,6 +2,7 @@
 
 namespace App\Modules\Billing\Http\Controllers;
 
+use App\Modules\Billing\Models\MarketPaymentMethod;
 use App\Modules\Billing\Models\Plan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -90,6 +91,50 @@ class PublicPricingController extends Controller
             ],
             'selectable_markets' => $this->selectableMarkets(),
             'data' => $plans,
+        ]);
+    }
+
+    /**
+     * GET /api/public/payment-methods — moyens de paiement disponibles par marché (P6-1).
+     *
+     * Résout le marché comme /public/pricing (param `market`|`country`, repli `global`), puis
+     * renvoie les moyens du marché triés par `display_order`. Chaque moyen porte un `mode` :
+     * `auto` (rail PSP réel), `manual` (preuve + validation admin via ManualPayment) ou
+     * `quote` (sur devis). À ce stade tout est manual/quote — aucun rail réel branché.
+     * Matérialise le DoD : chaque devise affichée renvoie ≥1 moyen (flux OU mention).
+     */
+    public function paymentMethods(Request $request): JsonResponse
+    {
+        [$marketCode, $source] = $this->resolveMarket(
+            $request->query('market'),
+            $request->query('country'),
+        );
+        $market = self::MARKETS[$marketCode];
+
+        $methods = MarketPaymentMethod::query()
+            ->where('is_active', true)
+            ->where('market_code', $marketCode)
+            ->whereNull('country_code')
+            ->orderBy('display_order')
+            ->get()
+            ->map(fn (MarketPaymentMethod $m) => [
+                'method'   => $m->method,
+                'mode'     => $m->mode,
+                'currency' => $m->currency,
+                'label'    => $m->label,
+            ])
+            ->values();
+
+        return response()->json([
+            'market' => [
+                'code'     => $marketCode,
+                'label'    => $market['label'],
+                'currency' => $market['currency'],
+                'source'   => $source,
+            ],
+            // Vrai dès qu'au moins un moyen est un rail automatique (faux à ce stade — DoD via mention).
+            'has_auto' => $methods->contains(fn ($m) => $m['mode'] === MarketPaymentMethod::MODE_AUTO),
+            'data'     => $methods,
         ]);
     }
 

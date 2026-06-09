@@ -3,6 +3,26 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Paramètres + namespace partagé geo.* (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-settings` (release `v1.0.0` → `rc.80`).
+
+### UX (i18n)
+- **`SettingsView`** internationalisé (gros écran : 6 onglets — Entreprise, Équipe, Rôles, Abonnement,
+  Intégrations, Notifications — + 4 modals : invitation, accès entrepôts, accès temporaire, mise à
+  niveau/preuve de paiement). Nouveau namespace `settings.*` (FR+EN) avec sous-objets company/team/
+  billing/invite/warehouse/temp/upgrade + maps de rôles, statuts d'abonnement et durées de session.
+- **Namespace partagé `geo.*`** (pays par code ISO, 30 entrées) + **`common.currencyName` étendu**
+  (+10 devises) — réutilisables par `OnboardingView` (rc.81).
+- Constantes/maps FR (tabs, roleLabel, subStatusLabel) converties via `t()`. Ratchet : vue retirée de
+  l'`ALLOWLIST`. La garde a débusqué 2 placeholders accentués oubliés (corrigés).
+
+### Avancement
+- Tracker [`i18n-coverage.md`](docs/recette/i18n-coverage.md) : **38 ✅ / 0 🟡 / 10 ⬜** (79 %).
+
+### Tests
+- Frontend **257** inchangé · `vue-tsc` propre · `npm run i18n:check` vert.
+
 ## [Non publié] — i18n : Marketplace (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-marketplace` (release `v1.0.0` → `rc.79`).

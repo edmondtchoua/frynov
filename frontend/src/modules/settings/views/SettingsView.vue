@@ -2,8 +2,8 @@
   <div>
 
     <div class="page-header">
-      <h2>Paramètres</h2>
-      <p class="page-subtitle">Gérez votre espace de travail et vos préférences</p>
+      <h2>{{ $t('settings.title') }}</h2>
+      <p class="page-subtitle">{{ $t('settings.subtitle') }}</p>
     </div>
 
     <div class="settings-layout">
@@ -28,95 +28,95 @@
         <!-- Company -->
         <section v-if="activeTab === 'company'">
           <div class="panel-header">
-            <h3>Informations entreprise</h3>
-            <p>Ces informations apparaissent sur vos factures et documents commerciaux.</p>
+            <h3>{{ $t('settings.company.title') }}</h3>
+            <p>{{ $t('settings.company.subtitle') }}</p>
           </div>
 
-          <div v-if="companyLoading" class="state-loading">Chargement…</div>
+          <div v-if="companyLoading" class="state-loading">{{ $t('common.loading') }}</div>
 
           <form v-else @submit.prevent="saveCompanySettings" class="company-form">
 
             <div class="form-section">
-              <div class="form-section-title">Identité</div>
+              <div class="form-section-title">{{ $t('settings.company.identity') }}</div>
               <div class="form-row">
-                <label>Nom de l'entreprise <span class="req">*</span></label>
-                <input v-model="companyForm.name" class="form-input" placeholder="Ma Société SARL" required />
+                <label>{{ $t('settings.company.name') }} <span class="req">*</span></label>
+                <input v-model="companyForm.name" class="form-input" :placeholder="$t('settings.company.namePlaceholder')" required />
               </div>
               <div class="form-row">
-                <label>Domaine personnalisé <span class="hint">(optionnel)</span></label>
+                <label>{{ $t('settings.company.domain') }} <span class="hint">{{ $t('catalog.productForm.optional') }}</span></label>
                 <div class="input-hint-row">
                   <input v-model="companyForm.domain" class="form-input" placeholder="ex. masociete.com" />
-                  <span class="input-hint-text">Utilisé pour identifier votre espace de travail</span>
+                  <span class="input-hint-text">{{ $t('settings.company.domainHint') }}</span>
                 </div>
               </div>
             </div>
 
             <div class="form-section">
-              <div class="form-section-title">Localisation &amp; coordonnées</div>
+              <div class="form-section-title">{{ $t('settings.company.locationContact') }}</div>
               <div class="form-grid-2">
                 <div class="form-row">
-                  <label>Pays</label>
+                  <label>{{ $t('settings.company.country') }}</label>
                   <select v-model="companyForm.country" class="form-select">
-                    <option value="">— Sélectionner —</option>
-                    <option value="SN">Sénégal</option>
-                    <option value="CI">Côte d'Ivoire</option>
-                    <option value="CM">Cameroun</option>
-                    <option value="ML">Mali</option>
-                    <option value="BF">Burkina Faso</option>
-                    <option value="GN">Guinée</option>
-                    <option value="TG">Togo</option>
-                    <option value="BJ">Bénin</option>
-                    <option value="NE">Niger</option>
-                    <option value="GH">Ghana</option>
-                    <option value="NG">Nigeria</option>
-                    <option value="MA">Maroc</option>
-                    <option value="DZ">Algérie</option>
-                    <option value="TN">Tunisie</option>
+                    <option value="">{{ $t('settings.selectPlaceholder') }}</option>
+                    <option value="SN">{{ $t('geo.country.SN') }}</option>
+                    <option value="CI">{{ $t('geo.country.CI') }}</option>
+                    <option value="CM">{{ $t('geo.country.CM') }}</option>
+                    <option value="ML">{{ $t('geo.country.ML') }}</option>
+                    <option value="BF">{{ $t('geo.country.BF') }}</option>
+                    <option value="GN">{{ $t('geo.country.GN') }}</option>
+                    <option value="TG">{{ $t('geo.country.TG') }}</option>
+                    <option value="BJ">{{ $t('geo.country.BJ') }}</option>
+                    <option value="NE">{{ $t('geo.country.NE') }}</option>
+                    <option value="GH">{{ $t('geo.country.GH') }}</option>
+                    <option value="NG">{{ $t('geo.country.NG') }}</option>
+                    <option value="MA">{{ $t('geo.country.MA') }}</option>
+                    <option value="DZ">{{ $t('geo.country.DZ') }}</option>
+                    <option value="TN">{{ $t('geo.country.TN') }}</option>
                   </select>
                 </div>
                 <div class="form-row">
-                  <label>Devise</label>
+                  <label>{{ $t('settings.company.currency') }}</label>
                   <select v-model="companyForm.currency" class="form-select">
-                    <option value="">— Sélectionner —</option>
-                    <option value="XOF">CFA BCEAO (XOF)</option>
-                    <option value="XAF">CFA BEAC (XAF)</option>
-                    <option value="GHS">Cedi ghanéen (GHS)</option>
-                    <option value="NGN">Naira nigérian (NGN)</option>
-                    <option value="MAD">Dirham marocain (MAD)</option>
-                    <option value="DZD">Dinar algérien (DZD)</option>
+                    <option value="">{{ $t('settings.selectPlaceholder') }}</option>
+                    <option value="XOF">{{ $t('common.currencyName.XOF') }} (XOF)</option>
+                    <option value="XAF">{{ $t('common.currencyName.XAF') }} (XAF)</option>
+                    <option value="GHS">{{ $t('common.currencyName.GHS') }} (GHS)</option>
+                    <option value="NGN">{{ $t('common.currencyName.NGN') }} (NGN)</option>
+                    <option value="MAD">{{ $t('common.currencyName.MAD') }} (MAD)</option>
+                    <option value="DZD">{{ $t('common.currencyName.DZD') }} (DZD)</option>
                   </select>
                 </div>
                 <div class="form-row">
-                  <label>Téléphone</label>
+                  <label>{{ $t('common.phone') }}</label>
                   <input v-model="companyForm.phone" class="form-input" placeholder="+221 77 000 00 00" />
                 </div>
                 <div class="form-row">
-                  <label>Site web</label>
+                  <label>{{ $t('settings.company.website') }}</label>
                   <input v-model="companyForm.website" class="form-input" placeholder="https://masociete.com" />
                 </div>
               </div>
               <div class="form-row">
-                <label>Adresse</label>
-                <textarea v-model="companyForm.address" class="form-textarea" rows="2" placeholder="Adresse complète…" />
+                <label>{{ $t('settings.company.address') }}</label>
+                <textarea v-model="companyForm.address" class="form-textarea" rows="2" :placeholder="$t('settings.company.addressPlaceholder')" />
               </div>
             </div>
 
             <!-- Session timeout -->
             <div class="form-section">
-              <div class="form-section-title">Sécurité &amp; Sessions</div>
+              <div class="form-section-title">{{ $t('settings.company.security') }}</div>
               <div class="form-row">
-                <label>Déconnexion automatique par inactivité</label>
+                <label>{{ $t('settings.company.autoLogout') }}</label>
                 <div class="input-hint-row">
                   <select v-model="companyForm.session_timeout" class="form-select">
-                    <option value="30">30 minutes</option>
-                    <option value="60">1 heure</option>
-                    <option value="240">4 heures</option>
-                    <option value="480">8 heures</option>
-                    <option value="1440">24 heures (défaut)</option>
-                    <option value="10080">7 jours</option>
-                    <option value="43200">30 jours</option>
+                    <option value="30">{{ $t('settings.company.timeout.30') }}</option>
+                    <option value="60">{{ $t('settings.company.timeout.60') }}</option>
+                    <option value="240">{{ $t('settings.company.timeout.240') }}</option>
+                    <option value="480">{{ $t('settings.company.timeout.480') }}</option>
+                    <option value="1440">{{ $t('settings.company.timeout.1440') }}</option>
+                    <option value="10080">{{ $t('settings.company.timeout.10080') }}</option>
+                    <option value="43200">{{ $t('settings.company.timeout.43200') }}</option>
                   </select>
-                  <span class="input-hint-text">Durée d'inactivité avant déconnexion automatique de tous les utilisateurs du tenant.</span>
+                  <span class="input-hint-text">{{ $t('settings.company.autoLogoutHint') }}</span>
                 </div>
               </div>
             </div>
@@ -126,7 +126,7 @@
 
             <div class="form-actions">
               <button type="submit" class="btn btn-primary" :disabled="companySaving">
-                {{ companySaving ? 'Enregistrement…' : 'Enregistrer les modifications' }}
+                {{ companySaving ? $t('common.saving') : $t('settings.company.saveChanges') }}
               </button>
             </div>
 
@@ -137,21 +137,20 @@
         <section v-else-if="activeTab === 'team'">
           <div class="panel-header-row">
             <div>
-              <h3>Équipe &amp; permissions</h3>
+              <h3>{{ $t('settings.team.title') }}</h3>
               <p>
-                {{ teamUsers.length }}
-                membre{{ teamUsers.length !== 1 ? 's' : '' }} dans votre espace de travail.
+                {{ $t('settings.team.membersCount', { count: teamUsers.length }) }}
               </p>
             </div>
             <button v-if="canManageTeam" class="btn btn-primary btn-sm-pad" @click="openInvite">
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
               </svg>
-              Inviter un membre
+              {{ $t('settings.team.invite') }}
             </button>
           </div>
 
-          <div v-if="teamLoading" class="state-loading">Chargement…</div>
+          <div v-if="teamLoading" class="state-loading">{{ $t('common.loading') }}</div>
 
           <div v-else-if="!teamUsers.length" class="coming-soon">
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
@@ -159,18 +158,18 @@
               <circle cx="20" cy="17" r="5" stroke="var(--brand-secondary)" stroke-width="2"/>
               <path d="M9 32c0-6.075 4.925-11 11-11s11 4.925 11 11" stroke="var(--brand-secondary)" stroke-width="2" stroke-linecap="round"/>
             </svg>
-            <p>Aucun membre pour l'instant. Invitez votre équipe pour collaborer.</p>
+            <p>{{ $t('settings.team.empty') }}</p>
           </div>
 
           <div v-else class="team-table-wrap">
             <table class="team-table">
               <thead>
                 <tr>
-                  <th>Membre</th>
-                  <th>Rôle</th>
-                  <th>Statut</th>
-                  <th>Ajouté le</th>
-                  <th>Actions</th>
+                  <th>{{ $t('settings.team.colMember') }}</th>
+                  <th>{{ $t('settings.team.colRole') }}</th>
+                  <th>{{ $t('common.status') }}</th>
+                  <th>{{ $t('settings.team.colAddedAt') }}</th>
+                  <th>{{ $t('common.actions') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -187,7 +186,7 @@
                       <div>
                         <div class="user-name">
                           {{ u.name }}
-                          <span v-if="u.id === auth.user?.id" class="self-tag">vous</span>
+                          <span v-if="u.id === auth.user?.id" class="self-tag">{{ $t('settings.team.self') }}</span>
                         </div>
                         <div class="user-email">{{ u.email }}</div>
                       </div>
@@ -200,11 +199,11 @@
                       class="role-select"
                       @change="changeRole(u, ($event.target as HTMLSelectElement).value)"
                     >
-                      <option value="admin">Admin</option>
-                      <option value="manager">Manager</option>
-                      <option value="member">Membre</option>
-                      <option value="viewer">Lecteur</option>
-                      <optgroup v-if="customRoles.length" label="Rôles personnalisés">
+                      <option value="admin">{{ $t('settings.role.admin') }}</option>
+                      <option value="manager">{{ $t('settings.role.manager') }}</option>
+                      <option value="member">{{ $t('settings.role.member') }}</option>
+                      <option value="viewer">{{ $t('settings.role.viewer') }}</option>
+                      <optgroup v-if="customRoles.length" :label="$t('settings.role.custom')">
                         <option v-for="r in customRoles" :key="r.id" :value="r.name">{{ r.name }}</option>
                       </optgroup>
                     </select>
@@ -219,7 +218,7 @@
                       class="team-status-badge"
                       :class="u.is_active ? 'status-active' : 'status-inactive'"
                     >
-                      {{ u.is_active ? 'Actif' : 'Inactif' }}
+                      {{ u.is_active ? $t('common.active') : $t('common.inactive') }}
                     </span>
                   </td>
                   <td class="team-date">{{ teamFmtDate(u.created_at) }}</td>
@@ -229,20 +228,20 @@
                         class="btn-toggle-user"
                         :class="{ 'btn-reactivate': !u.is_active }"
                         @click="toggleUser(u)"
-                      >{{ u.is_active ? 'Désactiver' : 'Réactiver' }}</button>
+                      >{{ u.is_active ? $t('settings.team.deactivate') : $t('settings.team.reactivate') }}</button>
                       <button
                         v-if="!isManagerRole(u)"
                         class="btn-toggle-user"
                         style="margin-left:0.4rem"
-                        title="Restreindre l'accès à certains entrepôts (multi-sites)"
+                        :title="$t('settings.team.sitesTitle')"
                         @click="openWarehouseModal(u)"
-                      >Sites{{ u.warehouse_ids?.length ? ` (${u.warehouse_ids.length})` : '' }}</button>
+                      >{{ $t('settings.team.sites') }}{{ u.warehouse_ids?.length ? ` (${u.warehouse_ids.length})` : '' }}</button>
                       <button
                         class="btn-toggle-user"
                         style="margin-left:0.4rem"
-                        title="Accorder un accès temporaire (rôle à durée limitée)"
+                        :title="$t('settings.team.tempTitle')"
                         @click="openTempModal(u)"
-                      >Accès temp.{{ u.temporary_access?.length ? ` (${u.temporary_access.length})` : '' }}</button>
+                      >{{ $t('settings.team.tempAccess') }}{{ u.temporary_access?.length ? ` (${u.temporary_access.length})` : '' }}</button>
                     </template>
                     <span v-else class="team-date">—</span>
                   </td>
@@ -260,8 +259,8 @@
         <!-- Billing -->
         <section v-else-if="activeTab === 'billing'">
           <div class="panel-header">
-            <h3>Abonnement & facturation</h3>
-            <p>Votre plan actuel et options de mise à niveau.</p>
+            <h3>{{ $t('settings.billing.title') }}</h3>
+            <p>{{ $t('settings.billing.subtitle') }}</p>
           </div>
 
           <!-- No subscription -->
@@ -271,7 +270,7 @@
               <path d="M4 16h32M10 10h4M18 10h4" stroke="var(--brand-primary)" stroke-width="2" stroke-linecap="round"/>
               <rect x="8" y="22" width="8" height="4" rx="1" fill="var(--brand-primary)" opacity=".5"/>
             </svg>
-            <p>Aucun abonnement actif pour le moment.</p>
+            <p>{{ $t('settings.billing.noSubscription') }}</p>
           </div>
 
           <!-- Live plan card -->
@@ -279,7 +278,7 @@
 
             <div class="plan-card-top">
               <div>
-                <div class="plan-badge">Plan actuel</div>
+                <div class="plan-badge">{{ $t('settings.billing.currentPlan') }}</div>
                 <div class="plan-name">{{ auth.user.subscription.plan_name }}</div>
               </div>
               <span :class="subStatusBadgeClass(auth.user.subscription.status)" class="badge">
@@ -289,10 +288,10 @@
 
             <div class="plan-price" v-if="auth.user.subscription.plan_price_monthly">
               {{ formatPrice(auth.user.subscription.plan_price_monthly, auth.user.subscription.currency) }}
-              <span>/ mois</span>
+              <span>{{ $t('settings.billing.perMonth') }}</span>
             </div>
             <div class="plan-price" v-else>
-              Gratuit <span>pendant la période de bêta</span>
+              {{ $t('settings.billing.free') }} <span>{{ $t('settings.billing.betaPeriod') }}</span>
             </div>
 
             <!-- Trial / renewal info -->
@@ -301,24 +300,24 @@
                 <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/>
                 <path d="M7 4v3.5L9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
-              Essai gratuit — <strong>{{ trialDaysLeft }} jour{{ trialDaysLeft > 1 ? 's' : '' }}</strong> restant{{ trialDaysLeft > 1 ? 's' : '' }}
+              {{ $t('settings.billing.trialLeft') }} <strong>{{ $t('settings.billing.daysLeft', { count: trialDaysLeft }) }}</strong> {{ $t('settings.billing.remaining') }}
             </div>
             <div v-else-if="auth.user.subscription.current_period_end" class="plan-renewal">
-              Renouvellement le {{ formatPeriodDate(auth.user.subscription.current_period_end) }}
+              {{ $t('settings.billing.renewalOn', { date: formatPeriodDate(auth.user.subscription.current_period_end) }) }}
             </div>
 
             <!-- Usage limits -->
             <div v-if="hasLimits" class="plan-limits">
               <div v-if="auth.user.subscription.max_users" class="plan-limit-row">
-                <span>Utilisateurs max</span>
+                <span>{{ $t('settings.billing.maxUsers') }}</span>
                 <strong>{{ auth.user.subscription.max_users }}</strong>
               </div>
               <div v-if="auth.user.subscription.max_products" class="plan-limit-row">
-                <span>Produits max</span>
+                <span>{{ $t('settings.billing.maxProducts') }}</span>
                 <strong>{{ auth.user.subscription.max_products }}</strong>
               </div>
               <div v-if="auth.user.subscription.max_monthly_orders" class="plan-limit-row">
-                <span>Commandes / mois</span>
+                <span>{{ $t('settings.billing.maxOrders') }}</span>
                 <strong>{{ auth.user.subscription.max_monthly_orders }}</strong>
               </div>
             </div>
@@ -337,12 +336,12 @@
 
           <!-- Promo code section -->
           <div class="promo-section">
-            <div class="promo-section-title">Code promotionnel</div>
+            <div class="promo-section-title">{{ $t('settings.billing.promoTitle') }}</div>
             <div class="promo-input-row">
               <input
                 v-model="promoCode"
                 class="promo-input"
-                placeholder="Entrez votre code…"
+                :placeholder="$t('settings.billing.promoPlaceholder')"
                 :disabled="promoApplied"
                 @keyup.enter="checkPromo"
                 style="text-transform:uppercase"
@@ -353,9 +352,9 @@
                 :disabled="promoLoading || !promoCode"
                 @click="checkPromo"
               >
-                {{ promoLoading ? '…' : 'Valider' }}
+                {{ promoLoading ? '…' : $t('settings.billing.promoValidate') }}
               </button>
-              <span v-else class="promo-success-chip">✓ Appliqué</span>
+              <span v-else class="promo-success-chip">{{ $t('settings.billing.promoApplied') }}</span>
             </div>
             <div v-if="promoFeedback" class="promo-feedback" :class="promoApplied ? 'promo-feedback--ok' : 'promo-feedback--err'">
               {{ promoFeedback }}
@@ -368,7 +367,7 @@
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M8 2v12M3 7l5-5 5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              Demander une mise à niveau de plan
+              {{ $t('settings.billing.requestUpgrade') }}
             </button>
           </div>
 
@@ -377,22 +376,22 @@
         <!-- Integrations -->
         <section v-else-if="activeTab === 'integrations'">
           <div class="panel-header">
-            <h3>Intégrations</h3>
-            <p>Connectez Frynov ERP à vos outils existants.</p>
+            <h3>{{ $t('settings.integrations') }}</h3>
+            <p>{{ $t('settings.integrationsDesc') }}</p>
           </div>
           <div style="text-align:center;padding:40px;color:#94a3b8;">
-            <p style="font-size:0.95rem;">Fonctionnalite bientot disponible.</p>
+            <p style="font-size:0.95rem;">{{ $t('settings.comingSoon') }}</p>
           </div>
         </section>
 
         <!-- Notifications -->
         <section v-else-if="activeTab === 'notifications'">
           <div class="panel-header">
-            <h3>Notifications</h3>
-            <p>Configurez vos alertes et rappels.</p>
+            <h3>{{ $t('settings.notifications') }}</h3>
+            <p>{{ $t('settings.notificationsDesc') }}</p>
           </div>
           <div style="text-align:center;padding:40px;color:#94a3b8;">
-            <p style="font-size:0.95rem;">Fonctionnalite bientot disponible.</p>
+            <p style="font-size:0.95rem;">{{ $t('settings.comingSoon') }}</p>
           </div>
         </section>
 
@@ -402,7 +401,7 @@
     <!-- ── Invite team member modal (shared BaseModal — UX-03) ───────────── -->
     <BaseModal
       :model-value="inviteModal.open"
-      title="Inviter un membre"
+      :title="$t('settings.invite.title')"
       @update:model-value="(v: boolean) => { if (!v) closeInvite() }"
     >
       <div class="settings-modal-body">
@@ -416,34 +415,34 @@
               {{ inviteModal.success }}
             </div>
             <div class="temp-password-box">
-              <div class="temp-password-label">Mot de passe temporaire</div>
+              <div class="temp-password-label">{{ $t('settings.invite.successPwdLabel') }}</div>
               <div class="temp-password-row">
                 <code class="temp-password-value">{{ inviteModal.tempPassword }}</code>
-                <button class="btn-copy" @click="copyPassword">{{ copiedPwd ? '✓ Copié' : 'Copier' }}</button>
+                <button class="btn-copy" @click="copyPassword">{{ copiedPwd ? $t('settings.invite.copied') : $t('settings.invite.copy') }}</button>
               </div>
             </div>
             <p class="invite-hint">
-              Communiquez ce mot de passe à l'utilisateur — il pourra le changer depuis son profil.
+              {{ $t('settings.invite.hint') }}
             </p>
           </div>
           <!-- Invite form -->
           <template v-else>
             <div class="form-row">
-              <label>Nom complet <span class="req">*</span></label>
+              <label>{{ $t('settings.invite.fullName') }} <span class="req">*</span></label>
               <input v-model="inviteForm.name" class="form-input" placeholder="Marie Dupont" />
             </div>
             <div class="form-row">
-              <label>Adresse email <span class="req">*</span></label>
+              <label>{{ $t('settings.invite.email') }} <span class="req">*</span></label>
               <input v-model="inviteForm.email" type="email" class="form-input" placeholder="marie@entreprise.com" />
             </div>
             <div class="form-row">
-              <label>Rôle <span class="req">*</span></label>
+              <label>{{ $t('settings.invite.role') }} <span class="req">*</span></label>
               <select v-model="inviteForm.role" class="form-select">
-                <option value="">— Sélectionner un rôle —</option>
-                <option value="manager">Manager — gestion équipe &amp; données</option>
-                <option value="member">Membre — accès complet aux modules</option>
-                <option value="viewer">Lecteur — consultation uniquement</option>
-                <optgroup v-if="customRoles.length" label="Rôles personnalisés">
+                <option value="">{{ $t('settings.invite.selectRole') }}</option>
+                <option value="manager">{{ $t('settings.invite.roleManager') }}</option>
+                <option value="member">{{ $t('settings.invite.roleMember') }}</option>
+                <option value="viewer">{{ $t('settings.invite.roleViewer') }}</option>
+                <optgroup v-if="customRoles.length" :label="$t('settings.role.custom')">
                   <option v-for="r in customRoles" :key="r.id" :value="r.name">{{ r.name }}</option>
                 </optgroup>
               </select>
@@ -454,115 +453,114 @@
 
       <template #footer>
         <button class="btn-cancel" @click="closeInvite">
-          {{ inviteModal.success ? 'Fermer' : 'Annuler' }}
+          {{ inviteModal.success ? $t('settings.invite.close') : $t('common.cancel') }}
         </button>
         <button
           v-if="!inviteModal.success"
           class="btn-submit"
           :disabled="inviteModal.saving || !inviteForm.name || !inviteForm.email || !inviteForm.role"
           @click="submitInvite"
-        >{{ inviteModal.saving ? 'Ajout…' : 'Ajouter le membre' }}</button>
+        >{{ inviteModal.saving ? $t('settings.invite.adding') : $t('settings.invite.add') }}</button>
       </template>
     </BaseModal>
 
     <!-- ── Member site/warehouse access modal (shared BaseModal — UX-03) ──── -->
-    <BaseModal v-model="whModal.open" :title="`Accès aux entrepôts — ${whModal.userName}`">
+    <BaseModal v-model="whModal.open" :title="$t('settings.warehouse.title', { name: whModal.userName })">
       <div class="settings-modal-body">
       <p class="modal-desc">
-        Cochez les entrepôts auxquels ce membre a accès. <strong>Aucune sélection = accès à tous les sites.</strong>
-        Les managers et admins voient toujours tous les sites.
+        {{ $t('settings.warehouse.desc') }}
       </p>
       <div v-if="whModal.error" class="form-error">{{ whModal.error }}</div>
       <label v-for="w in warehouses" :key="w.id" style="display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0; font-size:0.9rem; cursor:pointer;">
         <input v-model="whModal.selected" type="checkbox" :value="w.id" />
         {{ w.is_default ? '⭐ ' : '' }}{{ w.name }} <span style="color:#94a3b8; font-size:0.8rem;">{{ w.code }}</span>
       </label>
-      <p v-if="!warehouses.length" class="modal-desc">Aucun entrepôt. Créez-en dans Stock &amp; Inventaire → Entrepôts.</p>
+      <p v-if="!warehouses.length" class="modal-desc">{{ $t('settings.warehouse.empty') }}</p>
       </div>
 
       <template #footer>
-        <button class="btn-cancel" @click="whModal.open = false">Annuler</button>
+        <button class="btn-cancel" @click="whModal.open = false">{{ $t('common.cancel') }}</button>
         <button class="btn-submit" :disabled="whModal.saving" @click="saveWarehouses">
-          {{ whModal.saving ? 'Enregistrement…' : 'Enregistrer' }}
+          {{ whModal.saving ? $t('common.saving') : $t('common.save') }}
         </button>
       </template>
     </BaseModal>
 
     <!-- ── Member temporary access modal (auto-expiring role) ─────────────── -->
     <!-- ── Member temporary access modal (shared BaseModal — UX-03) ───────── -->
-    <BaseModal v-model="tempModal.open" :title="`Accès temporaire — ${tempModal.userName}`">
+    <BaseModal v-model="tempModal.open" :title="$t('settings.temp.title', { name: tempModal.userName })">
       <div class="settings-modal-body">
-          <p class="modal-desc">Accordez un rôle à durée limitée. Il est <strong>révoqué automatiquement</strong> à l'échéance, sans action manuelle.</p>
+          <p class="modal-desc">{{ $t('settings.temp.desc') }}</p>
           <div v-if="tempModal.error" class="form-error">{{ tempModal.error }}</div>
 
           <div v-if="tempModal.grants.length" style="margin-bottom:0.75rem; display:flex; flex-direction:column; gap:0.35rem;">
             <div v-for="g in tempModal.grants" :key="g.id" style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:0.4rem 0.6rem;">
-              <span>{{ roleLabel(g.role) }} — jusqu'au {{ teamFmtDate(g.expires_at) }}</span>
-              <button style="background:none; border:0; color:#dc2626; font-weight:600; cursor:pointer;" @click="revokeTemp(g.id)">Révoquer</button>
+              <span>{{ roleLabel(g.role) }} {{ $t('settings.temp.until') }} {{ teamFmtDate(g.expires_at) }}</span>
+              <button style="background:none; border:0; color:#dc2626; font-weight:600; cursor:pointer;" @click="revokeTemp(g.id)">{{ $t('settings.temp.revoke') }}</button>
             </div>
           </div>
 
-          <div class="form-row"><label>Rôle *</label>
+          <div class="form-row"><label>{{ $t('settings.temp.role') }} *</label>
             <select v-model="tempForm.role" class="form-select">
-              <option value="manager">Manager</option>
-              <option value="member">Membre</option>
-              <option value="viewer">Lecteur</option>
-              <option value="cashier">Caissier</option>
-              <option value="agent">Agent</option>
-              <option value="delivery">Livreur</option>
+              <option value="manager">{{ $t('settings.role.manager') }}</option>
+              <option value="member">{{ $t('settings.role.member') }}</option>
+              <option value="viewer">{{ $t('settings.role.viewer') }}</option>
+              <option value="cashier">{{ $t('settings.temp.roleCashier') }}</option>
+              <option value="agent">{{ $t('settings.temp.roleAgent') }}</option>
+              <option value="delivery">{{ $t('settings.temp.roleDelivery') }}</option>
             </select>
           </div>
-          <div class="form-row"><label>Expire le *</label>
+          <div class="form-row"><label>{{ $t('settings.temp.expiresAt') }} *</label>
             <input v-model="tempForm.expires_at" type="datetime-local" class="form-input" />
           </div>
-          <div class="form-row"><label>Note</label>
-            <input v-model="tempForm.note" type="text" class="form-input" placeholder="Optionnel" />
+          <div class="form-row"><label>{{ $t('settings.temp.note') }}</label>
+            <input v-model="tempForm.note" type="text" class="form-input" :placeholder="$t('settings.temp.optional')" />
           </div>
       </div>
 
       <template #footer>
-        <button class="btn-cancel" @click="tempModal.open = false">Fermer</button>
+        <button class="btn-cancel" @click="tempModal.open = false">{{ $t('settings.invite.close') }}</button>
         <button class="btn-submit" :disabled="tempModal.saving || !tempForm.expires_at" @click="grantTemp">
-          {{ tempModal.saving ? 'Attribution…' : 'Accorder l’accès' }}
+          {{ tempModal.saving ? $t('settings.temp.granting') : $t('settings.temp.grant') }}
         </button>
       </template>
     </BaseModal>
 
     <!-- ── Upgrade / payment proof modal (shared BaseModal — UX-03) ───────── -->
-    <BaseModal v-model="upgradeModal.open" size="lg" title="Demande de mise à niveau">
+    <BaseModal v-model="upgradeModal.open" size="lg" :title="$t('settings.upgrade.title')">
       <div class="settings-modal-body">
           <p class="modal-desc">
-            Soumettez votre preuve de paiement. Un administrateur validera votre demande dans les 24h.
+            {{ $t('settings.upgrade.desc') }}
           </p>
           <div class="form-row">
-            <label>Plan souhaité *</label>
+            <label>{{ $t('settings.upgrade.plan') }} *</label>
             <select v-model="upgradeForm.plan_code" class="form-select" @change="onUpgradePlanChange">
-              <option value="">— Sélectionner —</option>
+              <option value="">{{ $t('settings.selectPlaceholder') }}</option>
               <option v-for="p in upgradePlans" :key="p.code" :value="p.code">
                 {{ p.name }}<template v-if="p.price"> — {{ formatPlanPrice(p) }}</template>
               </option>
             </select>
           </div>
           <div class="form-row">
-            <label>Méthode de paiement *</label>
+            <label>{{ $t('settings.upgrade.method') }} *</label>
             <select v-model="upgradeForm.payment_method" class="form-select">
-              <option value="">— Sélectionner —</option>
+              <option value="">{{ $t('settings.selectPlaceholder') }}</option>
               <option value="orange_money">Orange Money</option>
               <option value="wave">Wave</option>
               <option value="mtn_money">MTN Money</option>
               <option value="moov_money">Moov Money</option>
-              <option value="bank_transfer">Virement bancaire</option>
+              <option value="bank_transfer">{{ $t('admin.bankTransfer') }}</option>
             </select>
           </div>
           <div class="form-row">
-            <label>Montant à payer ({{ upgradeCurrency }}) *</label>
+            <label>{{ $t('settings.upgrade.amount', { currency: upgradeCurrency }) }} *</label>
             <input v-model.number="upgradeForm.amount_fcfa" type="number" min="1" class="form-input" placeholder="ex. 15000" />
             <span v-if="selectedUpgradePlan?.price" class="input-hint-text">
-              Prix confirmé du plan {{ selectedUpgradePlan.name }} : {{ formatPlanPrice(selectedUpgradePlan) }}.
+              {{ $t('settings.upgrade.priceConfirmed', { plan: selectedUpgradePlan.name, price: formatPlanPrice(selectedUpgradePlan) }) }}
             </span>
           </div>
           <div class="form-row">
-            <label>Preuve de paiement <span class="hint">(photo ou PDF, 5 Mo max)</span></label>
+            <label>{{ $t('settings.upgrade.proof') }} <span class="hint">{{ $t('settings.upgrade.proofHint') }}</span></label>
             <input
               type="file"
               accept=".jpg,.jpeg,.png,.pdf,.webp"
@@ -572,21 +570,21 @@
             <span v-if="upgradeForm.proofFile" class="file-selected">{{ upgradeForm.proofFile.name }}</span>
           </div>
           <div class="form-row">
-            <label>Code promo <span class="hint">(optionnel)</span></label>
+            <label>{{ $t('settings.upgrade.promo') }} <span class="hint">{{ $t('catalog.productForm.optional') }}</span></label>
             <input v-model="upgradeForm.promo_code" class="form-input" placeholder="ex. PROMO20" style="text-transform:uppercase" />
           </div>
           <div class="form-row">
-            <label>Notes <span class="hint">(optionnel)</span></label>
-            <textarea v-model="upgradeForm.notes" class="form-textarea" rows="2" placeholder="Référence de transaction, remarques…"></textarea>
+            <label>{{ $t('settings.upgrade.notes') }} <span class="hint">{{ $t('catalog.productForm.optional') }}</span></label>
+            <textarea v-model="upgradeForm.notes" class="form-textarea" rows="2" :placeholder="$t('settings.upgrade.notesPlaceholder')"></textarea>
           </div>
           <div v-if="upgradeModal.error" class="form-error">{{ upgradeModal.error }}</div>
           <div v-if="upgradeModal.success" class="form-success">{{ upgradeModal.success }}</div>
       </div>
 
       <template #footer>
-        <button class="btn-cancel" @click="upgradeModal.open = false">Annuler</button>
+        <button class="btn-cancel" @click="upgradeModal.open = false">{{ $t('common.cancel') }}</button>
         <button class="btn-submit" :disabled="upgradeModal.saving" @click="submitUpgrade">
-          {{ upgradeModal.saving ? 'Envoi…' : 'Soumettre la demande' }}
+          {{ upgradeModal.saving ? $t('settings.upgrade.sending') : $t('settings.upgrade.submit') }}
         </button>
       </template>
     </BaseModal>
@@ -605,6 +603,7 @@ import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { pushToast } from '@/composables/useNotifications'
 import { useWarehouses } from '@/composables/useWarehouses'
+import { t } from '@/i18n'
 import type { WorkspaceUser } from '@/modules/auth/types'
 
 const activeTab = ref('company')
@@ -663,10 +662,10 @@ async function saveCompanySettings() {
         session_timeout_minutes: Number(companyForm.session_timeout) || 1440,
       },
     })
-    companySuccess.value = 'Modifications enregistrées avec succès.'
+    companySuccess.value = t('settings.company.saveSuccess')
     if (auth.user?.tenant) auth.user.tenant.name = companyForm.name
   } catch (err: any) {
-    companyError.value = err?.response?.data?.message ?? 'Erreur lors de la sauvegarde.'
+    companyError.value = err?.response?.data?.message ?? t('settings.company.saveError')
   } finally {
     companySaving.value = false
   }
@@ -734,7 +733,7 @@ async function saveWarehouses() {
     if (idx !== -1) teamUsers.value[idx] = updated
     whModal.open = false
   } catch (err: any) {
-    whModal.error = err?.response?.data?.message ?? 'Enregistrement impossible.'
+    whModal.error = err?.response?.data?.message ?? t('settings.warehouse.saveError')
   } finally {
     whModal.saving = false
   }
@@ -765,7 +764,7 @@ async function grantTemp() {
   } catch (e: any) {
     tempModal.error = e?.response?.data?.message
       ?? (Object.values(e?.response?.data?.errors ?? {})?.[0] as string[] | undefined)?.[0]
-      ?? 'Attribution impossible.'
+      ?? t('settings.temp.grantError')
   } finally {
     tempModal.saving = false
   }
@@ -777,7 +776,7 @@ async function revokeTemp(grantId: string) {
     await loadTeamUsers()
     tempModal.grants = [...(teamUsers.value.find(u => u.id === tempModal.userId)?.temporary_access ?? [])]
   } catch (e: any) {
-    tempModal.error = e?.response?.data?.message ?? 'Révocation impossible.'
+    tempModal.error = e?.response?.data?.message ?? t('settings.temp.revokeError')
   }
 }
 
@@ -814,7 +813,7 @@ async function submitInvite() {
     inviteModal.tempPassword = result.temp_password
     await loadTeamUsers()
   } catch (err: any) {
-    inviteModal.error = err?.response?.data?.message ?? "Erreur lors de l'invitation."
+    inviteModal.error = err?.response?.data?.message ?? t('settings.invite.error')
   } finally {
     inviteModal.saving = false
   }
@@ -827,7 +826,7 @@ async function changeRole(user: WorkspaceUser, newRole: string) {
     const idx = teamUsers.value.findIndex(u => u.id === user.id)
     if (idx !== -1) teamUsers.value[idx] = updated
   } catch (err: any) {
-    pushToast(err?.response?.data?.message ?? 'Erreur lors du changement de rôle.')
+    pushToast(err?.response?.data?.message ?? t('settings.roleChangeError'))
     await loadTeamUsers()
   }
 }
@@ -835,10 +834,10 @@ async function changeRole(user: WorkspaceUser, newRole: string) {
 const { confirm } = useConfirm()
 
 async function toggleUser(user: WorkspaceUser) {
-  const action = user.is_active ? 'désactiver' : 'réactiver'
+  const action = user.is_active ? t('settings.team.deactivateVerb') : t('settings.team.reactivateVerb')
   if (!(await confirm({
-    title: 'Confirmer',
-    message: `Voulez-vous ${action} ${user.name} ?`,
+    title: t('settings.confirmToggleTitle'),
+    message: t('settings.confirmToggle', { action, name: user.name }),
     confirmLabel: action,
     danger: user.is_active,
   }))) return
@@ -847,7 +846,7 @@ async function toggleUser(user: WorkspaceUser) {
     const idx = teamUsers.value.findIndex(u => u.id === user.id)
     if (idx !== -1) teamUsers.value[idx] = result.data
   } catch (err: any) {
-    pushToast(err?.response?.data?.message ?? 'Erreur.')
+    pushToast(err?.response?.data?.message ?? t('common.genericError'))
   }
 }
 
@@ -862,7 +861,11 @@ function initials(name: string): string {
 }
 
 function roleLabel(role: string): string {
-  const m: Record<string, string> = { admin: 'Admin', manager: 'Manager', member: 'Membre', viewer: 'Lecteur' }
+  const m: Record<string, string> = {
+    admin: t('settings.role.admin'), manager: t('settings.role.manager'),
+    member: t('settings.role.member'), viewer: t('settings.role.viewer'),
+    cashier: t('settings.temp.roleCashier'), agent: t('settings.temp.roleAgent'), delivery: t('settings.temp.roleDelivery'),
+  }
   return m[role] ?? role
 }
 
@@ -901,14 +904,14 @@ async function checkPromo() {
       await authService.applyPromo(promoCode.value, auth.user?.subscription?.plan_code)
       promoApplied.value  = true
       const label = result.discount_type === 'percent'
-        ? `${result.discount_value} %`
-        : `${result.discount_value} centimes`
-      promoFeedback.value = `Code appliqué ! Réduction de ${label}.`
+        ? t('settings.billing.promoPercent', { value: result.discount_value })
+        : t('settings.billing.promoFixed', { value: result.discount_value })
+      promoFeedback.value = t('settings.billing.promoOk', { label })
     } catch (err: any) {
-      promoFeedback.value = err?.response?.data?.message ?? 'Erreur lors de l\'application.'
+      promoFeedback.value = err?.response?.data?.message ?? t('settings.billing.promoApplyError')
     }
   } else {
-    promoFeedback.value = result.message ?? 'Code invalide.'
+    promoFeedback.value = result.message ?? t('settings.billing.promoInvalid')
   }
 
   promoLoading.value = false
@@ -971,9 +974,9 @@ async function submitUpgrade() {
   upgradeModal.error   = ''
   upgradeModal.success = ''
 
-  if (!upgradeForm.plan_code)      { upgradeModal.error = 'Sélectionnez un plan.'; return }
-  if (!upgradeForm.payment_method) { upgradeModal.error = 'Sélectionnez une méthode de paiement.'; return }
-  if (!upgradeForm.amount_fcfa)    { upgradeModal.error = 'Entrez le montant payé.'; return }
+  if (!upgradeForm.plan_code)      { upgradeModal.error = t('settings.upgrade.errPlan'); return }
+  if (!upgradeForm.payment_method) { upgradeModal.error = t('settings.upgrade.errMethod'); return }
+  if (!upgradeForm.amount_fcfa)    { upgradeModal.error = t('settings.upgrade.errAmount'); return }
 
   upgradeModal.saving = true
 
@@ -994,14 +997,14 @@ async function submitUpgrade() {
     await client.post('/api/me/manual-payments', fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
-    upgradeModal.success = 'Demande soumise avec succès ! Un administrateur va vérifier votre paiement.'
+    upgradeModal.success = t('settings.upgrade.success')
     // Reset form
     Object.assign(upgradeForm, {
       plan_code: '', payment_method: '', amount_fcfa: '',
       promo_code: '', notes: '', proofFile: null,
     })
   } catch (err: any) {
-    upgradeModal.error = err?.response?.data?.message ?? 'Une erreur est survenue.'
+    upgradeModal.error = err?.response?.data?.message ?? t('common.genericError')
   } finally {
     upgradeModal.saving = false
   }
@@ -1022,7 +1025,7 @@ const hasLimits = computed(() => {
 })
 
 function formatPrice(cents: number | null | undefined, currency = 'XOF'): string {
-  if (!cents) return 'Gratuit'
+  if (!cents) return t('settings.billing.free')
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
     currency,
@@ -1036,14 +1039,7 @@ function formatPeriodDate(iso: string | null | undefined): string {
 }
 
 function subStatusLabel(status: string): string {
-  const m: Record<string, string> = {
-    trialing:         'Essai',
-    active:           'Actif',
-    suspended:        'Suspendu',
-    cancelled:        'Annulé',
-    pending_approval: 'En attente',
-  }
-  return m[status] ?? status
+  return t(`settings.billing.status.${status}`)
 }
 
 function subStatusBadgeClass(status: string): string {
@@ -1103,17 +1099,17 @@ const IconNotifications = defineComponent({
   ]),
 })
 
-const tabs = [
-  { id: 'company',       label: 'Entreprise',    icon: IconCompany },
-  { id: 'team',          label: 'Équipe',         icon: IconTeam },
-  { id: 'roles',         label: 'Rôles',          icon: IconRoles },
-  { id: 'billing',       label: 'Abonnement',     icon: IconBilling },
-  { id: 'integrations',  label: 'Intégrations (bientot)',   icon: IconIntegrations },
-  { id: 'notifications', label: 'Notifications (bientot)',  icon: IconNotifications },
-]
+const tabs = computed(() => [
+  { id: 'company',       label: t('settings.tabs.company'),       icon: IconCompany },
+  { id: 'team',          label: t('settings.tabs.team'),          icon: IconTeam },
+  { id: 'roles',         label: t('settings.tabs.roles'),         icon: IconRoles },
+  { id: 'billing',       label: t('settings.tabs.billing'),       icon: IconBilling },
+  { id: 'integrations',  label: t('settings.tabs.integrations'),  icon: IconIntegrations },
+  { id: 'notifications', label: t('settings.tabs.notifications'), icon: IconNotifications },
+])
 
 // The Rôles tab is admin-only (role management is an escalation surface).
-const visibleTabs = computed(() => tabs.filter(t => t.id !== 'roles' || isAdmin.value))
+const visibleTabs = computed(() => tabs.value.filter(tab => tab.id !== 'roles' || isAdmin.value))
 </script>
 
 <style scoped>

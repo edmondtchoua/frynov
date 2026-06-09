@@ -3,6 +3,26 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Ventes Fiche commande & Retours (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-orders-detail-returns` (release `v1.0.0` → `rc.74`).
+
+### UX (i18n)
+- **`OrderDetailView`** internationalisé : en-tête (statut), table des lignes, méta (dates), panneau
+  **Paiements** (solde, liste, modal d'enregistrement) + panneau **Livraison** + actions
+  (confirmer/livrer/annuler) & erreurs. Namespace `orders.detail.*` ; réutilise `orders.status`,
+  `payments.method`/`colMethod`/`colReference`, `deliveries.status`, `common.*`.
+- **`ReturnsView`** internationalisé : en-tête, filtre statut, table (motif/résolution/statut), actions
+  (approuver/remettre en stock/refuser) + modal de refus. Namespace `orders.returns.*` (+ libellés
+  reason/resolution/status).
+- **`common.total`** ajouté (mutualisé). Ratchet : 2 vues retirées de l'`ALLOWLIST`.
+
+### Avancement
+- Tracker [`i18n-coverage.md`](docs/recette/i18n-coverage.md) : **32 ✅ / 0 🟡 / 16 ⬜** (67 %).
+
+### Tests
+- Frontend **257** inchangé · `vue-tsc` propre · `npm run i18n:check` vert.
+
 ## [Non publié] — i18n : Catalogue Fiche produit & Étiquettes — module 100 % (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-catalog-show-label` (release `v1.0.0` → `rc.73`). **Module Catalogue entièrement internationalisé (7/7 vues).**

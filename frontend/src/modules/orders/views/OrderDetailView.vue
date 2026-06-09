@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="page-header">
       <div>
-        <RouterLink to="/orders" class="back-link">← Commandes</RouterLink>
+        <RouterLink to="/orders" class="back-link">← {{ $t('orders.title') }}</RouterLink>
         <h2>{{ order?.number ?? '…' }}</h2>
       </div>
       <span v-if="order" class="badge" :class="statusBadge(order.status)">
@@ -16,7 +16,7 @@
     </div>
 
     <div v-else-if="error" class="empty-state">
-      <h3>Erreur</h3>
+      <h3>{{ $t('orders.detail.errorTitle') }}</h3>
       <p>{{ error }}</p>
     </div>
 
@@ -26,11 +26,11 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>SKU</th>
-              <th>Produit</th>
-              <th style="text-align:right;">Qté</th>
-              <th style="text-align:right;" class="hide-mobile">Prix unit.</th>
-              <th style="text-align:right;">Sous-total</th>
+              <th>{{ $t('orders.detail.sku') }}</th>
+              <th>{{ $t('common.product') }}</th>
+              <th style="text-align:right;">{{ $t('common.quantity') }}</th>
+              <th style="text-align:right;" class="hide-mobile">{{ $t('orders.detail.unitPrice') }}</th>
+              <th style="text-align:right;">{{ $t('orders.detail.subtotal') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -44,8 +44,8 @@
           </tbody>
           <tfoot>
             <tr>
-              <td colspan="3" class="hide-mobile" style="text-align: right; font-weight: 700; padding: 10px 16px;">Total</td>
-              <td class="show-mobile-only" style="text-align: right; font-weight: 700; padding: 10px 16px;">Total</td>
+              <td colspan="3" class="hide-mobile" style="text-align: right; font-weight: 700; padding: 10px 16px;">{{ $t('common.total') }}</td>
+              <td class="show-mobile-only" style="text-align: right; font-weight: 700; padding: 10px 16px;">{{ $t('common.total') }}</td>
               <td style="text-align: right; font-weight: 700; padding: 10px 16px; font-size: 1.05rem;">
                 {{ fmt(order.total_amount) }}
               </td>
@@ -62,44 +62,44 @@
 
           <!-- Meta -->
           <div class="card" style="font-size: 0.875rem; color: var(--gray-600);">
-            <div v-if="order.note" style="margin-bottom: 8px;"><strong>Note :</strong> {{ order.note }}</div>
-            <div><strong>Créée le :</strong> {{ fmtDate(order.created_at) }}</div>
-            <div v-if="order.fulfilled_at" style="margin-top: 4px;"><strong>Livrée le :</strong> {{ fmtDate(order.fulfilled_at) }}</div>
-            <div v-if="order.cancelled_at" style="margin-top: 4px;"><strong>Annulée le :</strong> {{ fmtDate(order.cancelled_at) }}</div>
+            <div v-if="order.note" style="margin-bottom: 8px;"><strong>{{ $t('common.note') }} :</strong> {{ order.note }}</div>
+            <div><strong>{{ $t('orders.detail.createdLabel') }}</strong> {{ fmtDate(order.created_at) }}</div>
+            <div v-if="order.fulfilled_at" style="margin-top: 4px;"><strong>{{ $t('orders.detail.fulfilledLabel') }}</strong> {{ fmtDate(order.fulfilled_at) }}</div>
+            <div v-if="order.cancelled_at" style="margin-top: 4px;"><strong>{{ $t('orders.detail.cancelledLabel') }}</strong> {{ fmtDate(order.cancelled_at) }}</div>
           </div>
 
           <!-- ── Payments panel ────────────────────────────────────────────── -->
           <div class="card">
             <div class="panel-header">
-              <h4 class="panel-title">Paiements</h4>
+              <h4 class="panel-title">{{ $t('payments.title') }}</h4>
               <button class="btn btn-ghost btn-sm" @click="openPaymentModal">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                   <path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                 </svg>
-                Enregistrer
+                {{ $t('common.save') }}
               </button>
             </div>
 
             <!-- Balance summary -->
             <div class="balance-row">
               <div class="balance-info">
-                <span class="balance-label">Encaissé</span>
+                <span class="balance-label">{{ $t('orders.detail.collected') }}</span>
                 <span class="balance-value" :style="payBalance >= order.total_amount ? 'color:#059669;' : ''">
                   {{ fmt(payBalance) }}
                 </span>
               </div>
               <div class="balance-info">
-                <span class="balance-label">Total</span>
+                <span class="balance-label">{{ $t('common.total') }}</span>
                 <span class="balance-value">{{ fmt(order.total_amount) }}</span>
               </div>
               <div class="balance-info">
-                <span class="balance-label">Reste</span>
+                <span class="balance-label">{{ $t('orders.detail.remaining') }}</span>
                 <span class="balance-value" :style="payBalance < order.total_amount ? 'color:#b45309;' : 'color:#059669;'">
                   {{ fmt(Math.max(0, order.total_amount - payBalance)) }}
                 </span>
               </div>
-              <span v-if="payIsFullyPaid" class="badge badge-success" style="align-self: center;">Soldé ✓</span>
-              <span v-else class="badge badge-warning" style="align-self: center;">Partiel</span>
+              <span v-if="payIsFullyPaid" class="badge badge-success" style="align-self: center;">{{ $t('orders.detail.settled') }} ✓</span>
+              <span v-else class="badge badge-warning" style="align-self: center;">{{ $t('orders.detail.partial') }}</span>
             </div>
 
             <!-- Payment list -->
@@ -107,7 +107,7 @@
               <span class="spinner-sm"></span>
             </div>
             <div v-else-if="payments.length === 0" style="font-size: 0.85rem; color: var(--gray-400); padding: 8px 0;">
-              Aucun paiement enregistré.
+              {{ $t('orders.detail.noPayments') }}
             </div>
             <div v-else class="pay-list">
               <div v-for="p in payments" :key="p.id" class="pay-item">
@@ -115,7 +115,7 @@
                 <span style="font-size: 0.85rem; color: var(--gray-600);">{{ fmtDateShort(p.paid_at) }}</span>
                 <span v-if="p.reference" style="font-family: monospace; font-size: 0.78rem; color: var(--gray-500);">{{ p.reference }}</span>
                 <span class="pay-amount">{{ fmt(p.amount_cents) }}</span>
-                <button class="btn-icon-sm" title="Annuler" @click="voidPayment(p.id)">
+                <button class="btn-icon-sm" :title="$t('common.cancel')" @click="voidPayment(p.id)">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                     <path d="M3 3l6 6M9 3l-6 6" stroke="var(--gray-400)" stroke-width="1.3" stroke-linecap="round"/>
                   </svg>
@@ -130,15 +130,15 @@
           <!-- ── Delivery panel ─────────────────────────────────────────────── -->
           <div class="card">
             <div class="panel-header">
-              <h4 class="panel-title">Livraison</h4>
-              <RouterLink to="/deliveries" class="btn btn-ghost btn-sm">Gérer →</RouterLink>
+              <h4 class="panel-title">{{ $t('orders.detail.delivery') }}</h4>
+              <RouterLink to="/deliveries" class="btn btn-ghost btn-sm">{{ $t('orders.detail.manage') }} →</RouterLink>
             </div>
 
             <div v-if="deliveryLoading" class="loading-center" style="min-height: 60px; padding: 12px;">
               <span class="spinner-sm"></span>
             </div>
             <div v-else-if="deliveries.length === 0" style="font-size: 0.85rem; color: var(--gray-400); padding: 8px 0;">
-              Aucune livraison associée à cette commande.
+              {{ $t('orders.detail.noDelivery') }}
             </div>
             <div v-else class="delivery-list">
               <div v-for="d in deliveries" :key="d.id" class="delivery-item">
@@ -160,7 +160,7 @@
         <!-- Right column — actions -->
         <div style="display: flex; flex-direction: column; gap: 12px;">
           <div class="card">
-            <h4 class="panel-title" style="margin-bottom: 12px;">Actions</h4>
+            <h4 class="panel-title" style="margin-bottom: 12px;">{{ $t('common.actions') }}</h4>
             <div style="display: flex; flex-direction: column; gap: 8px;">
               <button
                 v-if="order.status === 'draft'"
@@ -169,7 +169,7 @@
                 @click="act('confirm')"
               >
                 <span v-if="actionLoading === 'confirm'" class="spinner-sm"></span>
-                Confirmer la commande
+                {{ $t('orders.detail.confirmOrder') }}
               </button>
 
               <button
@@ -179,7 +179,7 @@
                 @click="act('fulfill')"
               >
                 <span v-if="actionLoading === 'fulfill'" class="spinner-sm"></span>
-                Marquer livrée
+                {{ $t('orders.detail.markFulfilled') }}
               </button>
 
               <button
@@ -189,11 +189,11 @@
                 @click="act('cancel')"
               >
                 <span v-if="actionLoading === 'cancel'" class="spinner-sm"></span>
-                Annuler
+                {{ $t('common.cancel') }}
               </button>
 
               <RouterLink :to="`/inventory/movements/${order.lines[0]?.product_id}`" class="btn btn-ghost btn-sm" v-if="order.lines.length > 0">
-                Voir le stock →
+                {{ $t('orders.detail.viewStock') }} →
               </RouterLink>
             </div>
 
@@ -206,12 +206,12 @@
     <!-- ── Record payment modal (shared BaseModal — UX-03) ───────────────────── -->
     <BaseModal
       v-model="payModal.open"
-      title="Enregistrer un paiement"
-      :subtitle="order ? ('Commande ' + order.number + ' · Reste ' + fmt(Math.max(0, (order.total_amount ?? 0) - payBalance))) : ''"
+      :title="$t('payments.modalTitle')"
+      :subtitle="order ? $t('orders.detail.paySubtitle', { number: order.number, remaining: fmt(Math.max(0, (order.total_amount ?? 0) - payBalance)) }) : ''"
     >
       <div style="display: flex; flex-direction: column; gap: 14px;">
         <div class="form-group">
-          <label class="form-label">Montant <span style="color:#dc2626;">*</span></label>
+          <label class="form-label">{{ $t('common.amount') }} <span style="color:#dc2626;">*</span></label>
           <!-- Devise verrouillée sur celle de la commande (le solde somme les centimes
                sans conversion) → affichée en suffixe du champ. -->
           <div class="input-affix">
@@ -226,33 +226,33 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Moyen <span style="color:#dc2626;">*</span></label>
+          <label class="form-label">{{ $t('payments.colMethod') }} <span style="color:#dc2626;">*</span></label>
           <select v-model="payForm.method" class="form-input">
-            <option value="cash">Espèces</option>
-            <option value="mobile_money">Mobile Money</option>
-            <option value="card">Carte</option>
-            <option value="transfer">Virement</option>
-            <option value="cheque">Chèque</option>
+            <option value="cash">{{ $t('payments.method.cash') }}</option>
+            <option value="mobile_money">{{ $t('payments.method.mobile_money') }}</option>
+            <option value="card">{{ $t('payments.method.card') }}</option>
+            <option value="transfer">{{ $t('payments.method.transfer') }}</option>
+            <option value="cheque">{{ $t('payments.method.cheque') }}</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Référence</label>
-          <input v-model="payForm.reference" type="text" class="form-input" placeholder="N° reçu…" />
+          <label class="form-label">{{ $t('payments.colReference') }}</label>
+          <input v-model="payForm.reference" type="text" class="form-input" :placeholder="$t('payments.referencePlaceholder')" />
         </div>
 
         <p v-if="payModal.error" style="color:#dc2626; font-size:0.875rem;">{{ payModal.error }}</p>
       </div>
 
       <template #footer>
-        <button class="btn btn-ghost" @click="payModal.open = false">Annuler</button>
+        <button class="btn btn-ghost" @click="payModal.open = false">{{ $t('common.cancel') }}</button>
         <button
           class="btn btn-primary"
           :disabled="payModal.saving || !payForm.amount || payForm.amount <= 0"
           @click="submitPayment"
         >
           <span v-if="payModal.saving" class="spinner-sm"></span>
-          Enregistrer
+          {{ $t('common.save') }}
         </button>
       </template>
     </BaseModal>
@@ -269,6 +269,7 @@ import { paymentService } from '@/modules/payments/services/paymentService'
 import { deliveryService } from '@/modules/deliveries/services/deliveryService'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
+import { t } from '@/i18n'
 import type { Order } from '../types'
 import type { Payment, PaymentMethod } from '@/modules/payments/types'
 import type { Delivery, DeliveryStatus } from '@/modules/deliveries/types'
@@ -303,7 +304,7 @@ async function load() {
   try {
     order.value = await orderService.get(id)
   } catch {
-    error.value = 'Commande introuvable.'
+    error.value = t('orders.detail.notFound')
   } finally {
     loading.value = false
   }
@@ -342,7 +343,7 @@ async function act(action: 'confirm' | 'fulfill' | 'cancel') {
   try {
     order.value = await orderService[action](id)
   } catch (e: any) {
-    actionError.value = e?.response?.data?.message ?? `Erreur lors de l'action "${action}".`
+    actionError.value = e?.response?.data?.message ?? t('orders.detail.actionError', { action })
   } finally {
     actionLoading.value = false
   }
@@ -375,7 +376,7 @@ async function submitPayment() {
     payModal.open = false
     loadPayments()
   } catch (e: any) {
-    payModal.error = e?.response?.data?.message ?? 'Une erreur est survenue.'
+    payModal.error = e?.response?.data?.message ?? t('common.genericError')
   } finally {
     payModal.saving = false
   }
@@ -385,8 +386,8 @@ const { confirm } = useConfirm()
 
 async function voidPayment(paymentId: string) {
   if (!(await confirm({
-    title: 'Annuler le paiement',
-    message: 'Voulez-vous annuler ce paiement ?',
+    title: t('orders.detail.voidTitle'),
+    message: t('orders.detail.voidConfirm'),
     danger: true,
   }))) return
   payActionError.value = null
@@ -394,25 +395,25 @@ async function voidPayment(paymentId: string) {
     await paymentService.void(paymentId)
     loadPayments()
   } catch (e: any) {
-    payActionError.value = e?.response?.data?.message ?? "Impossible d'annuler ce paiement."
+    payActionError.value = e?.response?.data?.message ?? t('orders.detail.voidError')
   }
 }
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 function statusLabel(s: string) {
-  return { draft: 'Brouillon', confirmed: 'Confirmée', fulfilled: 'Livrée', cancelled: 'Annulée' }[s] ?? s
+  return t(`orders.status.${s}`)
 }
 function statusBadge(s: string) {
   return { draft: 'badge-gray', confirmed: 'badge-blue', fulfilled: 'badge-success', cancelled: 'badge-error' }[s] ?? ''
 }
 function methodLabel(m: PaymentMethod): string {
-  return ({ cash: 'Espèces', mobile_money: 'Mobile Money', card: 'Carte', transfer: 'Virement', cheque: 'Chèque' } as Record<PaymentMethod, string>)[m] ?? m
+  return t(`payments.method.${m}`)
 }
 function methodBadge(m: PaymentMethod): string {
   return ({ cash: 'badge-success', mobile_money: 'badge-blue', card: 'badge-blue', transfer: 'badge-gray', cheque: 'badge-gray' } as Record<PaymentMethod, string>)[m] ?? 'badge-gray'
 }
 function deliveryStatusLabel(s: DeliveryStatus): string {
-  return ({ pending: 'En attente', dispatched: 'Expédiée', in_transit: 'En transit', delivered: 'Livrée', failed: 'Échec' } as Record<DeliveryStatus, string>)[s] ?? s
+  return t(`deliveries.status.${s}`)
 }
 function deliveryStatusBadge(s: DeliveryStatus): string {
   return ({ pending: 'badge-gray', dispatched: 'badge-blue', in_transit: 'badge-blue', delivered: 'badge-success', failed: 'badge-error' } as Record<DeliveryStatus, string>)[s] ?? 'badge-gray'

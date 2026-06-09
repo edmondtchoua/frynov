@@ -3,35 +3,35 @@
     <SalesTabNav />
     <div class="page-header">
       <div>
-        <h1 class="page-title">Retours & SAV</h1>
-        <p class="page-subtitle">{{ total }} retour(s) enregistré(s)</p>
+        <h1 class="page-title">{{ $t('orders.returns.title') }}</h1>
+        <p class="page-subtitle">{{ $t('orders.returns.subtitle', { count: total }) }}</p>
       </div>
     </div>
 
     <div class="filter-bar">
       <select v-model="filterStatus" class="form-input filter-select" @change="load">
-        <option value="">Tous les statuts</option>
-        <option value="pending">En attente</option>
-        <option value="approved">Approuvé</option>
-        <option value="restocked">Remis en stock</option>
-        <option value="rejected">Refusé</option>
-        <option value="cancelled">Annulé</option>
+        <option value="">{{ $t('common.allStatuses') }}</option>
+        <option value="pending">{{ $t('orders.returns.status.pending') }}</option>
+        <option value="approved">{{ $t('orders.returns.status.approved') }}</option>
+        <option value="restocked">{{ $t('orders.returns.status.restocked') }}</option>
+        <option value="rejected">{{ $t('orders.returns.status.rejected') }}</option>
+        <option value="cancelled">{{ $t('orders.returns.status.cancelled') }}</option>
       </select>
     </div>
 
     <div class="card table-scroll">
       <StateBlock v-if="loading" variant="loading" />
-      <StateBlock v-else-if="returns.length === 0" variant="empty" title="Aucun retour trouvé" />
+      <StateBlock v-else-if="returns.length === 0" variant="empty" :title="$t('orders.returns.empty')" />
       <table v-else class="data-table">
         <thead>
           <tr>
-            <th>Numéro</th>
-            <th>Commande</th>
-            <th>Motif</th>
-            <th>Résolution</th>
-            <th>Statut</th>
-            <th>Date</th>
-            <th>Actions</th>
+            <th>{{ $t('orders.returns.colNumber') }}</th>
+            <th>{{ $t('deliveries.colOrder') }}</th>
+            <th>{{ $t('orders.returns.colReason') }}</th>
+            <th>{{ $t('orders.returns.colResolution') }}</th>
+            <th>{{ $t('common.status') }}</th>
+            <th>{{ $t('common.date') }}</th>
+            <th>{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -44,13 +44,13 @@
             <td>{{ fmtDate(r.created_at) }}</td>
             <td class="actions-cell">
               <button v-if="r.status === 'pending'" class="btn btn-sm btn-primary" @click="approve(r)">
-                Approuver
+                {{ $t('orders.returns.approve') }}
               </button>
               <button v-if="r.status === 'approved'" class="btn btn-sm btn-blue" @click="restock(r)">
-                Remettre en stock
+                {{ $t('orders.returns.restock') }}
               </button>
               <button v-if="r.status === 'pending'" class="btn btn-sm btn-danger" @click="openReject(r)">
-                Refuser
+                {{ $t('orders.returns.reject') }}
               </button>
             </td>
           </tr>
@@ -62,23 +62,23 @@
     <BaseModal
       :model-value="!!rejectTarget"
       size="sm"
-      :title="rejectTarget ? `Refuser le retour ${rejectTarget.number}` : ''"
+      :title="rejectTarget ? $t('orders.returns.rejectTitle', { number: rejectTarget.number }) : ''"
       @update:model-value="(v: boolean) => { if (!v) rejectTarget = null }"
     >
       <div class="form-group">
-        <label class="form-label">Raison du refus *</label>
+        <label class="form-label">{{ $t('orders.returns.rejectReason') }} *</label>
         <textarea
           v-model="rejectReason"
           class="form-input"
           rows="3"
-          placeholder="Ex: Délai de retour dépassé (30 jours), article utilisé..."
+          :placeholder="$t('orders.returns.rejectPlaceholder')"
         ></textarea>
       </div>
 
       <template #footer>
-        <button class="btn btn-secondary" @click="rejectTarget = null">Annuler</button>
+        <button class="btn btn-secondary" @click="rejectTarget = null">{{ $t('common.cancel') }}</button>
         <button class="btn btn-danger" :disabled="!rejectReason || rejecting" @click="confirmReject">
-          {{ rejecting ? 'Refus en cours...' : 'Confirmer le refus' }}
+          {{ rejecting ? $t('orders.returns.rejecting') : $t('orders.returns.confirmReject') }}
         </button>
       </template>
     </BaseModal>
@@ -93,6 +93,7 @@ import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import SalesTabNav from '../components/SalesTabNav.vue'
+import { t } from '@/i18n'
 
 interface OrderReturn {
   id: string
@@ -128,9 +129,9 @@ const { confirm } = useConfirm()
 
 async function approve(r: OrderReturn) {
   if (!(await confirm({
-    title: 'Approuver le retour',
-    message: `Approuver le retour ${r.number} ?`,
-    confirmLabel: 'Approuver',
+    title: t('orders.returns.approveTitle'),
+    message: t('orders.returns.approveConfirm', { number: r.number }),
+    confirmLabel: t('orders.returns.approve'),
   }))) return
   await api.post(`/orders/returns/${r.id}/approve`, {})
   await load()
@@ -138,9 +139,9 @@ async function approve(r: OrderReturn) {
 
 async function restock(r: OrderReturn) {
   if (!(await confirm({
-    title: 'Remettre en stock',
-    message: `Remettre en stock les articles de ${r.number} ?`,
-    confirmLabel: 'Remettre en stock',
+    title: t('orders.returns.restockTitle'),
+    message: t('orders.returns.restockConfirm', { number: r.number }),
+    confirmLabel: t('orders.returns.restock'),
   }))) return
   await api.post(`/orders/returns/${r.id}/restock`, {})
   await load()
@@ -164,19 +165,13 @@ async function confirmReject() {
 }
 
 function reasonLabel(r: string): string {
-  return {
-    defective: 'Défectueux', wrong_item: 'Mauvais article',
-    changed_mind: "Changement d'avis", damaged: 'Endommagé', other: 'Autre',
-  }[r] ?? r
+  return t(`orders.returns.reason.${r}`)
 }
 function resolutionLabel(r: string): string {
-  return { refund: 'Remboursement', exchange: 'Échange', store_credit: 'Avoir' }[r] ?? r
+  return t(`orders.returns.resolution.${r}`)
 }
 function statusLabel(s: string): string {
-  return {
-    pending: 'En attente', approved: 'Approuvé', processing: 'Traitement',
-    restocked: 'Remis en stock', rejected: 'Refusé', cancelled: 'Annulé',
-  }[s] ?? s
+  return t(`orders.returns.status.${s}`)
 }
 function statusBadge(s: string): string {
   const m: Record<string, string> = {

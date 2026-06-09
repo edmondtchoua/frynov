@@ -2,14 +2,14 @@
   <div>
     <div class="page-header">
       <div>
-        <h2>Connexions Marketplace</h2>
-        <p class="page-subtitle">Synchronisez votre stock avec vos canaux de vente externes.</p>
+        <h2>{{ $t('marketplace.title') }}</h2>
+        <p class="page-subtitle">{{ $t('marketplace.subtitle') }}</p>
       </div>
       <button class="btn btn-primary" @click="openCreate">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
-        Connecter une plateforme
+        {{ $t('marketplace.connectPlatform') }}
       </button>
     </div>
 
@@ -20,18 +20,18 @@
           <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.4"/>
           <path d="M8 5v3.5M8 10.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
-        <span><strong>{{ unreadAlerts }} action{{ unreadAlerts > 1 ? 's' : '' }} requise{{ unreadAlerts > 1 ? 's' : '' }}</strong> — Vérifiez les alertes de synchronisation ci-dessous.</span>
-        <button class="btn btn-sm btn-secondary" @click="activeTab = 'alerts'">Voir les alertes</button>
+        <span><strong>{{ $t('marketplace.actionsRequired', { count: unreadAlerts }) }}</strong> {{ $t('marketplace.checkSyncAlerts') }}</span>
+        <button class="btn btn-sm btn-secondary" @click="activeTab = 'alerts'">{{ $t('reports.viewAlerts') }}</button>
       </div>
     </Transition>
 
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab" :class="{ active: activeTab === 'listings' }" @click="activeTab = 'listings'">
-        Connexions <span v-if="listings.length" class="tab-count">{{ listings.length }}</span>
+        {{ $t('marketplace.tabListings') }} <span v-if="listings.length" class="tab-count">{{ listings.length }}</span>
       </button>
       <button class="tab" :class="{ active: activeTab === 'alerts' }" @click="activeTab = 'alerts'">
-        Alertes
+        {{ $t('marketplace.alerts') }}
         <span v-if="unreadAlerts > 0" class="tab-count tab-count--red">{{ unreadAlerts }}</span>
       </button>
     </div>
@@ -46,21 +46,21 @@
           <rect x="4" y="4" width="32" height="32" rx="8" fill="var(--brand-primary-bg)"/>
           <path d="M10 20h20M20 10v20" stroke="var(--brand-primary)" stroke-width="2" stroke-linecap="round"/>
         </svg>
-        <h3>Aucune connexion</h3>
-        <p>Connectez vos produits à Facebook Marketplace, WhatsApp Business, Shopify ou Jumia.</p>
-        <button class="btn btn-primary" @click="openCreate">Première connexion</button>
+        <h3>{{ $t('marketplace.noConnections') }}</h3>
+        <p>{{ $t('marketplace.noConnectionsHint') }}</p>
+        <button class="btn btn-primary" @click="openCreate">{{ $t('marketplace.firstConnection') }}</button>
       </div>
       <div v-else class="card" style="padding:0;overflow:hidden">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Plateforme</th>
-              <th>Produit</th>
-              <th>ID Externe</th>
-              <th>Statut</th>
-              <th>Fermeture auto</th>
-              <th>Dernière sync</th>
-              <th style="text-align:right">Actions</th>
+              <th>{{ $t('marketplace.platform') }}</th>
+              <th>{{ $t('common.product') }}</th>
+              <th>{{ $t('marketplace.externalId') }}</th>
+              <th>{{ $t('common.status') }}</th>
+              <th>{{ $t('marketplace.autoCloseCol') }}</th>
+              <th>{{ $t('marketplace.lastSync') }}</th>
+              <th style="text-align:right">{{ $t('common.actions') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -93,14 +93,14 @@
               </td>
               <td>
                 <span :class="l.is_auto_close_enabled ? 'badge badge-success' : 'badge badge-gray'">
-                  {{ l.is_auto_close_enabled ? 'Oui' : 'Non' }}
+                  {{ l.is_auto_close_enabled ? $t('common.yes') : $t('common.no') }}
                 </span>
               </td>
               <td class="text-dim">{{ l.last_synced_at ? fmtDate(l.last_synced_at) : '—' }}</td>
               <td style="text-align:right">
                 <div class="row-actions">
-                  <button class="btn btn-ghost btn-sm" @click="openEdit(l)">Modifier</button>
-                  <button class="btn btn-ghost btn-sm text-danger" @click="deleteListing(l.id)">Supprimer</button>
+                  <button class="btn btn-ghost btn-sm" @click="openEdit(l)">{{ $t('common.edit') }}</button>
+                  <button class="btn btn-ghost btn-sm text-danger" @click="deleteListing(l.id)">{{ $t('common.delete') }}</button>
                 </div>
               </td>
             </tr>
@@ -115,7 +115,7 @@
         <span class="spinner-sm" style="width:24px;height:24px;border-width:3px"></span>
       </div>
       <div v-else-if="alerts.length === 0" class="empty-state" style="padding:3rem 2rem">
-        <p>Aucune alerte de synchronisation. Tout est à jour.</p>
+        <p>{{ $t('marketplace.noAlerts') }}</p>
       </div>
       <div v-else class="alerts-list">
         <div v-for="a in alerts" :key="a.id" class="alert-card" :class="{ unread: !a.is_read }">
@@ -127,18 +127,18 @@
             <div class="alert-meta">{{ fmtDate(a.created_at) }}</div>
           </div>
           <button v-if="!a.is_read" class="btn btn-sm btn-ghost" @click="markRead(a.id)">
-            Marquer lu
+            {{ $t('marketplace.markRead') }}
           </button>
         </div>
       </div>
     </div>
 
     <!-- Create/Edit modal (shared BaseModal — UX-03) -->
-    <BaseModal v-model="modal.open" :title="modal.editing ? 'Modifier la connexion' : 'Nouvelle connexion marketplace'" :subtitle="modal.editing ? (form.platform + ' · ' + form.external_product_id) : ''">
+    <BaseModal v-model="modal.open" :title="modal.editing ? $t('marketplace.editTitle') : $t('marketplace.newTitle')" :subtitle="modal.editing ? (form.platform + ' · ' + form.external_product_id) : ''">
       <div class="mp-modal-body">
             <div v-if="!modal.editing">
               <div class="form-group">
-                <label class="form-label">Plateforme <span class="req">*</span></label>
+                <label class="form-label">{{ $t('marketplace.platform') }} <span class="req">*</span></label>
                 <div class="platform-grid">
                   <button
                     v-for="p in platforms"
@@ -154,45 +154,45 @@
                 </div>
               </div>
               <div class="form-group">
-                <label class="form-label">ID produit externe <span class="req">*</span></label>
+                <label class="form-label">{{ $t('marketplace.externalProductId') }} <span class="req">*</span></label>
                 <input v-model="form.external_product_id" class="form-input mono" placeholder="123456789" />
-                <span class="form-hint">ID du produit/article sur la plateforme cible.</span>
+                <span class="form-hint">{{ $t('marketplace.externalProductIdHint') }}</span>
               </div>
               <div class="form-group">
-                <label class="form-label">URL de la listing <span class="hint">(optionnel)</span></label>
+                <label class="form-label">{{ $t('marketplace.listingUrl') }} <span class="hint">{{ $t('catalog.productForm.optional') }}</span></label>
                 <input v-model="form.external_url" type="url" class="form-input" placeholder="https://..." />
               </div>
             </div>
             <div class="form-group">
-              <label class="form-label">Seuil de fermeture</label>
+              <label class="form-label">{{ $t('marketplace.closeThreshold') }}</label>
               <input v-model.number="form.close_threshold" type="number" min="0" class="form-input" style="width:100px" />
-              <span class="form-hint">Fermer la listing si le stock disponible tombe ≤ à ce seuil.</span>
+              <span class="form-hint">{{ $t('marketplace.closeThresholdHint') }}</span>
             </div>
             <div class="form-switches">
               <label class="switch-row">
                 <input v-model="form.is_auto_close_enabled" type="checkbox" role="switch" class="switch-input" />
                 <span class="switch-track"><span class="switch-thumb"></span></span>
-                <span class="switch-label">Fermeture automatique quand stock ≤ seuil</span>
+                <span class="switch-label">{{ $t('marketplace.autoClose') }}</span>
               </label>
               <label class="switch-row">
                 <input v-model="form.is_auto_reopen_enabled" type="checkbox" role="switch" class="switch-input" />
                 <span class="switch-track"><span class="switch-thumb"></span></span>
-                <span class="switch-label">Réouverture automatique après réapprovisionnement</span>
+                <span class="switch-label">{{ $t('marketplace.autoReopen') }}</span>
               </label>
               <label class="switch-row">
                 <input v-model="form.is_price_sync_enabled" type="checkbox" role="switch" class="switch-input" />
                 <span class="switch-track"><span class="switch-thumb"></span></span>
-                <span class="switch-label">Synchroniser les prix automatiquement</span>
+                <span class="switch-label">{{ $t('marketplace.priceSync') }}</span>
               </label>
             </div>
             <div v-if="modal.error" class="form-error">{{ modal.error }}</div>
       </div>
 
       <template #footer>
-        <button class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button class="btn btn-ghost" @click="closeModal">{{ $t('common.cancel') }}</button>
         <button class="btn btn-primary" :disabled="modal.saving" @click="save">
           <span v-if="modal.saving" class="spinner-sm spinner-white"></span>
-          {{ modal.saving ? '…' : (modal.editing ? 'Mettre à jour' : 'Connecter') }}
+          {{ modal.saving ? '…' : (modal.editing ? $t('common.update') : $t('marketplace.connect')) }}
         </button>
       </template>
     </BaseModal>
@@ -205,6 +205,7 @@ import { formatDateTime } from '@/shared/utils/date'
 import client from '@/api/client'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
+import { t } from '@/i18n'
 
 const activeTab      = ref<'listings'|'alerts'>('listings')
 const listings       = ref<any[]>([])
@@ -248,7 +249,7 @@ function platformEmoji(code: string) {
 }
 
 function syncLabel(s: string) {
-  return { active:'Actif', closed:'Fermé', error:'Erreur', syncing:'Sync…', pending_manual:'Action req.', paused:'Pausé' }[s] ?? s
+  return t(`marketplace.sync.${s}`)
 }
 
 const fmtDate = formatDateTime
@@ -274,7 +275,7 @@ async function save() {
       await client.post('/api/marketplace/listings', { platform: form.platform, external_product_id: form.external_product_id, external_url: form.external_url || null, close_threshold: form.close_threshold, is_auto_close_enabled: form.is_auto_close_enabled, is_auto_reopen_enabled: form.is_auto_reopen_enabled, is_price_sync_enabled: form.is_price_sync_enabled })
     }
     closeModal(); loadListings()
-  } catch (e: any) { modal.error = e?.response?.data?.message ?? 'Erreur.' }
+  } catch (e: any) { modal.error = e?.response?.data?.message ?? t('common.genericError') }
   finally { modal.saving = false }
 }
 
@@ -282,9 +283,9 @@ const { confirm } = useConfirm()
 
 async function deleteListing(id: string) {
   if (!(await confirm({
-    title: 'Supprimer',
-    message: 'Supprimer cette connexion ?',
-    confirmLabel: 'Supprimer',
+    title: t('common.delete'),
+    message: t('marketplace.deleteConfirm'),
+    confirmLabel: t('common.delete'),
     danger: true,
   }))) return
   await client.delete(`/api/marketplace/listings/${id}`)

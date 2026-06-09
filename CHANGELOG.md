@@ -3,6 +3,24 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Marketplace (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-marketplace` (release `v1.0.0` → `rc.79`).
+
+### UX (i18n)
+- **`MarketplaceListingsView`** internationalisé : en-tête, bannière d'alertes, onglets
+  (connexions/alertes), table (plateforme, statut sync, fermeture auto), liste d'alertes,
+  **modal créer/éditer** (plateforme, ID externe, URL, seuil, switches auto-close/reopen/price-sync)
+  + confirmation de suppression & erreurs. Nouveau namespace `marketplace.*` (FR+EN, statuts de sync) ;
+  ajout `common.yes`/`common.no` ; réutilise `common.*`, `reports.viewAlerts`, `catalog.productForm.optional`.
+- Ratchet : vue retirée de l'`ALLOWLIST` (la garde a confirmé en débusquant un reliquat oublié).
+
+### Avancement
+- Tracker [`i18n-coverage.md`](docs/recette/i18n-coverage.md) : **37 ✅ / 0 🟡 / 11 ⬜** (77 %).
+
+### Tests
+- Frontend **257** inchangé · `vue-tsc` propre · `npm run i18n:check` vert.
+
 ## [Non publié] — i18n : Import/Export — Assistant — module 100 % (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-import-wizard` (release `v1.0.0` → `rc.78`). **Module Import/Export entièrement internationalisé (2/2 vues).**

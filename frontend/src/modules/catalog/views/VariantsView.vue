@@ -4,12 +4,12 @@
 
     <div class="page-header">
       <div>
-        <h2>Déclinaisons produit</h2>
-        <p class="page-subtitle">{{ meta.total ?? '—' }} déclinaison{{ (meta.total ?? 0) !== 1 ? 's' : '' }} sur {{ statsData.productsCount }} produit{{ statsData.productsCount !== 1 ? 's' : '' }}</p>
+        <h2>{{ $t('catalog.variants.title') }}</h2>
+        <p class="page-subtitle">{{ $t('catalog.variants.subtitle', { count: meta.total ?? '—', products: statsData.productsCount }) }}</p>
       </div>
       <div class="page-header-cta">
-        <span class="cta-note">Les déclinaisons se créent depuis la fiche produit.</span>
-        <RouterLink to="/catalog" class="btn btn-primary">← Voir les produits</RouterLink>
+        <span class="cta-note">{{ $t('catalog.variants.ctaNote') }}</span>
+        <RouterLink to="/catalog" class="btn btn-primary">← {{ $t('catalog.viewProductsList') }}</RouterLink>
       </div>
     </div>
 
@@ -24,14 +24,14 @@
           v-model="search"
           type="text"
           class="form-input search-input"
-          placeholder="SKU, libellé, nom produit…"
+          :placeholder="$t('catalog.variants.searchPlaceholder')"
           @input="debouncedLoad"
         />
       </div>
       <select v-model="filterStatus" class="form-input filter-sel" @change="load">
-        <option value="">Tous les statuts</option>
-        <option value="active">Produit actif</option>
-        <option value="draft">Brouillon</option>
+        <option value="">{{ $t('common.allStatuses') }}</option>
+        <option value="active">{{ $t('catalog.variants.statusActiveProduct') }}</option>
+        <option value="draft">{{ $t('catalog.status.draft') }}</option>
       </select>
     </div>
 
@@ -49,11 +49,11 @@
         <circle cx="14" cy="26" r="5" stroke="var(--brand-primary)" stroke-width="2"/>
         <circle cx="26" cy="26" r="5" stroke="var(--brand-primary)" stroke-width="2"/>
       </svg>
-      <h3>Aucune variante</h3>
+      <h3>{{ $t('catalog.variants.empty') }}</h3>
       <p>
-        {{ search ? 'Aucun résultat pour cette recherche.' : 'Créez des variantes depuis la fiche d\'un produit.' }}
+        {{ search ? $t('catalog.noResults') : $t('catalog.variants.emptyHint') }}
       </p>
-      <RouterLink v-if="!search" to="/catalog" class="btn btn-primary">Aller au catalogue</RouterLink>
+      <RouterLink v-if="!search" to="/catalog" class="btn btn-primary">{{ $t('catalog.variants.goToCatalog') }}</RouterLink>
     </div>
 
     <!-- Table -->
@@ -61,13 +61,13 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Variante</th>
-            <th>Produit parent</th>
-            <th class="hide-mobile">Attributs</th>
-            <th>Prix</th>
-            <th>Stock</th>
-            <th class="hide-mobile">Catégorie</th>
-            <th style="text-align:right">Actions</th>
+            <th>{{ $t('catalog.variants.colVariant') }}</th>
+            <th>{{ $t('catalog.variants.colParent') }}</th>
+            <th class="hide-mobile">{{ $t('catalog.variants.colAttributes') }}</th>
+            <th>{{ $t('catalog.colPrice') }}</th>
+            <th>{{ $t('catalog.variants.colStock') }}</th>
+            <th class="hide-mobile">{{ $t('catalog.colCategory') }}</th>
+            <th style="text-align:right">{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -115,8 +115,8 @@
               <span v-else class="dim">—</span>
             </td>
             <td style="text-align:right">
-              <RouterLink :to="`/catalog/products/${v.product_id}`" class="btn btn-ghost btn-sm" title="Voir la fiche produit">
-                Voir
+              <RouterLink :to="`/catalog/products/${v.product_id}`" class="btn btn-ghost btn-sm" :title="$t('catalog.variants.viewProductSheet')">
+                {{ $t('common.view') }}
               </RouterLink>
             </td>
           </tr>
@@ -125,9 +125,9 @@
 
       <!-- Pagination -->
       <div v-if="meta.last_page > 1" class="pagination-bar">
-        <button class="btn btn-ghost btn-sm" :disabled="meta.current_page <= 1" @click="goPage(meta.current_page - 1)">← Précédent</button>
-        <span class="page-info">Page {{ meta.current_page }} / {{ meta.last_page }}</span>
-        <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goPage(meta.current_page + 1)">Suivant →</button>
+        <button class="btn btn-ghost btn-sm" :disabled="meta.current_page <= 1" @click="goPage(meta.current_page - 1)">← {{ $t('common.previous') }}</button>
+        <span class="page-info">{{ $t('common.pageOf', { current: meta.current_page, total: meta.last_page }) }}</span>
+        <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goPage(meta.current_page + 1)">{{ $t('common.next') }} →</button>
       </div>
     </div>
   </div>

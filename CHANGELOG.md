@@ -3,6 +3,25 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Catalogue Attributs & Déclinaisons (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-catalog-attrs-variants` (release `v1.0.0` → `rc.72`).
+
+### UX (i18n)
+- **`AttributesView`** internationalisé : en-tête, état vide, cartes produit (compteur de déclinaisons,
+  voir la fiche), aide « aucun attribut ». Namespace `catalog.attributes.*`.
+- **`VariantsView`** internationalisé : en-tête (sous-titre paramétré), filtres (recherche, statut),
+  état vide, table (colonnes, voir), pagination (`common.pageOf`). Namespace `catalog.variants.*` ;
+  réutilise `common.*` + `catalog.colPrice/colCategory/status/noResults`. Libellé partagé
+  `catalog.viewProductsList`.
+- **Ratchet garde** : les 2 vues retirées de l'`ALLOWLIST` du gate i18n (désormais protégées).
+
+### Avancement
+- Tracker [`i18n-coverage.md`](docs/recette/i18n-coverage.md) : **28 ✅ / 0 🟡 / 20 ⬜** (58 %).
+
+### Tests
+- Frontend **257** inchangé · `vue-tsc` propre · `npm run i18n:check` vert.
+
 ## [Non publié] — i18n : garde CI dure (parité + texte FR en dur) (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-guard` (release `v1.0.0` → `rc.71`). **La Definition of Done i18n est désormais opposable automatiquement.**

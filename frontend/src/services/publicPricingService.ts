@@ -64,6 +64,49 @@ export interface PublicPricingResponse {
   data: PublicPlan[]
 }
 
+/** P6 — moyen de paiement disponible pour un marché. */
+export interface PublicPaymentMethod {
+  method: string
+  /** `auto` = rail PSP réel ; `manual` = preuve + validation admin ; `quote` = sur devis. */
+  mode: 'auto' | 'manual' | 'quote' | string
+  currency: string
+  label: string | null
+}
+
+export interface PublicPaymentMethodsResponse {
+  market: { code: string; label: string; currency: string; source: string }
+  /** Vrai dès qu'au moins un moyen est un rail automatique (faux tant qu'aucun PSP n'est branché). */
+  has_auto: boolean
+  data: PublicPaymentMethod[]
+}
+
+/**
+ * Fetch the payment methods available for a market (or country, resolved server-side).
+ * Public endpoint (P6-1). Throws on non-OK/timeout so callers can degrade gracefully.
+ */
+export async function fetchPublicPaymentMethods(
+  params: { market?: string; country?: string } = {},
+): Promise<PublicPaymentMethodsResponse> {
+  const qs = new URLSearchParams()
+  if (params.market) qs.set('market', params.market)
+  if (params.country) qs.set('country', params.country)
+  const query = qs.toString()
+  const url = `${API_BASE}/api/public/payment-methods${query ? `?${query}` : ''}`
+
+  const controller = new AbortController()
+  const tid = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { Accept: 'application/json' },
+    })
+    if (!res.ok) throw new Error(`public payment methods request failed: ${res.status}`)
+    return (await res.json()) as PublicPaymentMethodsResponse
+  } finally {
+    clearTimeout(tid)
+  }
+}
+
 /**
  * Fetch public pricing for a market (preferred) or a country (fallback resolution
  * server-side). Throws on a non-OK response or timeout so callers can degrade.

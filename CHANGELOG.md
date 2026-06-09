@@ -3,6 +3,28 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 💳 P6-2 : affichage des moyens de paiement par marché (checkout abonnement) (2026-06-09)
+
+Branche `feature/p6-2-checkout-display` (release `v1.0.0` → `rc.93`).
+
+### UX (paiements) — moitié visible du DoD
+- **`UpgradeView`** : nouvelle section **« Moyens de paiement disponibles »** alimentée par l'API P6-1
+  (`fetchPublicPaymentMethods`), affichant chaque moyen du marché avec un **badge de mode** —
+  *Validation manuelle* (`manual`) / *Sur devis* (`quote`) / *En ligne* (`auto`, futur). Remplace la
+  mention éditoriale en dur par des données structurées (source de vérité = l'API). Dégradation
+  gracieuse (section masquée) si l'API est injoignable. Rechargé au changement de marché.
+- Service `fetchPublicPaymentMethods` (raw fetch public, même patron que `fetchPublicPricing`).
+- i18n `billing.payMethods.*` (FR+EN) : titres, modes, libellés de méthodes (Wave/Orange Money/MTN
+  MoMo/M-Pesa/virement/carte/espèces).
+
+### Périmètre / suite
+- Couvre le **checkout abonnement** (UpgradeView). Le **checkout commercial** (sélecteurs POS/commande +
+  mapping fournisseur→`Payment.method`) reste un incrément ultérieur (touche des enums validés par tests).
+
+### Tests
+- **+2 tests** `publicPricingService.spec` (fetch payment-methods, dégradation). Frontend **262** ✅ ·
+  `vue-tsc` propre · `npm run i18n:check` vert (parité FR/EN, `UpgradeView` scannée).
+
 ## [Non publié] — 💳 P6-1 : socle moyens de paiement par marché (zéro PSP) (2026-06-09)
 
 Branche `feature/p6-1-payment-methods` (release `v1.0.0` → `rc.92`).

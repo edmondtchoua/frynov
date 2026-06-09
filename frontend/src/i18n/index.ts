@@ -778,6 +778,12 @@ export const messages: Record<Locale, Dict> = {
       },
     },
     billing: {
+      payMethods: {
+        title: 'Moyens de paiement disponibles',
+        intro: "À l'activation, réglez via l'un de ces moyens. Selon votre marché, le paiement est validé manuellement (preuve à téléverser) ou traité sur devis.",
+        mode: { auto: 'En ligne', manual: 'Validation manuelle', quote: 'Sur devis' },
+        method: { wave: 'Wave', orange_money: 'Orange Money', mtn_money: 'MTN MoMo', mpesa: 'M-Pesa', bank_transfer: 'Virement bancaire', card: 'Carte bancaire', cash: 'Espèces' },
+      },
       title: 'Abonnement & Facturation',
       subtitle: 'Gérez votre plan et consultez vos paiements',
       unknownPlan: 'Plan inconnu',
@@ -1599,6 +1605,12 @@ export const messages: Record<Locale, Dict> = {
       },
     },
     billing: {
+      payMethods: {
+        title: 'Available payment methods',
+        intro: 'On activation, pay via one of these methods. Depending on your market, payment is validated manually (upload a proof) or handled on quote.',
+        mode: { auto: 'Online', manual: 'Manual review', quote: 'On quote' },
+        method: { wave: 'Wave', orange_money: 'Orange Money', mtn_money: 'MTN MoMo', mpesa: 'M-Pesa', bank_transfer: 'Bank transfer', card: 'Card', cash: 'Cash' },
+      },
       title: 'Subscription & Billing',
       subtitle: 'Manage your plan and review your payments',
       unknownPlan: 'Unknown plan',

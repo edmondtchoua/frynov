@@ -142,6 +142,18 @@
       </div>
     </div>
 
+    <!-- P6-2 — Moyens de paiement disponibles pour le marché -->
+    <section v-if="paymentMethods.length" class="pay-methods">
+      <h3 class="pay-methods__title">{{ $t('billing.payMethods.title') }}</h3>
+      <p class="pay-methods__intro">{{ $t('billing.payMethods.intro') }}</p>
+      <ul class="pay-methods__list">
+        <li v-for="pm in paymentMethods" :key="pm.method" class="pay-method">
+          <span class="pay-method__name">{{ $t('billing.payMethods.method.' + pm.method) }}</span>
+          <span class="pay-method__mode" :class="`pay-method__mode--${pm.mode}`">{{ $t('billing.payMethods.mode.' + pm.mode) }}</span>
+        </li>
+      </ul>
+    </section>
+
     <!-- Footer note -->
     <p class="upgrade-note">
       {{ $t('billing.priceFootnote', { currency: market.currency, market: market.label }) }}
@@ -155,7 +167,7 @@ import { ref, computed, watch, onMounted, h } from 'vue'
 import { useRouter } from 'vue-router'
 import { authService } from '@/modules/auth/services/authService'
 import { useGeoContent } from '@/composables/useGeoContent'
-import { fetchPublicPricing, type PublicPlan } from '@/services/publicPricingService'
+import { fetchPublicPricing, fetchPublicPaymentMethods, type PublicPlan, type PublicPaymentMethod } from '@/services/publicPricingService'
 import type { Subscription } from '@/modules/auth/types'
 import { t } from '@/i18n'
 
@@ -221,7 +233,20 @@ async function loadPricing(marketCode: string): Promise<void> {
     apiPlans.value = null // graceful: fall back to local currency-aware amounts
   }
 }
-watch(() => market.value.code, code => { void loadPricing(code) }, { immediate: true })
+
+// P6-2 — moyens de paiement disponibles pour le marché (manual/quote tant qu'aucun PSP réel).
+const paymentMethods = ref<PublicPaymentMethod[]>([])
+
+async function loadPaymentMethods(marketCode: string): Promise<void> {
+  const code = marketCode === 'africa' ? 'waemu' : marketCode
+  try {
+    paymentMethods.value = (await fetchPublicPaymentMethods({ market: code })).data
+  } catch {
+    paymentMethods.value = [] // gracieux : la section se masque simplement
+  }
+}
+
+watch(() => market.value.code, code => { void loadPricing(code); void loadPaymentMethods(code) }, { immediate: true })
 
 const apiPlanByCode = computed<Record<string, PublicPlan>>(() =>
   Object.fromEntries((apiPlans.value ?? []).map(p => [p.code, p])),
@@ -665,6 +690,56 @@ onMounted(fetchSubscription)
 .btn-plan--enterprise:hover {
   background: var(--brand-primary-dark, #059669);
 }
+
+/* ── P6-2 — Moyens de paiement par marché ────────────────────────────────────── */
+.pay-methods {
+  margin-top: 2.5rem;
+  padding: 1.5rem;
+  border: 1px solid var(--gray-200, #e2e8f0);
+  border-radius: var(--radius-lg, 12px);
+  background: var(--gray-50, #f8fafc);
+}
+.pay-methods__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gray-900, #0f172a);
+  margin: 0 0 0.35rem;
+}
+.pay-methods__intro {
+  font-size: 0.8125rem;
+  color: var(--gray-500, #64748b);
+  margin: 0 0 1rem;
+  line-height: 1.55;
+}
+.pay-methods__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.pay-method {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: white;
+  border: 1px solid var(--gray-200, #e2e8f0);
+  border-radius: 999px;
+}
+.pay-method__name { font-size: 0.875rem; font-weight: 600; color: var(--gray-800, #1e293b); }
+.pay-method__mode {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+}
+.pay-method__mode--manual { background: #fef9c3; color: #854d0e; }
+.pay-method__mode--quote  { background: #f1f5f9; color: #475569; }
+.pay-method__mode--auto   { background: #d1fae5; color: #065f46; }
 
 /* ── Footer note ────────────────────────────────────────────────────────────── */
 .upgrade-note {

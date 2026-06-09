@@ -44,7 +44,7 @@ Une table structurée, requêtable par API publique + admin, qui **matérialise 
 | RC | Titre | Périmètre | v1.0.0 ? |
 |---|---|---|---|
 | **P6-1** ✅ **LIVRÉ (rc.92)** | **Socle marché↔moyens + mention manuelle** | Table/modèle/migration/seeder `market_payment_methods` (10 marchés, tout `manual`/`quote`) + `GET /api/public/payment-methods`. **Zéro rail, zéro PSP.** +5 tests `PublicPaymentMethodsTest`. | ✅ |
-| **P6-2** | **Brancher le checkout déclaratif (approche A) + admin** | Front : sélecteurs de paiement (`PosView` + bloc hors-POS) alimentés par l'API (fin du « en dur ») ; mention « manuel/sur devis » quand `mode≠auto` ; parcours client ManualPayment par marché. Admin : audit/validation/rejet/notifications. i18n FR+EN (garde CI). Tests. | ✅ |
+| **P6-2** 🟢 **partiel (rc.93)** | **Brancher le checkout déclaratif (approche A) + admin** | ✅ **Abonnement** : `UpgradeView` affiche les moyens par marché (badges manual/quote) via `fetchPublicPaymentMethods` + i18n + 2 tests. **Reste** : checkout **commercial** (sélecteurs `PosView`/commande + mapping fournisseur→`Payment.method`) + parcours admin ManualPayment côté client. | 🟢 |
 | **P6-3** | *(post-1.0)* **Infra webhook/PSP sans rail actif** | Créer `config/billing.php` ; routes webhook derrière `webhook.signature` (stub no-op + flag) ; interface `PaymentGateway` (initiate/verify/refund) + machine à états `Payment` derrière feature flag. Tests signature/anti-replay. | ❌ |
 | **P6-4** | *(post-1.0, par marché)* **Premier PSP réel** | 1 PSP sur 1 marché (Flutterwave/Paystack UEMOA-Nigeria **ou** Stripe Europe-Amérique du Nord, selon décision) : initiation, callback, webhook signé, réconciliation, remboursement. Bascule `mode` du marché `manual`→`auto`. Sprints isolés. | ❌ |
 

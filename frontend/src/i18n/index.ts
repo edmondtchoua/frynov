@@ -158,6 +158,21 @@ export const messages: Record<Locale, Dict> = {
       },
     },
     catalog: {
+      duplicate: {
+        action: 'Dupliquer',
+        titleProduct: 'Dupliquer le produit', titleCategory: 'Dupliquer la catégorie',
+        intro: "Une copie sera créée en brouillon. Les identifiants uniques sont régénérés, les codes externes vidés et le stock n'est pas copié.",
+        copied: 'Copié', regenerated: 'Régénéré', cleared: 'Vidé', excluded: 'Non copié',
+        variantsCount: '{count} variante(s)', attributesCount: '{count} attribut(s)',
+        confirm: 'Créer la copie', creating: 'Création…',
+        success: 'Copie créée.', error: 'La duplication a échoué. Réessayez.',
+        field: {
+          sku: 'SKU', internal_barcode: 'Code-barres interne', variant_skus: 'SKU des variantes',
+          barcode: 'Code-barres', gtin: 'GTIN', slug: 'Slug',
+          stock: 'Stock', movements: 'Mouvements', batches: 'Lots', serials: 'N° de série',
+          warranties: 'Garanties', licenses: 'Licences', products: 'Produits', subcategories: 'Sous-catégories',
+        },
+      },
       productsTitle: 'Catalogue produits', productSingular: 'produit', productPlural: 'produits',
       newProduct: 'Nouveau produit', addProduct: 'Ajouter un produit',
       searchPlaceholder: 'Nom, SKU, code-barres…', allCategories: 'Toutes catégories',
@@ -964,6 +979,21 @@ export const messages: Record<Locale, Dict> = {
       },
     },
     catalog: {
+      duplicate: {
+        action: 'Duplicate',
+        titleProduct: 'Duplicate product', titleCategory: 'Duplicate category',
+        intro: 'A draft copy will be created. Unique identifiers are regenerated, external codes cleared, and stock is not copied.',
+        copied: 'Copied', regenerated: 'Regenerated', cleared: 'Cleared', excluded: 'Not copied',
+        variantsCount: '{count} variant(s)', attributesCount: '{count} attribute(s)',
+        confirm: 'Create the copy', creating: 'Creating…',
+        success: 'Copy created.', error: 'Duplication failed. Try again.',
+        field: {
+          sku: 'SKU', internal_barcode: 'Internal barcode', variant_skus: 'Variant SKUs',
+          barcode: 'Barcode', gtin: 'GTIN', slug: 'Slug',
+          stock: 'Stock', movements: 'Movements', batches: 'Batches', serials: 'Serial numbers',
+          warranties: 'Warranties', licenses: 'Licenses', products: 'Products', subcategories: 'Subcategories',
+        },
+      },
       productsTitle: 'Product catalog', productSingular: 'product', productPlural: 'products',
       newProduct: 'New product', addProduct: 'Add a product',
       searchPlaceholder: 'Name, SKU, barcode…', allCategories: 'All categories',

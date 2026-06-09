@@ -167,8 +167,9 @@ Les tests catalogue couvrent création/liste/archive/lookup SKU, codes, labels, 
 
 ## 5bis. ✅ Décision produit VALIDÉE (2026-06-09) — politique opposable
 
-> ✅ **Backend livré (rc.89)** : `ProductDuplicationService` + endpoints `duplicate-preview`/`duplicate`
-> (produit & catégorie) + 8 tests `ProductDuplicationTest`. **Reste : wizard frontend (rc.90).**
+> ✅ **LIVRÉ COMPLET** — Backend (rc.89) : `ProductDuplicationService` + endpoints + 8 tests `ProductDuplicationTest`.
+> Frontend (rc.90) : `ProductDuplicationWizard.vue` (aperçu serveur + tags régénéré/vidé/non-copié + confirmation),
+> actions « Dupliquer » dans `ProductShowPage`/`CategoryListView`, `productService.duplicate*`, i18n `catalog.duplicate.*` (+3 tests).
 
 > Le doc d'audit exigeait une « validation produit avant implémentation ». Arbitrages **tranchés** ci-dessous ;
 > ils constituent la **spec opposable** pour l'implémentation (`ProductDuplicationService` + endpoints + tests).

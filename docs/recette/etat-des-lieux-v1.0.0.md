@@ -1,6 +1,6 @@
 # État des lieux v1.0.0 — polish UX restant + suite de la recette finale
 
-> Mise à jour : 2026-06-09. Branche `release/v1.0.0` à **`v1.0.0-rc.86`** (cette session → `rc.87+`).
+> Mise à jour : 2026-06-09. Branche `release/v1.0.0` à **`v1.0.0-rc.90`** (cette session → `rc.91+`).
 > Complète (et actualise) `go-no-go-v1.0.0.md` (figé à rc.1). Depuis rc.1 ont été livrés :
 > RBAC B2 (rc.4), remédiation audit sécurité (rc.5), audit UX/UI P0+P1 (rc.6→rc.13),
 > polish UX P1 — garde « modifications non enregistrées » sur la création de commande +
@@ -37,9 +37,10 @@
 > **garde i18n CI dure** (rc.71 : `npm run i18n:check` — parité FR/EN + texte FR en dur, ratchet allowlist).
 > **🔒 Sécurité — warehouse-scoping des GET unitaires** (rc.86) : commande/paiement d'un autre site
 > inaccessibles via UUID connu (`findById`/`findOrFail` + `WarehouseScope`) → **zone d'ombre Sprint 20 levée** (+4 tests HTTP).
-> **🧬 Catalogue — duplication produit/catégorie backend** (rc.89) : `ProductDuplicationService` (SKU/identifiants
-> régénérés, stock/identifiants jamais copiés, status draft, transactionnel) + endpoints + 8 tests ; wizard front → rc.90.
-> Tests : **backend 656** (653 ✅ / 2 skipped / **1 échec pré-existant hors périmètre** : `ImportModuleTest` adresse client) · **frontend 257** · `vue-tsc` propre ·
+> **🧬 Catalogue — duplication produit/catégorie COMPLÈTE** (rc.89 backend + rc.90 wizard) : `ProductDuplicationService`
+> (SKU/identifiants régénérés, stock/identifiants jamais copiés, status draft, transactionnel) + 4 endpoints +
+> `ProductDuplicationWizard.vue` (aperçu + tags) + actions « Dupliquer » (ProductShow/CategoryList) — **gate catalogue P1 levé** (11 tests).
+> Tests : **backend 656** (653 ✅ / 2 skipped / **1 échec pré-existant hors périmètre** : `ImportModuleTest` adresse client) · **frontend 260** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 
 ---

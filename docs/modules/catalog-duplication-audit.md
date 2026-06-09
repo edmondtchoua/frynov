@@ -165,6 +165,48 @@ Les tests catalogue couvrent création/liste/archive/lookup SKU, codes, labels, 
 | Tests backend | Absent | À ajouter. |
 | Tests frontend | Absent | À ajouter. |
 
+## 5bis. ✅ Décision produit VALIDÉE (2026-06-09) — politique opposable
+
+> Le doc d'audit exigeait une « validation produit avant implémentation ». Arbitrages **tranchés** ci-dessous ;
+> ils constituent la **spec opposable** pour l'implémentation (`ProductDuplicationService` + endpoints + tests).
+
+### Politique de copie — PRODUIT
+| Champ | Action | Raison |
+|---|---|---|
+| `name` | copier **+ suffixe « (copie) »** | lisibilité, évite la confusion |
+| `sku` | **régénérer** via `SkuGeneratorService::generate(tenant, prefix)` | unicité tenant/SKU |
+| `internal_barcode` | **vider** (`null`) | unique par tenant |
+| `barcode` (externe) | **vider** | éviter incohérence étiquettes/scans |
+| `gtin` | **vider** | arbitrage tranché : ne pas partager (sûr) |
+| `barcode_type`/`barcode_source`/`barcode_auto_generated` | **réinitialiser** | cohérent avec barcode vidé |
+| `description`, `price_amount`, `compare_at_price_amount`, `cost_amount`, `price_currency`, `weight_kg`, `metadata`, `product_type`, `has_variants` | **copier** | configuration catalogue légitime |
+| `category_id`, `supplier_id` | **copier** (validés même tenant) | même rattachement |
+| `status` | **forcer `draft`** | une copie ne doit jamais être publiée par accident |
+| stock / quantité / mouvements / lots / séries (IMEI/VIN) | **JAMAIS copié** (stock = 0, aucun mouvement) | données opérationnelles/uniques |
+| garanties émises / licences individuelles | **JAMAIS copié** (future-proof) | rattachées à des ventes passées |
+
+### Attributs (axes + valeurs)
+- `ProductAttribute` (axes) + `ProductAttributeValue` (valeurs) : **copiés** (config catalogue) en remappant `product_id` → nouveau produit.
+
+### Variantes
+- Copiées : `name`, `label`, `attributes` (JSON), `price_amount`, `cost_amount`, `price_currency`, `sort_order`, `is_active`.
+- **`sku` régénéré** (`generateVariant(newParentSku, index)`), **`barcode` vidé**, stock 0. Pivot `product_variant_attr_values` re-lié vers les valeurs d'attributs dupliquées.
+
+### Catégorie
+- Duplication = **copie du nœud seul** : `name` (+ suffixe), `parent_id` identique, `description`, `sort_order`, `is_active`. **`slug` régénéré** (unicité), `depth`/`path` recalculés par le modèle. **PAS** ses produits, **PAS** ses sous-catégories.
+
+### Endpoints (mêmes gardes `role_or_permission:manager|admin|catalog.*` que les writes existants)
+- `POST /api/catalog/products/{id}/duplicate-preview` → renvoie l'aperçu (champs copiés/vidés/régénérés) **sans persister**.
+- `POST /api/catalog/products/{id}/duplicate` → crée le produit + variantes + attributs **dans une seule `DB::transaction`** (rollback total si échec). Audit : journaliser `product.duplicated` (nouvelle action), ne pas copier l'historique source.
+- `POST /api/catalog/categories/{id}/duplicate` (+ `-preview`) → nœud catégorie.
+- Source chargée **par `tenant_id`** ; toute relation (catégorie/fournisseur) vérifiée même tenant.
+
+### Tests d'acceptation (backend, `#[Test]`)
+preview produit · duplication produit (SKU/barcode/GTIN régénérés/vidés, status=draft) · duplication variantes (SKU régénérés, stock 0) · copie attributs/valeurs · duplication catégorie (nœud seul, slug régénéré) · **non-copie** stock/mouvements/identifiants · **rollback** transactionnel · garde RBAC (member → 403) · isolation tenant (source d'un autre tenant → 404).
+
+### Séquencement
+**rc.88 = backend** (service + endpoints + tests) ; **rc.89 = frontend** (`ProductDuplicationWizard.vue` + action « Dupliquer » dans `ProductShowPage`/`CategoryListView` + `productService.duplicate*` + i18n FR/EN).
+
 ## 6. Proposition d’architecture
 
 ### 6.1 Principe directeur

@@ -42,4 +42,25 @@ describe("productService", () => {
     await productService.categories.list()
     expect(vi.mocked(client.get)).toHaveBeenCalledWith(expect.stringContaining("categories"))
   })
+
+  it("duplicatePreview posts to product duplicate-preview and resolves the preview", async () => {
+    vi.mocked(client.post).mockResolvedValue({ data: { data: { source: { id: "p1", name: "X" }, result: { name: "X (copie)" }, regenerated: ["sku"], cleared: ["barcode"], excluded: ["stock"] } } })
+    const preview = await productService.duplicatePreview("p1")
+    expect(vi.mocked(client.post)).toHaveBeenCalledWith("/api/catalog/products/p1/duplicate-preview")
+    expect(preview.result.name).toBe("X (copie)")
+    expect(preview.regenerated).toContain("sku")
+  })
+
+  it("duplicate posts to product duplicate and resolves the new product", async () => {
+    vi.mocked(client.post).mockResolvedValue({ data: { data: { id: "p2", name: "X (copie)", status: "draft" } } })
+    const created = await productService.duplicate("p1")
+    expect(vi.mocked(client.post)).toHaveBeenCalledWith("/api/catalog/products/p1/duplicate")
+    expect(created.id).toBe("p2")
+  })
+
+  it("categories.duplicate posts to category duplicate", async () => {
+    vi.mocked(client.post).mockResolvedValue({ data: { data: { id: "c2", name: "Cat (copie)" } } })
+    await productService.categories.duplicate("c1")
+    expect(vi.mocked(client.post)).toHaveBeenCalledWith("/api/catalog/categories/c1/duplicate")
+  })
 })

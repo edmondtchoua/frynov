@@ -69,6 +69,17 @@
             </svg>
             {{ $t('inventory.adjust') }}
           </button>
+          <button
+            v-if="isManagerOrAbove"
+            class="btn btn-secondary btn-sm"
+            @click="showDuplicate = true"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M3 11V3a1 1 0 011-1h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            {{ $t('catalog.duplicate.action') }}
+          </button>
           <RouterLink
             v-if="isManagerOrAbove"
             :to="`/catalog/products/${product.id}/edit`"
@@ -81,6 +92,15 @@
           </RouterLink>
         </div>
       </div>
+
+      <ProductDuplicationWizard
+        v-if="product"
+        :model-value="showDuplicate"
+        entity="product"
+        :source-id="product.id"
+        @close="showDuplicate = false"
+        @duplicated="onDuplicated"
+      />
 
       <!-- ── Tab navigation ──────────────────────────────────────── -->
       <div class="show-tabs">
@@ -701,6 +721,7 @@ import { productService } from '../services/productService'
 import { usePermission } from '@/composables/usePermission'
 import { t } from '@/i18n'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
+import ProductDuplicationWizard from '../components/ProductDuplicationWizard.vue'
 import client from '@/api/client'
 import type { Product, ProductStockSummary, StockMovementItem } from '../types'
 
@@ -712,6 +733,14 @@ const productId = route.params.id as string
 
 // ── State ──────────────────────────────────────────────────────────────────
 const product      = ref<Product | null>(null)
+const showDuplicate = ref(false)
+
+function onDuplicated(p: unknown): void {
+  showDuplicate.value = false
+  pushToast(t('catalog.duplicate.success'))
+  const id = (p as { id?: string })?.id
+  if (id) router.push(`/catalog/products/${id}`)
+}
 const loading      = ref(false)
 const stockSummary = ref<ProductStockSummary | null>(null)
 const stockLoading = ref(false)

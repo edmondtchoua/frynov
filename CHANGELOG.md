@@ -3,6 +3,27 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧬 Catalogue : duplication produit/catégorie — wizard frontend (P1, complet) (2026-06-09)
+
+Branche `feature/catalog-duplication-wizard` (release `v1.0.0` → `rc.90`).
+
+### UX (catalogue) — fonctionnalité P1 désormais complète (backend rc.89 + frontend rc.90)
+- **`ProductDuplicationWizard.vue`** (modal `BaseModal`) : récupère l'aperçu serveur (sans persistance) et
+  affiche, avant confirmation, le nom de la copie, le nombre de variantes/attributs, et des **tags
+  catégorisés** « Régénéré » (SKU, code interne, slug…) / « Vidé » (barcode, GTIN) / « Non copié »
+  (stock, mouvements, séries, garanties…). Confirmation → crée la copie en **brouillon**.
+- Actions **« Dupliquer »** ajoutées dans `ProductShowPage` (→ redirige vers le nouveau produit) et
+  `CategoryListView` (→ recharge la liste). `productService.duplicate*` (produit & catégorie, preview + create).
+- Nouveau namespace i18n `catalog.duplicate.*` (FR+EN) — labels d'actions, intro, et map `field.*` des
+  codes serveur. Le composant est entièrement bilingue (DoD i18n).
+
+### Tests
+- **+3 tests** `productService.spec` (duplicate-preview / duplicate produit, duplicate catégorie).
+  Frontend **260** ✅ · `vue-tsc` propre · `npm run i18n:check` vert (parité FR/EN).
+
+### Gate catalogue
+- **Duplication produit/catégorie assistée : LIVRÉE** (politique serveur §5bis + endpoints + wizard + 11 tests).
+
 ## [Non publié] — 🧬 Catalogue : duplication produit/catégorie — backend (P1) (2026-06-09)
 
 Branche `feature/catalog-duplication-backend` (release `v1.0.0` → `rc.89`).

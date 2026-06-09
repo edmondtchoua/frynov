@@ -67,6 +67,7 @@
             <td style="text-align: right;">
               <div class="row-actions">
                 <button class="btn btn-ghost btn-sm" @click="openEdit(cat)">{{ $t('common.edit') }}</button>
+                <button class="btn btn-ghost btn-sm" @click="openDuplicate(cat)">{{ $t('catalog.duplicate.action') }}</button>
                 <button class="btn btn-ghost btn-sm text-danger" @click="confirmDelete(cat)">
                   {{ $t('common.delete') }}
                 </button>
@@ -152,6 +153,15 @@
         </button>
       </template>
     </BaseModal>
+
+    <ProductDuplicationWizard
+      v-if="dupCategoryId"
+      :model-value="showDuplicate"
+      entity="category"
+      :source-id="dupCategoryId"
+      @close="showDuplicate = false"
+      @duplicated="onDuplicated"
+    />
   </div>
 </template>
 
@@ -159,6 +169,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
 import { productService } from '../services/productService'
+import ProductDuplicationWizard from '../components/ProductDuplicationWizard.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { t } from '@/i18n'
@@ -172,6 +183,19 @@ const editingId  = ref<string | null>(null)
 
 const catForm   = reactive({ name: '', parent_id: '', description: '', sort_order: 0, is_active: true })
 const catErrors = reactive<Record<string, string>>({})
+
+const showDuplicate = ref(false)
+const dupCategoryId = ref<string | null>(null)
+
+function openDuplicate(cat: Category) {
+  dupCategoryId.value = cat.id
+  showDuplicate.value = true
+}
+
+function onDuplicated() {
+  showDuplicate.value = false
+  load()
+}
 
 const rootCategories = computed(() => categories.value.filter(c => !c.parent_id))
 

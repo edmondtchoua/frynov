@@ -16,6 +16,25 @@ interface PaginatedProducts {
   links: { next: string | null; prev: string | null }
 }
 
+/** Aperçu non persisté d'une duplication (politique serveur §5bis). */
+export interface DuplicationPreview {
+  source: { id: string; sku?: string; name: string }
+  result: {
+    name: string
+    status?: string
+    category_id?: string | null
+    parent_id?: string | null
+    product_type?: string
+    price_amount?: number
+    cost_amount?: number | null
+    attributes_count?: number
+    variants_count?: number
+  }
+  regenerated: string[]
+  cleared?: string[]
+  excluded: string[]
+}
+
 export const productService = {
   // ── Products ───────────────────────────────────────────────────────────────
 
@@ -72,6 +91,16 @@ export const productService = {
 
   activate(id: string): Promise<Product> {
     return client.patch(`/api/catalog/products/${id}/activate`).then(r => r.data.data)
+  },
+
+  /** Aperçu de duplication produit (ne persiste rien). */
+  duplicatePreview(id: string): Promise<DuplicationPreview> {
+    return client.post(`/api/catalog/products/${id}/duplicate-preview`).then(r => r.data.data)
+  },
+
+  /** Duplique le produit (SKU/identifiants régénérés, stock non copié, statut brouillon). */
+  duplicate(id: string): Promise<Product> {
+    return client.post(`/api/catalog/products/${id}/duplicate`).then(r => r.data.data)
   },
 
   // ── Variants ───────────────────────────────────────────────────────────────
@@ -179,6 +208,14 @@ export const productService = {
 
     delete(id: string): Promise<void> {
       return client.delete(`/api/catalog/categories/${id}`)
+    },
+
+    duplicatePreview(id: string): Promise<DuplicationPreview> {
+      return client.post(`/api/catalog/categories/${id}/duplicate-preview`).then(r => r.data.data)
+    },
+
+    duplicate(id: string): Promise<Category> {
+      return client.post(`/api/catalog/categories/${id}/duplicate`).then(r => r.data.data)
     },
   },
 }

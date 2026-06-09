@@ -3,6 +3,32 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 💳 P6-3 : infra passerelle de paiement + webhooks (inerte, post-1.0) (2026-06-09)
+
+Branche `feature/p6-3-gateway-infra` (release `v1.0.0` → `rc.94`).
+
+### Paiements — fondation PSP (AUCUN rail réel actif)
+- **`config/billing.php`** : secrets webhooks par prestataire (vide ⇒ refusé) + **feature flag
+  `gateways_enabled` (false par défaut)**. Corrige le code mort signalé par le cadrage (le middleware
+  `VerifyWebhookSignature` lisait une config inexistante).
+- **Abstraction `PaymentGateway`** (`code`/`initiate`/`verify`/`refund`) + **`ManualGateway`** (référence,
+  approche A — aucun appel externe) + **`PaymentGatewayManager`** : `manual` toujours dispo ; tout rail
+  réel **refusé tant que le flag est false**.
+- **Webhook signé** : `PaymentWebhookController` (no-op, accuse réception) + routes
+  `POST /api/webhooks/payments/{provider}` **enregistrées uniquement si le flag est actif** (hors auth,
+  protégées par `webhook.signature`). Défaut sûr : route absente (404) tant que désactivé.
+
+### P6-4 (intégration PSP réelle) — bloqué décision fondateur
+- L'abstraction + l'adaptateur de référence sont en place. Une intégration **live** (Flutterwave/Paystack/
+  Stripe…) exige des **décisions fondateur** (PSP cible, marché prioritaire, comptes marchands) et des
+  **secrets** non disponibles → **non implémentable en code à ce stade**. Le socle est prêt à l'accueillir.
+
+### Tests
+- **+9 tests** : `PaymentGatewayTest` (manuel toujours dispo, rail réel refusé flag off, inconnu rejeté,
+  manuel sans appel externe) · `PaymentWebhookInfraTest` (signature valide/invalide/replay/non-configuré,
+  route absente quand désactivé). Backend **670** (667 ✅ / 2 skipped / 1 échec pré-existant hors périmètre).
+  Payments suite 40 ✅.
+
 ## [Non publié] — 💳 P6-2 : affichage des moyens de paiement par marché (checkout abonnement) (2026-06-09)
 
 Branche `feature/p6-2-checkout-display` (release `v1.0.0` → `rc.93`).

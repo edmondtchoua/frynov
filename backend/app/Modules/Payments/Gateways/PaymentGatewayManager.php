@@ -20,7 +20,8 @@ class PaymentGatewayManager
     public function __construct()
     {
         $this->register(new ManualGateway());
-        // Les rails réels s'enregistreront ici en P6-4 (derrière le flag).
+        // Rails réels (P6-4) — référencés, mais get() les refuse tant que le flag est false.
+        $this->register(new FlutterwaveGateway());
     }
 
     public function register(PaymentGateway $gateway): void

@@ -3,6 +3,26 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 💳 P6-4 : adaptateur de référence Flutterwave (inerte) (2026-06-09)
+
+Branche `feature/p6-4-flutterwave-ref` (release `v1.0.0` → `rc.95`).
+
+### Paiements — premier adaptateur PSP (référence, AUCUN appel réseau réel)
+- **`FlutterwaveGateway implements PaymentGateway`** (couverture panafricaine : cartes + Mobile Money
+  Nigeria/Ghana/Kenya/UEMOA…) : `initiate` (`POST /v3/payments` → intention + lien de redirection),
+  `verify` (`/v3/transactions/verify_by_reference` → statut canonique succeeded/failed/pending),
+  `refund` (`POST /v3/transactions/{ref}/refund`). Lit `base_url`/`secret_key` depuis `config/billing.php`.
+- **Inerte par défaut** : enregistré dans `PaymentGatewayManager`, mais `get('flutterwave')` reste **refusé
+  tant que `gateways_enabled=false`** et n'appelle rien tant que la `secret_key` n'est pas renseignée.
+- **Activation (décision fondateur)** : renseigner `FLUTTERWAVE_SECRET_KEY` + `PAYMENT_GATEWAYS_ENABLED=true`
+  + le secret webhook, puis basculer le `mode` du marché `manual`→`auto`. ⚠️ Vérifier le contrat exact
+  contre la doc Flutterwave v3 avant production. Variante **Stripe/Paystack** = même patron.
+
+### Tests
+- **+5 tests** `FlutterwaveGatewayTest` (HTTP mocké via `Http::fake`/`fakeSequence`) : résolution par le
+  manager (flag on), `initiate` pending+lien, échec prestataire, mapping de statut, remboursement.
+  Backend **675** (672 ✅ / 2 skipped / 1 échec pré-existant hors périmètre).
+
 ## [Non publié] — 💳 P6-3 : infra passerelle de paiement + webhooks (inerte, post-1.0) (2026-06-09)
 
 Branche `feature/p6-3-gateway-infra` (release `v1.0.0` → `rc.94`).

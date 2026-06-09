@@ -1,6 +1,6 @@
 # Couverture i18n — tracker vivant (UX-13)
 
-> **Mise à jour : 2026-06-09 (rc.74).** Source de vérité de l'avancement i18n, vue par vue.
+> **Mise à jour : 2026-06-09 (rc.75).** Source de vérité de l'avancement i18n, vue par vue.
 > Remplace les estimations « par zone » de l'état-des-lieux par un **décompte réel par vue**
 > (audit multi-agents du 2026-06-09). Le français reste la **source de vérité** ; l'anglais suit.
 
@@ -25,18 +25,18 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 
 | État | Vues | % |
 |---|---|---|
-| ✅ **Complet** | 32 | 67 % |
+| ✅ **Complet** | 33 | 69 % |
 | 🟡 **Partiel** | 0 | 0 % |
-| ⬜ **À faire** (non câblé) | 16 | 33 % |
-| **Câblées i18n (toutes complètes)** | **32** | **67 %** |
+| ⬜ **À faire** (non câblé) | 15 | 31 % |
+| **Câblées i18n (toutes complètes)** | **33** | **69 %** |
 
-> ✅ **rc.74** : **32 vues complètes** (+ Ventes `OrderDetailView` / `ReturnsView`). Aucune vue câblée
-> sans reliquat (garde CI dure depuis rc.71). Reste **16 vues non câblées** (cf. ⬜ ci-dessous).
+> ✅ **rc.75** : **33 vues complètes** — **module Ventes 100 %** (`OrderCreateView`). Aucune vue câblée
+> sans reliquat (garde CI dure depuis rc.71). Reste **15 vues non câblées** (cf. ⬜ ci-dessous).
 
 > ⚠️ Le module **Customers** (`CustomerListView`, `CustomerDetailView`) est géré par une **session
 > concurrente** → ne pas y toucher tant que ce verrou n'est pas levé.
 
-## ✅ Complètes (32)
+## ✅ Complètes (33)
 
 | Module | Vue | Namespace | RC |
 |---|---|---|---|
@@ -70,6 +70,7 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 | orders | `OrderListView` | `orders.*` + `common.pageOf` | rc.34 / rc.70 |
 | orders | `OrderDetailView` | `orders.detail.*` | rc.74 |
 | orders | `ReturnsView` | `orders.returns.*` | rc.74 |
+| orders | `OrderCreateView` | `orders.create.*` | rc.75 |
 | deliveries | `DeliveryListView` | `deliveries.*` + `common.pageOf/prev/next` | rc.26 / rc.70 |
 | reports | `SalesReportView` / `StockReportView` | `reports.*` (+ `top10`) | rc.30 / rc.70 |
 
@@ -101,7 +102,6 @@ Les 11 vues câblées qui conservaient des reliquats ont été **finalisées en 
 | admin | `AdminDashboardView`, `AuditLogView`, `ModuleListView` |
 | billing | `BillingView`, `UpgradeView` |
 | inventory | `BatchDeliveryView`, `MovementHistoryView` |
-| orders | `OrderCreateView` |
 | onboarding | `OnboardingView` |
 | pos | `PosView` |
 | import-export | `ImportHistoryView`, `ImportWizardView` |

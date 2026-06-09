@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="page-header">
       <div>
-        <RouterLink to="/inventory" class="back-link">← Stock</RouterLink>
-        <h2>Historique des mouvements</h2>
+        <RouterLink to="/inventory" class="back-link">← {{ $t('inventory.backToStock') }}</RouterLink>
+        <h2>{{ $t('inventory.history.title') }}</h2>
         <p v-if="stockInfo" class="page-subtitle">
           {{ stockInfo.product?.name }} · {{ stockInfo.product?.sku }}
         </p>
@@ -14,37 +14,37 @@
     <!-- Product summary card -->
     <div v-if="stockInfo" class="summary-card">
       <div class="summary-stat">
-        <span class="summary-label">Quantité</span>
+        <span class="summary-label">{{ $t('inventory.quantity') }}</span>
         <span class="summary-value">{{ stockInfo.stock.quantity }}</span>
       </div>
       <div class="summary-divider"></div>
       <div class="summary-stat">
-        <span class="summary-label">Réservé</span>
+        <span class="summary-label">{{ $t('inventory.reserved') }}</span>
         <span class="summary-value">{{ stockInfo.stock.reserved_quantity }}</span>
       </div>
       <div class="summary-divider"></div>
       <div class="summary-stat">
-        <span class="summary-label">Disponible</span>
+        <span class="summary-label">{{ $t('inventory.available') }}</span>
         <span class="summary-value" :style="stockInfo.stock.is_low_stock ? 'color:#b45309;' : 'color:#059669;'">
           {{ stockInfo.available }}
         </span>
       </div>
       <div class="summary-divider"></div>
       <div class="summary-stat">
-        <span class="summary-label">Seuil bas</span>
+        <span class="summary-label">{{ $t('inventory.lowThreshold') }}</span>
         <span class="summary-value">{{ stockInfo.stock.low_stock_threshold }}</span>
       </div>
-      <span v-if="stockInfo.stock.is_low_stock" class="badge badge-warning" style="align-self: center;">Stock bas</span>
+      <span v-if="stockInfo.stock.is_low_stock" class="badge badge-warning" style="align-self: center;">{{ $t('inventory.lowStock') }}</span>
     </div>
 
     <!-- Filters -->
     <div class="filter-bar">
       <select v-model="filters.type" class="form-input filter-select" style="max-width: 180px;" @change="load">
-        <option value="">Tous les types</option>
-        <option value="in">Entrée</option>
-        <option value="out">Sortie</option>
-        <option value="adjustment">Ajustement</option>
-        <option value="return">Retour</option>
+        <option value="">{{ $t('inventory.history.allTypes') }}</option>
+        <option value="in">{{ $t('inventory.history.type.in') }}</option>
+        <option value="out">{{ $t('inventory.history.type.out') }}</option>
+        <option value="adjustment">{{ $t('inventory.history.type.adjustment') }}</option>
+        <option value="return">{{ $t('inventory.history.type.return') }}</option>
       </select>
     </div>
 
@@ -60,8 +60,8 @@
         <circle cx="20" cy="20" r="8" stroke="var(--brand-primary)" stroke-width="2"/>
         <path d="M20 16v4.5l2.5 2" stroke="var(--brand-primary)" stroke-width="2" stroke-linecap="round"/>
       </svg>
-      <h3>Aucun mouvement</h3>
-      <p>{{ filters.type ? 'Aucun mouvement de ce type pour ce produit.' : 'Aucun mouvement enregistré pour ce produit.' }}</p>
+      <h3>{{ $t('inventory.history.empty') }}</h3>
+      <p>{{ filters.type ? $t('inventory.history.emptyTypeFiltered') : $t('inventory.history.emptyAll') }}</p>
     </div>
 
     <!-- Timeline -->
@@ -132,9 +132,9 @@
 
     <!-- Pagination -->
     <div v-if="meta.last_page > 1" class="pagination">
-      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page <= 1" @click="goToPage(meta.current_page - 1)">← Précédent</button>
-      <span class="page-info">Page {{ meta.current_page }} / {{ meta.last_page }}</span>
-      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goToPage(meta.current_page + 1)">Suivant →</button>
+      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page <= 1" @click="goToPage(meta.current_page - 1)">← {{ $t('common.previous') }}</button>
+      <span class="page-info">{{ $t('common.pageOf', { current: meta.current_page, total: meta.last_page }) }}</span>
+      <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goToPage(meta.current_page + 1)">{{ $t('common.next') }} →</button>
     </div>
   </div>
 </template>
@@ -144,6 +144,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { formatDateTime } from '@/shared/utils/date'
 import { RouterLink, useRoute } from 'vue-router'
 import { inventoryService } from '../services/inventoryService'
+import { t } from '@/i18n'
 import type { StockMovement, MovementType } from '../types'
 
 const route = useRoute()
@@ -185,17 +186,22 @@ function goToPage(page: number) { filters.page = page; load() }
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 function typeLabel(type: MovementType): string {
-  return { in: 'Entrée', out: 'Sortie', adjustment: 'Ajustement', return: 'Retour' }[type] ?? type
+  return ({
+    in:         t('inventory.history.type.in'),
+    out:        t('inventory.history.type.out'),
+    adjustment: t('inventory.history.type.adjustment'),
+    return:     t('inventory.history.type.return'),
+  } as Record<string, string>)[type] ?? type
 }
 
 function reasonLabel(reason: string): string {
   return ({
-    delivery: 'Livraison',
-    sale:     'Vente',
-    return:   'Retour',
-    loss:     'Perte',
-    count:    'Inventaire',
-    manual:   'Manuel',
+    delivery: t('inventory.history.reason.delivery'),
+    sale:     t('inventory.history.reason.sale'),
+    return:   t('inventory.history.reason.return'),
+    loss:     t('inventory.history.reason.loss'),
+    count:    t('inventory.history.reason.count'),
+    manual:   t('inventory.history.reason.manual'),
   } as Record<string, string>)[reason] ?? reason
 }
 

@@ -15,9 +15,10 @@ import { messages } from '../index'
 
 // ── Vues de module non encore internationalisées (ratchet) ───────────────────
 // Retirer une ligne dès que la vue est traduite FR+EN. Objectif : liste vide.
+// rc.84 : toutes les vues traduisibles sont faites. Il ne reste QUE le module
+// Customers, géré par une session concurrente (verrou). Dès le verrou levé,
+// traduire ces 2 vues puis vider complètement l'allowlist.
 const ALLOWLIST = new Set<string>([
-  'inventory/views/BatchDeliveryView.vue',
-  'inventory/views/MovementHistoryView.vue',
   // Customers — session concurrente, exclu tant que le verrou n'est pas levé.
   'customers/views/CustomerListView.vue',
   'customers/views/CustomerDetailView.vue',

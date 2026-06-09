@@ -1,6 +1,6 @@
 # Couverture i18n — tracker vivant (UX-13)
 
-> **Mise à jour : 2026-06-09 (rc.83).** Source de vérité de l'avancement i18n, vue par vue.
+> **Mise à jour : 2026-06-09 (rc.84).** Source de vérité de l'avancement i18n, vue par vue.
 > Remplace les estimations « par zone » de l'état-des-lieux par un **décompte réel par vue**
 > (audit multi-agents du 2026-06-09). Le français reste la **source de vérité** ; l'anglais suit.
 
@@ -25,21 +25,23 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 
 | État | Vues | % |
 |---|---|---|
-| ✅ **Complet** | 44 | 92 % |
+| ✅ **Complet** | 46 | 96 % |
 | 🟡 **Partiel** | 0 | 0 % |
-| ⬜ **À faire** (non câblé) | 4 | 8 % |
-| **Câblées i18n (toutes complètes)** | **44** | **92 %** |
+| ⬜ **À faire** (non câblé) | 2 | 4 % |
+| **Câblées i18n (toutes complètes)** | **46** | **96 %** |
 
-> ✅ **rc.83** : **44 vues complètes** (+ **Admin secondaire** à 100 % : `AdminDashboardView`,
-> `AuditLogView`, `ModuleListView`). Extension `admin.*` (`dash`, `audit`, `modules`, `moduleStatus`) ;
-> réutilise `admin.tenantStatus`, `billing.subStatus` et `common.*` (pageOf/prev/next/date/status/name/
-> loading). Aucune vue câblée sans reliquat (garde CI dure depuis rc.71). Reste **4 vues non câblées**
-> (2 traduisibles — Inventaire — + 2 Customers exclues).
+> 🎉 **rc.84 — objectif traduisible ATTEINT** : **46 vues complètes** (+ **Inventaire** à 100 % :
+> `BatchDeliveryView`, `MovementHistoryView`). **Toutes les vues traduisibles sont internationalisées
+> FR+EN.** Il ne reste que les **2 vues du module Customers**, gérées par une session concurrente
+> (verrou) → exclues du périmètre actif. Extension `inventory.*` (`delivery`, `history`) ; réutilise
+> `inventory.quantity/reserved/available/lowThreshold/lowStock/backToStock`, `common.*`
+> (pageOf/prev/next/saving/delete). Aucune vue câblée sans reliquat (garde CI dure depuis rc.71).
+> **L'`ALLOWLIST` de la garde ne contient plus que les 2 vues Customers.**
 
 > ⚠️ Le module **Customers** (`CustomerListView`, `CustomerDetailView`) est géré par une **session
 > concurrente** → ne pas y toucher tant que ce verrou n'est pas levé.
 
-## ✅ Complètes (44)
+## ✅ Complètes (46)
 
 | Module | Vue | Namespace | RC |
 |---|---|---|---|
@@ -72,6 +74,8 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 | admin | `CountryRuleListView` | `admin.*` + `common.deleteFailed` | rc.67 / rc.70 |
 | inventory | `StockListView` | `inventory.*` + `common.pageOf/genericError` | rc.56 / rc.70 |
 | inventory | `StockTransferView` | `inventory.*` (ship confirm) | rc.59 / rc.70 |
+| inventory | `BatchDeliveryView` | `inventory.delivery.*` + `common.saving/delete` | rc.84 |
+| inventory | `MovementHistoryView` | `inventory.history.*` + `common.pageOf/prev/next` | rc.84 |
 | payments | `PaymentListView` | `payments.*` + `common.pageOf` | rc.28 / rc.70 |
 | orders | `OrderListView` | `orders.*` + `common.pageOf` | rc.34 / rc.70 |
 | orders | `OrderDetailView` | `orders.detail.*` | rc.74 |
@@ -109,16 +113,17 @@ Les 11 vues câblées qui conservaient des reliquats ont été **finalisées en 
 > Toute nouvelle liste paginée doit l'utiliser (cf. Definition of Done) ; les vues ⬜ ci-dessous
 > l'adopteront lors de leur traduction.
 
-## ⬜ À faire — non câblées (4)
+## ⬜ À faire — non câblées (2 — exclues)
 
 | Module | Vues |
 |---|---|
-| inventory | `BatchDeliveryView`, `MovementHistoryView` |
 | customers ⚠️ | `CustomerListView`, `CustomerDetailView` *(session concurrente — exclu)* |
 
-> **2 vues traduisibles restantes** (hors 2 Customers exclues). Prochaine cible recommandée :
-> **Inventaire restant** (`BatchDeliveryView`, `MovementHistoryView`) — réutilise `inventory.*` +
-> `common.*`. Après quoi l'`ALLOWLIST` ne contiendra plus que les 2 vues Customers (verrou levé → fin).
+> ✅ **0 vue traduisible restante.** Toutes les vues du périmètre actif sont internationalisées FR+EN.
+> Les **2 seules vues restantes** appartiennent au module **Customers**, sous verrou (session
+> concurrente). **Action de clôture** : dès le verrou levé, traduire `CustomerListView` +
+> `CustomerDetailView` (namespace `customers.*`), les retirer de l'`ALLOWLIST` → **allowlist vide,
+> couverture i18n 48/48 (100 %)**.
 
 ## 🛣️ Ordre de bascule recommandé (prochaines RC)
 
@@ -129,8 +134,8 @@ Les 11 vues câblées qui conservaient des reliquats ont été **finalisées en 
 4. **POS** — `PosView` (vue dense, prévoir un namespace `pos.*`).
 5. ~~**Import/Export**, **Marketplace**, **Settings**, **Onboarding**, **Billing**~~ ✅ rc.77–82.
 6. ~~**Admin secondaire** — `AdminDashboardView`, `AuditLogView`, `ModuleListView`.~~ ✅ **rc.83**
-7. **Inventaire restant** — `BatchDeliveryView`, `MovementHistoryView` *(prochaine cible)*.
-8. **Customers** — dès que le verrou de session concurrente est levé.
+7. ~~**Inventaire restant** — `BatchDeliveryView`, `MovementHistoryView`.~~ ✅ **rc.84**
+8. **Customers** — dès que le verrou de session concurrente est levé *(seule étape restante → 100 %)*.
 
 ## 🤖 Garde automatisée — ✅ livrée (rc.71)
 
@@ -146,9 +151,9 @@ suite vitest (`npm run coverage`). Échoue si :
   positifs quasi nuls.
 - **(c) Anti-bitrot** — l'allowlist ne référence que des vues réellement présentes.
 
-**Ratchet** : l'`ALLOWLIST` du spec liste les **4 vues** non encore traduites (dont 2 Customers
-exclues). On **retire une entrée** dès qu'une vue est traduite (sinon la garde ne la protège pas).
-Objectif : allowlist vide (hors verrou Customers).
+**Ratchet** : l'`ALLOWLIST` du spec ne liste plus que les **2 vues Customers** (verrou session
+concurrente). Toutes les autres vues sont traduites et protégées par la garde. **Objectif final** :
+dès le verrou Customers levé, traduire + retirer ces 2 dernières entrées → **allowlist vide (100 %)**.
 
 **Validation à la livraison** : la garde a immédiatement débusqué un reliquat manqué par l'audit
 (`WarehouseView` — libellés de devises en dur), corrigé via le nouveau `common.currencyName.*`

@@ -3,26 +3,26 @@
     <InventoryTabNav />
     <div class="page-header">
       <div>
-        <h1 class="page-title">Réception de livraison</h1>
-        <p class="page-subtitle">Enregistrez plusieurs produits en une seule opération</p>
+        <h1 class="page-title">{{ $t('inventory.delivery.title') }}</h1>
+        <p class="page-subtitle">{{ $t('inventory.delivery.subtitle') }}</p>
       </div>
-      <router-link to="/inventory" class="btn btn-ghost">← Stock</router-link>
+      <router-link to="/inventory" class="btn btn-ghost">← {{ $t('inventory.backToStock') }}</router-link>
     </div>
 
     <div class="card delivery-form">
       <div class="form-group">
-        <label class="form-label">Référence livraison <span class="hint">(optionnel)</span></label>
-        <input v-model="reference" class="form-input" placeholder="Ex: BL-2026-042, Commande fournisseur n°…" />
+        <label class="form-label">{{ $t('inventory.delivery.refLabel') }} <span class="hint">{{ $t('inventory.delivery.optional') }}</span></label>
+        <input v-model="reference" class="form-input" :placeholder="$t('inventory.delivery.refPlaceholder')" />
       </div>
 
-      <h3 class="section-title">Articles reçus</h3>
+      <h3 class="section-title">{{ $t('inventory.delivery.itemsReceived') }}</h3>
 
       <div v-for="(item, i) in items" :key="i" class="delivery-item">
         <div class="item-search">
           <input
             v-model="item.search"
             class="form-input"
-            :placeholder="`Produit ${i + 1} — nom ou SKU`"
+            :placeholder="$t('inventory.delivery.productPlaceholder', { n: i + 1 })"
             @input="onSearch(i)"
             @focus="item.showSuggestions = true"
           />
@@ -48,22 +48,22 @@
           v-model.number="item.quantity"
           type="number" min="1"
           class="form-input qty-input"
-          placeholder="Qté"
+          :placeholder="$t('inventory.delivery.qty')"
         />
         <button
           class="btn btn-ghost btn-sm remove-btn"
           @click="removeItem(i)"
           :disabled="items.length === 1"
-          title="Supprimer"
+          :title="$t('common.delete')"
         >✕</button>
       </div>
 
       <button type="button" class="btn btn-secondary btn-sm mt-2" @click="addItem">
-        + Ajouter un article
+        + {{ $t('inventory.delivery.addItem') }}
       </button>
 
       <div class="form-actions">
-        <span class="items-summary">{{ validItemsCount }} article(s) prêt(s)</span>
+        <span class="items-summary">{{ $t('inventory.delivery.itemsReady', { count: validItemsCount }) }}</span>
         <button
           type="button"
           class="btn btn-primary"
@@ -71,12 +71,12 @@
           @click="submit"
         >
           <span v-if="submitting" class="spinner-sm spinner-white"></span>
-          {{ submitting ? 'Enregistrement…' : 'Valider la réception' }}
+          {{ submitting ? $t('common.saving') : $t('inventory.delivery.submit') }}
         </button>
       </div>
 
       <div v-if="success" class="alert alert-success">
-        ✓ {{ success }} mouvement(s) enregistré(s). Redirection vers le stock…
+        ✓ {{ $t('inventory.delivery.successMsg', { count: success }) }}
       </div>
       <div v-if="error" class="alert alert-error">{{ error }}</div>
     </div>
@@ -88,6 +88,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import InventoryTabNav from '../components/InventoryTabNav.vue'
 import api from '@/services/api'
+import { t } from '@/i18n'
 
 interface Product { id: string; name: string; sku: string }
 interface DeliveryItem {
@@ -157,7 +158,7 @@ async function submit() {
     success.value = r.data.count ?? payload.items.length
     setTimeout(() => router.push('/inventory'), 2000)
   } catch (e: unknown) {
-    error.value = 'Erreur lors de la réception. Vérifiez les données et réessayez.'
+    error.value = t('inventory.delivery.error')
   } finally {
     submitting.value = false
   }

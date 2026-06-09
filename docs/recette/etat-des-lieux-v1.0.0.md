@@ -45,9 +45,10 @@
 > par marché** (badges manual/quote) via `fetchPublicPaymentMethods` → DoD « chaque devise = un flux ou une
 > mention » matérialisé (+7 tests). **P6-3** (rc.94) : infra passerelle inerte (`config/billing.php`, interface
 > `PaymentGateway` + `ManualGateway` + manager, webhook signé flag-gated) — **aucun rail PSP réel** (+9 tests).
-> **P6-4** (rc.95) : **adaptateur de référence `FlutterwaveGateway`** (initiate/verify/refund, HTTP mocké,
-> +5 tests) — **inerte** ; activation = décision fondateur (clé + flag). Cf. [`p6-cadrage.md`](decisions/p6-cadrage.md).
-> Tests : **backend 675** (672 ✅ / 2 skipped / **1 échec pré-existant hors périmètre** : `ImportModuleTest` adresse client) · **frontend 262** · `vue-tsc` propre ·
+> **P6-4** (rc.95) : **adaptateur de référence `FlutterwaveGateway`** (HTTP mocké, +5 tests) — **inerte** ;
+> activation = décision fondateur (clé + flag). **Checkout commercial backend** (rc.96) : `PaymentMethodCatalog`
+> (provider→catégorie) + `POST /api/payments` accepte `provider` (+5 tests). Cf. [`p6-cadrage.md`](decisions/p6-cadrage.md).
+> Tests : **backend 680** (677 ✅ / 2 skipped / **1 échec pré-existant hors périmètre** : `ImportModuleTest` adresse client) · **frontend 262** · `vue-tsc` propre ·
 > `composer audit` / `npm audit` 0 vulnérabilité.
 
 ---

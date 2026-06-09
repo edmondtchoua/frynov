@@ -3,6 +3,27 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 💳 P6 : checkout commercial — moyen spécifique par marché (backend) (2026-06-09)
+
+Branche `feature/p6-commercial-provider` (release `v1.0.0` → `rc.96`).
+
+### Paiements — enregistrement d'un moyen spécifique
+- **`PaymentMethodCatalog`** : pont `provider` (moyen marché : wave/orange_money/mtn_money/mpesa/
+  bank_transfer/card/cash) → **catégorie canonique `Payment.method`** (mobile_money/transfer/card/cash).
+- **`POST /api/payments`** accepte désormais un champ optionnel **`provider`** (alternatif à `method`) :
+  il dérive la catégorie canonique `Payment.method` **et** trace le provider en `reference` (si vide).
+  L'enum `Payment.method` est **inchangé** ; la compat ascendante (`method` direct) est préservée.
+  Permet à tout checkout commercial d'offrir un moyen précis par marché sans churn de schéma.
+
+### Périmètre / suite
+- Backend prêt. **Reste** : sélecteur de paiement frontend dans `PosView`/commande, consommant
+  `/api/public/payment-methods` et postant `provider` (UI dense — incrément ultérieur).
+
+### Tests
+- **+5 tests** `PaymentProviderTest` (provider→catégorie + traçage, référence explicite conservée,
+  `method` legacy, ni l'un ni l'autre → 422, mapping du catalogue). Backend **680** (677 ✅ / 2 skipped /
+  1 échec pré-existant hors périmètre). Payments suite 50 ✅.
+
 ## [Non publié] — 💳 P6-4 : adaptateur de référence Flutterwave (inerte) (2026-06-09)
 
 Branche `feature/p6-4-flutterwave-ref` (release `v1.0.0` → `rc.95`).

@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { fetchPublicPricing } from '@/services/publicPricingService'
+import { fetchPublicPricing, fetchPublicPaymentMethods } from '@/services/publicPricingService'
 
 // The landing is a PUBLIC page: pricing is fetched via a raw fetch (no auth token,
 // no axios 401-redirect interceptor) from the backend source of truth.
@@ -37,5 +37,33 @@ describe('publicPricingService.fetchPublicPricing', () => {
   it('throws on a non-OK response so the caller can fall back', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 503 }))
     await expect(fetchPublicPricing({ market: 'waemu' })).rejects.toThrow()
+  })
+})
+
+describe('publicPricingService.fetchPublicPaymentMethods (P6)', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('requests /api/public/payment-methods for the market and parses the methods', async () => {
+    const payload = {
+      market: { code: 'waemu', label: 'UEMOA', currency: 'XOF', source: 'market' },
+      has_auto: false,
+      data: [{ method: 'wave', mode: 'manual', currency: 'XOF', label: null }],
+    }
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => payload })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const res = await fetchPublicPaymentMethods({ market: 'waemu' })
+
+    const url = String(fetchMock.mock.calls[0][0])
+    expect(url).toContain('/api/public/payment-methods')
+    expect(url).toContain('market=waemu')
+    expect(res.has_auto).toBe(false)
+    expect(res.data[0].method).toBe('wave')
+    expect(res.data[0].mode).toBe('manual')
+  })
+
+  it('throws on a non-OK response so the caller can degrade', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }))
+    await expect(fetchPublicPaymentMethods({ market: 'europe' })).rejects.toThrow()
   })
 })

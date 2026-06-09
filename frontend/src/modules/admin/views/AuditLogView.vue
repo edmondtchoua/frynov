@@ -4,11 +4,11 @@
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Action</th>
-            <th>Utilisateur</th>
-            <th>Tenant</th>
-            <th>IP</th>
-            <th>Date</th>
+            <th>{{ $t('admin.audit.colAction') }}</th>
+            <th>{{ $t('admin.audit.colUser') }}</th>
+            <th>{{ $t('admin.audit.colTenant') }}</th>
+            <th>{{ $t('admin.audit.colIp') }}</th>
+            <th>{{ $t('common.date') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -22,13 +22,13 @@
         </tbody>
       </table>
     </div>
-    <div v-else-if="loading" class="state-msg">Chargement…</div>
-    <div v-else class="state-msg">Aucune entrée dans le journal.</div>
+    <div v-else-if="loading" class="state-msg">{{ $t('common.loading') }}</div>
+    <div v-else class="state-msg">{{ $t('admin.audit.empty') }}</div>
 
     <div class="pagination" v-if="meta && meta.last_page > 1">
-      <button :disabled="page === 1" @click="page--; load()">← Précédent</button>
-      <span>Page {{ meta.current_page }} / {{ meta.last_page }}</span>
-      <button :disabled="page === meta.last_page" @click="page++; load()">Suivant →</button>
+      <button :disabled="page === 1" @click="page--; load()">← {{ $t('common.previous') }}</button>
+      <span>{{ $t('common.pageOf', { current: meta.current_page, total: meta.last_page }) }}</span>
+      <button :disabled="page === meta.last_page" @click="page++; load()">{{ $t('common.next') }} →</button>
     </div>
   </div>
 </template>

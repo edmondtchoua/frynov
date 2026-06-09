@@ -16,9 +16,6 @@ import { messages } from '../index'
 // ── Vues de module non encore internationalisées (ratchet) ───────────────────
 // Retirer une ligne dès que la vue est traduite FR+EN. Objectif : liste vide.
 const ALLOWLIST = new Set<string>([
-  'admin/views/AdminDashboardView.vue',
-  'admin/views/AuditLogView.vue',
-  'admin/views/ModuleListView.vue',
   'inventory/views/BatchDeliveryView.vue',
   'inventory/views/MovementHistoryView.vue',
   // Customers — session concurrente, exclu tant que le verrou n'est pas levé.

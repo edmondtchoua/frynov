@@ -4,24 +4,24 @@
     <!-- KPI grid -->
     <div class="kpi-grid" v-if="data">
       <div class="kpi-card">
-        <div class="kpi-label">Tenants total</div>
+        <div class="kpi-label">{{ $t('admin.dash.tenantsTotal') }}</div>
         <div class="kpi-value">{{ data.overview.tenants }}</div>
-        <div class="kpi-sub">{{ data.overview.active_tenants }} actifs</div>
+        <div class="kpi-sub">{{ $t('admin.dash.activeCount', { count: data.overview.active_tenants }) }}</div>
       </div>
       <div class="kpi-card kpi-card--warn" v-if="data.overview.suspended_tenants > 0">
-        <div class="kpi-label">Suspendus</div>
+        <div class="kpi-label">{{ $t('admin.dash.suspended') }}</div>
         <div class="kpi-value">{{ data.overview.suspended_tenants }}</div>
-        <div class="kpi-sub">Attention requise</div>
+        <div class="kpi-sub">{{ $t('admin.dash.attentionRequired') }}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Utilisateurs</div>
+        <div class="kpi-label">{{ $t('admin.dash.users') }}</div>
         <div class="kpi-value">{{ data.overview.total_users }}</div>
-        <div class="kpi-sub">Tous tenants</div>
+        <div class="kpi-sub">{{ $t('admin.dash.allTenants') }}</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Modules ERP</div>
+        <div class="kpi-label">{{ $t('admin.dash.erpModules') }}</div>
         <div class="kpi-value">{{ data.overview.total_modules }}</div>
-        <div class="kpi-sub">{{ data.overview.total_plans }} plans actifs</div>
+        <div class="kpi-sub">{{ $t('admin.dash.activePlans', { count: data.overview.total_plans }) }}</div>
       </div>
     </div>
 
@@ -29,14 +29,14 @@
 
       <!-- Subscriptions by status -->
       <section class="admin-card">
-        <h2 class="admin-card__title">Abonnements par statut</h2>
+        <h2 class="admin-card__title">{{ $t('admin.dash.subsByStatus') }}</h2>
         <div class="stat-list">
           <div
             v-for="(count, status) in data.subscriptions"
             :key="status"
             class="stat-row"
           >
-            <span class="stat-badge" :class="`stat-badge--${status}`">{{ status }}</span>
+            <span class="stat-badge" :class="`stat-badge--${status}`">{{ $t('billing.subStatus.' + status) }}</span>
             <span class="stat-count">{{ count }}</span>
           </div>
         </div>
@@ -44,7 +44,7 @@
 
       <!-- By plan -->
       <section class="admin-card">
-        <h2 class="admin-card__title">Répartition par plan</h2>
+        <h2 class="admin-card__title">{{ $t('admin.dash.byPlan') }}</h2>
         <div class="stat-list">
           <div v-for="p in data.by_plan" :key="p.code" class="stat-row">
             <span class="stat-name">{{ p.name }}</span>
@@ -55,14 +55,14 @@
 
       <!-- Recent tenants -->
       <section class="admin-card admin-card--wide">
-        <h2 class="admin-card__title">Derniers tenants créés</h2>
+        <h2 class="admin-card__title">{{ $t('admin.dash.recentTenants') }}</h2>
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Nom</th>
-              <th>Plan</th>
-              <th>Statut</th>
-              <th>Créé le</th>
+              <th>{{ $t('common.name') }}</th>
+              <th>{{ $t('admin.dash.colPlan') }}</th>
+              <th>{{ $t('common.status') }}</th>
+              <th>{{ $t('admin.dash.createdOn') }}</th>
               <th></th>
             </tr>
           </thead>
@@ -73,10 +73,10 @@
                 <div class="tenant-slug">{{ t.slug }}</div>
               </td>
               <td><span class="plan-badge">{{ t.plan }}</span></td>
-              <td><span class="status-dot" :class="`status-dot--${t.status}`"></span> {{ t.status }}</td>
+              <td><span class="status-dot" :class="`status-dot--${t.status}`"></span> {{ $t('admin.tenantStatus.' + t.status) }}</td>
               <td>{{ formatDate(t.created_at) }}</td>
               <td>
-                <RouterLink :to="`/admin/tenants/${t.id}`" class="btn-link">Voir →</RouterLink>
+                <RouterLink :to="`/admin/tenants/${t.id}`" class="btn-link">{{ $t('admin.dash.view') }}</RouterLink>
               </td>
             </tr>
           </tbody>
@@ -85,7 +85,7 @@
 
       <!-- Audit log -->
       <section class="admin-card admin-card--wide">
-        <h2 class="admin-card__title">Activité récente</h2>
+        <h2 class="admin-card__title">{{ $t('admin.dash.recentActivity') }}</h2>
         <div class="log-list">
           <div v-for="log in data.recent_logs" :key="log.id" class="log-row">
             <span class="log-action">{{ log.action }}</span>
@@ -99,7 +99,7 @@
     </div>
 
     <!-- Loading -->
-    <div v-else-if="loading" class="admin-loading">Chargement…</div>
+    <div v-else-if="loading" class="admin-loading">{{ $t('common.loading') }}</div>
     <div v-else-if="error" class="admin-error">{{ error }}</div>
 
   </div>
@@ -110,6 +110,7 @@ import { ref, onMounted } from 'vue'
 import { formatDate } from '@/shared/utils/date'
 import { RouterLink } from 'vue-router'
 import { adminService } from '../services/adminService'
+import { t } from '@/i18n'
 
 const data    = ref<Awaited<ReturnType<typeof adminService.getDashboard>> | null>(null)
 const loading = ref(true)
@@ -119,7 +120,7 @@ onMounted(async () => {
   try {
     data.value = await adminService.getDashboard()
   } catch (e: any) {
-    error.value = e.message ?? 'Erreur de chargement'
+    error.value = e.message ?? t('admin.dash.loadError')
   } finally {
     loading.value = false
   }

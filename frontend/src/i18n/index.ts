@@ -432,6 +432,19 @@ export const messages: Record<Locale, Dict> = {
       searchTenant: 'Rechercher un tenant…', allPlans: 'Tous les plans',
       colTenant: 'Tenant', colPlan: 'Plan', colSubscription: 'Abonnement',
       tenantStatus: { active: 'Actif', suspended: 'Suspendu', cancelled: 'Annulé' },
+      dash: {
+        tenantsTotal: 'Tenants total', activeCount: '{count} actifs', suspended: 'Suspendus', attentionRequired: 'Attention requise',
+        users: 'Utilisateurs', allTenants: 'Tous tenants', erpModules: 'Modules ERP', activePlans: '{count} plans actifs',
+        subsByStatus: 'Abonnements par statut', byPlan: 'Répartition par plan', recentTenants: 'Derniers tenants créés',
+        colPlan: 'Plan', createdOn: 'Créé le', view: 'Voir →', recentActivity: 'Activité récente', loadError: 'Erreur de chargement',
+      },
+      audit: {
+        colAction: 'Action', colUser: 'Utilisateur', colTenant: 'Tenant', colIp: 'IP', empty: 'Aucune entrée dans le journal.',
+      },
+      modules: {
+        activations: '{count} activation(s)', core: 'Core', hide: 'Masquer', show: 'Afficher', empty: 'Aucun module trouvé.',
+      },
+      moduleStatus: { active: 'Actif', beta: 'Bêta', coming_soon: 'Bientôt', maintenance: 'Maintenance', disabled: 'Désactivé' },
       details: 'Détails', suspend: 'Suspendre', reactivate: 'Réactiver',
       noTenants: 'Aucun espace client trouvé', suspendConfirm: 'Suspendre « {name} » ?',
       allTenants: 'Tous les tenants', information: 'Informations', slug: 'Slug', domain: 'Domaine',
@@ -1193,6 +1206,19 @@ export const messages: Record<Locale, Dict> = {
       searchTenant: 'Search a tenant…', allPlans: 'All plans',
       colTenant: 'Tenant', colPlan: 'Plan', colSubscription: 'Subscription',
       tenantStatus: { active: 'Active', suspended: 'Suspended', cancelled: 'Cancelled' },
+      dash: {
+        tenantsTotal: 'Total tenants', activeCount: '{count} active', suspended: 'Suspended', attentionRequired: 'Attention required',
+        users: 'Users', allTenants: 'All tenants', erpModules: 'ERP modules', activePlans: '{count} active plans',
+        subsByStatus: 'Subscriptions by status', byPlan: 'Breakdown by plan', recentTenants: 'Recently created tenants',
+        colPlan: 'Plan', createdOn: 'Created on', view: 'View →', recentActivity: 'Recent activity', loadError: 'Loading error',
+      },
+      audit: {
+        colAction: 'Action', colUser: 'User', colTenant: 'Tenant', colIp: 'IP', empty: 'No entries in the log.',
+      },
+      modules: {
+        activations: '{count} activation(s)', core: 'Core', hide: 'Hide', show: 'Show', empty: 'No module found.',
+      },
+      moduleStatus: { active: 'Active', beta: 'Beta', coming_soon: 'Coming soon', maintenance: 'Maintenance', disabled: 'Disabled' },
       details: 'Details', suspend: 'Suspend', reactivate: 'Reactivate',
       noTenants: 'No client workspace found', suspendConfirm: 'Suspend "{name}"?',
       allTenants: 'All tenants', information: 'Information', slug: 'Slug', domain: 'Domain',

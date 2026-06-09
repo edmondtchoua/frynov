@@ -1,6 +1,6 @@
 # Couverture i18n — tracker vivant (UX-13)
 
-> **Mise à jour : 2026-06-09 (rc.82).** Source de vérité de l'avancement i18n, vue par vue.
+> **Mise à jour : 2026-06-09 (rc.83).** Source de vérité de l'avancement i18n, vue par vue.
 > Remplace les estimations « par zone » de l'état-des-lieux par un **décompte réel par vue**
 > (audit multi-agents du 2026-06-09). Le français reste la **source de vérité** ; l'anglais suit.
 
@@ -25,21 +25,21 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 
 | État | Vues | % |
 |---|---|---|
-| ✅ **Complet** | 41 | 85 % |
+| ✅ **Complet** | 44 | 92 % |
 | 🟡 **Partiel** | 0 | 0 % |
-| ⬜ **À faire** (non câblé) | 7 | 15 % |
-| **Câblées i18n (toutes complètes)** | **41** | **85 %** |
+| ⬜ **À faire** (non câblé) | 4 | 8 % |
+| **Câblées i18n (toutes complètes)** | **44** | **92 %** |
 
-> ✅ **rc.82** : **41 vues complètes** (+ module **Billing** à 100 % : `BillingView`, `UpgradeView`).
-> Nouveau namespace `billing.*` (plans Découverte/Essentiel/Croissance/Business, quotas, factures,
-> statuts d'abonnement, paiements manuels, preuve) ; réutilise `common.currencyName` et les libellés
-> `common.*` (date/amount/status/notes/loading/retry). Aucune vue câblée sans reliquat (garde CI dure
-> depuis rc.71). Reste **7 vues non câblées** (5 traduisibles + 2 Customers exclues).
+> ✅ **rc.83** : **44 vues complètes** (+ **Admin secondaire** à 100 % : `AdminDashboardView`,
+> `AuditLogView`, `ModuleListView`). Extension `admin.*` (`dash`, `audit`, `modules`, `moduleStatus`) ;
+> réutilise `admin.tenantStatus`, `billing.subStatus` et `common.*` (pageOf/prev/next/date/status/name/
+> loading). Aucune vue câblée sans reliquat (garde CI dure depuis rc.71). Reste **4 vues non câblées**
+> (2 traduisibles — Inventaire — + 2 Customers exclues).
 
 > ⚠️ Le module **Customers** (`CustomerListView`, `CustomerDetailView`) est géré par une **session
 > concurrente** → ne pas y toucher tant que ce verrou n'est pas levé.
 
-## ✅ Complètes (41)
+## ✅ Complètes (44)
 
 | Module | Vue | Namespace | RC |
 |---|---|---|---|
@@ -52,6 +52,9 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 | catalog | `CategoryListView` | `catalog.*` | rc.45 |
 | admin | `PlanListView` | `admin.*` | rc.68 |
 | admin | `ManualPaymentView` | `admin.*` | rc.68 |
+| admin | `AdminDashboardView` | `admin.dash.*` + `billing.subStatus` + `admin.tenantStatus` | rc.83 |
+| admin | `AuditLogView` | `admin.audit.*` + `common.pageOf/prev/next` | rc.83 |
+| admin | `ModuleListView` | `admin.modules/moduleStatus.*` | rc.83 |
 | admin | `TenantDetailView` | `admin.*` | rc.65 |
 | auth | `LoginView` | `auth.*` | rc.61 |
 | auth | `RegisterView` | `auth.*` | rc.61 |
@@ -106,17 +109,16 @@ Les 11 vues câblées qui conservaient des reliquats ont été **finalisées en 
 > Toute nouvelle liste paginée doit l'utiliser (cf. Definition of Done) ; les vues ⬜ ci-dessous
 > l'adopteront lors de leur traduction.
 
-## ⬜ À faire — non câblées (7)
+## ⬜ À faire — non câblées (4)
 
 | Module | Vues |
 |---|---|
-| admin | `AdminDashboardView`, `AuditLogView`, `ModuleListView` |
 | inventory | `BatchDeliveryView`, `MovementHistoryView` |
 | customers ⚠️ | `CustomerListView`, `CustomerDetailView` *(session concurrente — exclu)* |
 
-> **5 vues traduisibles restantes** (hors 2 Customers exclues). Prochaine cible recommandée :
-> **Admin secondaire** (`AdminDashboardView`, `AuditLogView`, `ModuleListView`) — réutilise
-> `common.*`/`admin.*` déjà très fournis.
+> **2 vues traduisibles restantes** (hors 2 Customers exclues). Prochaine cible recommandée :
+> **Inventaire restant** (`BatchDeliveryView`, `MovementHistoryView`) — réutilise `inventory.*` +
+> `common.*`. Après quoi l'`ALLOWLIST` ne contiendra plus que les 2 vues Customers (verrou levé → fin).
 
 ## 🛣️ Ordre de bascule recommandé (prochaines RC)
 
@@ -126,8 +128,8 @@ Les 11 vues câblées qui conservaient des reliquats ont été **finalisées en 
 3. **Ventes** — `OrderCreateView`, `OrderDetailView`, `ReturnsView`.
 4. **POS** — `PosView` (vue dense, prévoir un namespace `pos.*`).
 5. ~~**Import/Export**, **Marketplace**, **Settings**, **Onboarding**, **Billing**~~ ✅ rc.77–82.
-6. **Admin secondaire** — `AdminDashboardView`, `AuditLogView`, `ModuleListView` *(prochaine cible)*.
-7. **Inventaire restant** — `BatchDeliveryView`, `MovementHistoryView`.
+6. ~~**Admin secondaire** — `AdminDashboardView`, `AuditLogView`, `ModuleListView`.~~ ✅ **rc.83**
+7. **Inventaire restant** — `BatchDeliveryView`, `MovementHistoryView` *(prochaine cible)*.
 8. **Customers** — dès que le verrou de session concurrente est levé.
 
 ## 🤖 Garde automatisée — ✅ livrée (rc.71)
@@ -144,7 +146,7 @@ suite vitest (`npm run coverage`). Échoue si :
   positifs quasi nuls.
 - **(c) Anti-bitrot** — l'allowlist ne référence que des vues réellement présentes.
 
-**Ratchet** : l'`ALLOWLIST` du spec liste les **7 vues** non encore traduites (dont 2 Customers
+**Ratchet** : l'`ALLOWLIST` du spec liste les **4 vues** non encore traduites (dont 2 Customers
 exclues). On **retire une entrée** dès qu'une vue est traduite (sinon la garde ne la protège pas).
 Objectif : allowlist vide (hors verrou Customers).
 

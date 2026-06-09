@@ -8,11 +8,11 @@
             <div class="module-name">{{ mod.name }}</div>
             <div class="module-cat">{{ mod.category }}</div>
           </div>
-          <span class="module-status" :class="`module-status--${mod.status}`">{{ mod.status }}</span>
+          <span class="module-status" :class="`module-status--${mod.status}`">{{ $t('admin.moduleStatus.' + mod.status) }}</span>
         </div>
         <div class="module-stats">
-          <span>{{ mod.total_activations }} activation{{ mod.total_activations !== 1 ? 's' : '' }}</span>
-          <span v-if="mod.is_core" class="core-badge">Core</span>
+          <span>{{ $t('admin.modules.activations', { count: mod.total_activations }) }}</span>
+          <span v-if="mod.is_core" class="core-badge">{{ $t('admin.modules.core') }}</span>
         </div>
         <div class="module-actions">
           <button
@@ -20,24 +20,24 @@
             :class="mod.is_visible ? 'btn-sm--warn' : 'btn-sm--ok'"
             @click="toggleVisibility(mod)"
           >
-            {{ mod.is_visible ? 'Masquer' : 'Afficher' }}
+            {{ mod.is_visible ? $t('admin.modules.hide') : $t('admin.modules.show') }}
           </button>
           <select
             class="status-select"
             :value="mod.status"
             @change="updateStatus(mod, ($event.target as HTMLSelectElement).value)"
           >
-            <option value="active">active</option>
-            <option value="beta">beta</option>
-            <option value="coming_soon">coming_soon</option>
-            <option value="maintenance">maintenance</option>
-            <option value="disabled">disabled</option>
+            <option value="active">{{ $t('admin.moduleStatus.active') }}</option>
+            <option value="beta">{{ $t('admin.moduleStatus.beta') }}</option>
+            <option value="coming_soon">{{ $t('admin.moduleStatus.coming_soon') }}</option>
+            <option value="maintenance">{{ $t('admin.moduleStatus.maintenance') }}</option>
+            <option value="disabled">{{ $t('admin.moduleStatus.disabled') }}</option>
           </select>
         </div>
       </div>
     </div>
-    <div v-else-if="loading" class="state-msg">Chargement…</div>
-    <div v-else class="state-msg">Aucun module trouvé.</div>
+    <div v-else-if="loading" class="state-msg">{{ $t('common.loading') }}</div>
+    <div v-else class="state-msg">{{ $t('admin.modules.empty') }}</div>
   </div>
 </template>
 

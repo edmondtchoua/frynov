@@ -3,6 +3,23 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : Ventes Création de commande — module 100 % (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-orders-create` (release `v1.0.0` → `rc.75`). **Module Ventes entièrement internationalisé (4/4 vues).**
+
+### UX (i18n)
+- **`OrderCreateView`** internationalisé : sélecteur client (autocomplétion), lignes d'articles
+  (picker produit/variante, prix, quantité, totaux), note, total & actions + validations & erreur de
+  création. Namespace `orders.create.*` ; réutilise `orders.new`/`colItems`, `common.*`,
+  `catalog.productForm.optional`.
+- Ratchet : vue retirée de l'`ALLOWLIST` → **module Ventes (Liste/Création/Fiche/Retours) complet**.
+
+### Avancement
+- Tracker [`i18n-coverage.md`](docs/recette/i18n-coverage.md) : **33 ✅ / 0 🟡 / 15 ⬜** (69 %).
+
+### Tests
+- Frontend **257** inchangé · `vue-tsc` propre · `npm run i18n:check` vert.
+
 ## [Non publié] — i18n : Ventes Fiche commande & Retours (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-orders-detail-returns` (release `v1.0.0` → `rc.74`).

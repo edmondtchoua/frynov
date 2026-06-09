@@ -1,23 +1,23 @@
 <template>
   <div class="order-create">
     <div class="page-header">
-      <h2>Nouvelle commande</h2>
-      <RouterLink to="/orders" class="btn btn-secondary">← Retour</RouterLink>
+      <h2>{{ $t('orders.new') }}</h2>
+      <RouterLink to="/orders" class="btn btn-secondary">← {{ $t('common.back') }}</RouterLink>
     </div>
 
     <form @submit.prevent="submit">
       <!-- ── Customer (optional) ──────────────────────────────────── -->
       <div class="card" style="margin-bottom:1rem">
-        <label class="form-label">Client <span class="hint">(optionnel)</span></label>
+        <label class="form-label">{{ $t('orders.create.customer') }} <span class="hint">{{ $t('catalog.productForm.optional') }}</span></label>
         <div class="picker">
           <input
             v-model="customerSearch"
             class="form-input"
-            :placeholder="selectedCustomer ? selectedCustomer.name : 'Rechercher un client…'"
+            :placeholder="selectedCustomer ? selectedCustomer.name : $t('orders.create.searchCustomer')"
             @input="onCustomerSearch"
             @focus="customerOpen = true"
           />
-          <button v-if="selectedCustomer" type="button" class="picker-clear" @click="clearCustomer" title="Retirer">✕</button>
+          <button v-if="selectedCustomer" type="button" class="picker-clear" @click="clearCustomer" :title="$t('orders.create.remove')">✕</button>
           <div v-if="customerOpen && customerResults.length" class="picker-dropdown">
             <button
               v-for="c in customerResults" :key="c.id" type="button"
@@ -36,13 +36,13 @@
 
       <!-- ── Line items ───────────────────────────────────────────── -->
       <div class="card" style="margin-bottom:1rem">
-        <h3 class="card-h3">Articles</h3>
+        <h3 class="card-h3">{{ $t('orders.colItems') }}</h3>
 
         <div class="lines-head">
-          <span style="flex:1">Produit</span>
-          <span style="width:130px;text-align:right">Prix unitaire</span>
-          <span style="width:90px;text-align:center">Qté</span>
-          <span style="width:120px;text-align:right">Total ligne</span>
+          <span style="flex:1">{{ $t('common.product') }}</span>
+          <span style="width:130px;text-align:right">{{ $t('orders.create.unitPrice') }}</span>
+          <span style="width:90px;text-align:center">{{ $t('common.quantity') }}</span>
+          <span style="width:120px;text-align:right">{{ $t('orders.create.lineTotal') }}</span>
           <span style="width:32px"></span>
         </div>
 
@@ -53,7 +53,7 @@
               v-model="item._search"
               class="form-input"
               :class="{ error: item._error }"
-              :placeholder="item.label || 'Rechercher un produit (nom, SKU)…'"
+              :placeholder="item.label || $t('orders.create.searchProduct')"
               @input="onProductSearch(i)"
               @focus="openProductDropdown(i)"
             />
@@ -65,12 +65,12 @@
                 <span class="po-name">{{ p.name }}<span v-if="p.has_variants" class="var-tag">variantes</span></span>
                 <span class="po-meta">{{ p.sku }} · {{ p.price.formatted }}</span>
               </button>
-              <div v-if="productSearching" class="picker-loading">Recherche…</div>
+              <div v-if="productSearching" class="picker-loading">{{ $t('orders.create.searching') }}</div>
             </div>
 
             <!-- Variant selector — required for variable products -->
             <div v-if="item.product_id && (item._needsVariant || item._variants.length)" class="variant-pick">
-              <span v-if="item._loadingVariants" class="dim" style="font-size:0.78rem">Chargement des variantes…</span>
+              <span v-if="item._loadingVariants" class="dim" style="font-size:0.78rem">{{ $t('orders.create.loadingVariants') }}</span>
               <select
                 v-else
                 :value="item.variant_id ?? ''"
@@ -78,7 +78,7 @@
                 :class="{ error: item._needsVariant && item._error }"
                 @change="selectVariant(i, item._variants.find(v => v.id === ($event.target as HTMLSelectElement).value)!)"
               >
-                <option value="" disabled>Choisir une déclinaison…</option>
+                <option value="" disabled>{{ $t('orders.create.chooseVariant') }}</option>
                 <option v-for="v in item._variants" :key="v.id" :value="v.id">
                   {{ v.label }} · {{ v.sku }} · {{ fmtCents(v.price_cents) }}
                 </option>
@@ -111,33 +111,33 @@
             type="button" class="line-remove"
             :disabled="items.length === 1"
             @click="removeItem(i)"
-            title="Supprimer la ligne"
+            :title="$t('orders.create.removeLine')"
           >✕</button>
         </div>
 
         <button type="button" class="btn btn-secondary" style="margin-top:0.75rem" @click="addItem">
-          + Ajouter un article
+          + {{ $t('orders.create.addItem') }}
         </button>
       </div>
 
       <!-- ── Note ─────────────────────────────────────────────────── -->
       <div class="card" style="margin-bottom:1rem">
-        <label class="form-label">Note <span class="hint">(optionnel)</span></label>
-        <textarea v-model="note" class="form-input" rows="2" placeholder="Commentaire sur la commande…"></textarea>
+        <label class="form-label">{{ $t('common.note') }} <span class="hint">{{ $t('catalog.productForm.optional') }}</span></label>
+        <textarea v-model="note" class="form-input" rows="2" :placeholder="$t('orders.create.notePlaceholder')"></textarea>
       </div>
 
       <!-- ── Total + actions ──────────────────────────────────────── -->
       <div class="card order-footer">
         <div class="order-total">
-          <span class="ot-label">Total commande</span>
+          <span class="ot-label">{{ $t('orders.create.orderTotal') }}</span>
           <span class="ot-value">{{ fmtCents(orderTotalCents) }}</span>
         </div>
         <div v-if="error" class="form-error">{{ error }}</div>
         <div class="footer-actions">
-          <RouterLink to="/orders" class="btn btn-secondary">Annuler</RouterLink>
+          <RouterLink to="/orders" class="btn btn-secondary">{{ $t('common.cancel') }}</RouterLink>
           <button type="submit" class="btn btn-primary" :disabled="loading || !canSubmit">
             <span v-if="loading" class="spinner-sm spinner-white"></span>
-            {{ loading ? 'Création…' : 'Créer la commande' }}
+            {{ loading ? $t('orders.create.creating') : $t('orders.create.submit') }}
           </button>
         </div>
       </div>
@@ -153,6 +153,7 @@ import { formatMoney } from '@/shared/utils/money'
 import { orderService } from '../services/orderService'
 import { productService } from '@/modules/catalog/services/productService'
 import { customerService } from '@/modules/customers/services/customerService'
+import { t } from '@/i18n'
 import type { Product } from '@/modules/catalog/types'
 
 const router = useRouter()
@@ -331,8 +332,8 @@ async function submit() {
   }
   if (!valid) {
     error.value = items.value.some(it => it.product_id && it._needsVariant)
-      ? 'Choisissez une déclinaison pour les produits à variantes.'
-      : 'Sélectionnez un produit pour chaque ligne.'
+      ? t('orders.create.errVariant')
+      : t('orders.create.errProduct')
     return
   }
 
@@ -352,7 +353,7 @@ async function submit() {
     dirty.value = false // saved → no unsaved-changes prompt on the redirect
     router.push(`/orders/${order.id}`)
   } catch (e: any) {
-    error.value = e?.response?.data?.message ?? 'Erreur lors de la création de la commande.'
+    error.value = e?.response?.data?.message ?? t('orders.create.createError')
   } finally {
     loading.value = false
   }

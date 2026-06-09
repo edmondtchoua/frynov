@@ -3,6 +3,29 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — i18n : formulaire produit + tracker de couverture (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-catalog-productform` (release `v1.0.0` → `rc.69`).
+
+### UX (i18n)
+- **`ProductFormView`** internationalisé (plus grosse vue de l'app) : infos générales (SKU/code-barres/
+  GTIN + aides), prix de base (devise, marge, stock initial), **builder d'axes de variation** (axes,
+  valeurs, aperçu combinaisons, génération), table des déclinaisons, colonne latérale (statut,
+  catégorie, étiquettes, expédition), **modal de désactivation de variante** (transfert/sortie/
+  conservation) + validations & erreurs. Nouveau namespace `catalog.productForm.*` (FR+EN), incluant
+  noms d'axes, libellés de devises et hints de statut. Notes d'inventaire **persistées** laissées en
+  FR (source de vérité, exclues de l'i18n UI).
+
+### Gouvernance i18n
+- **Tracker vivant `docs/recette/i18n-coverage.md`** — décompte **exhaustif des 48 vues** (✅ complet /
+  🟡 partiel / ⬜ à faire), issu d'un audit multi-agents. État réel : **15 ✅ / 11 🟡 / 22 ⬜**.
+- **Definition of Done i18n** formalisée : toute vue créée/modifiée doit livrer FR+EN (parité de clés,
+  zéro chaîne en dur) dans le même changement. Référencée depuis `i18n.md` et l'état-des-lieux.
+- Découverte : motif **pagination « Page X / Y »** codé en dur dans 6 vues → quick win `common.pageOf`.
+
+### Tests
+- Frontend **254** inchangé · `vue-tsc` propre.
+
 ## [Non publié] — i18n : Admin Plans & Paiements manuels (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-admin3` (release `v1.0.0` → `rc.68`). **Fin de l'internationalisation du back-office Admin.**

@@ -3,10 +3,10 @@
     <CatalogTabNav />
     <div class="page-header">
       <div>
-        <h2>Impression d'étiquettes</h2>
-        <p class="page-subtitle">Générez et imprimez des étiquettes en masse pour vos produits.</p>
+        <h2>{{ $t('catalog.labelPrint.title') }}</h2>
+        <p class="page-subtitle">{{ $t('catalog.labelPrint.subtitle') }}</p>
       </div>
-      <RouterLink to="/catalog" class="btn btn-ghost">← Catalogue</RouterLink>
+      <RouterLink to="/catalog" class="btn btn-ghost">← {{ $t('catalog.productForm.backToCatalog') }}</RouterLink>
     </div>
 
     <div class="labels-layout">
@@ -15,12 +15,12 @@
       <div class="labels-left">
         <div class="card">
           <div class="section-header-row">
-            <h3>Sélectionner les produits</h3>
+            <h3>{{ $t('catalog.labelPrint.selectProducts') }}</h3>
             <input v-model="search" type="text" class="form-input search-sm"
-                   placeholder="Rechercher…" @input="debouncedSearch" />
+                   :placeholder="$t('catalog.labelPrint.searchPlaceholder')" @input="debouncedSearch" />
           </div>
 
-          <div v-if="loading" class="state-center">Chargement…</div>
+          <div v-if="loading" class="state-center">{{ $t('common.loading') }}</div>
 
           <div v-else class="product-pick-list">
             <label
@@ -46,7 +46,7 @@
           </div>
 
           <div v-if="products.length === 0 && !loading" class="state-center text-muted">
-            Aucun produit trouvé.
+            {{ $t('catalog.labelPrint.noProducts') }}
           </div>
         </div>
       </div>
@@ -56,10 +56,10 @@
 
         <!-- Config -->
         <div class="card">
-          <h3>Configuration</h3>
+          <h3>{{ $t('catalog.labelPrint.configuration') }}</h3>
 
           <div class="form-group">
-            <label class="form-label">Format</label>
+            <label class="form-label">{{ $t('catalog.labelPrint.format') }}</label>
             <div class="format-choice">
               <label class="format-opt" :class="{ active: config.format === 'thermal' }">
                 <input v-model="config.format" type="radio" value="thermal" class="sr-only" />
@@ -67,7 +67,7 @@
                   <rect x="4" y="8" width="20" height="12" rx="3" stroke="currentColor" stroke-width="1.5"/>
                   <path d="M8 14h12M8 17h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                 </svg>
-                <span>Thermique</span>
+                <span>{{ $t('catalog.thermal') }}</span>
                 <small>50×30 mm</small>
               </label>
               <label class="format-opt" :class="{ active: config.format === 'a4sheet' }">
@@ -76,28 +76,28 @@
                   <rect x="6" y="3" width="16" height="22" rx="2" stroke="currentColor" stroke-width="1.5"/>
                   <path d="M10 9h8M10 13h6M10 17h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
                 </svg>
-                <span>Planche A4</span>
+                <span>{{ $t('catalog.a4sheet') }}</span>
                 <small>21×29.7 cm</small>
               </label>
             </div>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Options</label>
+            <label class="form-label">{{ $t('catalog.labelPrint.options') }}</label>
             <div class="options-list">
               <label class="opt-row">
                 <input v-model="config.show_price" type="checkbox" class="pick-cb" />
-                <span>Afficher le prix</span>
+                <span>{{ $t('catalog.labelPrint.showPrice') }}</span>
               </label>
               <label class="opt-row">
                 <input v-model="config.show_qr" type="checkbox" class="pick-cb" />
-                <span>Afficher le QR Code</span>
+                <span>{{ $t('catalog.labelPrint.showQr') }}</span>
               </label>
             </div>
           </div>
 
           <div class="form-group" style="margin-bottom:0">
-            <label class="form-label">Copies par défaut</label>
+            <label class="form-label">{{ $t('catalog.labelPrint.defaultCopies') }}</label>
             <input v-model.number="config.default_copies" type="number" min="1" max="500"
                    class="form-input" style="width:100px" />
           </div>
@@ -105,20 +105,20 @@
 
         <!-- Summary & print -->
         <div class="card">
-          <h3>Résumé</h3>
+          <h3>{{ $t('catalog.labelPrint.summary') }}</h3>
           <div v-if="batch.length === 0" class="state-center text-muted" style="padding:2rem 0">
-            Aucun produit sélectionné.
+            {{ $t('catalog.labelPrint.noneSelected') }}
           </div>
           <div v-else>
             <div class="summary-list">
               <div v-for="item in batch" :key="item.product_id" class="summary-row">
                 <span class="summary-name">{{ item.product_name }}</span>
-                <span class="summary-copies">{{ item.copies }} étiq.</span>
+                <span class="summary-copies">{{ $t('catalog.labelPrint.labelsShort', { count: item.copies }) }}</span>
                 <button type="button" class="summary-remove" @click="removeFromBatch(item.product_id)">✕</button>
               </div>
             </div>
             <div class="summary-total">
-              Total : <strong>{{ totalLabels }} étiquette{{ totalLabels > 1 ? 's' : '' }}</strong>
+              <strong>{{ $t('catalog.labelPrint.total', { count: totalLabels }) }}</strong>
             </div>
             <button
               class="btn btn-primary"
@@ -128,7 +128,7 @@
             >
               <span v-if="printing" class="spinner-sm spinner-white"></span>
               <template v-else>🖨</template>
-              {{ printing ? 'Génération…' : 'Imprimer les étiquettes' }}
+              {{ printing ? $t('catalog.labelPrint.generating') : $t('catalog.labelPrint.printLabels') }}
             </button>
           </div>
         </div>
@@ -144,6 +144,7 @@ import { pushToast } from '@/composables/useNotifications'
 import { RouterLink } from 'vue-router'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
 import { productService } from '../services/productService'
+import { t } from '@/i18n'
 import type { LabelBatchItem, Product } from '../types'
 
 const products = ref<Product[]>([])
@@ -201,7 +202,7 @@ async function doPrint() {
       show_qr:    config.show_qr,
     })
   } catch (e: any) {
-    pushToast(e?.response?.data?.message ?? 'Erreur lors de la génération.')
+    pushToast(e?.response?.data?.message ?? t('catalog.labelPrint.genError'))
   } finally {
     printing.value = false
   }

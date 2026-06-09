@@ -9,8 +9,8 @@
 
     <!-- ── 404 ─────────────────────────────────────────────────────── -->
     <div v-else-if="!product" class="empty-state">
-      <p>Produit introuvable.</p>
-      <RouterLink to="/catalog" class="btn btn-secondary">← Retour catalogue</RouterLink>
+      <p>{{ $t('catalog.productForm.productNotFound') }}</p>
+      <RouterLink to="/catalog" class="btn btn-secondary">← {{ $t('catalog.productShow.backCatalog') }}</RouterLink>
     </div>
 
     <template v-else>
@@ -39,7 +39,7 @@
                 {{ statusLabel(product.status) }}
               </span>
               <span v-if="productHasVariants" class="variant-count">
-                {{ product.variants?.length ?? 0 }} variante(s)
+                {{ $t('catalog.productForm.variantCount', { count: product.variants?.length ?? 0 }) }}
               </span>
             </div>
           </div>
@@ -56,7 +56,7 @@
               <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               <path d="M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
-            Entrée stock
+            {{ $t('catalog.productShow.stockIn') }}
           </button>
           <button
             v-if="isManagerOrAbove && product.product_type !== 'service'"
@@ -67,7 +67,7 @@
               <circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.4"/>
               <path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
             </svg>
-            Ajuster
+            {{ $t('inventory.adjust') }}
           </button>
           <RouterLink
             v-if="isManagerOrAbove"
@@ -77,7 +77,7 @@
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <path d="M11.5 2.5a2.121 2.121 0 013 3L5 15H2v-3L11.5 2.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
             </svg>
-            Modifier
+            {{ $t('common.edit') }}
           </RouterLink>
         </div>
       </div>
@@ -107,37 +107,37 @@
 
             <!-- Identification -->
             <div class="card info-card">
-              <h3 class="card-section-title">Identification</h3>
+              <h3 class="card-section-title">{{ $t('catalog.productShow.identification') }}</h3>
               <div class="info-rows">
                 <div class="info-row">
-                  <span class="info-label">SKU</span>
+                  <span class="info-label">{{ $t('catalog.productForm.sku') }}</span>
                   <code class="info-value mono">{{ product.sku }}</code>
                 </div>
                 <div class="info-row" v-if="product.internal_barcode">
-                  <span class="info-label">Code-barres interne</span>
+                  <span class="info-label">{{ $t('catalog.productForm.internalBarcode') }}</span>
                   <code class="info-value mono">{{ product.internal_barcode }}</code>
                 </div>
                 <div class="info-row" v-if="product.gtin">
-                  <span class="info-label">GTIN / EAN</span>
+                  <span class="info-label">{{ $t('catalog.productShow.gtinEan') }}</span>
                   <code class="info-value mono">{{ product.gtin }}</code>
                 </div>
                 <div class="info-row">
-                  <span class="info-label">Catégorie</span>
+                  <span class="info-label">{{ $t('catalog.colCategory') }}</span>
                   <span class="info-value">{{ product.category?.name ?? '—' }}</span>
                 </div>
                 <div class="info-row" v-if="product.supplier">
-                  <span class="info-label">Fournisseur</span>
+                  <span class="info-label">{{ $t('catalog.productShow.supplier') }}</span>
                   <span class="info-value">
                     {{ product.supplier.name }}
                     <span v-if="product.supplier.code" class="code-chip">{{ product.supplier.code }}</span>
                   </span>
                 </div>
                 <div class="info-row" v-if="product.weight_kg">
-                  <span class="info-label">Poids</span>
+                  <span class="info-label">{{ $t('catalog.productShow.weight') }}</span>
                   <span class="info-value">{{ product.weight_kg }} kg</span>
                 </div>
                 <div class="info-row" v-if="product.description">
-                  <span class="info-label">Description</span>
+                  <span class="info-label">{{ $t('common.description') }}</span>
                   <span class="info-value text-wrap">{{ product.description }}</span>
                 </div>
               </div>
@@ -145,22 +145,22 @@
 
             <!-- Pricing -->
             <div class="card info-card">
-              <h3 class="card-section-title">Prix</h3>
+              <h3 class="card-section-title">{{ $t('catalog.colPrice') }}</h3>
               <div class="price-grid">
                 <div class="price-cell">
-                  <div class="price-label">Prix de vente</div>
+                  <div class="price-label">{{ $t('catalog.productForm.salePrice') }}</div>
                   <div class="price-value primary">{{ product.price.formatted }}</div>
                 </div>
                 <div class="price-cell" v-if="product.compare_at_price">
-                  <div class="price-label">Prix barré</div>
+                  <div class="price-label">{{ $t('catalog.productForm.compareAtPrice') }}</div>
                   <div class="price-value strikethrough">{{ product.compare_at_price.formatted }}</div>
                 </div>
                 <div class="price-cell" v-if="product.cost">
-                  <div class="price-label">Coût d'achat</div>
+                  <div class="price-label">{{ $t('catalog.productForm.costPrice') }}</div>
                   <div class="price-value">{{ product.cost.formatted }}</div>
                 </div>
                 <div class="price-cell" v-if="margin !== null">
-                  <div class="price-label">Marge</div>
+                  <div class="price-label">{{ $t('catalog.productShow.margin') }}</div>
                   <div class="price-value" :class="margin >= 0 ? 'margin-ok' : 'margin-bad'">
                     {{ margin.toFixed(1) }}%
                   </div>
@@ -175,9 +175,9 @@
 
             <div class="card stock-summary-card">
               <div class="stock-header">
-                <h3 class="card-section-title" style="margin:0">Stock</h3>
+                <h3 class="card-section-title" style="margin:0">{{ $t('catalog.variants.colStock') }}</h3>
                 <span v-if="stockLoading" class="spinner-xs"></span>
-                <button class="refresh-btn" @click="loadStockSummary" title="Actualiser">
+                <button class="refresh-btn" @click="loadStockSummary" :title="$t('catalog.productShow.refresh')">
                   <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                     <path d="M13.5 8A5.5 5.5 0 112.5 8M2.5 3v5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
@@ -187,19 +187,19 @@
               <div v-if="stockSummary" class="stock-kpis">
                 <div class="stock-kpi">
                   <div class="stock-kpi-val">{{ stockSummary.total_quantity.toLocaleString('fr-FR') }}</div>
-                  <div class="stock-kpi-lbl">Total</div>
+                  <div class="stock-kpi-lbl">{{ $t('inventory.kpi.total') }}</div>
                 </div>
                 <div class="stock-kpi">
                   <div class="stock-kpi-val available">{{ stockSummary.available_quantity.toLocaleString('fr-FR') }}</div>
-                  <div class="stock-kpi-lbl">Disponible</div>
+                  <div class="stock-kpi-lbl">{{ $t('inventory.available') }}</div>
                 </div>
                 <div class="stock-kpi">
                   <div class="stock-kpi-val reserved">{{ stockSummary.reserved_quantity.toLocaleString('fr-FR') }}</div>
-                  <div class="stock-kpi-lbl">Réservé</div>
+                  <div class="stock-kpi-lbl">{{ $t('inventory.reserved') }}</div>
                 </div>
                 <div class="stock-kpi" v-if="stockSummary.low_stock_count > 0">
                   <div class="stock-kpi-val warning">{{ stockSummary.low_stock_count }}</div>
-                  <div class="stock-kpi-lbl">⚠ Stock bas</div>
+                  <div class="stock-kpi-lbl">⚠ {{ $t('inventory.lowStock') }}</div>
                 </div>
               </div>
 
@@ -212,30 +212,30 @@
                   :class="{ 'wh-low': wh.low_stock }"
                 >
                   <span class="wh-name">{{ wh.warehouse_name }}</span>
-                  <span class="wh-qty">{{ wh.available }} dispo</span>
+                  <span class="wh-qty">{{ wh.available }} {{ $t('catalog.productShow.dispo') }}</span>
                 </div>
               </div>
 
               <!-- Quick stock actions -->
               <div v-if="isManagerOrAbove" class="stock-quick-actions">
                 <button class="btn btn-primary btn-sm" style="flex:1" @click="openReceiveDrawer">
-                  + Entrée stock
+                  + {{ $t('catalog.productShow.stockIn') }}
                 </button>
                 <button class="btn btn-ghost btn-sm" @click="openAdjustDrawer">
-                  Ajuster
+                  {{ $t('inventory.adjust') }}
                 </button>
               </div>
             </div>
 
             <!-- Label print card -->
             <div class="card">
-              <h3 class="card-section-title">Étiquettes</h3>
+              <h3 class="card-section-title">{{ $t('catalog.productForm.labels') }}</h3>
               <div class="label-btns">
                 <button class="btn btn-secondary btn-sm" @click="printLabel('thermal')">
-                  🖨 Thermique
+                  🖨 {{ $t('catalog.thermal') }}
                 </button>
                 <button class="btn btn-secondary btn-sm" @click="printLabel('a4sheet')">
-                  📄 Planche A4
+                  📄 {{ $t('catalog.a4sheet') }}
                 </button>
               </div>
             </div>
@@ -249,9 +249,9 @@
       <!-- ═══════════════════════════════════════════════════════════ -->
       <div v-if="activeTab === 'variants'" class="tab-content">
         <div v-if="!productHasVariants" class="empty-state">
-          <p>Ce produit n'a pas de variantes.</p>
+          <p>{{ $t('catalog.productShow.noVariants') }}</p>
           <RouterLink :to="`/catalog/products/${product.id}/edit`" class="btn btn-primary">
-            Activer les variantes
+            {{ $t('catalog.productShow.enableVariants') }}
           </RouterLink>
         </div>
 
@@ -262,11 +262,11 @@
               v-model="variantSearch"
               type="text"
               class="form-input search-input"
-              placeholder="Rechercher une variante…"
+              :placeholder="$t('catalog.productShow.searchVariant')"
               style="max-width:280px"
             />
             <span class="variant-count-text">
-              {{ filteredVariants.length }} variante(s)
+              {{ $t('catalog.productForm.variantCount', { count: filteredVariants.length }) }}
             </span>
           </div>
 
@@ -274,23 +274,23 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Déclinaison</th>
-                  <th>SKU</th>
-                  <th>Code-barres</th>
-                  <th>Prix</th>
-                  <th>Stock dispo</th>
-                  <th>Statut</th>
-                  <th style="text-align:right">Actions</th>
+                  <th>{{ $t('catalog.productForm.variantCol') }}</th>
+                  <th>{{ $t('catalog.productForm.sku') }}</th>
+                  <th>{{ $t('catalog.productShow.barcode') }}</th>
+                  <th>{{ $t('catalog.colPrice') }}</th>
+                  <th>{{ $t('catalog.productShow.stockAvail') }}</th>
+                  <th>{{ $t('common.status') }}</th>
+                  <th style="text-align:right">{{ $t('common.actions') }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="filteredVariants.length === 0">
-                  <td colspan="6" class="empty-cell">Aucune variante</td>
+                  <td colspan="6" class="empty-cell">{{ $t('catalog.variants.empty') }}</td>
                 </tr>
                 <tr v-for="v in filteredVariants" :key="v.id" :class="{ 'row-inactive': !v.is_active }">
                   <td>
                     <span class="variant-label">{{ v.label ?? v.name ?? v.sku }}</span>
-                    <span v-if="!v.is_active" class="inactive-pill">Inactif</span>
+                    <span v-if="!v.is_active" class="inactive-pill">{{ $t('common.inactive') }}</span>
                   </td>
                   <td><code class="mono">{{ v.sku }}</code></td>
                   <td>
@@ -329,7 +329,7 @@
                       <button
                         v-if="isManagerOrAbove"
                         class="btn-action btn-stock-in"
-                        title="Entrée stock pour cette variante"
+                        :title="$t('catalog.productShow.variantStockIn')"
                         @click="openVariantReceiveDrawer(v)"
                       >
                         <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
@@ -340,7 +340,7 @@
                       <!-- Print thermal label — fetches via axios (authenticated) -->
                       <button
                         class="btn-action"
-                        title="Imprimer étiquette thermique"
+                        :title="$t('catalog.productShow.printThermal')"
                         @click="printVariantLabel(v.id)"
                       >
                         <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
@@ -363,7 +363,7 @@
       <!-- ═══════════════════════════════════════════════════════════ -->
       <div v-if="activeTab === 'stock'" class="tab-content">
         <div v-if="product.product_type === 'service'" class="empty-state">
-          <p>Les services ne gèrent pas de stock physique.</p>
+          <p>{{ $t('catalog.productShow.serviceNoStock') }}</p>
         </div>
 
         <template v-else>
@@ -383,15 +383,15 @@
             <div v-if="stockSummary" class="stock-detail-cards">
               <div class="stock-kpi-card">
                 <div class="skc-val">{{ stockSummary.total_quantity.toLocaleString('fr-FR') }}</div>
-                <div class="skc-lbl">Quantité totale</div>
+                <div class="skc-lbl">{{ $t('catalog.productShow.totalQty') }}</div>
               </div>
               <div class="stock-kpi-card available">
                 <div class="skc-val">{{ stockSummary.available_quantity.toLocaleString('fr-FR') }}</div>
-                <div class="skc-lbl">Disponible</div>
+                <div class="skc-lbl">{{ $t('inventory.available') }}</div>
               </div>
               <div class="stock-kpi-card reserved">
                 <div class="skc-val">{{ stockSummary.reserved_quantity.toLocaleString('fr-FR') }}</div>
-                <div class="skc-lbl">Réservé</div>
+                <div class="skc-lbl">{{ $t('inventory.reserved') }}</div>
               </div>
             </div>
 
@@ -400,12 +400,12 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Entrepôt</th>
-                    <th>Quantité</th>
-                    <th>Réservé</th>
-                    <th>Disponible</th>
-                    <th>Valeur</th>
-                    <th>Alerte</th>
+                    <th>{{ $t('catalog.productShow.warehouse') }}</th>
+                    <th>{{ $t('inventory.quantity') }}</th>
+                    <th>{{ $t('inventory.reserved') }}</th>
+                    <th>{{ $t('inventory.available') }}</th>
+                    <th>{{ $t('inventory.kpi.value') }}</th>
+                    <th>{{ $t('catalog.productShow.alert') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -415,7 +415,7 @@
                     <td>{{ wh.reserved }}</td>
                     <td><strong>{{ wh.available }}</strong></td>
                     <td>{{ fmtCents(wh.total_value_cents) }}</td>
-                    <td><span v-if="wh.low_stock" class="warn-badge">⚠ Bas</span></td>
+                    <td><span v-if="wh.low_stock" class="warn-badge">⚠ {{ $t('catalog.productShow.lowShort') }}</span></td>
                   </tr>
                 </tbody>
               </table>
@@ -423,10 +423,10 @@
 
             <div v-if="isManagerOrAbove" class="stock-actions-row">
               <button class="btn btn-primary" @click="openReceiveDrawer">
-                ↓ Entrée stock
+                ↓ {{ $t('catalog.productShow.stockIn') }}
               </button>
               <button class="btn btn-secondary" @click="openAdjustDrawer">
-                ↕ Ajustement
+                ↕ {{ $t('inventory.adjustment') }}
               </button>
             </div>
           </div>
@@ -440,18 +440,18 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Type</th>
-                    <th>Quantité</th>
-                    <th>Avant</th>
-                    <th>Après</th>
-                    <th>Motif</th>
-                    <th>Référence</th>
-                    <th>Date</th>
+                    <th>{{ $t('admin.type') }}</th>
+                    <th>{{ $t('inventory.quantity') }}</th>
+                    <th>{{ $t('catalog.productShow.before') }}</th>
+                    <th>{{ $t('catalog.productShow.after') }}</th>
+                    <th>{{ $t('catalog.productShow.reason') }}</th>
+                    <th>{{ $t('inventory.reference') }}</th>
+                    <th>{{ $t('common.date') }}</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-if="movements.length === 0">
-                    <td colspan="7" class="empty-cell">Aucun mouvement enregistré</td>
+                    <td colspan="7" class="empty-cell">{{ $t('catalog.productShow.noMovements') }}</td>
                   </tr>
                   <tr v-for="m in movements" :key="m.id">
                     <td>
@@ -483,22 +483,22 @@
       <!-- ═══════════════════════════════════════════════════════════ -->
       <div v-if="activeTab === 'prices'" class="tab-content">
         <div class="card">
-          <h3 class="card-section-title">Tarification</h3>
+          <h3 class="card-section-title">{{ $t('catalog.productShow.pricing') }}</h3>
           <div class="price-grid-full">
             <div class="pf-row">
-              <span class="pf-label">Prix de vente</span>
+              <span class="pf-label">{{ $t('catalog.productForm.salePrice') }}</span>
               <span class="pf-val primary">{{ product.price.formatted }}</span>
             </div>
             <div class="pf-row" v-if="product.compare_at_price">
-              <span class="pf-label">Prix barré / promotionnel</span>
+              <span class="pf-label">{{ $t('catalog.productShow.compareAtPromo') }}</span>
               <span class="pf-val strikethrough">{{ product.compare_at_price.formatted }}</span>
             </div>
             <div class="pf-row" v-if="product.cost">
-              <span class="pf-label">Coût d'achat (CMUP)</span>
+              <span class="pf-label">{{ $t('catalog.productShow.costCmup') }}</span>
               <span class="pf-val">{{ product.cost.formatted }}</span>
             </div>
             <div class="pf-row" v-if="margin !== null">
-              <span class="pf-label">Marge brute</span>
+              <span class="pf-label">{{ $t('catalog.productShow.grossMargin') }}</span>
               <span class="pf-val" :class="margin >= 0 ? 'margin-ok' : 'margin-bad'">
                 {{ margin.toFixed(2) }}%
               </span>
@@ -508,9 +508,9 @@
 
         <!-- Variant prices -->
         <div v-if="productHasVariants && product.variants?.some(v => v.price)" class="card" style="margin-top:1rem">
-          <h3 class="card-section-title">Prix par variante</h3>
+          <h3 class="card-section-title">{{ $t('catalog.productShow.pricePerVariant') }}</h3>
           <table class="data-table">
-            <thead><tr><th>Variante</th><th>Prix</th><th>vs Base</th></tr></thead>
+            <thead><tr><th>{{ $t('catalog.variants.colVariant') }}</th><th>{{ $t('catalog.colPrice') }}</th><th>{{ $t('catalog.productShow.vsBase') }}</th></tr></thead>
             <tbody>
               <tr v-for="v in product.variants?.filter(vv => vv.price)" :key="v.id">
                 <td>{{ v.label ?? v.name ?? v.sku }}</td>
@@ -537,7 +537,7 @@
       <div v-if="showReceiveDrawer" class="drawer-overlay" @click.self="showReceiveDrawer = false">
         <div class="drawer">
           <div class="drawer-header">
-            <h3>Entrée de stock</h3>
+            <h3>{{ $t('inventory.modalTitle.in') }}</h3>
             <button class="drawer-close" @click="showReceiveDrawer = false">×</button>
           </div>
           <div class="drawer-body">
@@ -558,15 +558,15 @@
                   <circle cx="4" cy="12" r="2.5" stroke="currentColor" stroke-width="1.4"/>
                   <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.4"/>
                 </svg>
-                Variante : <strong>{{ receiveTarget.variantLabel }}</strong>
+                {{ $t('catalog.productShow.variantColon') }} <strong>{{ receiveTarget.variantLabel }}</strong>
               </div>
               <div v-else-if="product?.has_variants" class="receive-variant-hint">
-                Entrée sur le produit global (toutes variantes)
+                {{ $t('catalog.productShow.globalStockEntry') }}
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Quantité à réceptionner <span class="req">*</span></label>
+              <label class="form-label">{{ $t('catalog.productShow.qtyToReceive') }} <span class="req">*</span></label>
               <input
                 v-model.number="receiveForm.quantity"
                 type="number"
@@ -578,9 +578,9 @@
             </div>
 
             <div class="form-group" v-if="warehouses.length > 1">
-              <label class="form-label">Entrepôt</label>
+              <label class="form-label">{{ $t('catalog.productShow.warehouse') }}</label>
               <select v-model="receiveForm.warehouse_id" class="form-input">
-                <option value="">Entrepôt par défaut</option>
+                <option value="">{{ $t('catalog.productShow.defaultWarehouse') }}</option>
                 <option v-for="w in warehouses" :key="w.id" :value="w.id">
                   {{ w.is_default ? '⭐ ' : '' }}{{ w.name }}
                 </option>
@@ -588,7 +588,7 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label">Coût unitaire (optionnel)</label>
+              <label class="form-label">{{ $t('catalog.productShow.unitCost') }}</label>
               <div class="input-adorn-right">
                 <input
                   v-model.number="receiveForm.unit_cost_display"
@@ -602,26 +602,26 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label">Note / Référence</label>
+              <label class="form-label">{{ $t('catalog.productShow.noteRef') }}</label>
               <input
                 v-model="receiveForm.note"
                 type="text"
                 class="form-input"
-                placeholder="N° bon de livraison, commentaire…"
+                :placeholder="$t('catalog.productShow.notePlaceholder')"
               />
             </div>
 
             <div v-if="receiveError" class="alert alert-error">{{ receiveError }}</div>
           </div>
           <div class="drawer-footer">
-            <button class="btn btn-ghost" @click="showReceiveDrawer = false">Annuler</button>
+            <button class="btn btn-ghost" @click="showReceiveDrawer = false">{{ $t('common.cancel') }}</button>
             <button
               class="btn btn-primary"
               :disabled="receiveSaving"
               @click="submitReceive"
             >
               <span v-if="receiveSaving" class="spinner-sm spinner-white"></span>
-              {{ receiveSaving ? 'Enregistrement…' : 'Valider l\'entrée' }}
+              {{ receiveSaving ? $t('common.saving') : $t('catalog.productShow.validateEntry') }}
             </button>
           </div>
         </div>
@@ -635,16 +635,16 @@
       <div v-if="showAdjustDrawer" class="drawer-overlay" @click.self="showAdjustDrawer = false">
         <div class="drawer">
           <div class="drawer-header">
-            <h3>Ajustement de stock</h3>
+            <h3>{{ $t('inventory.modalTitle.adjust') }}</h3>
             <button class="drawer-close" @click="showAdjustDrawer = false">×</button>
           </div>
           <div class="drawer-body">
             <p class="drawer-subtitle">
-              Stock actuel : <strong>{{ stockSummary?.available_quantity ?? '?' }}</strong>
+              {{ $t('catalog.productShow.currentStock') }} <strong>{{ stockSummary?.available_quantity ?? '?' }}</strong>
             </p>
 
             <div class="form-group">
-              <label class="form-label">Nouvelle quantité <span class="req">*</span></label>
+              <label class="form-label">{{ $t('catalog.productShow.newQty') }} <span class="req">*</span></label>
               <input
                 v-model.number="adjustForm.newQty"
                 type="number"
@@ -654,34 +654,34 @@
               />
               <span v-if="adjustErrors.newQty" class="form-error">{{ adjustErrors.newQty }}</span>
               <p v-if="adjustDelta !== null" class="form-hint" :class="adjustDelta >= 0 ? 'hint-ok' : 'hint-warn'">
-                Δ {{ adjustDelta >= 0 ? '+' : '' }}{{ adjustDelta }} unité(s)
+                Δ {{ adjustDelta >= 0 ? '+' : '' }}{{ adjustDelta }} {{ $t('catalog.productShow.units') }}
               </p>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Justification <span class="req">*</span></label>
+              <label class="form-label">{{ $t('catalog.productShow.justification') }} <span class="req">*</span></label>
               <textarea
                 v-model="adjustForm.note"
                 class="form-input"
                 :class="{ error: adjustErrors.note }"
                 rows="2"
-                placeholder="Ex : Inventaire physique du 02/06 — comptage manuel…"
+                :placeholder="$t('catalog.productShow.justifPlaceholder')"
               />
               <span v-if="adjustErrors.note" class="form-error">{{ adjustErrors.note }}</span>
-              <span class="form-hint hint-ok" style="font-size:0.75rem">Minimum 5 caractères requis</span>
+              <span class="form-hint hint-ok" style="font-size:0.75rem">{{ $t('catalog.productShow.min5') }}</span>
             </div>
 
             <div v-if="adjustError" class="alert alert-error">{{ adjustError }}</div>
           </div>
           <div class="drawer-footer">
-            <button class="btn btn-ghost" @click="showAdjustDrawer = false">Annuler</button>
+            <button class="btn btn-ghost" @click="showAdjustDrawer = false">{{ $t('common.cancel') }}</button>
             <button
               class="btn btn-primary"
               :disabled="adjustSaving"
               @click="submitAdjust"
             >
               <span v-if="adjustSaving" class="spinner-sm spinner-white"></span>
-              {{ adjustSaving ? 'Ajustement…' : 'Confirmer l\'ajustement' }}
+              {{ adjustSaving ? $t('catalog.productShow.adjusting') : $t('catalog.productShow.confirmAdjust') }}
             </button>
           </div>
         </div>
@@ -699,6 +699,7 @@ import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
 import { productService } from '../services/productService'
 import { usePermission } from '@/composables/usePermission'
+import { t } from '@/i18n'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
 import client from '@/api/client'
 import type { Product, ProductStockSummary, StockMovementItem } from '../types'
@@ -724,10 +725,10 @@ const variantSearch = ref('')
 // ── Tabs ───────────────────────────────────────────────────────────────────
 const visibleTabs = computed(() => {
   const tabs: { key: string; label: string; badge?: number | string }[] = [
-    { key: 'overview', label: 'Vue d\'ensemble' },
-    { key: 'variants', label: 'Variantes', badge: product.value?.variants?.length || undefined },
-    { key: 'stock',    label: 'Stock' },
-    { key: 'prices',   label: 'Prix' },
+    { key: 'overview', label: t('catalog.productShow.tabs.overview') },
+    { key: 'variants', label: t('catalog.productShow.tabs.variants'), badge: product.value?.variants?.length || undefined },
+    { key: 'stock',    label: t('catalog.productShow.tabs.stock') },
+    { key: 'prices',   label: t('catalog.productShow.tabs.prices') },
   ]
   if (product.value?.product_type === 'service') {
     return tabs.filter(t => t.key !== 'stock')
@@ -735,10 +736,10 @@ const visibleTabs = computed(() => {
   return tabs
 })
 
-const stockSubTabs = [
-  { key: 'current',   label: 'Stock actuel' },
-  { key: 'movements', label: 'Mouvements' },
-]
+const stockSubTabs = computed(() => [
+  { key: 'current',   label: t('catalog.productShow.stockTabs.current') },
+  { key: 'movements', label: t('catalog.productShow.stockTabs.movements') },
+])
 
 // ── Derived ────────────────────────────────────────────────────────────────
 // True if the product has variants (either by flag OR by actual variant records)
@@ -861,7 +862,7 @@ async function fetchAndPrintLabel(
       win.addEventListener('load', () => win.print(), { once: true })
     }
   } catch (e: any) {
-    pushToast('Erreur lors de l\'impression : ' + (e?.response?.data?.message ?? e?.message))
+    pushToast(t('catalog.productShow.printError') + (e?.response?.data?.message ?? e?.message))
   }
 }
 
@@ -912,7 +913,7 @@ async function submitReceive() {
   receiveError.value = ''
 
   if (!receiveForm.quantity || receiveForm.quantity < 1) {
-    receiveErrors.quantity = 'La quantité doit être ≥ 1'
+    receiveErrors.quantity = t('catalog.productShow.qtyMin1')
     return
   }
 
@@ -939,7 +940,7 @@ async function submitReceive() {
     // Reload stock summary to update the variant stock column instantly
     await loadStockSummary()
   } catch (e: any) {
-    receiveError.value = e?.response?.data?.message ?? 'Erreur lors de l\'entrée de stock.'
+    receiveError.value = e?.response?.data?.message ?? t('catalog.productShow.stockInError')
   } finally {
     receiveSaving.value = false
   }
@@ -968,11 +969,11 @@ async function submitAdjust() {
   adjustError.value = ''
 
   if (adjustForm.newQty === null || adjustForm.newQty < 0) {
-    adjustErrors.newQty = 'La quantité doit être ≥ 0'
+    adjustErrors.newQty = t('catalog.productShow.qtyMin0')
     return
   }
   if (!adjustForm.note || adjustForm.note.trim().length < 5) {
-    adjustErrors.note = 'La justification doit faire au moins 5 caractères'
+    adjustErrors.note = t('catalog.productShow.justifMin5')
     return
   }
 
@@ -986,21 +987,21 @@ async function submitAdjust() {
     showAdjustDrawer.value = false
     await loadStockSummary()
   } catch (e: any) {
-    adjustError.value = e?.response?.data?.message ?? 'Erreur lors de l\'ajustement.'
+    adjustError.value = e?.response?.data?.message ?? t('catalog.productShow.adjustError')
   } finally {
     adjustSaving.value = false
   }
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
-function typeLabel(t: string) {
-  return { simple: 'Simple', variable: 'Variable', service: 'Service', kit: 'Kit' }[t] ?? t
+function typeLabel(type: string) {
+  return t(`catalog.productShow.type.${type}`)
 }
 function statusLabel(s: string) {
-  return { active: 'Actif', draft: 'Brouillon', archived: 'Archivé' }[s] ?? s
+  return t(`catalog.status.${s}`)
 }
-function mvtTypeLabel(t: string) {
-  return { in: 'Entrée', out: 'Sortie', adjustment: 'Ajustement', return: 'Retour' }[t] ?? t
+function mvtTypeLabel(type: string) {
+  return t(`catalog.productShow.mvtType.${type}`)
 }
 const formatDate = formatDateTime
 const fmtCents = (c: number) => formatMoney(c)

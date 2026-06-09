@@ -14,15 +14,11 @@ import { describe, it, expect } from 'vitest'
 import { messages } from '../index'
 
 // ── Vues de module non encore internationalisées (ratchet) ───────────────────
-// Retirer une ligne dès que la vue est traduite FR+EN. Objectif : liste vide.
-// rc.84 : toutes les vues traduisibles sont faites. Il ne reste QUE le module
-// Customers, géré par une session concurrente (verrou). Dès le verrou levé,
-// traduire ces 2 vues puis vider complètement l'allowlist.
-const ALLOWLIST = new Set<string>([
-  // Customers — session concurrente, exclu tant que le verrou n'est pas levé.
-  'customers/views/CustomerListView.vue',
-  'customers/views/CustomerDetailView.vue',
-])
+// 🎉 rc.85 : ALLOWLIST VIDE — 100 % des vues de module sont internationalisées FR+EN
+// (Customers inclus, verrou de session concurrente levé). Toute nouvelle vue doit
+// naître bilingue (cf. Definition of Done) ; n'ajouter une entrée ici qu'en dernier
+// recours, temporairement, avec un ticket de suivi.
+const ALLOWLIST = new Set<string>([])
 
 const ACCENTED = /[àâäéèêëîïôöùûüçœÀÂÄÉÈÊËÎÏÔÖÙÛÜÇŒ]/
 

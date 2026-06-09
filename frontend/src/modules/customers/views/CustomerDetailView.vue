@@ -1,9 +1,9 @@
 <template>
   <div>
     <div class="page-header">
-      <RouterLink to="/customers" class="btn btn-ghost">← Clients</RouterLink>
+      <RouterLink to="/customers" class="btn btn-ghost">← {{ $t('customers.title') }}</RouterLink>
       <div v-if="customer && !editing" class="header-actions">
-        <button class="btn btn-ghost" @click="editing = true">Modifier</button>
+        <button class="btn btn-ghost" @click="editing = true">{{ $t('common.edit') }}</button>
       </div>
     </div>
 
@@ -18,9 +18,9 @@
         <rect x="4" y="4" width="32" height="32" rx="8" fill="#fff0f0"/>
         <path d="M20 12v12M20 28v2" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round"/>
       </svg>
-      <h3>Client introuvable</h3>
-      <p>Ce client n'existe pas ou a été supprimé.</p>
-      <RouterLink to="/customers" class="btn btn-primary">Retour aux clients</RouterLink>
+      <h3>{{ $t('customers.notFoundTitle') }}</h3>
+      <p>{{ $t('customers.notFoundMsg') }}</p>
+      <RouterLink to="/customers" class="btn btn-primary">{{ $t('customers.backToList') }}</RouterLink>
     </div>
 
     <template v-else-if="customer">
@@ -36,31 +36,31 @@
               <div class="customer-avatar-lg">{{ initials(customer.name) }}</div>
               <div>
                 <h2 class="customer-full-name">{{ customer.name }}</h2>
-                <div class="customer-since">Client depuis {{ formatDate(customer.created_at) }}</div>
+                <div class="customer-since">{{ $t('customers.since', { date: formatDate(customer.created_at) }) }}</div>
               </div>
             </div>
 
             <div class="info-grid">
               <div class="info-item">
-                <span class="info-label">Email</span>
+                <span class="info-label">{{ $t('common.email') }}</span>
                 <span v-if="customer.email" class="info-value">
                   <a :href="`mailto:${customer.email}`" class="info-link">{{ customer.email }}</a>
                 </span>
-                <span v-else class="info-empty">Non renseigné</span>
+                <span v-else class="info-empty">{{ $t('customers.notProvided') }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">Téléphone</span>
+                <span class="info-label">{{ $t('common.phone') }}</span>
                 <span v-if="customer.phone" class="info-value">
                   <a :href="`tel:${customer.phone}`" class="info-link">{{ customer.phone }}</a>
                 </span>
-                <span v-else class="info-empty">Non renseigné</span>
+                <span v-else class="info-empty">{{ $t('customers.notProvided') }}</span>
               </div>
               <div v-if="customer.address" class="info-item info-item--full">
-                <span class="info-label">Adresse</span>
+                <span class="info-label">{{ $t('customers.colAddress') }}</span>
                 <span class="info-value">{{ formatCustomerAddress(customer.address) }}</span>
               </div>
               <div v-if="customer.notes" class="info-item info-item--full">
-                <span class="info-label">Notes</span>
+                <span class="info-label">{{ $t('common.notes') }}</span>
                 <span class="info-value notes-value">{{ customer.notes }}</span>
               </div>
             </div>
@@ -68,57 +68,57 @@
 
           <!-- Edit mode -->
           <div v-else class="card">
-            <h3 class="card-section-title">Modifier le client</h3>
+            <h3 class="card-section-title">{{ $t('customers.editTitle') }}</h3>
             <div class="form-group">
-              <label class="form-label">Nom complet *</label>
+              <label class="form-label">{{ $t('customers.fullName') }} *</label>
               <input v-model="form.name" type="text" class="form-input" :class="{ error: formErrors.name }"/>
               <span v-if="formErrors.name" class="form-error">{{ formErrors.name }}</span>
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label class="form-label">Email</label>
-                <input v-model="form.email" type="email" class="form-input" placeholder="email@exemple.com"/>
+                <label class="form-label">{{ $t('common.email') }}</label>
+                <input v-model="form.email" type="email" class="form-input" :placeholder="$t('customers.emailPlaceholder')"/>
               </div>
               <div class="form-group">
-                <label class="form-label">Téléphone</label>
-                <input v-model="form.phone" type="tel" class="form-input" placeholder="+221 77 000 00 00"/>
+                <label class="form-label">{{ $t('common.phone') }}</label>
+                <input v-model="form.phone" type="tel" class="form-input" :placeholder="$t('customers.phonePlaceholder')"/>
               </div>
             </div>
 
-            <h4 class="subsection-title">Adresse</h4>
+            <h4 class="subsection-title">{{ $t('customers.colAddress') }}</h4>
             <div class="form-row">
               <div class="form-group">
-                <label class="form-label">Rue</label>
+                <label class="form-label">{{ $t('customers.street') }}</label>
                 <input v-model="form.address.street" data-testid="customer-address-street" type="text" class="form-input"/>
               </div>
               <div class="form-group">
-                <label class="form-label">Ville</label>
+                <label class="form-label">{{ $t('customers.city') }}</label>
                 <input v-model="form.address.city" type="text" class="form-input"/>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
-                <label class="form-label">Code postal</label>
+                <label class="form-label">{{ $t('customers.zip') }}</label>
                 <input v-model="form.address.zip" type="text" class="form-input"/>
               </div>
               <div class="form-group">
-                <label class="form-label">Pays</label>
+                <label class="form-label">{{ $t('customers.country') }}</label>
                 <input v-model="form.address.country" type="text" class="form-input"/>
               </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label">Notes</label>
+              <label class="form-label">{{ $t('common.notes') }}</label>
               <textarea v-model="form.notes" class="form-input" rows="3"></textarea>
             </div>
 
             <div v-if="saveError" class="alert alert-error" style="margin-top: 1rem;">{{ saveError }}</div>
 
             <div class="edit-actions">
-              <button class="btn btn-ghost" @click="cancelEdit">Annuler</button>
+              <button class="btn btn-ghost" @click="cancelEdit">{{ $t('common.cancel') }}</button>
               <button class="btn btn-primary" :disabled="saving" @click="saveCustomer">
                 <span v-if="saving" class="spinner-sm spinner-white"></span>
-                {{ saving ? 'Enregistrement…' : 'Mettre à jour' }}
+                {{ saving ? $t('common.saving') : $t('common.update') }}
               </button>
             </div>
           </div>
@@ -127,24 +127,24 @@
           <div class="card">
             <div class="card-section-header">
               <h3 class="card-section-title" style="margin-bottom: 0; border: none; padding: 0;">
-                Commandes ({{ customer.orders_count ?? orders.length }})
+                {{ $t('customers.colOrders') }} ({{ customer.orders_count ?? orders.length }})
               </h3>
-              <RouterLink to="/orders/new" class="btn btn-ghost btn-sm">Nouvelle commande</RouterLink>
+              <RouterLink to="/orders/new" class="btn btn-ghost btn-sm">{{ $t('customers.newOrder') }}</RouterLink>
             </div>
 
             <div v-if="ordersLoading" class="loading-center" style="min-height: 100px; padding: 1rem 0;">
               <span class="spinner-sm"></span>
             </div>
             <div v-else-if="orders.length === 0" class="orders-empty">
-              <p>Aucune commande pour ce client.</p>
+              <p>{{ $t('customers.noOrders') }}</p>
             </div>
             <table v-else class="data-table" style="margin-top: 1rem;">
               <thead>
                 <tr>
-                  <th>Référence</th>
-                  <th>Statut</th>
-                  <th>Montant</th>
-                  <th>Date</th>
+                  <th>{{ $t('customers.colRef') }}</th>
+                  <th>{{ $t('common.status') }}</th>
+                  <th>{{ $t('common.amount') }}</th>
+                  <th>{{ $t('common.date') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -165,30 +165,30 @@
         <div class="detail-side">
           <div class="card stat-card">
             <div class="stat-item">
-              <span class="stat-label">Commandes</span>
+              <span class="stat-label">{{ $t('customers.colOrders') }}</span>
               <span class="stat-value">{{ customer.orders_count ?? '—' }}</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat-item">
-              <span class="stat-label">Client depuis</span>
+              <span class="stat-label">{{ $t('customers.sinceLabel') }}</span>
               <span class="stat-value-sm">{{ formatDate(customer.created_at) }}</span>
             </div>
           </div>
 
           <div class="card">
-            <h3 class="card-section-title">Actions</h3>
+            <h3 class="card-section-title">{{ $t('common.actions') }}</h3>
             <div class="action-list">
               <RouterLink to="/orders/new" class="action-btn">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                 </svg>
-                Créer une commande
+                {{ $t('customers.createOrder') }}
               </RouterLink>
               <button class="action-btn action-btn--danger" @click="deleteCustomer">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path d="M3 4h10M6 4V3h4v1M5 4v8a1 1 0 001 1h4a1 1 0 001-1V4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
                 </svg>
-                Supprimer le client
+                {{ $t('customers.deleteCustomer') }}
               </button>
             </div>
           </div>
@@ -206,6 +206,7 @@ import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
 import { customerService } from '../services/customerService'
 import { formatCustomerAddress, normalizeCustomerAddress } from '../address'
+import { t } from '@/i18n'
 import type { Customer } from '../types'
 
 const route    = useRoute()
@@ -244,7 +245,12 @@ function orderStatusBadge(status: string): string {
 }
 
 function orderStatusLabel(status: string): string {
-  return { draft: 'Brouillon', confirmed: 'Confirmée', fulfilled: 'Livrée', cancelled: 'Annulée' }[status] ?? status
+  return ({
+    draft:     t('orders.status.draft'),
+    confirmed: t('orders.status.confirmed'),
+    fulfilled: t('orders.status.fulfilled'),
+    cancelled: t('orders.status.cancelled'),
+  } as Record<string, string>)[status] ?? status
 }
 
 function populateForm(c: Customer) {
@@ -262,7 +268,7 @@ function cancelEdit() {
 }
 
 async function saveCustomer() {
-  if (!form.name.trim()) { formErrors.name = 'Le nom est requis'; return }
+  if (!form.name.trim()) { formErrors.name = t('customers.nameRequired'); return }
   saving.value    = true
   saveError.value = ''
   try {
@@ -278,14 +284,14 @@ async function saveCustomer() {
     })
     editing.value = false
   } catch {
-    saveError.value = 'Impossible de sauvegarder. Réessayez.'
+    saveError.value = t('customers.saveError')
   } finally {
     saving.value = false
   }
 }
 
 async function deleteCustomer() {
-  if (!confirm(`Supprimer "${customer.value?.name}" ? Cette action est irréversible.`)) return
+  if (!confirm(t('customers.deleteConfirm', { name: customer.value?.name ?? '' }))) return
   try {
     await customerService.delete(id)
     router.push('/customers')

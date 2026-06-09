@@ -2,14 +2,14 @@
   <div>
     <div class="page-header">
       <div>
-        <h2>Clients</h2>
-        <p class="page-subtitle">{{ meta.total ?? '—' }} clients</p>
+        <h2>{{ $t('customers.title') }}</h2>
+        <p class="page-subtitle">{{ $t('customers.count', { count: meta.total ?? '—' }) }}</p>
       </div>
       <button class="btn btn-primary" @click="openCreate">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
-        Nouveau client
+        {{ $t('customers.new') }}
       </button>
     </div>
 
@@ -24,7 +24,7 @@
           v-model="search"
           type="text"
           class="form-input search-input"
-          placeholder="Nom, email, téléphone…"
+          :placeholder="$t('customers.searchPlaceholder')"
           @input="debouncedLoad"
         />
       </div>
@@ -37,11 +37,11 @@
     <StateBlock
       v-else-if="customers.length === 0"
       variant="empty"
-      title="Aucun client"
-      :message="search ? 'Aucun résultat pour cette recherche.' : 'Ajoutez votre premier client.'"
+      :title="$t('customers.emptyTitle')"
+      :message="search ? $t('customers.emptySearch') : $t('customers.emptyFirst')"
     >
       <template v-if="!search" #action>
-        <button class="btn btn-primary" @click="openCreate">Ajouter un client</button>
+        <button class="btn btn-primary" @click="openCreate">{{ $t('customers.add') }}</button>
       </template>
     </StateBlock>
 
@@ -50,12 +50,12 @@
       <table class="data-table data-table--cards">
         <thead>
           <tr>
-            <th>Client</th>
-            <th class="hide-mobile">Téléphone</th>
-            <th class="hide-mobile">Adresse</th>
-            <th class="hide-mobile">Notes</th>
-            <th class="hide-mobile">Commandes</th>
-            <th style="text-align: right;">Actions</th>
+            <th>{{ $t('customers.colClient') }}</th>
+            <th class="hide-mobile">{{ $t('common.phone') }}</th>
+            <th class="hide-mobile">{{ $t('customers.colAddress') }}</th>
+            <th class="hide-mobile">{{ $t('common.notes') }}</th>
+            <th class="hide-mobile">{{ $t('customers.colOrders') }}</th>
+            <th style="text-align: right;">{{ $t('common.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -69,27 +69,27 @@
                 </div>
               </div>
             </td>
-            <td class="hide-mobile" data-label="Téléphone">
+            <td class="hide-mobile" :data-label="$t('common.phone')">
               <span v-if="customer.phone" class="customer-phone">{{ customer.phone }}</span>
               <span v-else class="text-muted">—</span>
             </td>
-            <td class="hide-mobile" data-label="Adresse">
+            <td class="hide-mobile" :data-label="$t('customers.colAddress')">
               <span v-if="formatCustomerAddress(customer.address)" class="customer-address">{{ formatCustomerAddress(customer.address) }}</span>
               <span v-else class="text-muted">—</span>
             </td>
-            <td class="hide-mobile" data-label="Notes">
+            <td class="hide-mobile" :data-label="$t('common.notes')">
               <span v-if="customer.notes" class="customer-notes">{{ customer.notes }}</span>
               <span v-else class="text-muted">—</span>
             </td>
-            <td class="hide-mobile" data-label="Commandes">
+            <td class="hide-mobile" :data-label="$t('customers.colOrders')">
               <span class="badge badge-gray">{{ customer.orders_count ?? 0 }}</span>
             </td>
             <td class="cell-actions" style="text-align: right;">
               <div class="row-actions">
                 <RouterLink :to="`/customers/${customer.id}`" class="btn btn-ghost btn-sm">
-                  Voir
+                  {{ $t('customers.view') }}
                 </RouterLink>
-                <button class="btn btn-ghost btn-sm" @click="openEdit(customer)">Éditer</button>
+                <button class="btn btn-ghost btn-sm" @click="openEdit(customer)">{{ $t('common.edit') }}</button>
               </div>
             </td>
           </tr>
@@ -100,45 +100,45 @@
     <!-- Pagination -->
     <div v-if="meta.last_page > 1" class="pagination">
       <button class="btn btn-ghost btn-sm" :disabled="meta.current_page <= 1" @click="goToPage(meta.current_page - 1)">
-        ← Précédent
+        ← {{ $t('common.previous') }}
       </button>
-      <span class="page-info">Page {{ meta.current_page }} / {{ meta.last_page }}</span>
+      <span class="page-info">{{ $t('common.pageOf', { current: meta.current_page, total: meta.last_page }) }}</span>
       <button class="btn btn-ghost btn-sm" :disabled="meta.current_page >= meta.last_page" @click="goToPage(meta.current_page + 1)">
-        Suivant →
+        {{ $t('common.next') }} →
       </button>
     </div>
 
     <!-- Create / Edit modal (shared BaseModal — UX-03) -->
     <BaseModal
       :model-value="showModal"
-      :title="editingCustomer ? 'Modifier le client' : 'Nouveau client'"
+      :title="editingCustomer ? $t('customers.editTitle') : $t('customers.new')"
       @update:model-value="(v: boolean) => { if (!v) closeModal() }"
     >
       <div class="form-group">
-        <label class="form-label">Nom complet <span style="color: var(--color-error);">*</span></label>
-        <input v-model="form.name" type="text" class="form-input" :class="{ error: formErrors.name }" placeholder="Amina Diallo" @input="delete formErrors.name"/>
+        <label class="form-label">{{ $t('customers.fullName') }} <span style="color: var(--color-error);">*</span></label>
+        <input v-model="form.name" type="text" class="form-input" :class="{ error: formErrors.name }" :placeholder="$t('customers.namePlaceholder')" @input="delete formErrors.name"/>
         <span v-if="formErrors.name" class="form-error">{{ formErrors.name }}</span>
       </div>
       <div class="form-row">
         <div class="form-group" style="margin-bottom: 0;">
-          <label class="form-label">Email</label>
-          <input v-model="form.email" type="email" class="form-input" placeholder="amina@exemple.com"/>
+          <label class="form-label">{{ $t('common.email') }}</label>
+          <input v-model="form.email" type="email" class="form-input" :placeholder="$t('customers.emailPlaceholder')"/>
         </div>
         <div class="form-group" style="margin-bottom: 0;">
-          <label class="form-label">Téléphone</label>
-          <input v-model="form.phone" type="tel" class="form-input" placeholder="+221 77 000 00 00"/>
+          <label class="form-label">{{ $t('common.phone') }}</label>
+          <input v-model="form.phone" type="tel" class="form-input" :placeholder="$t('customers.phonePlaceholder')"/>
         </div>
       </div>
       <div class="form-group" style="margin-bottom: 0;">
-        <label class="form-label">Notes</label>
-        <textarea v-model="form.notes" class="form-input" rows="2" placeholder="Informations complémentaires…"></textarea>
+        <label class="form-label">{{ $t('common.notes') }}</label>
+        <textarea v-model="form.notes" class="form-input" rows="2" :placeholder="$t('customers.notesPlaceholder')"></textarea>
       </div>
 
       <template #footer>
-        <button class="btn btn-ghost" @click="closeModal">Annuler</button>
+        <button class="btn btn-ghost" @click="closeModal">{{ $t('common.cancel') }}</button>
         <button class="btn btn-primary" :disabled="saving" @click="saveCustomer">
           <span v-if="saving" class="spinner-sm spinner-white"></span>
-          {{ saving ? 'Enregistrement…' : (editingCustomer ? 'Mettre à jour' : 'Créer') }}
+          {{ saving ? $t('common.saving') : (editingCustomer ? $t('common.update') : $t('common.create')) }}
         </button>
       </template>
     </BaseModal>
@@ -150,6 +150,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { customerService } from '../services/customerService'
 import { formatCustomerAddress } from '../address'
+import { t } from '@/i18n'
 import StateBlock from '@/shared/ui/StateBlock.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import type { Customer, CustomerAddress } from '../types'
@@ -216,7 +217,7 @@ function openEdit(c: Customer) {
 function closeModal() { showModal.value = false; editingCustomer.value = null }
 
 async function saveCustomer() {
-  if (!form.name.trim()) { formErrors.name = 'Le nom est requis'; return }
+  if (!form.name.trim()) { formErrors.name = t('customers.nameRequired'); return }
   saving.value = true
   try {
     const data = {

@@ -3,6 +3,29 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🎉 i18n : module Customers — COUVERTURE 100 % (UX-13) (2026-06-09)
+
+Branche `feature/ux-i18n-customers` (release `v1.0.0` → `rc.85`).
+
+### UX (i18n)
+- **Module Customers internationalisé** (verrou de session concurrente levé) : `CustomerListView`
+  (liste, recherche, table + `data-label` mobiles, modal créer/éditer, pagination) et
+  `CustomerDetailView` (fiche, mode édition + adresse, commandes liées, sidebar stats, actions).
+- Nouveau namespace `customers.*` (FR+EN). Mutualise massivement `common.*` (email/phone/notes/
+  actions/status/amount/date/pageOf/previous/next/cancel/edit/update/create/saving) et réutilise
+  `orders.status.*` pour les statuts de commande. `confirm()` de suppression et erreurs via `t()`.
+
+### 🎉🎉 Jalon — couverture i18n 100 %
+- **48/48 vues de module internationalisées FR+EN.** L'`ALLOWLIST` de la garde CI est désormais
+  **vide** : l'anti-régression scanne toutes les vues sans exception. Le maintien à 100 % est garanti
+  par la Definition of Done (toute vue naît bilingue) + la garde.
+
+### Avancement
+- Tracker [`i18n-coverage.md`](docs/recette/i18n-coverage.md) : **48 ✅ / 0 🟡 / 0 ⬜ (100 %)**.
+
+### Tests
+- Frontend **257** inchangé · `vue-tsc` propre · `npm run i18n:check` vert (allowlist vide).
+
 ## [Non publié] — i18n : Inventaire restant — objectif traduisible atteint (UX-13) (2026-06-09)
 
 Branche `feature/ux-i18n-inventory-rest` (release `v1.0.0` → `rc.84`).

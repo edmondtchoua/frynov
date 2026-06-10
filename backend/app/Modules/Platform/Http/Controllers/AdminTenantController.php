@@ -102,12 +102,18 @@ class AdminTenantController extends Controller
     {
         $request->validate([
             'plan_code' => ['required', 'exists:plans,code'],
+            'interval'  => ['nullable', 'in:monthly,yearly'],
         ]);
 
         $plan    = Plan::where('code', $request->input('plan_code'))->firstOrFail();
         $oldPlan = $tenant->plan;
 
-        $subscription = $this->subscriptions->changePlan($tenant, $plan, $request->user());
+        $subscription = $this->subscriptions->changePlan(
+            $tenant,
+            $plan,
+            $request->user(),
+            $request->input('interval', 'monthly'),
+        );
         $this->audit->logPlanChanged($request, $tenant->id, $oldPlan, $plan->code);
 
         return response()->json($subscription->load('plan'));

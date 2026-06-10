@@ -56,9 +56,21 @@ class SubscriptionService
 
     /**
      * Upgrade or change the plan for a tenant.
+     *
+     * @param string $interval  Périodicité de l'abonnement (`monthly`|`yearly`). Pilote la fin de
+     *                          période : +1 mois (mensuel) ou +1 an (annuel). Valeur hors whitelist
+     *                          → mensuel. La périodicité est persistée sur l'abonnement.
      */
-    public function changePlan(Tenant $tenant, Plan $newPlan, ?User $approvedBy = null): Subscription
-    {
+    public function changePlan(
+        Tenant $tenant,
+        Plan $newPlan,
+        ?User $approvedBy = null,
+        string $interval = Subscription::INTERVAL_MONTHLY,
+    ): Subscription {
+        $interval = in_array($interval, [Subscription::INTERVAL_MONTHLY, Subscription::INTERVAL_YEARLY], true)
+            ? $interval
+            : Subscription::INTERVAL_MONTHLY;
+
         $current = $this->current($tenant);
 
         if ($current) {
@@ -68,12 +80,17 @@ class SubscriptionService
             ]);
         }
 
+        $periodEnd = $interval === Subscription::INTERVAL_YEARLY
+            ? now()->addYear()
+            : now()->addMonth();
+
         $subscription = Subscription::create([
             'tenant_id'            => $tenant->id,
             'plan_id'              => $newPlan->id,
             'status'               => $approvedBy ? Subscription::STATUS_ACTIVE : Subscription::STATUS_PENDING_APPROVAL,
+            'interval'             => $interval,
             'current_period_start' => now(),
-            'current_period_end'   => now()->addMonth(),
+            'current_period_end'   => $periodEnd,
             'approved_by'          => $approvedBy?->id,
             'approved_at'          => $approvedBy ? now() : null,
         ]);

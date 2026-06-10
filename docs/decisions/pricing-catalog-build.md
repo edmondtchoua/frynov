@@ -26,7 +26,7 @@
 | **RC-0** | billing | seed prix **annuels** (×10) + colonnes `subscriptions` (interval/currency/market_code/amount_paid) | ✅ **rc.101** |
 | RC-3A | stock | fix `findOrCreate` (warehouse_id) + coût unitaire `moveIn` | ✅ **rc.102** |
 | RC-1A | pricing | API publique `interval` whitelist + `monthly_equivalent`/`savings` | ✅ **rc.103** |
-| RC-1B | pricing | `changePlan(interval)` → `addMonth/addYear`, abonnement porte l'interval | ⬜ |
+| RC-1B | pricing | `changePlan(interval)` → `addMonth/addYear`, abonnement porte l'interval | ✅ **rc.104** |
 | RC-1C | pricing | détection périodicité à l'approbation (`PaymentPeriodResolver`, `manual_payments.interval`+`market_code`) | ⬜ |
 | RC-1D | pricing | toggle Mensuel/Annuel front (landing + UpgradeView) + i18n | ⬜ |
 | RC-5A | spécial | colonnes `stock_tracking`/`fulfillment_type` + data-migration | ⬜ |

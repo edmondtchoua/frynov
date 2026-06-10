@@ -3,6 +3,23 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🗓️ RC-1B : abonnement périodique (changePlan interval → +1 mois / +1 an) (2026-06-10)
+
+Branche `feature/pricing-changeplan-interval` (release `v1.0.0` → `rc.104`).
+
+### Billing — `SubscriptionService::changePlan`
+- Nouveau paramètre **`interval`** (`monthly`|`yearly`, défaut mensuel, valeur hors whitelist →
+  mensuel) : la **fin de période** est calculée `now()->addMonth()` (mensuel) ou `now()->addYear()`
+  (annuel), au lieu d'un `addMonth()` **codé en dur**. La **périodicité est persistée** sur le nouvel
+  abonnement (colonne `interval` du socle RC-0).
+- **`AdminTenantController::changePlan`** accepte un `interval` optionnel (`in:monthly,yearly`).
+- L'approbation d'un paiement manuel reste mensuelle par défaut — la **détection** de la périodicité
+  d'après le montant encaissé arrive en RC-1C.
+
+### Tests
+- **+3 tests** `SubscriptionServiceTest` : défaut mensuel (+1 mois) ; annuel (+1 an + `interval`
+  persisté) ; interval inconnu → repli mensuel. Billing + Platform **99 ✅**.
+
 ## [Non publié] — 💳 RC-1A : API pricing publique — périodicité annuelle + économie (2026-06-10)
 
 Branche `feature/pricing-interval-public-api` (release `v1.0.0` → `rc.103`).

@@ -3,6 +3,24 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧮 RC-4A : matrice d'entrée de stock variantes × entrepôts (backend) (2026-06-11)
+
+Branche `feature/catalog-variant-stock-matrix` (release `v1.0.0` → `rc.108`).
+Réponse à « l'entrée de stock sur les produits à variantes n'est pas optimale » — socle de la grille
+best-ERP (front : RC-4B).
+
+### Inventaire / Catalogue
+- **`POST /inventory/deliveries`** accepte désormais **`warehouse_id` par ligne** (réception ciblée par
+  site) + `unit_cost_cents` (CMUP). `InventoryService::receiveDelivery` route chaque ligne vers le bon
+  entrepôt (via le `findOrCreate(warehouse_id)` de RC-3A). **Périmètre d'accès** : un opérateur restreint
+  ne peut réceptionner que dans ses sites autorisés (sinon **403**).
+- **`GET /catalog/products/{id}/variant-stock-matrix`** : matrice variantes × entrepôts accessibles
+  (cellule = quantité / dispo / CMUP) pour peupler la grille de saisie. **422** si produit non stockable.
+
+### Tests
+- **+4 tests** `VariantStockMatrixTest` (matrice listée, batch routé par entrepôt + CMUP, 403 hors
+  périmètre, 422 service). Catalog+Inventory **167 ✅**.
+
 ## [Non publié] — 🗓️ RC-1D : toggle Mensuel/Annuel (landing + upgrade) + i18n (2026-06-11)
 
 Branche `feature/pricing-interval-frontend` (release `v1.0.0` → `rc.107`).

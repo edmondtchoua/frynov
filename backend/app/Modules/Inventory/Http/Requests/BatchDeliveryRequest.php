@@ -16,6 +16,9 @@ class BatchDeliveryRequest extends FormRequest
             // Sprint 11 fix — scoped to tenant to prevent cross-tenant IDOR via product_id injection
             'items.*.product_id'     => ['required', 'uuid', Rule::exists('products', 'id')->where('tenant_id', auth()->user()->tenant_id)],
             'items.*.variant_id'     => ['nullable', 'uuid', Rule::exists('product_variants', 'id')->where('tenant_id', auth()->user()->tenant_id)],
+            // RC-4 — entrée multi-variantes par entrepôt. Validé côté tenant (anti-IDOR) ; l'accès
+            // par site (WarehouseScope) est vérifié dans le contrôleur. Null = entrepôt par défaut.
+            'items.*.warehouse_id'   => ['nullable', 'uuid', Rule::exists('warehouses', 'id')->where('tenant_id', auth()->user()->tenant_id)],
             'items.*.quantity'       => ['required', 'integer', 'min:1', 'max:10000'],
             // unit_cost_cents feeds the CMUP (weighted avg cost). A negative value
             // would corrupt it — validate min:0. Read by InventoryService::receiveDelivery().

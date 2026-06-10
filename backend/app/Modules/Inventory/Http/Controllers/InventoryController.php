@@ -238,6 +238,17 @@ class InventoryController extends Controller
     {
         $items = $request->validated()['items'];
 
+        // RC-4 — un opérateur restreint ne peut réceptionner que dans ses entrepôts autorisés.
+        $allowed = WarehouseScope::resolve($request->user(), null); // null = aucune restriction
+        if ($allowed !== null) {
+            foreach ($items as $item) {
+                $wh = $item['warehouse_id'] ?? null;
+                if ($wh !== null && ! in_array($wh, $allowed, true)) {
+                    return response()->json(['message' => "Vous n'avez pas accès à cet entrepôt."], 403);
+                }
+            }
+        }
+
         // Apply top-level reference to each item if not individually set
         if ($reference = $request->validated()['reference'] ?? null) {
             $items = array_map(fn($i) => array_merge(['reference' => $reference], $i), $items);

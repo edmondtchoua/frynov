@@ -236,7 +236,7 @@ Réception complète d'une livraison multi-produits.
   "reference": "BL-2026-042",
   "items": [
     { "product_id": "uuid1", "quantity": 30 },
-    { "product_id": "uuid2", "variant_id": "uuid3", "quantity": 15, "note": "Taille L seulement" }
+    { "product_id": "uuid2", "variant_id": "uuid3", "warehouse_id": "uuid4", "quantity": 15, "unit_cost_cents": 1200, "note": "Taille L seulement" }
   ]
 }
 ```
@@ -245,6 +245,36 @@ Réception complète d'une livraison multi-produits.
 |-----------|--------|
 | `items` max | 200 lignes |
 | `quantity` max par item | 10 000 |
+| `warehouse_id` (RC-4) | optionnel — entrepôt cible par ligne (défaut : entrepôt par défaut du tenant) |
+| `unit_cost_cents` | optionnel — coût d'achat de la réception (alimente le CMUP) |
+
+> **Périmètre d'accès (RC-4).** Un opérateur restreint à certains sites (`user_warehouses`) ne peut
+> réceptionner que dans ses entrepôts autorisés — une ligne ciblant un entrepôt interdit renvoie **403**.
+> Les managers/admins ne sont pas restreints.
+
+---
+
+### GET `/api/catalog/products/{id}/variant-stock-matrix`
+
+Matrice d'entrée de stock « best-ERP » qui peuple la grille multi-variantes × entrepôt : lignes =
+variantes (ou le produit simple), colonnes = entrepôts **accessibles** à l'utilisateur, cellule =
+stock courant. Renvoie **422** pour un produit non stockable (service/digital).
+
+```json
+{
+  "product_id": "uuid",
+  "product_name": "T-shirt",
+  "has_variants": true,
+  "warehouses": [{ "id": "wh1", "name": "Abidjan", "code": "WH-ABJ", "is_default": true }],
+  "rows": [
+    { "variant_id": "v1", "label": "Rouge", "sku": "TSHIRT-R",
+      "cells": { "wh1": { "quantity": 12, "available": 12, "unit_cost_cents": 1000 } } }
+  ]
+}
+```
+
+La grille frontend collecte les quantités saisies par cellule puis POST le tout vers
+`/api/inventory/deliveries` (une ligne par couple variante × entrepôt).
 
 **Réponse 201 :**
 ```json

@@ -182,4 +182,74 @@ class SubscriptionServiceTest extends TestCase
             'plan_id'   => $proPlan->id,
         ]);
     }
+
+    #[Test]
+    public function change_plan_defaults_to_monthly_period(): void
+    {
+        $this->service->createStarter($this->tenant);
+        $plan = $this->makePaidPlan();
+
+        $sub = $this->service->changePlan($this->tenant, $plan);
+
+        $this->assertSame(Subscription::INTERVAL_MONTHLY, $sub->interval);
+        // Fin de période ≈ +1 mois (tolérance 1 min pour l'exécution du test).
+        $this->assertEqualsWithDelta(
+            now()->addMonth()->timestamp,
+            $sub->current_period_end->timestamp,
+            60,
+        );
+    }
+
+    #[Test]
+    public function change_plan_yearly_sets_a_one_year_period_and_persists_interval(): void
+    {
+        $this->service->createStarter($this->tenant);
+        $plan = $this->makePaidPlan();
+
+        $sub = $this->service->changePlan($this->tenant, $plan, null, Subscription::INTERVAL_YEARLY);
+
+        $this->assertSame(Subscription::INTERVAL_YEARLY, $sub->interval);
+        $this->assertEqualsWithDelta(
+            now()->addYear()->timestamp,
+            $sub->current_period_end->timestamp,
+            60,
+        );
+
+        // Persisté en base (hors scope tenant pour relire).
+        $this->assertDatabaseHas('subscriptions', [
+            'id'       => $sub->id,
+            'interval' => 'yearly',
+        ]);
+    }
+
+    #[Test]
+    public function change_plan_rejects_an_unknown_interval_and_falls_back_to_monthly(): void
+    {
+        $this->service->createStarter($this->tenant);
+        $plan = $this->makePaidPlan();
+
+        $sub = $this->service->changePlan($this->tenant, $plan, null, 'weekly');
+
+        $this->assertSame(Subscription::INTERVAL_MONTHLY, $sub->interval);
+        $this->assertEqualsWithDelta(
+            now()->addMonth()->timestamp,
+            $sub->current_period_end->timestamp,
+            60,
+        );
+    }
+
+    private function makePaidPlan(): Plan
+    {
+        return Plan::create([
+            'code'                => Plan::CODE_PRO,
+            'name'                => 'Pro',
+            'price_monthly_cents' => 1500000,
+            'price_yearly_cents'  => 15000000,
+            'currency'            => 'XOF',
+            'trial_days'          => 14,
+            'is_active'           => true,
+            'is_public'           => true,
+            'sort_order'          => 2,
+        ]);
+    }
 }

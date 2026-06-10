@@ -155,5 +155,20 @@ réelle — ce preview est purement indicatif.
 - `reason` ∈ `ok | downgrade | free_target | not_paid | past_due_no_period | not_eligible | expired |
   degenerate_period | cross_currency_blocked`. Un avoir **ne franchit jamais une devise**.
 
-> **Suite RC-2** : RC-2B applique réellement le crédit au commit (paiement manuel) ; RC-2C affiche
-> crédit/net/avoir dans l'UI d'upgrade (i18n FR+EN).
+### Application au commit (RC-2B — paiement manuel, « acompte virtuel »)
+
+À l'approbation d'un paiement sur un **vrai upgrade** (abonnement courant actif payé, plan ou
+périodicité différents), le reliquat agit comme un **acompte virtuel** : le client ne vire que le
+**net** (`net_payable_minor`), et le crédit comble le reste → `cash + crédit = tarif` → abonnement
+**activé**. Garde-fous (revue adverse) :
+
+- le crédit n'est consommé que si l'upgrade **solde réellement** le tarif (sinon il reste intact) ;
+- `amount_paid_minor` du nouvel abonnement = **cash réellement encaissé** (le crédit n'est pas du cash,
+  n'enfle pas le CA) ;
+- l'avoir appliqué (`credit_applied_minor`) et l'avoir reporté (`credit_minor`) sont tracés dans
+  `subscriptions.metadata` (jamais écrasés ; clés distinctes de `overpaid_minor`), **émis une seule fois**,
+  au moment où l'abonnement courant est réellement annulé (idempotence) ;
+- un **renouvellement** (même plan + même périodicité) ou un **premier achat** (sans courant) ne
+  déclenchent **aucune** proration.
+
+> **Suite RC-2C** : afficher crédit/net/avoir dans l'UI d'upgrade (i18n FR+EN).

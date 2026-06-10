@@ -3,6 +3,27 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 💸 RC-2B : application du reliquat à l'upgrade (acompte virtuel) (2026-06-11)
+
+Branche `feature/billing-proration-apply` (release `v1.0.0` → `rc.111`).
+Le reliquat calculé (RC-2A) est désormais **réellement appliqué** au moment du paiement.
+
+### Billing — le client paie le net, le crédit comble le reste
+- **`ManualPaymentService::approve`** : sur un **vrai upgrade** (abonnement courant actif payé, plan ou
+  périodicité différents), le reliquat agit comme un **acompte virtuel** → `cash + crédit = tarif` →
+  abonnement activé. Le crédit n'est consommé **que s'il solde** réellement (sinon intact) ;
+  `amount_paid_minor` = **cash réel** (le crédit n'enfle pas le CA).
+- **`changePlan(..., ?ProrationResult)`** : trace l'avoir appliqué (`credit_applied_minor`) et reporté
+  (`credit_minor`) dans `metadata` — **émis une seule fois** (garde `didCancel` : uniquement quand le
+  courant est réellement annulé), persisté dès qu'il y a un avoir appliqué **ou** reporté (pas sur
+  `eligible`, sinon perte d'un avoir reporté) — **correctifs revue adverse** (bloquants).
+- **Renouvellement** (même plan + périodicité) / **premier achat** → aucune proration.
+
+### Tests
+- **+4 tests** `ProrationApplyTest` (upgrade paie le net → actif + crédit tracé ; renouvellement sans
+  proration ; 1er achat sans courant ; idempotence). Billing+Platform **151 ✅** (aucune régression RC-1C).
+- **Suite → RC-2C** : UI upgrade crédit/net/avoir (i18n FR+EN).
+
 ## [Non publié] — 🧾 RC-2A : ProrationCalculator (reliquat d'upgrade) + preview (2026-06-11)
 
 Branche `feature/billing-proration-calculator` (release `v1.0.0` → `rc.110`).

@@ -103,6 +103,12 @@ Le système **reconnaît tout seul** ce que vous payez à partir du **montant** 
 4. Choisir le plan cible.
 5. Confirmer le mode de paiement.
 
+> 💰 **Reliquat (proration) à l'upgrade.** Si vous montez en gamme **avant la fin** de votre période
+> payée, l'écran affiche directement sur chaque plan le **reliquat appliqué** (la valeur du temps non
+> consommé de votre plan actuel) et le **montant net à payer** après déduction. Vous ne réglez que ce
+> net — le crédit comble le reste. En cas de **downgrade** ou si le reliquat dépasse le coût, l'excédent
+> devient un **avoir** déduit à votre prochaine échéance (jamais remboursé en espèces).
+
 La source backend officielle pour préparer la landing et la page d'upgrade est maintenant l'API publique `GET /api/public/pricing`. La page frontend ne doit plus maintenir durablement une grille de prix séparée.
 
 ## Limites d'utilisation

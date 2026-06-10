@@ -3,6 +3,29 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🏷️ RC-5A : politique produit stock/livraison (socle produits spéciaux) (2026-06-10)
+
+Branche `feature/catalog-product-stock-policy` (release `v1.0.0` → `rc.105`).
+Fondation P0 des **produits spéciaux** (services non stockables, digital, sérialisé IMEI/VIN, garanties — RC-5B→E).
+
+### Catalogue — politique serveur explicite (3 axes orthogonaux)
+- Nouvelles colonnes `products.stock_tracking` (`none|aggregate|batch|serialized`, défaut `aggregate`) et
+  `fulfillment_type` (`none|manual|delivery|download|license|appointment`, défaut `delivery`) — distinctes
+  de `product_type` (nature commerciale). Index `(tenant_id, stock_tracking)`.
+- **Data-migration** : les services existants → `none`/`manual` (non stockables). Autres produits
+  inchangés (`aggregate`/`delivery`).
+- **`Product`** : constantes `STOCK_TRACKING_*` / `FULFILLMENT_*`, type `digital` ; hook `booted()` qui
+  **dérive** la politique du type à la création (service/digital → `none`) sur **tous** les chemins
+  (API, duplication, seeders) ; `isStockable()` **fait autorité** (un service/digital n'est jamais
+  stockable, même avec une donnée héritée `aggregate`) ; `isDigital()`, `isSerialized()`.
+- **API** `POST/PATCH /catalog/products` accepte `product_type` (+ `digital`), `stock_tracking`,
+  `fulfillment_type` (whitelist). `CatalogResource` expose `stock_tracking`, `fulfillment_type`,
+  `is_stockable`, `is_serialized`.
+
+### Tests
+- **+6 tests** `ProductStockPolicyTest` (défauts par type, non-stockable service/digital, sérialisé
+  honoré, autorité du type sur donnée héritée, `none` explicite). Catalog+Orders+Inventory+Reports **261 ✅**.
+
 ## [Non publié] — 🗓️ RC-1B : abonnement périodique (changePlan interval → +1 mois / +1 an) (2026-06-10)
 
 Branche `feature/pricing-changeplan-interval` (release `v1.0.0` → `rc.104`).

@@ -105,6 +105,22 @@ La catégorie apparaît immédiatement dans la liste, indentée si elle a une ca
 
 > ✅ **Important :** La création d'un produit ne crée **pas** automatiquement une ligne de stock. Pour qu'un produit apparaisse dans le module Stock, il faut effectuer sa première **entrée de stock** (voir le guide Stock).
 
+### Types de produit et suivi de stock
+
+Tout produit n'est pas un article physique à compter. Frynov distingue **ce que vous vendez** de **la façon dont le stock est suivi** :
+
+| Type de produit | Suit du stock ? | Exemple |
+|---|---|---|
+| **Physique** (simple / à variantes) | Oui — quantité par entrepôt | Boubou, téléphone, pièce détachée |
+| **Service** | **Non** — aucun stock | Installation, prestation, formation |
+| **Produit digital** | **Non** — livraison immatérielle | Logiciel, ebook, licence *(livraison à venir)* |
+| **Kit / lot** | Selon composition | Pack composé d'autres produits |
+
+- Un **service** ou un **produit digital** est automatiquement marqué **non stockable** : aucune entrée de stock ne lui est demandée, et il ne fausse pas vos rapports de stock.
+- Les produits physiques restent suivis comme aujourd'hui (quantité par entrepôt, voir le guide Stock).
+
+> 🔜 Le suivi **par unité sérialisée** (un numéro IMEI par téléphone, un VIN par véhicule), les **garanties** et la **livraison digitale** arrivent dans les prochaines versions — cette base les prépare sans changer votre saisie actuelle.
+
 ### Modifier un produit
 
 1. Dans la liste des produits, cliquez sur le produit

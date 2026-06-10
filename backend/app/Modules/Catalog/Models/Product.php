@@ -15,11 +15,26 @@ class Product extends Model
 {
     use HasFactory, HasTenant, HasUuids, SoftDeletes;
 
-    // Valid product types
+    // Valid product types (nature commerciale)
     public const TYPE_SIMPLE   = 'simple';
     public const TYPE_VARIABLE = 'variable';
     public const TYPE_SERVICE  = 'service';
     public const TYPE_KIT      = 'kit';
+    public const TYPE_DIGITAL  = 'digital';   // RC-5B — produit immatériel (entitlement/licence)
+
+    // Politique de suivi du stock (RC-5A) — comment le stock est compté
+    public const STOCK_TRACKING_NONE       = 'none';        // service / digital : aucun stock
+    public const STOCK_TRACKING_AGGREGATE  = 'aggregate';   // quantité agrégée (défaut historique)
+    public const STOCK_TRACKING_BATCH      = 'batch';       // par lot (péremption)
+    public const STOCK_TRACKING_SERIALIZED = 'serialized';  // par unité (IMEI/VIN)
+
+    // Politique de livraison (RC-5A) — comment on remet le produit
+    public const FULFILLMENT_NONE        = 'none';
+    public const FULFILLMENT_MANUAL      = 'manual';
+    public const FULFILLMENT_DELIVERY    = 'delivery';      // défaut physique
+    public const FULFILLMENT_DOWNLOAD    = 'download';
+    public const FULFILLMENT_LICENSE     = 'license';
+    public const FULFILLMENT_APPOINTMENT = 'appointment';
 
     protected $fillable = [
         'tenant_id',
@@ -34,7 +49,9 @@ class Product extends Model
         'cost_amount',
         'status',
         'has_variants',
-        'product_type',         // Sprint 17: simple|variable|service|kit
+        'product_type',         // Sprint 17: simple|variable|service|kit|digital
+        'stock_tracking',       // RC-5A: none|aggregate|batch|serialized
+        'fulfillment_type',     // RC-5A: none|manual|delivery|download|license|appointment
         'barcode',
         'internal_barcode',
         'gtin',
@@ -55,6 +72,40 @@ class Product extends Model
         ];
     }
 
+    /**
+     * Dérive la politique de stock/livraison à partir du type quand elle n'est pas explicitement
+     * fournie — quel que soit le chemin de création (API, duplication, seeders, tests). Garantit
+     * qu'un service/digital n'est JAMAIS stockable par accident (le défaut DB `aggregate` ne suffit pas).
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Product $product) {
+            if ($product->stock_tracking === null) {
+                $product->stock_tracking = self::defaultStockTrackingFor($product->product_type);
+            }
+            if ($product->fulfillment_type === null) {
+                $product->fulfillment_type = self::defaultFulfillmentFor($product->product_type);
+            }
+        });
+    }
+
+    public static function defaultStockTrackingFor(?string $type): string
+    {
+        return match ($type) {
+            self::TYPE_SERVICE, self::TYPE_DIGITAL => self::STOCK_TRACKING_NONE,
+            default                                => self::STOCK_TRACKING_AGGREGATE,
+        };
+    }
+
+    public static function defaultFulfillmentFor(?string $type): string
+    {
+        return match ($type) {
+            self::TYPE_SERVICE => self::FULFILLMENT_MANUAL,
+            self::TYPE_DIGITAL => self::FULFILLMENT_DOWNLOAD,
+            default            => self::FULFILLMENT_DELIVERY,
+        };
+    }
+
     // ── Type helpers ──────────────────────────────────────────────────────────
 
     public function isVariable(): bool
@@ -67,9 +118,28 @@ class Product extends Model
         return $this->product_type === self::TYPE_SERVICE;
     }
 
+    public function isDigital(): bool
+    {
+        return $this->product_type === self::TYPE_DIGITAL;
+    }
+
+    /**
+     * Un produit est stockable s'il suit réellement du stock. Fait AUTORITÉ sur `stock_tracking`
+     * (none → non stockable) tout en restant rétro-compatible : un service est non stockable même
+     * si une donnée héritée porte encore `aggregate`.
+     */
     public function isStockable(): bool
     {
-        return $this->product_type !== self::TYPE_SERVICE;
+        if ($this->product_type === self::TYPE_SERVICE || $this->product_type === self::TYPE_DIGITAL) {
+            return false;
+        }
+
+        return ($this->stock_tracking ?? self::STOCK_TRACKING_AGGREGATE) !== self::STOCK_TRACKING_NONE;
+    }
+
+    public function isSerialized(): bool
+    {
+        return $this->stock_tracking === self::STOCK_TRACKING_SERIALIZED;
     }
 
     // â”€â”€ Money accessors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

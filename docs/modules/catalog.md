@@ -19,6 +19,12 @@ public function isOnSale(): bool           // compare_at_price > price
 public function isActive(): bool
 public function isDraft(): bool
 
+// Politique produit (nature / stock / livraison) — RC-5A
+public function isService(): bool
+public function isDigital(): bool
+public function isStockable(): bool        // false pour service/digital ou stock_tracking=none
+public function isSerialized(): bool       // stock_tracking=serialized (IMEI/VIN à venir)
+
 // Relations
 public function category(): BelongsTo
 public function variants(): HasMany
@@ -29,6 +35,24 @@ public function tenant(): BelongsTo
 - `draft` — brouillon, non visible en front
 - `active` — publié, vendable
 - `archived` — retiré du catalogue (non supprimé)
+
+**Politique produit (RC-5A — socle produits spéciaux).** Trois axes orthogonaux, à ne pas mélanger :
+
+| Champ | Valeurs | Rôle |
+|---|---|---|
+| `product_type` | `simple` · `variable` · `service` · `kit` · `digital` | **Nature commerciale** (ce que c'est) |
+| `stock_tracking` | `none` · `aggregate` · `batch` · `serialized` | **Comment le stock est compté** |
+| `fulfillment_type` | `none` · `manual` · `delivery` · `download` · `license` · `appointment` | **Comment on livre** |
+
+- À la création, `stock_tracking`/`fulfillment_type` sont **dérivés du type** s'ils ne sont pas fournis
+  (hook `Product::booted()`) : `service`→`none`/`manual`, `digital`→`none`/`download`, sinon
+  `aggregate`/`delivery`. Couvre tous les chemins (API, duplication, seeders, tests).
+- **`isStockable()` fait autorité** : un `service`/`digital` n'est **jamais** stockable, même si une
+  donnée héritée porte encore `aggregate` (l'autorité du type prime). La migration a *backfillé* les
+  services existants vers `none`/`manual`.
+- L'API (`POST/PATCH /catalog/products`) accepte ces trois champs (whitelist). Le `CatalogResource`
+  expose `stock_tracking`, `fulfillment_type`, `is_stockable`, `is_serialized`.
+- Fondation des produits spéciaux (digital, garanties, licences, sérialisé IMEI/VIN — RC-5B→E).
 
 ### `ProductVariant`
 

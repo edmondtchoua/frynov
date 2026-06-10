@@ -17,6 +17,20 @@ use Illuminate\Validation\Rule;
 
 class CatalogController extends Controller
 {
+    /** Whitelists des politiques produit (RC-5A) — alignées sur les constantes du modèle Product. */
+    private const PRODUCT_TYPES = [
+        Product::TYPE_SIMPLE, Product::TYPE_VARIABLE, Product::TYPE_SERVICE,
+        Product::TYPE_KIT, Product::TYPE_DIGITAL,
+    ];
+    private const STOCK_TRACKINGS = [
+        Product::STOCK_TRACKING_NONE, Product::STOCK_TRACKING_AGGREGATE,
+        Product::STOCK_TRACKING_BATCH, Product::STOCK_TRACKING_SERIALIZED,
+    ];
+    private const FULFILLMENT_TYPES = [
+        Product::FULFILLMENT_NONE, Product::FULFILLMENT_MANUAL, Product::FULFILLMENT_DELIVERY,
+        Product::FULFILLMENT_DOWNLOAD, Product::FULFILLMENT_LICENSE, Product::FULFILLMENT_APPOINTMENT,
+    ];
+
     public function __construct(
         private readonly CatalogService $catalog,
         private readonly ?StockService $stockService = null,
@@ -223,6 +237,9 @@ class CatalogController extends Controller
             'weight_kg'               => ['nullable', 'numeric', 'min:0'],
             'metadata'                => ['nullable', 'array'],
             'has_variants'            => ['nullable', 'boolean'],
+            'product_type'            => ['nullable', Rule::in(self::PRODUCT_TYPES)],
+            'stock_tracking'          => ['nullable', Rule::in(self::STOCK_TRACKINGS)],
+            'fulfillment_type'        => ['nullable', Rule::in(self::FULFILLMENT_TYPES)],
         ]);
 
         $product  = $this->catalog->createProduct($tenantId, $data);
@@ -251,6 +268,9 @@ class CatalogController extends Controller
             'barcode'                 => ['nullable', 'string', 'max:50'],
             'weight_kg'               => ['nullable', 'numeric', 'min:0'],
             'metadata'                => ['nullable', 'array'],
+            'product_type'            => ['sometimes', Rule::in(self::PRODUCT_TYPES)],
+            'stock_tracking'          => ['sometimes', Rule::in(self::STOCK_TRACKINGS)],
+            'fulfillment_type'        => ['sometimes', Rule::in(self::FULFILLMENT_TYPES)],
         ]);
 
         $product = $this->catalog->updateProduct($product, $data);

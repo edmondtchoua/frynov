@@ -104,15 +104,47 @@ class ManualPaymentService
                 ->where('id', '!=', $payment->id)
                 ->sum('amount_cents');
 
+            $targetInterval = $payment->declared_interval ?? Subscription::INTERVAL_MONTHLY;
+
+            // ── Proration (RC-2) : sur un vrai UPGRADE (changement de plan/périodicité depuis un
+            //    courant actif payé), le reliquat du temps non consommé agit comme un ACOMPTE VIRTUEL :
+            //    le client ne vire que le NET, le crédit comble le reste. Le crédit n'est consommé que
+            //    si l'upgrade SOLDE réellement le tarif ; sinon il reste intact. ──────────────────────
+            $current   = $this->subscriptions->current($payment->tenant);
+            $proration = null;
+            $virtualCredit = 0;
+
+            $isPlanChange = $current
+                && $current->status === Subscription::STATUS_ACTIVE
+                && (int) $current->amount_paid_minor > 0
+                && ($current->plan_id !== $payment->plan_id || $current->interval !== $targetInterval);
+
+            if ($isPlanChange) {
+                $candidate = $this->subscriptions->previewProration($payment->tenant, $payment->plan, $targetInterval, now());
+                if ($candidate->appliedCreditMinor > 0) {
+                    $withCredit = $this->resolver->resolve(
+                        $payment->plan, (int) $payment->amount_cents, $payment->currency, $payment->market_code,
+                        $targetInterval, $alreadyPaid + $candidate->appliedCreditMinor, $payment->promo_code_used !== null,
+                    );
+                    if ($withCredit->isComplete) {
+                        $proration     = $candidate;          // crédit consommé : l'upgrade solde
+                        $virtualCredit = $candidate->appliedCreditMinor;
+                    }
+                }
+            }
+
             $res = $this->resolver->resolve(
                 $payment->plan,
                 (int) $payment->amount_cents,
                 $payment->currency,
                 $payment->market_code,
-                $payment->declared_interval ?? 'monthly',
-                $alreadyPaid,
+                $targetInterval,
+                $alreadyPaid + $virtualCredit,
                 $payment->promo_code_used !== null,
             );
+
+            // Cash RÉELLEMENT encaissé (le crédit n'est PAS du cash et ne gonfle pas amount_paid_minor).
+            $realCash = $alreadyPaid + (int) $payment->amount_cents;
 
             $payment->update([
                 'status'              => ManualPayment::STATUS_APPROVED,
@@ -153,6 +185,7 @@ class ManualPaymentService
                     $res->interval ?? Subscription::INTERVAL_MONTHLY,
                     settle: true,
                     periodStart: $periodStart,
+                    proration: $proration,   // RC-2 : trace l'avoir appliqué/reporté (si upgrade soldé par crédit)
                 );
 
                 $meta = $sub->metadata ?? [];
@@ -163,7 +196,7 @@ class ManualPaymentService
                 $sub->update([
                     'currency'          => $payment->currency,
                     'market_code'       => $res->marketCode,
-                    'amount_paid_minor' => $res->paidCumulativeMinor,
+                    'amount_paid_minor' => $realCash,   // cash réel (hors crédit virtuel de proration)
                     'metadata'          => $meta,
                 ]);
             } elseif ($res->isPartial) {
@@ -177,7 +210,7 @@ class ManualPaymentService
                 $sub->update([
                     'currency'          => $payment->currency,
                     'market_code'       => $res->marketCode,
-                    'amount_paid_minor' => $res->paidCumulativeMinor,
+                    'amount_paid_minor' => $realCash,
                 ]);
             }
 

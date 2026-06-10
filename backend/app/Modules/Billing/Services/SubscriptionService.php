@@ -110,6 +110,10 @@ class SubscriptionService
      *                                          démarrée (current_period_end = null), modules NON activés.
      * @param \Carbon\CarbonInterface|null $periodStart  Début de période (repris du 1er acompte au
      *                                          solde d'un échelonnement) ; défaut = maintenant.
+     * @param ProrationResult|null $proration  Reliquat de proration (RC-2). Quand fourni ET qu'un
+     *                                          abonnement courant a réellement été annulé dans CET appel,
+     *                                          l'avoir résiduel et l'avoir appliqué sont tracés dans la
+     *                                          metadata du NOUVEL abonnement (jamais écrasés).
      */
     public function changePlan(
         Tenant $tenant,
@@ -118,18 +122,21 @@ class SubscriptionService
         string $interval = Subscription::INTERVAL_MONTHLY,
         bool $settle = true,
         ?\Carbon\CarbonInterface $periodStart = null,
+        ?ProrationResult $proration = null,
     ): Subscription {
         $interval = in_array($interval, [Subscription::INTERVAL_MONTHLY, Subscription::INTERVAL_YEARLY], true)
             ? $interval
             : Subscription::INTERVAL_MONTHLY;
 
-        $current = $this->current($tenant);
+        $current   = $this->current($tenant);
+        $didCancel = false;
 
         if ($current) {
             $current->update([
                 'status'       => Subscription::STATUS_CANCELLED,
                 'cancelled_at' => now(),
             ]);
+            $didCancel = true;
         }
 
         // Statut : approbateur + soldé → actif ; approbateur + acompte → past_due ; sinon en attente.
@@ -153,6 +160,29 @@ class SubscriptionService
             'approved_by'          => $approvedBy?->id,
             'approved_at'          => $approvedBy ? now() : null,
         ]);
+
+        // Proration (RC-2) — émise UNE seule fois, au moment où le courant est réellement annulé
+        // (garde d'idempotence). Persistée dès qu'il y a un avoir appliqué OU reporté (PAS sur eligible,
+        // sinon un avoir reporté antérieur sur un cas non éligible serait perdu).
+        if ($proration !== null && $didCancel
+            && ($proration->appliedCreditMinor > 0 || $proration->carryCreditMinor > 0)) {
+            $meta = $subscription->metadata ?? [];
+            if ($proration->carryCreditMinor > 0) {
+                $meta['credit_minor'] = (int) ($meta['credit_minor'] ?? 0) + $proration->carryCreditMinor;
+            }
+            if ($proration->appliedCreditMinor > 0) {
+                $meta['credit_applied_minor'] = $proration->appliedCreditMinor;
+            }
+            $meta['proration'] = [
+                'from_plan'     => $current?->plan?->code,
+                'fraction'      => $proration->fraction,
+                'credit_minor'  => $proration->creditMinor,
+                'applied_minor' => $proration->appliedCreditMinor,
+                'currency'      => $proration->currency,
+                'reason'        => $proration->reason,
+            ];
+            $subscription->update(['metadata' => $meta]);
+        }
 
         $tenant->update([
             'plan'                => $newPlan->code,

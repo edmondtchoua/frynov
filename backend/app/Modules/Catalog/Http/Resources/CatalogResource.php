@@ -21,6 +21,11 @@ class CatalogResource extends JsonResource
             'description'  => $this->description,
             'status'       => $this->status,
             'product_type' => $this->product_type ?? 'simple',
+            // Politique serveur de stock & livraison (RC-5A)
+            'stock_tracking'   => $this->stock_tracking ?? 'aggregate',
+            'fulfillment_type' => $this->fulfillment_type ?? 'delivery',
+            'is_stockable'     => $this->isStockable(),
+            'is_serialized'    => $this->isSerialized(),
             'category'     => new CategoryResource($this->whenLoaded('category')),
             // Supplier — populated when relation is loaded
             'supplier'     => $this->whenLoaded('supplier', fn () => $this->supplier ? [

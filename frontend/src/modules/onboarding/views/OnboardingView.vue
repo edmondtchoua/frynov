@@ -548,7 +548,7 @@ async function submitOnboarding() {
   provisioning.value  = true
   provisionError.value = ''
   try {
-    await api.post('/workspace/provision', {
+    await api.post('/api/workspace/provision', {
       company_name:    answers.company,
       country:         answers.country,
       currency:        answers.currency,

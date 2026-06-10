@@ -704,6 +704,7 @@ export const messages: Record<Locale, Dict> = {
     },
     onboarding: {
       alreadyRegistered: 'Déjà inscrit ? Connexion',
+      leaveConfirm: 'Votre configuration en cours sera perdue. Quitter l’assistant ?',
       stepCount: 'Étape {step} sur {total}',
       back: '← Retour',
       continue: 'Continuer →',
@@ -1531,6 +1532,7 @@ export const messages: Record<Locale, Dict> = {
     },
     onboarding: {
       alreadyRegistered: 'Already registered? Sign in',
+      leaveConfirm: 'Your in-progress setup will be lost. Leave the wizard?',
       stepCount: 'Step {step} of {total}',
       back: '← Back',
       continue: 'Continue →',

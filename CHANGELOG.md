@@ -3,6 +3,21 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🛡️ UX-07 : garde anti-perte sur l'onboarding (2026-06-09)
+
+Branche `feature/ux07-onboarding-guard` (release `v1.0.0` → `rc.100`).
+
+### UX (gate UX/UI P1 — UX-07 complété)
+- **`OnboardingView`** : câblage de `useUnsavedChanges` (déjà en place sur `ProductFormView` et
+  `OrderCreateView`). La garde anti-perte (prompt `beforeunload` + confirmation `onBeforeRouteLeave`)
+  s'active **dès que l'utilisateur a commencé l'assistant** (étape > 1, type d'entreprise ou nom saisi)
+  et se **lève après un provisioning réussi** (pour ne pas bloquer la redirection finale vers le
+  tableau de bord). Message i18n `onboarding.leaveConfirm` (FR+EN).
+- **Gate UX/UI P1 — UX-07 : ✅** (les 3 formulaires critiques sont désormais protégés).
+
+### Tests
+- Frontend **262** ✅ · `vue-tsc` propre · `npm run i18n:check` vert (parité FR/EN, `OnboardingView` scannée).
+
 ## [Non publié] — ✅ Test : suite backend 100 % verte (fix `ImportModuleTest` adresse) (2026-06-09)
 
 Branche `fix/import-address-test` (release `v1.0.0` → `rc.99`).

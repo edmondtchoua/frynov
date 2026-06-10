@@ -18,11 +18,28 @@ class ManualPayment extends Model
     public const STATUS_APPROVED = 'approved';
     public const STATUS_REJECTED = 'rejected';
 
+    // Statuts applicatifs de résolution de périodicité (RC-1C).
+    public const RESOLUTION_MATCHED      = 'matched';
+    public const RESOLUTION_PARTIAL      = 'partial';
+    public const RESOLUTION_OVERPAID     = 'overpaid';
+    public const RESOLUTION_FREE         = 'free';
+    public const RESOLUTION_NEEDS_REVIEW = 'needs_review';
+    public const RESOLUTION_UNMATCHED    = 'unmatched';
+    public const RESOLUTION_SETTLED      = 'settled';   // acompte d'un cycle déjà soldé (exclu du cumul)
+
     protected $fillable = [
         'tenant_id',
         'plan_id',
         'amount_cents',
         'currency',
+        'market_code',
+        'declared_interval',
+        'detected_interval',
+        'target_amount_minor',
+        'remaining_due_minor',
+        'overpaid_minor',
+        'resolution_status',
+        'applied_at',
         'payment_method',
         'proof_path',
         'proof_original_filename',
@@ -37,8 +54,12 @@ class ManualPayment extends Model
     protected function casts(): array
     {
         return [
-            'amount_cents' => 'integer',
-            'reviewed_at'  => 'datetime',
+            'amount_cents'        => 'integer',
+            'target_amount_minor' => 'integer',
+            'remaining_due_minor' => 'integer',
+            'overpaid_minor'      => 'integer',
+            'applied_at'          => 'datetime',
+            'reviewed_at'         => 'datetime',
         ];
     }
 
@@ -64,6 +85,12 @@ class ManualPayment extends Model
     public function isPending(): bool
     {
         return $this->status === self::STATUS_PENDING;
+    }
+
+    /** Vrai dès qu'un acompte a été imputé au cumul (garde-fou idempotence). */
+    public function isApplied(): bool
+    {
+        return $this->applied_at !== null;
     }
 
     public function hasProof(): bool
@@ -93,6 +120,13 @@ class ManualPayment extends Model
             'plan_name'              => $this->plan?->name,
             'amount_cents'           => $this->amount_cents,
             'currency'               => $this->currency,
+            'market_code'            => $this->market_code,
+            'declared_interval'      => $this->declared_interval,
+            'detected_interval'      => $this->detected_interval,
+            'target_amount_minor'    => $this->target_amount_minor,
+            'remaining_due_minor'    => $this->remaining_due_minor,
+            'overpaid_minor'         => $this->overpaid_minor,
+            'resolution_status'      => $this->resolution_status,
             'payment_method'         => $this->payment_method,
             'has_proof'              => $this->hasProof(),
             'proof_original_filename' => $this->proof_original_filename,

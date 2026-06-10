@@ -78,6 +78,23 @@ Le paiement manuel reste important pour les marchés où la carte bancaire inter
 4. Téléverser la preuve de paiement.
 5. Un administrateur valide ou rejette le paiement.
 
+### Payer au mois, à l'année, ou en plusieurs fois (détection automatique)
+
+Le système **reconnaît tout seul** ce que vous payez à partir du **montant** :
+
+- **Paiement mensuel complet** → abonnement activé pour **1 mois**.
+- **Paiement annuel complet** (≈ 10 mois, ~2 mois offerts) → abonnement activé pour **1 an**.
+- **Acompte (paiement partiel)** → l'abonnement reste **en attente de solde** (« past due ») : l'accès
+  s'ouvre **une fois le total atteint**. Vos versements **s'additionnent** ; le **reste à payer** est suivi.
+  Quand le solde est atteint, l'abonnement s'active et la **période part de votre premier versement**.
+- Une **petite tolérance** (±1 %) absorbe les arrondis de mobile money — un paiement plein n'est jamais
+  pris à tort pour un trop-payé.
+- Un **trop-perçu** éventuel est conservé en **avoir** sur votre compte.
+
+> 💡 Vous pouvez préciser au paiement si vous visez le **mensuel** ou l'**annuel** (utile pour les
+> acomptes) ; sinon le système déduit la périodicité du montant. Un paiement avec **code promo** ou en
+> **devise non reconnue** est mis de côté pour **validation manuelle** par un administrateur.
+
 ## Mise à niveau de plan
 
 1. Aller dans **Paramètres > Abonnement**.

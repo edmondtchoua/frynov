@@ -64,3 +64,51 @@ Retourne la grille publique des plans actifs et publics, localisée par marché 
 - Un pays inconnu revient au marché `global` en USD.
 - Les données contractuelles de prix doivent venir de cette API, pas d'une table hardcodée dans la landing.
 - L'économie annuelle est calculée à partir du **mensuel réel du marché** (pas d'un ratio figé) : robuste si la grille évolue.
+
+---
+
+## `POST /api/me/manual-payments` — soumettre un paiement (RC-1C)
+
+Le tenant déclare un versement (avec preuve). La **périodicité et le marché sont DÉTECTÉS** du montant.
+
+### Paramètres
+
+| Paramètre | Règle |
+|---|---|
+| `plan_code` | requis — plan visé |
+| `amount_cents` | requis — montant encaissé en **unités mineures** |
+| `currency` | défaut `XOF` — détermine le marché côté serveur |
+| `payment_method` | requis |
+| `market_code` | optionnel — **hint** marché ; ignoré s'il ne correspond pas à la devise |
+| `interval` | optionnel `monthly`/`yearly` — périodicité **déclarée** (repli pour router un acompte) |
+| `promo_code`, `notes`, `proof` | optionnels |
+
+> La devise n'est jamais saisie librement comme « marché » : le marché est résolu serveur-side à partir
+> de la devise (avec le `market_code` comme hint validé). Sans `interval`, la détection est purement basée
+> sur le montant (repli mensuel).
+
+## Détection de périodicité & acompte échelonné
+
+À la **soumission** (cumul = 0) puis surtout à l'**approbation** (cumul des acomptes non soldés), le
+`PaymentPeriodResolver` compare le montant encaissé aux prix du plan pour le marché résolu :
+
+- **Tolérance ±1 %** (bruit mobile money / FX) : un paiement plein dans la bande est `matched`
+  (jamais un faux trop-perçu). Bornes entières arrondies vers l'extérieur (≥ 1 unité mineure).
+- **Annuel testé avant mensuel** : les bandes ne se recoupent jamais (annuel = 10× mensuel).
+- **Trop-perçu** uniquement **au-delà** de la borne haute de la **plus grande** cible → abonnement
+  soldé + **avoir** tracé dans `subscriptions.metadata['overpaid_minor']`.
+- **Zone morte** (entre mensuel et annuel) = **acompte vers l'annuel**, pas un trop-perçu mensuel.
+- **Acompte** (`partial`) : abonnement `past_due`, **période non démarrée**, modules non activés ;
+  le **reste dû** est tracé. Les acomptes s'**accumulent** sur la clé stable `(tenant, plan, market)` ;
+  au solde, l'abonnement passe `active` et `current_period_start` reprend la **date du 1er acompte**.
+- **Renouvellement** : après un solde, les acomptes du cycle sont marqués `settled` (exclus du cumul)
+  → un nouveau paiement repart d'un cumul à zéro (jamais compté comme avoir).
+- **`needs_review`** (promo appliquée) / **`unmatched`** (devise hors référentiel) : paiement approuvé
+  **sans activation** — l'admin tranche.
+
+`resolution_status` ∈ `matched | partial | overpaid | free | needs_review | unmatched | settled`. Le
+paiement expose `market_code`, `detected_interval`, `target_amount_minor`, `remaining_due_minor`,
+`overpaid_minor`, `resolution_status` (barre de progression d'acompte côté admin).
+
+> **Hors périmètre RC-1C** (→ RC-2) : abondement d'acompte en place (au lieu d'annuler/recréer), cible
+> nette après **promo**, sièges supplémentaires, table d'avoirs dédiée, proration d'upgrade avant fin.

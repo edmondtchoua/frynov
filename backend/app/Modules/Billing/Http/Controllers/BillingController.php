@@ -104,6 +104,9 @@ class BillingController extends Controller
             'payment_method' => ['required', 'string', 'max:64'],
             'notes'          => ['nullable', 'string', 'max:1000'],
             'promo_code'     => ['nullable', 'string', 'max:32'],
+            // RC-1C — hint marché (validé serveur-side vs devise) + périodicité déclarée (repli d'acompte)
+            'market_code'    => ['nullable', 'string', 'max:32'],
+            'interval'       => ['nullable', 'in:monthly,yearly'],
             'proof'          => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf,webp', 'max:5120'], // 5 MB
         ]);
 
@@ -116,14 +119,16 @@ class BillingController extends Controller
         $plan = Plan::where('code', $request->input('plan_code'))->firstOrFail();
 
         $payment = $this->manualPayments->submit(
-            tenant:        $tenant,
-            plan:          $plan,
-            amountCents:   $request->input('amount_cents'),
-            currency:      $request->input('currency', 'XOF'),
-            paymentMethod: $request->input('payment_method'),
-            proof:         $request->file('proof'),
-            notes:         $request->input('notes'),
-            promoCode:     $request->input('promo_code'),
+            tenant:           $tenant,
+            plan:             $plan,
+            amountCents:      $request->input('amount_cents'),
+            currency:         $request->input('currency', 'XOF'),
+            paymentMethod:    $request->input('payment_method'),
+            proof:            $request->file('proof'),
+            notes:            $request->input('notes'),
+            promoCode:        $request->input('promo_code'),
+            marketHint:       $request->input('market_code'),
+            declaredInterval: $request->input('interval'),
         );
 
         return response()->json([

@@ -27,7 +27,7 @@
 | RC-3A | stock | fix `findOrCreate` (warehouse_id) + coût unitaire `moveIn` | ✅ **rc.102** |
 | RC-1A | pricing | API publique `interval` whitelist + `monthly_equivalent`/`savings` | ✅ **rc.103** |
 | RC-1B | pricing | `changePlan(interval)` → `addMonth/addYear`, abonnement porte l'interval | ✅ **rc.104** |
-| RC-1C | pricing | détection périodicité à l'approbation (`PaymentPeriodResolver`, `manual_payments.interval`+`market_code`) | ⬜ |
+| RC-1C | pricing | détection périodicité à l'approbation (`PaymentPeriodResolver`, `manual_payments.interval`+`market_code`) | ✅ **rc.106** |
 | RC-1D | pricing | toggle Mensuel/Annuel front (landing + UpgradeView) + i18n | ⬜ |
 | RC-5A | spécial | colonnes `stock_tracking`/`fulfillment_type` + data-migration | ✅ **rc.105** |
 | RC-4A–C | stock | grille multi-variantes par entrepôt (back + front) + i18n | ⬜ |
@@ -40,3 +40,14 @@
 - Tolérance FX **±1 %** indispensable (mobile money) ; arrondi **par exposant devise** (XOF/XAF = 0).
 - Pas de **job de renouvellement/relance** (cron billing) — hors périmètre, à planifier après.
 - **DoD i18n** : tout RC touchant une vue livre FR+EN + met à jour le tracker (garde CI).
+
+## 🔭 Reporté à RC-2 (issu de la revue adverse RC-1C)
+- **Abondement d'acompte en place** (`applyDeposit`) au lieu d'annuler/recréer l'abonnement à chaque
+  tranche (évite la multiplication des lignes `cancelled`). RC-1C reprend déjà `current_period_start` du
+  1er acompte au solde — mitigation suffisante en V1.
+- **Cible nette après promo** : RC-1C route un paiement avec `promo_code` en `needs_review` (pas de
+  fausse détection). RC-2 calculera la cible remisée (PromotionService) pour activer automatiquement.
+- **Sièges supplémentaires** (`extra_user`) exclus du matching (le surplus part en avoir) — à intégrer.
+- **Table d'avoirs dédiée** (`tenant_credits`) au lieu de `subscriptions.metadata['overpaid_minor']`.
+- **Rétro-action d'un acompte imputé** (rejet/remboursement décrémentant le cumul) — bloquée en RC-1C.
+- **Mismatch devise↔moyen de paiement** strict → `needs_review` (omis en V1, atténué par le hint cohérent).

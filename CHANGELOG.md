@@ -3,6 +3,36 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔎 RC-1C : détection de périodicité & acompte échelonné (PaymentPeriodResolver) (2026-06-11)
+
+Branche `feature/pricing-period-detection` (release `v1.0.0` → `rc.106`).
+Conçu + **durci par revue adverse multi-agents** (workflow : 2 bugs d'argent BLOQUANTS corrigés avant code).
+
+### Billing — le système détecte la périodicité payée et met à jour l'abonnement
+- **`PaymentPeriodResolver`** (pur) + DTO `PaymentPeriodResult` + support `Markets` (devise↔marché↔exposant).
+  À l'approbation d'un paiement manuel, la périodicité (mensuel/annuel) est **détectée du montant** vs les
+  prix du plan/marché, **tolérance ±1 %** (bruit mobile money/FX), annuel testé avant mensuel.
+- **Acompte échelonné** : versements partiels → abonnement **`past_due`** (période non démarrée, modules non
+  activés, reste dû tracé) ; ils **s'accumulent** (clé stable `tenant+plan+market`, cumul des seuls acomptes
+  non soldés) ; au solde → **`active`**, `current_period_start` repris du **1er acompte**, cycle clôturé
+  (`settled`). Un **renouvellement** repart de zéro (jamais compté comme avoir).
+- **Trop-perçu** uniquement au-delà de la **plus grande** cible → avoir mergé dans
+  `subscriptions.metadata['overpaid_minor']`. **Zone morte** mensuel↔annuel = acompte vers l'annuel.
+  **Promo → `needs_review`**, **devise inconnue → `unmatched`** (approuvé sans activation auto).
+- **Garde-fou d'idempotence** (`approve()` ne traite qu'un paiement `pending`) — corrige un double
+  `changePlan` latent. **`changePlan(..., bool $settle, ?periodStart)`** : `active`|`past_due`, période
+  démarrée seulement au solde. `manual_payments` enrichi (migration additive : `market_code`,
+  `declared/detected_interval`, `target/remaining_due/overpaid_minor`, `resolution_status`, `applied_at`).
+- API `POST /api/me/manual-payments` accepte `market_code` (hint validé vs devise) + `interval` déclaré.
+
+### Tests
+- **+28 tests** : `PaymentPeriodResolverTest` (18, matrice corrigée : tolérance≠trop-perçu, overpaid
+  seulement au-delà de la plus grande cible, zone morte→annuel, free/unmatched/promo, cumul) +
+  `ManualPaymentDetectionTest` (10, bout-en-bout : full/partial/2-acomptes/idempotent/overpaid/renouvellement/
+  unmatched/promo). Billing+Platform **127 ✅**.
+- **Hors périmètre (→ RC-2)** : abondement d'acompte en place, cible nette après promo, sièges sup.,
+  table d'avoirs dédiée, proration d'upgrade avant fin.
+
 ## [Non publié] — 🏷️ RC-5A : politique produit stock/livraison (socle produits spéciaux) (2026-06-10)
 
 Branche `feature/catalog-product-stock-policy` (release `v1.0.0` → `rc.105`).

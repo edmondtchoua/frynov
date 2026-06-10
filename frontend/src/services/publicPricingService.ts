@@ -19,6 +19,10 @@ export interface PublicPlanPrice {
   base_amount_minor: number
   included_users: number | null
   extra_user_amount_minor: number | null
+  /** Annual-only economics (present when interval=yearly; absent on monthly). RC-1A. */
+  monthly_equivalent_minor?: number
+  savings_amount_minor?: number
+  savings_pct?: number
 }
 
 export interface PublicPlanLimits {
@@ -58,8 +62,12 @@ export interface SelectableMarket {
   countries: string[]
 }
 
+export type PricingInterval = 'monthly' | 'yearly'
+
 export interface PublicPricingResponse {
   market: PublicMarket
+  /** Périodicité réellement appliquée par le backend (après whitelist). RC-1A. */
+  interval: PricingInterval | string
   selectable_markets: SelectableMarket[]
   data: PublicPlan[]
 }
@@ -112,11 +120,12 @@ export async function fetchPublicPaymentMethods(
  * server-side). Throws on a non-OK response or timeout so callers can degrade.
  */
 export async function fetchPublicPricing(
-  params: { market?: string; country?: string } = {},
+  params: { market?: string; country?: string; interval?: PricingInterval } = {},
 ): Promise<PublicPricingResponse> {
   const qs = new URLSearchParams()
   if (params.market) qs.set('market', params.market)
   if (params.country) qs.set('country', params.country)
+  if (params.interval) qs.set('interval', params.interval)
   const query = qs.toString()
   const url = `${API_BASE}/api/public/pricing${query ? `?${query}` : ''}`
 

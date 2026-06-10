@@ -101,7 +101,13 @@ class InventoryController extends Controller
     {
         $data     = $request->validated();
         $tenantId = $request->user()->tenant_id;
-        $stock    = $this->stockService->findOrCreate($tenantId, $productId, $data['variant_id'] ?? null);
+
+        $warehouseId = $this->resolveWritableWarehouse($request, $data['warehouse_id'] ?? null);
+        if ($warehouseId instanceof JsonResponse) {
+            return $warehouseId; // 403/404 — caller is not allowed to write to that warehouse
+        }
+
+        $stock = $this->stockService->findOrCreate($tenantId, $productId, $data['variant_id'] ?? null, $warehouseId);
 
         $movement = $this->stockService->moveIn(
             $stock,
@@ -110,9 +116,36 @@ class InventoryController extends Controller
             $data['reference'] ?? null,
             $data['note'] ?? null,
             $request->user()->id,
+            (int) ($data['unit_cost_cents'] ?? 0),
         );
 
         return response()->json(['movement' => $movement, 'stock' => $stock->fresh()], 201);
+    }
+
+    /**
+     * Validate an optional target warehouse for a write: it must belong to the tenant AND
+     * be within the user's access scope. Returns the resolved id (or null to let the service
+     * pick the tenant default), or a JsonResponse error to short-circuit the caller.
+     */
+    private function resolveWritableWarehouse(Request $request, ?string $warehouseId): string|null|JsonResponse
+    {
+        if ($warehouseId === null || $warehouseId === '') {
+            return null;
+        }
+
+        $tenantId = $request->user()->tenant_id;
+        $exists = \App\Modules\Inventory\Models\Warehouse::where('tenant_id', $tenantId)
+            ->where('id', $warehouseId)->exists();
+        if (! $exists) {
+            return response()->json(['message' => 'Entrepôt introuvable.'], 404);
+        }
+
+        $scope = WarehouseScope::resolve($request->user(), $warehouseId);
+        if ($scope !== null && ! in_array($warehouseId, $scope, true)) {
+            return response()->json(['message' => "Vous n'avez pas accès à cet entrepôt."], 403);
+        }
+
+        return $warehouseId;
     }
 
     // POST /api/inventory/stock/{productId}/move-out

@@ -3,6 +3,17 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🐛 Fix : onboarding étape 6 — URL de provisioning (2026-06-09)
+
+Branche `fix/onboarding-provision-url` (release `v1.0.0` → `rc.98`).
+
+### Correctif
+- **`OnboardingView`** : l'appel de provisioning ciblait `'/workspace/provision'` (sans préfixe `/api`),
+  donc partait vers le serveur Vite (`localhost:5173/workspace/provision`) → **404** et « Une erreur est
+  survenue » à l'étape 6. Corrigé en **`'/api/workspace/provision'`** (route backend
+  `WorkspaceController::provision`, conforme à toutes les autres requêtes `/api/...`). Bug pré-existant.
+- Scan complet du front : **aucune autre requête** ne manquait le préfixe `/api`.
+
 ## [Non publié] — 💳 P6 : sélecteur de paiement par marché au checkout commercial (frontend) (2026-06-09)
 
 Branche `feature/p6-commercial-selector` (release `v1.0.0` → `rc.97`).

@@ -3,6 +3,17 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — ✅ Test : suite backend 100 % verte (fix `ImportModuleTest` adresse) (2026-06-09)
+
+Branche `fix/import-address-test` (release `v1.0.0` → `rc.99`).
+
+### Tests
+- **`ImportModuleTest::customer_import_stores_…`** : l'assertion attendait l'adresse client importée
+  sous forme de **string**, alors que `Customer.address` est une **colonne json `{street,city,zip,country}`**
+  (cast `array`) — l'import alimente correctement le champ `street`. Assertion alignée sur le modèle
+  canonique (+ test renommé `…_structured_address_…`). **Aucun changement de code de production.**
+- Résultat : **backend 680 → 678 ✅ / 2 skipped / 0 échec** (suite entièrement verte).
+
 ## [Non publié] — 🐛 Fix : onboarding étape 6 — URL de provisioning (2026-06-09)
 
 Branche `fix/onboarding-provision-url` (release `v1.0.0` → `rc.98`).

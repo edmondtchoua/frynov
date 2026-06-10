@@ -196,7 +196,7 @@ class ImportModuleTest extends TestCase
     }
 
     #[Test]
-    public function customer_import_stores_address_string_and_notes(): void
+    public function customer_import_stores_structured_address_and_notes(): void
     {
         $file = $this->makeXlsxUpload([
             ['Nom', 'Email', 'Téléphone', 'Adresse', 'Notes'],
@@ -217,7 +217,10 @@ class ImportModuleTest extends TestCase
             ->where('email', 'edmond@example.com')
             ->firstOrFail();
 
-        $this->assertSame('Rue Lotin Same, AKWA', $customer->address);
+        // `Customer.address` est une colonne json {street,city,zip,country} (cast array) :
+        // une adresse importée à plat alimente le champ `street` (cf. travail « Map string addresses »).
+        $this->assertIsArray($customer->address);
+        $this->assertSame('Rue Lotin Same, AKWA', $customer->address['street']);
         $this->assertSame('Client importé', $customer->notes);
     }
 

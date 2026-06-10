@@ -115,14 +115,31 @@ class PlansSeeder extends Seeder
 
             foreach (self::MARKETS as $marketCode => $market) {
                 $currency = $market['currency'];
+                $monthly  = $data['prices'][$currency];
+                $extra    = $data['extra_user_amounts'][$currency];
+
                 PlanPrice::updateOrCreate(
                     ['plan_id' => $plan->id, 'market_code' => $marketCode, 'interval' => 'monthly'],
                     [
                         'country_code' => null,
                         'currency' => $currency,
-                        'base_amount_minor' => $data['prices'][$currency],
+                        'base_amount_minor' => $monthly,
                         'included_users' => $data['included_users'],
-                        'extra_user_amount_minor' => $data['extra_user_amounts'][$currency],
+                        'extra_user_amount_minor' => $extra,
+                        'is_public' => true,
+                        'sort_order' => $data['sort_order'],
+                    ],
+                );
+
+                // Prix ANNUEL = 10× le mensuel (≈ 2 mois offerts, convention legacy). 0 reste 0 (gratuit).
+                PlanPrice::updateOrCreate(
+                    ['plan_id' => $plan->id, 'market_code' => $marketCode, 'interval' => 'yearly'],
+                    [
+                        'country_code' => null,
+                        'currency' => $currency,
+                        'base_amount_minor' => $monthly * 10,
+                        'included_users' => $data['included_users'],
+                        'extra_user_amount_minor' => $extra !== null ? $extra * 10 : null,
                         'is_public' => true,
                         'sort_order' => $data['sort_order'],
                     ],

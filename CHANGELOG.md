@@ -3,6 +3,28 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 💰 RC-0 : socle Billing périodicité (prix annuels + colonnes abonnement) (2026-06-10)
+
+Branche `feature/billing-rc0-foundation` (release `v1.0.0` → `rc.101`).
+
+### Billing — fondation périodicité (mensuel/annuel)
+- **`PlansSeeder`** : ajout des **prix annuels** (`interval='yearly'`, `base_amount_minor` = mensuel ×10,
+  `extra_user` ×10) pour **tous les plans × marchés** (la colonne `plan_prices.interval` + l'unique
+  `(plan_id, market_code, interval)` existaient déjà). 0 reste 0 (plan gratuit). Idempotent.
+- **`subscriptions`** : nouvelles colonnes `interval` (défaut `monthly`), `currency`, `market_code`,
+  `amount_paid_minor` → l'abonnement porte sa **périodicité** et la **trace du paiement** qui l'a
+  activé (détection périodicité + proration à venir). Modèle `Subscription` (+ constantes `INTERVAL_*`).
+- **Socle partagé** par les chantiers Périodicité (RC-1) et Proration (RC-2) — livré une seule fois.
+
+### Plan de build
+- Nouveau **`docs/decisions/pricing-catalog-build.md`** : plan vivant des 4 sous-chantiers (pricing
+  périodicité/proration + stock variantes + produits spéciaux), défauts produit adoptés, bugs fondation
+  débusqués (`StockService::findOrCreate` ignore `warehouse_id` ; l'API pricing force le mensuel), suivi par RC.
+
+### Tests
+- **+2 tests** `PlanYearlyPricingTest` (chaque mensuel a son annuel = ×10 ; l'abonnement porte `interval`,
+  défaut mensuel). Backend **682** (680 ✅ / 2 skipped). DemoSeeder (full seed) vert.
+
 ## [Non publié] — 🛡️ UX-07 : garde anti-perte sur l'onboarding (2026-06-09)
 
 Branche `feature/ux07-onboarding-guard` (release `v1.0.0` → `rc.100`).

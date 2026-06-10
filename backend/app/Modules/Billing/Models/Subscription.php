@@ -20,10 +20,17 @@ class Subscription extends Model
     public const STATUS_CANCELLED          = 'cancelled';
     public const STATUS_PENDING_APPROVAL   = 'pending_approval';
 
+    public const INTERVAL_MONTHLY = 'monthly';
+    public const INTERVAL_YEARLY  = 'yearly';
+
     protected $fillable = [
         'tenant_id',
         'plan_id',
         'status',
+        'interval',
+        'currency',
+        'market_code',
+        'amount_paid_minor',
         'trial_ends_at',
         'current_period_start',
         'current_period_end',
@@ -45,6 +52,7 @@ class Subscription extends Model
             'cancelled_at'          => 'datetime',
             'approved_at'           => 'datetime',
             'metadata'              => 'array',
+            'amount_paid_minor'     => 'integer',
         ];
     }
 

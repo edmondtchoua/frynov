@@ -3,6 +3,25 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 💳 RC-1A : API pricing publique — périodicité annuelle + économie (2026-06-10)
+
+Branche `feature/pricing-interval-public-api` (release `v1.0.0` → `rc.103`).
+Débloque le toggle Mensuel/Annuel de la landing et de l'écran d'upgrade (RC-1D).
+
+### Billing — `GET /api/public/pricing`
+- **Whitelist `interval`** : accepte `monthly` **et `yearly`** (avant : `yearly` était silencieusement
+  ramené au mensuel) ; toute autre valeur (`weekly`…) retombe sur `monthly`. La réponse expose
+  désormais `interval` à la racine.
+- **Économie annuelle** : sur `interval=yearly`, chaque prix porte `monthly_equivalent_minor`
+  (`round(base/12)`), `savings_amount_minor` (`12×mensuel − annuel`, plancher 0) et `savings_pct`.
+  Calculé à partir du **mensuel réel du marché** (pas d'un ratio figé). Plan gratuit → 0 sans
+  économie fictive. En mensuel, ces champs sont absents.
+
+### Tests
+- `PublicPricingApiTest` : test « unsupported interval » **inversé** (yearly = supporté, renvoie
+  l'annuel + l'économie) ; **+2 tests** (plan gratuit annuel à 0 ; périodicité hors whitelist
+  `weekly` → mensuel, sans champ d'économie). Billing **46 ✅**.
+
 ## [Non publié] — 📦 RC-3A : socle stock multi-entrepôt (warehouse_id dans la clé de résolution) (2026-06-10)
 
 Branche `feature/inventory-stock-foundation` (release `v1.0.0` → `rc.102`).

@@ -85,16 +85,54 @@ class PublicPricingApiTest extends TestCase
     }
 
     #[Test]
-    public function unsupported_interval_falls_back_to_monthly_prices(): void
+    public function yearly_interval_returns_annual_prices_with_savings_economics(): void
     {
         $this->seed(PlansSeeder::class);
 
+        // Canada Essentiel : mensuel 2500 → annuel ×10 = 25000.
+        // Équivalent mensuel = round(25000/12) = 2083 ; économie vs 12×2500=30000 :
+        // 5000 (≈ 17 %).
         $response = $this->getJson('/api/public/pricing?market=canada&interval=yearly');
 
         $response->assertOk()
+            ->assertJsonPath('interval', 'yearly')
+            ->assertJsonPath('data.1.price.interval', 'yearly')
+            ->assertJsonPath('data.1.price.currency', 'CAD')
+            ->assertJsonPath('data.1.price.base_amount_minor', 25000)
+            ->assertJsonPath('data.1.price.monthly_equivalent_minor', 2083)
+            ->assertJsonPath('data.1.price.savings_amount_minor', 5000)
+            ->assertJsonPath('data.1.price.savings_pct', 17);
+    }
+
+    #[Test]
+    public function free_plan_yearly_stays_zero_with_no_savings(): void
+    {
+        $this->seed(PlansSeeder::class);
+
+        // Le plan Découverte (gratuit) reste à 0 en annuel, sans économie fictive.
+        $this->getJson('/api/public/pricing?market=canada&interval=yearly')
+            ->assertOk()
+            ->assertJsonPath('data.0.price.base_amount_minor', 0)
+            ->assertJsonPath('data.0.price.monthly_equivalent_minor', 0)
+            ->assertJsonPath('data.0.price.savings_amount_minor', 0)
+            ->assertJsonPath('data.0.price.savings_pct', 0);
+    }
+
+    #[Test]
+    public function truly_unsupported_interval_falls_back_to_monthly_prices(): void
+    {
+        $this->seed(PlansSeeder::class);
+
+        // Une périodicité hors whitelist (ex : weekly) retombe sur le mensuel —
+        // et n'expose AUCUN champ d'économie (réservé à l'annuel).
+        $response = $this->getJson('/api/public/pricing?market=canada&interval=weekly');
+
+        $response->assertOk()
+            ->assertJsonPath('interval', 'monthly')
             ->assertJsonPath('data.1.price.interval', 'monthly')
             ->assertJsonPath('data.1.price.currency', 'CAD')
-            ->assertJsonPath('data.1.price.base_amount_minor', 2500);
+            ->assertJsonPath('data.1.price.base_amount_minor', 2500)
+            ->assertJsonMissingPath('data.1.price.savings_pct');
     }
 
     #[Test]

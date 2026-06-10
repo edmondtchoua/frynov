@@ -56,10 +56,14 @@ class PublicPricingController extends Controller
         return null;
     }
 
+    /** Périodicités d'abonnement exposées publiquement (annuel = mensuel ×10, seedé). */
+    private const INTERVALS = ['monthly', 'yearly'];
+
     public function index(Request $request): JsonResponse
     {
+        // Whitelist : mensuel ou annuel ; toute autre valeur retombe sur le mensuel.
         $interval = $request->string('interval', 'monthly')->lower()->toString();
-        if ($interval !== 'monthly') {
+        if (! in_array($interval, self::INTERVALS, true)) {
             $interval = 'monthly';
         }
 
@@ -69,9 +73,11 @@ class PublicPricingController extends Controller
         );
         $market = self::MARKETS[$marketCode];
 
+        // On charge les DEUX périodicités du marché : le mensuel sert de référence pour
+        // calculer l'équivalent mensuel et l'économie affichés sur l'offre annuelle.
         $plans = Plan::query()
             ->with(['limits', 'prices' => fn ($query) => $query
-                ->where('interval', $interval)
+                ->whereIn('interval', self::INTERVALS)
                 ->where('is_public', true)
                 ->whereIn('market_code', [$marketCode, 'global'])])
             ->where('is_active', true)
@@ -89,6 +95,7 @@ class PublicPricingController extends Controller
                 'source' => $source,
                 'country' => $this->normalizeCountry($request->query('country')),
             ],
+            'interval' => $interval,
             'selectable_markets' => $this->selectableMarkets(),
             'data' => $plans,
         ]);
@@ -188,12 +195,49 @@ class PublicPricingController extends Controller
     }
 
     /**
+     * Économie de l'offre annuelle vs 12 mensualités. Renvoie un tableau vide pour le mensuel
+     * (rien à comparer). `monthly_equivalent_minor` = ce que coûte « par mois » l'offre annuelle ;
+     * `savings_*` = ce qu'on évite par rapport à 12× le tarif mensuel.
+     *
+     * @param  \App\Modules\Billing\Models\PlanPrice  $price    prix de la période demandée
+     * @param  ?\App\Modules\Billing\Models\PlanPrice $monthly  prix mensuel de référence (peut être null)
+     * @return array<string, int>
+     */
+    private function intervalEconomics(string $interval, $price, $monthly): array
+    {
+        if ($interval !== 'yearly') {
+            return [];
+        }
+
+        $yearly             = (int) $price->base_amount_minor;
+        $monthlyEquivalent  = (int) round($yearly / 12);
+        $annualizedMonthly  = $monthly ? (int) $monthly->base_amount_minor * 12 : 0;
+        $savingsAmount      = max(0, $annualizedMonthly - $yearly);
+        $savingsPct         = $annualizedMonthly > 0
+            ? (int) round($savingsAmount / $annualizedMonthly * 100)
+            : 0;
+
+        return [
+            'monthly_equivalent_minor' => $monthlyEquivalent,
+            'savings_amount_minor'     => $savingsAmount,
+            'savings_pct'              => $savingsPct,
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function serializePlan(Plan $plan, string $marketCode, string $interval): array
     {
-        $price = $plan->prices->firstWhere('market_code', $marketCode)
-            ?? $plan->prices->firstWhere('market_code', 'global');
+        // Prix du marché demandé, sinon repli sur le marché 'global'. On garde les deux
+        // périodicités pour ce marché afin de calculer l'économie annuelle.
+        $marketPrices = $plan->prices->where('market_code', $marketCode);
+        if ($marketPrices->isEmpty()) {
+            $marketPrices = $plan->prices->where('market_code', 'global');
+        }
+
+        $price   = $marketPrices->firstWhere('interval', $interval);
+        $monthly = $marketPrices->firstWhere('interval', 'monthly');
 
         return [
             'code' => $plan->code,
@@ -202,14 +246,14 @@ class PublicPricingController extends Controller
             'trial_days' => $plan->trial_days,
             'features' => $plan->features ?? [],
             'sort_order' => $plan->sort_order,
-            'price' => $price ? [
+            'price' => $price ? array_merge([
                 'market_code' => $price->market_code,
                 'currency' => $price->currency,
                 'interval' => $interval,
                 'base_amount_minor' => $price->base_amount_minor,
                 'included_users' => $price->included_users,
                 'extra_user_amount_minor' => $price->extra_user_amount_minor,
-            ] : null,
+            ], $this->intervalEconomics($interval, $price, $monthly)) : null,
             'limits' => $plan->limits ? [
                 'max_products' => $plan->limits->max_products,
                 'max_monthly_orders' => $plan->limits->max_monthly_orders,

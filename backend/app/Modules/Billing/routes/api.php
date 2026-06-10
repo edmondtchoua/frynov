@@ -16,4 +16,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Manual payment proofs
     Route::get('me/manual-payments', [BillingController::class, 'listPayments'])->name('me.manual-payments.index');
     Route::post('me/manual-payments', [BillingController::class, 'submitPayment'])->name('me.manual-payments.store');
+
+    // Proration preview (RC-2) — lecture seule du reliquat avant un changement de plan.
+    Route::post('me/subscription/preview-upgrade', [BillingController::class, 'previewUpgrade'])->name('me.subscription.preview-upgrade');
 });

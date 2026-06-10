@@ -6,6 +6,7 @@ use App\Modules\Billing\Exceptions\InvalidPromoCodeException;
 use App\Modules\Billing\Models\Plan;
 use App\Modules\Billing\Services\ManualPaymentService;
 use App\Modules\Billing\Services\PromotionService;
+use App\Modules\Billing\Services\SubscriptionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -15,7 +16,31 @@ class BillingController extends Controller
     public function __construct(
         private readonly PromotionService      $promotions,
         private readonly ManualPaymentService  $manualPayments,
+        private readonly SubscriptionService   $subscriptions,
     ) {}
+
+    /**
+     * POST /api/me/subscription/preview-upgrade
+     * Aperçu (LECTURE SEULE) du reliquat de proration pour un changement de plan : crédit du temps
+     * non consommé, net à payer, avoir reporté. Ne persiste rien — recalculé au commit (approbation).
+     */
+    public function previewUpgrade(Request $request): JsonResponse
+    {
+        $request->validate([
+            'plan_code' => ['required', 'string', 'exists:plans,code'],
+            'interval'  => ['required', 'in:monthly,yearly'],
+        ]);
+
+        $tenant = $request->user()->tenant;
+        if (! $tenant) {
+            return response()->json(['message' => 'Tenant non trouvé.'], 422);
+        }
+
+        $plan = Plan::where('code', $request->input('plan_code'))->firstOrFail();
+        $result = $this->subscriptions->previewProration($tenant, $plan, $request->input('interval'));
+
+        return response()->json($result->toArray());
+    }
 
     /**
      * POST /api/me/promo/validate

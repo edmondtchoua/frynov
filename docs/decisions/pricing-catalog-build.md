@@ -7,7 +7,10 @@
 - **Annuel = mensuel ×10** (≈ 2 mois offerts, -16,7 % ; 0 reste 0).
 - **Acompte échelonné** : abonnement en `past_due`, **accès activé une fois soldé** (reste dû tracé).
 - **Détection périodicité au paiement** : match montant↔prix, **tolérance ±1 %** ; `market_code` stocké sur le paiement.
-- **Proration** : crédit = **avoir reporté** (non remboursé), arrondi **par exposant devise** (XOF = 0 décimale).
+- **Proration** : modèle **HYBRIDE** (décision fondateur) — le reliquat est **déduit du net à payer** à
+  l'upgrade ; l'excédent (downgrade / crédit > tarif) devient un **avoir reporté** (jamais de cash).
+  Assiette = payé − trop-perçu ; fraction en secondes (arithmétique entière) ; un avoir ne franchit
+  jamais une devise.
 - **Produits spéciaux** : périmètre = **digital + garanties + licences** (IMEI/VIN = SKU/GTIN, déjà livrés).
 
 ## 🧱 Streams & dépendances
@@ -32,7 +35,9 @@
 | RC-5A | spécial | colonnes `stock_tracking`/`fulfillment_type` + data-migration | ✅ **rc.105** |
 | RC-4A | stock | backend matrice variantes × entrepôts + batch `warehouse_id`/CMUP | ✅ **rc.108** |
 | RC-4B | stock | grille front de saisie multi-variantes × entrepôt + i18n | ✅ **rc.109** |
-| RC-2A–D | pricing | `ProrationCalculator` + crédit/reliquat + preview-change + UI/i18n | ⬜ |
+| RC-2A | pricing | `ProrationCalculator` (pur) + `previewProration` + endpoint preview-upgrade | ✅ **rc.110** |
+| RC-2B | pricing | application réelle du crédit au commit (changePlan + paiement manuel) | ⬜ |
+| RC-2C | pricing | UI upgrade : crédit/net/avoir + i18n FR+EN | ⬜ |
 | RC-5B–E | spécial | digital · assets/entitlements · licences/garanties · reporting | ⬜ |
 
 ## ⚠️ Risques (rappels)

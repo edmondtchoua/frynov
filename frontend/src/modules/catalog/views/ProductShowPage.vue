@@ -48,6 +48,19 @@
         <!-- Actions rapides -->
         <div class="product-header-actions">
           <button
+            v-if="isManagerOrAbove && productHasVariants && product.product_type !== 'service'"
+            class="btn btn-primary btn-sm"
+            @click="showGridDrawer = true"
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/>
+              <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/>
+              <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/>
+              <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/>
+            </svg>
+            {{ $t('catalog.stockGrid.openBtn') }}
+          </button>
+          <button
             v-if="isManagerOrAbove && product.product_type !== 'service'"
             class="btn btn-secondary btn-sm"
             @click="openReceiveDrawer"
@@ -708,6 +721,14 @@
       </div>
     </Teleport>
 
+    <!-- Grille de stock multi-variantes × entrepôt (RC-4) -->
+    <VariantStockGridDrawer
+      v-if="product"
+      v-model="showGridDrawer"
+      :product-id="product.id"
+      @saved="onGridSaved"
+    />
+
   </div>
 </template>
 
@@ -722,6 +743,7 @@ import { usePermission } from '@/composables/usePermission'
 import { t } from '@/i18n'
 import CatalogTabNav from '../components/CatalogTabNav.vue'
 import ProductDuplicationWizard from '../components/ProductDuplicationWizard.vue'
+import VariantStockGridDrawer from '../components/VariantStockGridDrawer.vue'
 import client from '@/api/client'
 import type { Product, ProductStockSummary, StockMovementItem } from '../types'
 
@@ -775,6 +797,13 @@ const stockSubTabs = computed(() => [
 const productHasVariants = computed(() =>
   (product.value?.has_variants === true) || (product.value?.variants?.length ?? 0) > 0
 )
+
+// ── Grille de stock multi-variantes × entrepôt (RC-4) ──────────────────────
+const showGridDrawer = ref(false)
+async function onGridSaved() {
+  pushToast({ type: 'success', message: t('catalog.stockGrid.saved') })
+  await Promise.all([loadStockSummary(), loadProduct()])
+}
 
 // Quick lookup: variantId → { available, quantity, low_stock }
 const variantStockMap = computed(() => {

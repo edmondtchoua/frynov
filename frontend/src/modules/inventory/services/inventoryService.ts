@@ -1,6 +1,39 @@
 import client from '@/api/client'
 import type { AdjustStockPayload, MoveStockPayload, Stock, StockMovement } from '../types'
 
+// ── Matrice d'entrée de stock variantes × entrepôts (RC-4) ──────────────────
+export interface StockMatrixCell {
+  quantity: number
+  available: number
+  unit_cost_cents: number
+}
+export interface StockMatrixWarehouse {
+  id: string
+  name: string
+  code: string | null
+  is_default: boolean
+}
+export interface StockMatrixRow {
+  variant_id: string | null
+  label: string
+  sku: string
+  cells: Record<string, StockMatrixCell>
+}
+export interface VariantStockMatrix {
+  product_id: string
+  product_name: string
+  has_variants: boolean
+  warehouses: StockMatrixWarehouse[]
+  rows: StockMatrixRow[]
+}
+export interface DeliveryItem {
+  product_id: string
+  variant_id?: string | null
+  warehouse_id?: string | null
+  quantity: number
+  unit_cost_cents?: number
+}
+
 interface PaginatedStocks {
   data: Stock[]
   meta: { current_page: number; last_page: number; per_page: number; total: number }
@@ -59,5 +92,15 @@ export const inventoryService = {
   // ── Scan to action ────────────────────────────────────────────────────────
   scan(sku: string, action: 'check' | 'move_in' | 'move_out', quantity?: number) {
     return client.post('/api/inventory/scan', { sku, action, quantity }).then(r => r.data)
+  },
+
+  // ── Variant × warehouse stock matrix (RC-4) ────────────────────────────────
+  variantStockMatrix(productId: string): Promise<VariantStockMatrix> {
+    return client.get(`/api/catalog/products/${productId}/variant-stock-matrix`).then(r => r.data)
+  },
+
+  // ── Batch delivery (one line per variant × warehouse) ──────────────────────
+  receiveDelivery(items: DeliveryItem[], reference?: string) {
+    return client.post('/api/inventory/deliveries', { items, reference: reference || undefined }).then(r => r.data)
   },
 }

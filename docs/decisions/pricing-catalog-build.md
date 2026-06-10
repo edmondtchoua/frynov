@@ -28,7 +28,7 @@
 | RC-1A | pricing | API publique `interval` whitelist + `monthly_equivalent`/`savings` | ✅ **rc.103** |
 | RC-1B | pricing | `changePlan(interval)` → `addMonth/addYear`, abonnement porte l'interval | ✅ **rc.104** |
 | RC-1C | pricing | détection périodicité à l'approbation (`PaymentPeriodResolver`, `manual_payments.interval`+`market_code`) | ✅ **rc.106** |
-| RC-1D | pricing | toggle Mensuel/Annuel front (landing + UpgradeView) + i18n | ⬜ |
+| RC-1D | pricing | toggle Mensuel/Annuel front (landing + UpgradeView) + i18n | ✅ **rc.107** |
 | RC-5A | spécial | colonnes `stock_tracking`/`fulfillment_type` + data-migration | ✅ **rc.105** |
 | RC-4A–C | stock | grille multi-variantes par entrepôt (back + front) + i18n | ⬜ |
 | RC-2A–D | pricing | `ProrationCalculator` + crédit/reliquat + preview-change + UI/i18n | ⬜ |

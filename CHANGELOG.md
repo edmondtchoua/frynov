@@ -3,6 +3,24 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🗓️ RC-1D : toggle Mensuel/Annuel (landing + upgrade) + i18n (2026-06-11)
+
+Branche `feature/pricing-interval-frontend` (release `v1.0.0` → `rc.107`).
+Rend visible côté utilisateur toute la périodicité backend (RC-1A→C).
+
+### Frontend — choix de la périodicité
+- **`LandingView`** (page publique) et **`UpgradeView`** (module) : nouveau **toggle Mensuel / Annuel**
+  qui recharge les tarifs (`fetchPublicPricing({ interval })`). Sur l'annuel : **équivalent mensuel**
+  (« ≈ X / mois ») + **badge d'économie** (`savings_pct`) par plan, pastille « 2 mois offerts ».
+- **`publicPricingService`** : param `interval` + types `PricingInterval`, `interval` racine et champs
+  d'économie (`monthly_equivalent_minor`, `savings_amount_minor`, `savings_pct`) sur le prix.
+- **i18n FR+EN** : `billing.perYear`, `billingMonthly/Annual`, `annualSavePill`, `annualEquivalent`,
+  `saveBadge`, `annualBillingIn`, `billingPeriod` (UpgradeView ; la landing reste FR, hors périmètre garde).
+
+### Qualité
+- Garde i18n (parité FR/EN + pas de FR en dur dans les vues de module) ✅, **vue-tsc** ✅,
+  **262 tests** front ✅.
+
 ## [Non publié] — 🔎 RC-1C : détection de périodicité & acompte échelonné (PaymentPeriodResolver) (2026-06-11)
 
 Branche `feature/pricing-period-detection` (release `v1.0.0` → `rc.106`).

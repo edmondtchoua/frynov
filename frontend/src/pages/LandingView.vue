@@ -318,6 +318,25 @@
               </option>
             </select>
           </label>
+
+          <div class="billing-toggle" role="group" aria-label="Périodicité de facturation">
+            <button
+              type="button"
+              class="billing-toggle__btn"
+              :class="{ active: billingInterval === 'monthly' }"
+              :aria-pressed="billingInterval === 'monthly'"
+              @click="billingInterval = 'monthly'"
+            >Mensuel</button>
+            <button
+              type="button"
+              class="billing-toggle__btn"
+              :class="{ active: billingInterval === 'yearly' }"
+              :aria-pressed="billingInterval === 'yearly'"
+              @click="billingInterval = 'yearly'"
+            >
+              Annuel <span class="billing-toggle__pill">2 mois offerts</span>
+            </button>
+          </div>
         </div>
 
         <div class="plans-grid">
@@ -333,6 +352,8 @@
               <span class="plan-amount">{{ plan.price }}</span>
               <span v-if="plan.period" class="plan-period">{{ plan.period }}</span>
             </div>
+            <div v-if="plan.monthlyEquivalent" class="plan-annual-eq">{{ plan.monthlyEquivalent }}</div>
+            <div v-if="plan.savingsPct > 0" class="plan-savings">Économisez {{ plan.savingsPct }}%</div>
             <p class="plan-tagline">{{ plan.tagline }}</p>
             <ul class="plan-features">
               <li v-for="f in plan.features" :key="f">
@@ -560,18 +581,25 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
    changes market in the selector. */
 const apiPlans = ref<PublicPlan[] | null>(null)
 
-async function loadPricing(marketCode: string): Promise<void> {
+/** Périodicité affichée (mensuel par défaut). L'annuel = ~10 mois (≈ 2 mois offerts). RC-1D. */
+const billingInterval = ref<PricingInterval>('monthly')
+
+async function loadPricing(marketCode: string, interval: PricingInterval): Promise<void> {
   // The API knows real markets, not the legacy 'africa' alias → map it to UEMOA/XOF.
   const code = marketCode === 'africa' ? 'waemu' : marketCode
   try {
-    const res = await fetchPublicPricing({ market: code })
+    const res = await fetchPublicPricing({ market: code, interval })
     apiPlans.value = res.data
   } catch {
     apiPlans.value = null // graceful: fall back to local currency-aware amounts
   }
 }
 
-watch(() => market.value.code, code => { void loadPricing(code) }, { immediate: true })
+watch(
+  [() => market.value.code, billingInterval],
+  ([code, interval]) => { void loadPricing(code, interval) },
+  { immediate: true },
+)
 
 const apiPlanByCode = computed<Record<string, PublicPlan>>(() =>
   Object.fromEntries((apiPlans.value ?? []).map(p => [p.code, p])),
@@ -598,7 +626,24 @@ function planPeriod(code: string, fallback: string): string {
   const plan = apiPlanByCode.value[code]
   if (!plan) return fallback
   if (!plan.price || plan.price.base_amount_minor === 0) return ''
-  return `${plan.price.currency} / mois`
+  const suffix = billingInterval.value === 'yearly' ? '/ an' : '/ mois'
+  return `${plan.price.currency} ${suffix}`
+}
+
+/** Sur l'annuel : « ≈ X CURRENCY / mois » (équivalent mensuel). Vide en mensuel ou plan gratuit. */
+function planMonthlyEquivalent(code: string): string {
+  const plan = apiPlanByCode.value[code]
+  if (billingInterval.value !== 'yearly' || !plan?.price?.base_amount_minor) return ''
+  const eq = plan.price.monthly_equivalent_minor
+  if (!eq) return ''
+  return `≈ ${formatPlanAmount(eq, plan.price.currency)} ${plan.price.currency} / mois`
+}
+
+/** Pourcentage d'économie de l'offre annuelle pour ce plan (0 si non applicable). */
+function planSavingsPct(code: string): number {
+  const plan = apiPlanByCode.value[code]
+  if (billingInterval.value !== 'yearly' || !plan?.price?.base_amount_minor) return 0
+  return plan.price.savings_pct ?? 0
 }
 
 /* ── Trust avatars ────────────────────────────────────────── */
@@ -807,6 +852,9 @@ interface LandingPlan {
   featured: boolean
   cta: string
   features: string[]
+  /** Annuel (RC-1D) : équivalent mensuel « ≈ X / mois » + % d'économie. Vides en mensuel. */
+  monthlyEquivalent: string
+  savingsPct: number
 }
 
 const planLimits = {
@@ -838,6 +886,8 @@ const plans = computed<LandingPlan[]>(() => [
     name: 'Starter / Découverte',
     price: planAmount('starter', pricing.value.discovery),
     period: planPeriod('starter', ''),
+    monthlyEquivalent: planMonthlyEquivalent('starter'),
+    savingsPct: planSavingsPct('starter'),
     tagline: 'Pour tester Frynov sans engagement.',
     featured: false,
     cta: 'Commencer gratuitement',
@@ -853,6 +903,8 @@ const plans = computed<LandingPlan[]>(() => [
     name: 'Essentiel',
     price: planAmount('essential', pricing.value.essential),
     period: planPeriod('essential', pricing.value.period),
+    monthlyEquivalent: planMonthlyEquivalent('essential'),
+    savingsPct: planSavingsPct('essential'),
     tagline: 'Pour gérer une boutique active au quotidien.',
     featured: false,
     cta: 'Choisir Essentiel',
@@ -869,6 +921,8 @@ const plans = computed<LandingPlan[]>(() => [
     name: 'Pro / Croissance',
     price: planAmount('pro', pricing.value.growth),
     period: planPeriod('pro', pricing.value.period),
+    monthlyEquivalent: planMonthlyEquivalent('pro'),
+    savingsPct: planSavingsPct('pro'),
     tagline: 'Pour les équipes qui vendent plus et veulent automatiser.',
     featured: true,
     cta: 'Essayer Croissance 30 jours',
@@ -885,6 +939,8 @@ const plans = computed<LandingPlan[]>(() => [
     name: 'Business / Enterprise',
     price: planAmount('enterprise', pricing.value.business),
     period: planPeriod('enterprise', pricing.value.period),
+    monthlyEquivalent: planMonthlyEquivalent('enterprise'),
+    savingsPct: planSavingsPct('enterprise'),
     tagline: 'Pour les groupes, grossistes et réseaux multi-sites.',
     featured: false,
     cta: 'Contacter l’équipe',
@@ -1117,6 +1173,77 @@ const faqs = computed(() => isAfrica.value ? faqsAfrica : faqsGlobal)
 .market-selector select:focus {
   outline: 2px solid rgba(16,185,129,0.35);
   outline-offset: 2px;
+}
+
+/* ── Toggle périodicité Mensuel / Annuel (RC-1D) ───────────────────────────── */
+.billing-toggle {
+  margin: 1rem auto 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  border: 1px solid #d1fae5;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 8px 24px rgba(16,185,129,0.08);
+}
+
+.billing-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #475569;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 0.45rem 1.1rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.billing-toggle__btn.active {
+  background: #059669;
+  color: white;
+}
+
+.billing-toggle__btn:focus-visible {
+  outline: 2px solid rgba(16,185,129,0.5);
+  outline-offset: 2px;
+}
+
+.billing-toggle__pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.billing-toggle__btn.active .billing-toggle__pill {
+  background: rgba(255,255,255,0.22);
+  color: white;
+}
+
+.plan-annual-eq {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.plan-savings {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
 }
 
 /* ════════════════════════════════════════════════════════════

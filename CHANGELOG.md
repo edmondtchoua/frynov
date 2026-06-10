@@ -3,6 +3,28 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧾 RC-2A : ProrationCalculator (reliquat d'upgrade) + preview (2026-06-11)
+
+Branche `feature/billing-proration-calculator` (release `v1.0.0` → `rc.110`).
+Conçu + **durci par revue adverse** (2 bugs d'argent BLOQUANTS + 3 majeurs corrigés avant code).
+
+### Billing — calcul du reliquat (lecture seule)
+- **`ProrationCalculator`** (pur) + DTO `ProrationResult` : à un changement de plan, valorise le **temps
+  non consommé** du plan en cours et l'impute sur le nouveau. **Modèle hybride** (décision produit) :
+  crédit + avoir reporté **appliqués** au tarif → le client paie le **net** ; excédent (downgrade /
+  crédit > tarif) → **avoir reporté**, jamais de cash.
+- Correctifs revue adverse : **arithmétique entière** pour la fraction (déterministe, bornes exactes
+  jour 1 / expiré), **assiette = payé − trop-perçu** (pas de double comptage RC-1C), **garde cross-devise**
+  (un avoir ne franchit jamais une devise), avoir reporté imputé même quand le crédit de temps est nul.
+- **`SubscriptionService::previewProration`** (lecture seule, marché résolu depuis la devise du courant) +
+  **`POST /me/subscription/preview-upgrade`** : affiche crédit / net à payer / avoir reporté avant de
+  confirmer. Aucune mutation — recalculé au commit (RC-2B).
+
+### Tests
+- **+20 tests** : `ProrationCalculatorTest` (17, matrice corrigée + cas ajoutés : assiette nette du
+  trop-perçu, carried cross-devise non imputé) + `PreviewUpgradeTest` (3). Billing+Platform **147 ✅**.
+- **Suite (→ RC-2B/C/D)** : application réelle au commit (paiement manuel), UI crédit/net/avoir (i18n).
+
 ## [Non publié] — 🟩 RC-4B : grille de saisie de stock multi-variantes (frontend) + i18n (2026-06-11)
 
 Branche `feature/catalog-variant-stock-grid-ui` (release `v1.0.0` → `rc.109`).

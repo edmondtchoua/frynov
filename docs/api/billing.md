@@ -112,3 +112,48 @@ paiement expose `market_code`, `detected_interval`, `target_amount_minor`, `rema
 
 > **Hors périmètre RC-1C** (→ RC-2) : abondement d'acompte en place (au lieu d'annuler/recréer), cible
 > nette après **promo**, sièges supplémentaires, table d'avoirs dédiée, proration d'upgrade avant fin.
+
+---
+
+## `POST /api/me/subscription/preview-upgrade` — aperçu de proration (RC-2)
+
+Calcule (**lecture seule**, aucune mutation) le **reliquat** si le tenant changeait de plan maintenant :
+crédit du temps non consommé du plan en cours, net à payer, avoir reporté. Le marché/devise est résolu
+sur l'abonnement courant. Le calcul est **re-exécuté au commit** (approbation du paiement) avec l'horloge
+réelle — ce preview est purement indicatif.
+
+### Paramètres
+
+| Paramètre | Règle |
+|---|---|
+| `plan_code` | requis — plan cible |
+| `interval` | requis — `monthly`/`yearly` |
+
+### Réponse
+
+```json
+{
+  "eligible": true,
+  "reason": "ok",
+  "currency": "XOF",
+  "exponent": 0,
+  "fraction_remaining": 0.967,
+  "credit_minor": 957000,
+  "new_gross_minor": 9900000,
+  "applied_credit_minor": 957000,
+  "net_payable_minor": 8943000,
+  "carry_credit_minor": 0
+}
+```
+
+- **Modèle hybride** (décision produit) : le crédit + l'avoir reporté sont **appliqués** au nouveau tarif
+  (`applied_credit_minor`) → le client paie le **`net_payable_minor`** ; l'excédent (downgrade /
+  crédit > tarif) part en **avoir reporté** (`carry_credit_minor`), jamais en cash.
+- **Assiette** du crédit = montant réellement encaissé **moins le trop-perçu déjà tracé** (pas de double
+  comptage). **Fraction** = temps non consommé, calculée en **secondes** (arithmétique entière). Crédit
+  **borné** par l'assiette.
+- `reason` ∈ `ok | downgrade | free_target | not_paid | past_due_no_period | not_eligible | expired |
+  degenerate_period | cross_currency_blocked`. Un avoir **ne franchit jamais une devise**.
+
+> **Suite RC-2** : RC-2B applique réellement le crédit au commit (paiement manuel) ; RC-2C affiche
+> crédit/net/avoir dans l'UI d'upgrade (i18n FR+EN).

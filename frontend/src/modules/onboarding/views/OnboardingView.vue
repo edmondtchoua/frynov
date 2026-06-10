@@ -423,6 +423,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import FrynovLogo from '@/shared/components/FrynovLogo.vue'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
+import { useUnsavedChanges } from '@/composables/useUnsavedChanges'
 import { t } from '@/i18n'
 
 const router = useRouter()
@@ -456,6 +457,14 @@ const step5Errors = reactive({ company: '' })
 
 const provisioning  = ref(false)
 const provisionError = ref('')
+
+// UX-07 — garde anti-perte : active dès que l'utilisateur a commencé l'assistant,
+// levée une fois le provisioning réussi (pour ne pas bloquer la redirection finale).
+const onboardingComplete = ref(false)
+const dirty = computed(() =>
+  !onboardingComplete.value && (step.value > 1 || !!answers.type || !!answers.company.trim()),
+)
+useUnsavedChanges(dirty, t('onboarding.leaveConfirm'))
 
 // ── Step 1 — Business types (libellés i18n) ────────────────
 const businessTypes = computed(() => [
@@ -568,6 +577,7 @@ async function submitOnboarding() {
     // roles and subscription before the user enters the app — otherwise the RBAC
     // tab menus and billing screen would be empty for a freshly-onboarded account.
     await auth.fetchCurrentUser()
+    onboardingComplete.value = true // UX-07 : lève la garde anti-perte (succès → redirection libre)
   } catch (err: any) {
     provisionError.value =
       err?.response?.data?.message ?? t('onboarding.provisionError')

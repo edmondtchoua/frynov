@@ -3,6 +3,21 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🟩 RC-4B : grille de saisie de stock multi-variantes (frontend) + i18n (2026-06-11)
+
+Branche `feature/catalog-variant-stock-grid-ui` (release `v1.0.0` → `rc.109`).
+Termine la réponse à « l'entrée de stock variantes pas optimale » : saisie best-ERP en un écran.
+
+### Catalogue — grille variantes × entrepôts
+- **`VariantStockGridDrawer`** : tableau **variantes (lignes) × entrepôts (colonnes)** avec une saisie
+  de quantité par cellule + un **coût d'achat unitaire** optionnel par ligne (→ CMUP). Total
+  « X unités à ajouter », envoi **groupé** vers `POST /inventory/deliveries` (1 ligne par cellule non
+  nulle). Recharge le stock à la validation.
+- Bouton **« Saisie en grille »** sur la fiche produit (`ProductShowPage`) pour les produits à
+  variantes — fini le formulaire répété par déclinaison.
+- `inventoryService` : `variantStockMatrix()` + `receiveDelivery()` (+ types).
+- **i18n FR+EN** : `catalog.stockGrid.*`. Garde i18n ✅, **vue-tsc** ✅, **262 tests** front ✅.
+
 ## [Non publié] — 🧮 RC-4A : matrice d'entrée de stock variantes × entrepôts (backend) (2026-06-11)
 
 Branche `feature/catalog-variant-stock-matrix` (release `v1.0.0` → `rc.108`).

@@ -175,6 +175,18 @@ Cliquer sur un produit ouvre sa **fiche de consultation** (≠ formulaire d'édi
 (drawers latéraux) permettent l'**entrée de stock** et l'**ajustement** — par produit
 **ou par variante** (chaque variante a son propre stock).
 
+### Entrée de stock en grille (produits à variantes) — RC-4
+
+Pour les produits à variantes, le bouton **« Saisie en grille »** ouvre un **tableau**
+**variantes × entrepôts** : une ligne par déclinaison, une colonne par entrepôt. Vous saisissez
+**toutes les quantités reçues d'un coup** (plus besoin d'ouvrir un formulaire par variante), avec
+un **coût d'achat unitaire** optionnel par ligne (qui alimente le CMUP). Un total « X unités à
+ajouter » récapitule la saisie ; **Valider** crée tous les mouvements de réception en une fois.
+
+> C'est la façon dont les meilleurs ERP e-commerce gèrent la réception multi-déclinaisons : rapide,
+> visuel, sans répétition. Le stock de chaque cellule (variante/entrepôt) est mis à jour
+> indépendamment.
+
 ---
 
 ## Codes QR et codes-barres

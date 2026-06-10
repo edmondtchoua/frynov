@@ -86,12 +86,12 @@ $movement->performed_by     // UUID du user ayant effectué l'opération
 Toutes les opérations de stock avec mutex Redis anti-oversell.
 
 ```php
-// Résolution
-$stock = $service->findOrCreate(tenantId, productId, variantId?);
-$stock = $service->findBySku('VET-0001', tenantId);  // pour scanner POS
+// Résolution — la ligne de stock est résolue PAR ENTREPÔT
+$stock = $service->findOrCreate(tenantId, productId, variantId?, warehouseId?);
+$stock = $service->findBySku('VET-0001', tenantId, warehouseId?);  // pour scanner POS
 
 // Opérations
-$movement = $service->moveIn(stock, quantity, reason, reference?, note?, performedBy?);
+$movement = $service->moveIn(stock, quantity, reason, reference?, note?, performedBy?, unitCostCents?);
 $movement = $service->moveOut(stock, quantity, reason, reference?, note?, performedBy?);
   // ↑ throws InsufficientStockException, StockLockException
 $movement = $service->adjust(stock, newQuantity, reason, note?, performedBy?);
@@ -104,7 +104,24 @@ $service->release(stock, quantity);
 // Utilitaires
 $service->available(stock): int
 $service->lowStockItems(tenantId): Collection
+$service->defaultWarehouseId(tenantId): ?string   // is_default, sinon le plus ancien
 ```
+
+#### Invariant multi-entrepôt (RC-3A)
+
+La clé unique en base est **`(tenant_id, warehouse_id, product_id, variant_id)`** : un même SKU
+possède **une ligne de stock par entrepôt qui le détient**. `findOrCreate` intègre donc
+`warehouse_id` dans sa clé de résolution :
+
+- `warehouseId` **fourni** → résout/crée la ligne dans cet entrepôt précis ;
+- `warehouseId` **omis** → résout l'**entrepôt par défaut** du tenant (`is_default`, sinon le plus ancien) ;
+- tenant **sans aucun entrepôt** → retombe sur une ligne `warehouse_id = NULL` (compatibilité mono-site historique).
+
+> ⚠️ Avant RC-3A, `findOrCreate` ignorait `warehouse_id` : il pouvait renvoyer la ligne d'un
+> autre entrepôt ou créer une ligne `NULL` orpheline (invisible des listes filtrées par entrepôt).
+> L'entrée de stock manuelle (`POST /inventory/stock/{id}/move-in`) accepte désormais
+> `warehouse_id` (vérifié : appartenance tenant + périmètre d'accès `WarehouseScope`) et
+> `unit_cost_cents` (alimente le CMUP perpétuel).
 
 #### Protection anti-oversell (Redis)
 

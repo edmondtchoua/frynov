@@ -140,17 +140,25 @@ class CatalogController extends Controller
         /** @var StockService $stockService */
         $stockService = app(StockService::class);
 
+        // A provided warehouse must belong to this tenant (prevents cross-tenant injection).
+        // When omitted, the service resolves the tenant's default warehouse.
+        $warehouseId = ! empty($data['warehouse_id']) ? $data['warehouse_id'] : null;
+        if ($warehouseId !== null) {
+            $owns = \App\Modules\Inventory\Models\Warehouse::where('tenant_id', $tenantId)
+                ->where('id', $warehouseId)->exists();
+            if (! $owns) {
+                return response()->json(['message' => 'Entrepôt introuvable.'], 404);
+            }
+        }
+
+        // Pass warehouse_id INTO the unique-key match so the right row is found/created
+        // (the index is tenant+warehouse+product+variant). Never relocate an existing row.
         $stock = $stockService->findOrCreate(
             $tenantId,
             $id,
             $data['variant_id'] ?? null,
+            $warehouseId,
         );
-
-        // Assign warehouse if provided
-        if (! empty($data['warehouse_id'])) {
-            $stock->update(['warehouse_id' => $data['warehouse_id']]);
-            $stock->refresh();
-        }
 
         $movement = $stockService->moveIn(
             $stock,

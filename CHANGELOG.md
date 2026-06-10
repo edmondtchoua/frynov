@@ -3,6 +3,31 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 📦 RC-3A : socle stock multi-entrepôt (warehouse_id dans la clé de résolution) (2026-06-10)
+
+Branche `feature/inventory-stock-foundation` (release `v1.0.0` → `rc.102`).
+Prérequis des chantiers **grille de stock par variante** (RC-4) et **produits spéciaux** (RC-5).
+
+### Inventaire — bug fondation corrigé
+- **`StockService::findOrCreate`** intègre désormais **`warehouse_id`** dans sa clé de résolution
+  (l'index unique DB est `tenant+warehouse+product+variant`). Avant : le param était ignoré → la
+  méthode pouvait renvoyer le stock d'un **autre entrepôt** ou créer une ligne **`NULL` orpheline**
+  (invisible des listes filtrées par site).
+  - `warehouseId` fourni → ligne dans cet entrepôt ; omis → **entrepôt par défaut** du tenant
+    (`is_default`, sinon le plus ancien) ; tenant sans entrepôt → ligne `NULL` (compat mono-site).
+  - Nouveau `StockService::defaultWarehouseId(tenantId)`.
+- **Entrée de stock manuelle** (`POST /inventory/stock/{id}/move-in`) accepte `warehouse_id`
+  (vérifié : appartenance tenant + périmètre `WarehouseScope` → 404/403) et `unit_cost_cents`
+  (alimente le **CMUP** perpétuel). `MoveStockRequest` étendu.
+- **`CatalogController::initialStock`** : `warehouse_id` passé **dans** `findOrCreate` (au lieu d'un
+  `update()` post-hoc qui pouvait violer la contrainte unique / déplacer une ligne existante) +
+  garde d'appartenance tenant de l'entrepôt.
+
+### Tests
+- **+4 tests** `StockWarehouseFoundationTest` : une ligne distincte par entrepôt pour un même SKU
+  (idempotent), résolution de l'entrepôt par défaut, repli `NULL` sans entrepôt, CMUP par entrepôt.
+- Suites Inventory + Orders + Catalog vertes (228 ✅ / 2 skipped). Aucune régression.
+
 ## [Non publié] — 💰 RC-0 : socle Billing périodicité (prix annuels + colonnes abonnement) (2026-06-10)
 
 Branche `feature/billing-rc0-foundation` (release `v1.0.0` → `rc.101`).

@@ -24,6 +24,10 @@ class MoveStockRequest extends FormRequest
             ])],
             // variant_id — optional, scopes the stock movement to a specific variant
             'variant_id' => ['nullable', 'uuid'],
+            // warehouse_id — optional, targets a specific location (defaults to tenant default)
+            'warehouse_id' => ['nullable', 'uuid'],
+            // unit_cost_cents — optional purchase cost for this receipt (feeds CMUP on move-in)
+            'unit_cost_cents' => ['nullable', 'integer', 'min:0'],
             'reference'  => ['nullable', 'string', 'max:100'],
             'note'       => ['nullable', 'string', 'max:500'],
         ];

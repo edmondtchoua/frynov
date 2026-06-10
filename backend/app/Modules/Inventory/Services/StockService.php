@@ -12,6 +12,7 @@ use App\Modules\Inventory\Exceptions\StockLockException;
 use App\Modules\Inventory\Jobs\RecalculateCmupJob;
 use App\Modules\Inventory\Models\Stock;
 use App\Modules\Inventory\Models\StockMovement;
+use App\Modules\Inventory\Models\Warehouse;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -22,15 +23,46 @@ class StockService
 
     // ── Resolution ─────────────────────────────────────────────────────────
 
-    public function findOrCreate(string $tenantId, string $productId, ?string $variantId = null): Stock
-    {
+    /**
+     * Resolve (or create) the stock row for a product/variant **within a warehouse**.
+     *
+     * The DB unique index is (tenant_id, warehouse_id, product_id, variant_id): the same
+     * SKU lives in as many rows as there are warehouses holding it. Omitting warehouse_id
+     * previously made firstOrCreate match the wrong row (any warehouse) or insert an
+     * orphan NULL-warehouse row invisible to every warehouse-scoped listing.
+     *
+     * @param ?string $warehouseId  Target warehouse. When null, resolves to the tenant's
+     *                              default warehouse; if the tenant has none (e.g. minimal
+     *                              test fixtures), falls back to a NULL-warehouse row —
+     *                              preserving the historical single-location behaviour.
+     */
+    public function findOrCreate(
+        string $tenantId,
+        string $productId,
+        ?string $variantId = null,
+        ?string $warehouseId = null,
+    ): Stock {
+        $warehouseId ??= $this->defaultWarehouseId($tenantId);
+
         return Stock::firstOrCreate(
-            ['tenant_id' => $tenantId, 'product_id' => $productId, 'variant_id' => $variantId],
+            ['tenant_id' => $tenantId, 'warehouse_id' => $warehouseId, 'product_id' => $productId, 'variant_id' => $variantId],
             ['quantity' => 0, 'reserved_quantity' => 0, 'low_stock_threshold' => 5, 'unit_cost_cents' => 0, 'total_value_cents' => 0],
         );
     }
 
-    public function findBySku(string $sku, string $tenantId): Stock
+    /**
+     * The tenant's default warehouse id (is_default first, else the oldest), or null
+     * when the tenant has no warehouse at all.
+     */
+    public function defaultWarehouseId(string $tenantId): ?string
+    {
+        return Warehouse::where('tenant_id', $tenantId)
+            ->orderByDesc('is_default')
+            ->orderBy('created_at')
+            ->value('id');
+    }
+
+    public function findBySku(string $sku, string $tenantId, ?string $warehouseId = null): Stock
     {
         $product = Product::where('tenant_id', $tenantId)
             ->where('sku', $sku)
@@ -38,13 +70,13 @@ class StockService
             ->first();
 
         if ($product && ! $product->has_variants) {
-            return $this->findOrCreate($tenantId, $product->id, null);
+            return $this->findOrCreate($tenantId, $product->id, null, $warehouseId);
         }
 
         $variant = ProductVariant::where('tenant_id', $tenantId)->where('sku', $sku)->first();
 
         if ($variant) {
-            return $this->findOrCreate($tenantId, $variant->product_id, $variant->id);
+            return $this->findOrCreate($tenantId, $variant->product_id, $variant->id, $warehouseId);
         }
 
         throw new ProductNotFoundException($sku);

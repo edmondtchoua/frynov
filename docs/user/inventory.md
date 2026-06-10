@@ -70,9 +70,13 @@ Après avoir créé un produit dans le **Catalogue**, il faut lui donner un stoc
 4. Saisissez la quantité initiale reçue
 5. Choisissez la raison : **Livraison** (ou **Stock initial** si c'est un premier approvisionnement)
 6. Ajoutez optionnellement une référence (ex : `BL-2026-001`)
-7. Cliquez sur **Valider**
+7. **Entrepôt** : si votre entreprise gère plusieurs sites, choisissez l'entrepôt qui reçoit la marchandise (sinon l'**entrepôt principal** est utilisé)
+8. **Coût d'achat unitaire** (optionnel) : renseignez le prix d'achat de cette réception — il alimente automatiquement le **CMUP** (coût moyen unitaire pondéré) du produit
+9. Cliquez sur **Valider**
 
-Le produit apparaît maintenant dans la liste Stock avec la quantité saisie.
+Le produit apparaît maintenant dans la liste Stock avec la quantité saisie, **dans l'entrepôt choisi**.
+
+> 🏬 **Chaque entrepôt a son propre stock.** Le même produit peut avoir 12 unités à Abidjan et 3 à Lomé : ce sont deux compteurs distincts. Le coût d'achat saisi à l'entrée fait évoluer le CMUP de l'entrepôt concerné.
 
 ---
 

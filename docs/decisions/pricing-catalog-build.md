@@ -37,7 +37,7 @@
 | RC-4B | stock | grille front de saisie multi-variantes × entrepôt + i18n | ✅ **rc.109** |
 | RC-2A | pricing | `ProrationCalculator` (pur) + `previewProration` + endpoint preview-upgrade | ✅ **rc.110** |
 | RC-2B | pricing | application réelle du crédit au commit (acompte virtuel : client paie le net) | ✅ **rc.111** |
-| RC-2C | pricing | UI upgrade : crédit/net/avoir + i18n FR+EN | ⬜ |
+| RC-2C | pricing | UI upgrade : reliquat/net affichés par carte + i18n FR+EN | ✅ **rc.112** |
 | RC-5B–E | spécial | digital · assets/entitlements · licences/garanties · reporting | ⬜ |
 
 ## ⚠️ Risques (rappels)

@@ -3,6 +3,19 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧮 RC-2C : aperçu du reliquat dans l'écran d'upgrade + i18n (2026-06-11)
+
+Branche `feature/billing-proration-ui` (release `v1.0.0` → `rc.112`).
+**Clôt le chantier Pricing de bout en bout** (périodicité + acompte + proration, backend → UI).
+
+### Frontend — « ce que vous payez après reliquat »
+- **`UpgradeView`** : pour chaque plan payant différent du plan courant, appel à
+  `POST /me/subscription/preview-upgrade` à la périodicité sélectionnée ; si un reliquat s'applique,
+  affichage sur la carte du **reliquat appliqué** (−montant) et du **net à payer**. Silencieux si pas
+  de crédit. Recalcul au changement de périodicité.
+- **i18n FR+EN** : `billing.prorationCredit`, `billing.prorationNet`. Garde i18n ✅, **vue-tsc** ✅,
+  **262 tests** front ✅.
+
 ## [Non publié] — 💸 RC-2B : application du reliquat à l'upgrade (acompte virtuel) (2026-06-11)
 
 Branche `feature/billing-proration-apply` (release `v1.0.0` → `rc.111`).

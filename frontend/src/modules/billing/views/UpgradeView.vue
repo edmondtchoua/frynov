@@ -90,6 +90,10 @@
             {{ $t('billing.annualEquivalent', { amount: formatPrice(plan.monthlyEquivalent ?? 0) }) }}
           </p>
           <span v-if="plan.savingsPct > 0" class="price-savings">{{ $t('billing.saveBadge', { pct: plan.savingsPct }) }}</span>
+          <template v-if="prorationByPlan[plan.code]">
+            <p class="price-proration-credit">{{ $t('billing.prorationCredit', { amount: formatPrice(prorationByPlan[plan.code].applied_credit_minor / 100) }) }}</p>
+            <p class="price-proration-net">{{ $t('billing.prorationNet', { amount: formatPrice(prorationByPlan[plan.code].net_payable_minor / 100) }) }}</p>
+          </template>
           <p v-if="plan.price === 0" class="price-note">{{ $t('billing.freeForever') }}</p>
           <p v-else-if="plan.price !== null" class="price-note">
             {{ billingInterval === 'yearly'
@@ -197,6 +201,7 @@ import { authService } from '@/modules/auth/services/authService'
 import { useGeoContent } from '@/composables/useGeoContent'
 import { fetchPublicPricing, fetchPublicPaymentMethods, type PublicPlan, type PublicPaymentMethod, type PricingInterval } from '@/services/publicPricingService'
 import type { Subscription } from '@/modules/auth/types'
+import client from '@/api/client'
 import { t } from '@/i18n'
 
 const router = useRouter()
@@ -386,6 +391,34 @@ async function fetchSubscription(): Promise<void> {
   }
 }
 
+// ── Aperçu de proration (RC-2C) — « ce que vous payez après reliquat » ──────────
+interface ProrationPreview {
+  eligible: boolean
+  applied_credit_minor: number
+  net_payable_minor: number
+  currency: string
+}
+const prorationByPlan = ref<Record<string, ProrationPreview>>({})
+
+/** Pré-calcule le reliquat pour chaque plan payant différent du plan courant, à la périodicité choisie. */
+async function loadProrations(): Promise<void> {
+  prorationByPlan.value = {}
+  const targets = plans.value.filter(p => p.code !== currentPlanCode.value && p.price !== null && p.price > 0)
+  await Promise.all(targets.map(async (p) => {
+    try {
+      const { data } = await client.post('/api/me/subscription/preview-upgrade', {
+        plan_code: p.code,
+        interval: billingInterval.value,
+      })
+      if (data?.eligible && (data.applied_credit_minor ?? 0) > 0) {
+        prorationByPlan.value = { ...prorationByPlan.value, [p.code]: data }
+      }
+    } catch { /* silencieux : aucun reliquat affiché */ }
+  }))
+}
+
+watch([billingInterval, currentPlanCode], () => { void loadProrations() })
+
 // ── Actions ────────────────────────────────────────────────────────────────────
 function choosePlan(plan: UpgradePlan): void {
   router.push({ path: '/settings', query: { tab: 'billing', plan: plan.code } })
@@ -395,7 +428,10 @@ function chooseEnterprise(): void {
   router.push({ path: '/settings', query: { tab: 'billing', plan: 'enterprise' } })
 }
 
-onMounted(fetchSubscription)
+onMounted(async () => {
+  await fetchSubscription()
+  void loadProrations()
+})
 </script>
 
 <style scoped>
@@ -526,6 +562,22 @@ onMounted(fetchSubscription)
   color: var(--brand-primary-dark, #047857);
 }
 .plan-card--enterprise .price-eq { color: var(--gray-400, #94a3b8); }
+
+.price-proration-credit {
+  width: 100%;
+  margin: 0.3rem 0 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--brand-primary-dark, #047857);
+}
+.price-proration-net {
+  width: 100%;
+  margin: 0.1rem 0 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--gray-900, #0f172a);
+}
+.plan-card--enterprise .price-proration-net { color: #fff; }
 
 /* ── States ─────────────────────────────────────────────────────────────────── */
 .state-loading {

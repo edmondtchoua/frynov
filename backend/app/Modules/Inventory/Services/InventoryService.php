@@ -15,7 +15,7 @@ class InventoryService
      * Process a full delivery: bulk moveIn for multiple products/variants.
      * Wrapped in a single transaction — if any item fails, all rollback.
      *
-     * Each item: ['product_id', 'variant_id'?, 'quantity', 'unit_cost_cents'?, 'reference'?, 'note'?]
+     * Each item: ['product_id', 'variant_id'?, 'warehouse_id'?, 'quantity', 'unit_cost_cents'?, 'reference'?, 'note'?]
      */
     public function receiveDelivery(array $items, string $tenantId, string $performedBy): array
     {
@@ -27,6 +27,7 @@ class InventoryService
                     $tenantId,
                     $item['product_id'],
                     $item['variant_id'] ?? null,
+                    $item['warehouse_id'] ?? null,
                 );
 
                 $movements[] = $this->stock->moveIn(

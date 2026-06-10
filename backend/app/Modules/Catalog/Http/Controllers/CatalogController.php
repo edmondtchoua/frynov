@@ -8,7 +8,9 @@ use App\Modules\Catalog\Services\CatalogService;
 use App\Modules\Catalog\Services\ProductDuplicationService;
 use App\Modules\Inventory\Models\Stock;
 use App\Modules\Inventory\Models\StockMovement;
+use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Services\StockService;
+use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -121,6 +123,88 @@ class CatalogController extends Controller
             'low_stock_count'    => $lowStock,
             'by_warehouse'       => $byWarehouse,
             'by_variant'         => $byVariant,  // per-variant stock map
+        ]);
+    }
+
+    /**
+     * GET /api/catalog/products/{id}/variant-stock-matrix
+     * Matrice d'entrée de stock « best-ERP » : lignes = variantes (ou le produit simple),
+     * colonnes = entrepôts accessibles, cellule = stock courant (quantité/dispo/CMUP). Sert à
+     * peupler la grille de saisie multi-variantes × entrepôt (RC-4).
+     */
+    public function variantStockMatrix(Request $request, string $id): JsonResponse
+    {
+        $tenantId = $request->user()->tenant_id;
+        $product  = $this->catalog->findProduct($tenantId, $id);
+
+        if (! $product) {
+            return response()->json(['message' => 'Produit introuvable.'], 404);
+        }
+        if (! $product->isStockable()) {
+            return response()->json(['message' => 'Ce produit ne gère pas de stock.'], 422);
+        }
+
+        // Entrepôts visibles par l'utilisateur (périmètre d'accès). null = tous ceux du tenant.
+        $allowed = WarehouseScope::resolve($request->user(), $request->query('warehouse_id'));
+        $whQuery = Warehouse::where('tenant_id', $tenantId)->where('is_active', true);
+        if ($allowed !== null) {
+            $whQuery->whereIn('id', $allowed);
+        }
+        $warehouses = $whQuery->orderByDesc('is_default')->orderBy('name')->get(['id', 'name', 'code', 'is_default']);
+
+        // Index des lignes de stock par (variant|warehouse) pour un remplissage O(1).
+        $stocks = Stock::where('tenant_id', $tenantId)
+            ->where('product_id', $id)
+            ->get()
+            ->keyBy(fn ($s) => ($s->variant_id ?? 'null') . '|' . ($s->warehouse_id ?? 'null'));
+
+        $cellFor = function (?string $variantId, ?string $warehouseId) use ($stocks): array {
+            $row = $stocks->get(($variantId ?? 'null') . '|' . ($warehouseId ?? 'null'));
+            return [
+                'quantity'        => (int) ($row->quantity ?? 0),
+                'available'       => (int) ($row?->available() ?? 0),
+                'unit_cost_cents' => (int) ($row->unit_cost_cents ?? 0),
+            ];
+        };
+
+        $buildCells = function (?string $variantId) use ($warehouses, $cellFor): array {
+            $cells = [];
+            foreach ($warehouses as $wh) {
+                $cells[$wh->id] = $cellFor($variantId, $wh->id);
+            }
+            return $cells;
+        };
+
+        $rows = [];
+        if ($product->has_variants) {
+            foreach ($product->variants()->where('is_active', true)->orderBy('sort_order')->get() as $v) {
+                $rows[] = [
+                    'variant_id' => $v->id,
+                    'label'      => $v->label ?: ($v->name ?: $v->sku),
+                    'sku'        => $v->sku,
+                    'cells'      => $buildCells($v->id),
+                ];
+            }
+        } else {
+            $rows[] = [
+                'variant_id' => null,
+                'label'      => $product->name,
+                'sku'        => $product->sku,
+                'cells'      => $buildCells(null),
+            ];
+        }
+
+        return response()->json([
+            'product_id'   => $product->id,
+            'product_name' => $product->name,
+            'has_variants' => (bool) $product->has_variants,
+            'warehouses'   => $warehouses->map(fn ($w) => [
+                'id'         => $w->id,
+                'name'       => $w->name,
+                'code'       => $w->code,
+                'is_default' => (bool) $w->is_default,
+            ])->values(),
+            'rows'         => $rows,
         ]);
     }
 

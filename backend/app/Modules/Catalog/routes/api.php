@@ -23,6 +23,7 @@ Route::prefix('catalog')->name('catalog.')->group(function () {
         Route::get('products',                           [CatalogController::class, 'index'])->name('products.index');
         Route::get('products/{id}',                      [CatalogController::class, 'show'])->name('products.show');
         Route::get('products/{id}/stock-summary',        [CatalogController::class, 'stockSummary'])->name('products.stock-summary');
+        Route::get('products/{id}/variant-stock-matrix', [CatalogController::class, 'variantStockMatrix'])->name('products.variant-stock-matrix');
 
         // QR codes and barcodes (raw SVG or JSON sheet)
         Route::get('products/{productId}/qrcode',  [ProductCodeController::class, 'qrCode'])->name('products.qrcode');

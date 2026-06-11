@@ -52,6 +52,7 @@ class Product extends Model
         'product_type',         // Sprint 17: simple|variable|service|kit|digital
         'stock_tracking',       // RC-5A: none|aggregate|batch|serialized
         'fulfillment_type',     // RC-5A: none|manual|delivery|download|license|appointment
+        'warranty_policy_id',   // RC-5D: politique de garantie attachée (nullable)
         'barcode',
         'internal_barcode',
         'gtin',
@@ -140,6 +141,12 @@ class Product extends Model
     public function isSerialized(): bool
     {
         return $this->stock_tracking === self::STOCK_TRACKING_SERIALIZED;
+    }
+
+    /** RC-5D — le produit déclenche-t-il une garantie à la vente ? */
+    public function hasWarranty(): bool
+    {
+        return $this->warranty_policy_id !== null;
     }
 
     // â”€â”€ Money accessors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

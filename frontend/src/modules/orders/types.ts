@@ -42,6 +42,21 @@ export interface OrderUnit {
   sold_at: string | null
 }
 
+// RC-5D — contrat de garantie généré à la vente, rattaché à la commande (et à l'unité si sérialisé).
+export interface OrderWarranty {
+  id: string
+  product_id: string
+  inventory_unit_id: string | null
+  order_line_id: string
+  customer_id: string | null
+  serial_value: string | null
+  starts_at: string
+  ends_at: string
+  status: 'active' | 'expired' | 'void'
+  product_name: string | null
+  policy_name: string | null
+}
+
 export interface CreateOrderItem {
   product_id: string
   variant_id?: string | null

@@ -25,4 +25,5 @@ return [
     App\Modules\Platform\Providers\PlatformServiceProvider::class,
     App\Modules\Marketplace\Providers\MarketplaceServiceProvider::class,
     App\Modules\Pos\Providers\PosServiceProvider::class,
+    App\Modules\Warranties\Providers\WarrantiesServiceProvider::class,
 ];

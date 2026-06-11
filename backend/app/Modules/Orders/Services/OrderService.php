@@ -15,6 +15,7 @@ use App\Modules\Orders\Exceptions\OrderStateException;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderLine;
 use App\Modules\Platform\Services\AuditService;
+use App\Modules\Warranties\Services\WarrantyService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
@@ -24,6 +25,7 @@ class OrderService
         private readonly StockService $stockService,
         private readonly AuditService $auditService,
         private readonly SerializedAllocationService $allocation,
+        private readonly WarrantyService $warranties,
     ) {}
 
     // ── Queries ────────────────────────────────────────────────────────────
@@ -196,6 +198,9 @@ class OrderService
     /**
      * Fulfill a confirmed order — consumes reserved stock and marks delivered.
      *
+     * Pour les produits sous garantie (RC-5D), génère les contrats de garantie après la vente
+     * (date de fin calculée, rattachés au client/à l'unité).
+     *
      * @throws OrderStateException
      * @throws InsufficientStockException
      * @throws StockLockException
@@ -241,6 +246,10 @@ class OrderService
                 'performed_by' => $userId,
                 'fulfilled_at' => now(),
             ]);
+
+            // RC-5D — garanties : générer les contrats après la vente (date de vente = fulfilled_at,
+            // rattachés au client et, pour le sérialisé, à chaque unité vendue).
+            $this->warranties->issueForOrder($order->fresh('lines'), $userId);
         });
 
         $fulfilled = $order->fresh('lines');

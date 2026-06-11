@@ -35,13 +35,19 @@ const UNITS = {
   data: [{ id: 'u1', product_id: 'p1', variant_id: null, order_line_id: 'l1', customer_id: null, serial_type: 'imei', serial_value: '359000000000001', condition: 'new', status: 'reserved', sold_at: null }],
   count: 1,
 }
+// RC-5D — contrats de garantie générés pour la commande.
+const WARRANTIES = {
+  data: [{ id: 'w1', product_id: 'p1', inventory_unit_id: 'u1', order_line_id: 'l1', customer_id: null, serial_value: '359000000000001', starts_at: '2026-06-01T10:00:00Z', ends_at: '2027-06-01T10:00:00Z', status: 'active', product_name: 'iPhone 15', policy_name: 'Garantie 12 mois' }],
+  count: 1,
+}
 
-// Dispatch client.get by URL (order / payments / deliveries / units)
-function mockGet(units: any = UNITS) {
+// Dispatch client.get by URL (order / payments / deliveries / units / warranties)
+function mockGet(units: any = UNITS, warranties: any = WARRANTIES) {
   vi.mocked(client.get).mockImplementation((url: string) => {
-    if (url.endsWith('/payments'))   return Promise.resolve({ data: PAYMENTS }) as any
-    if (url.endsWith('/deliveries')) return Promise.resolve({ data: { data: [] } }) as any
-    if (url.endsWith('/units'))      return Promise.resolve({ data: units }) as any
+    if (url.endsWith('/payments'))    return Promise.resolve({ data: PAYMENTS }) as any
+    if (url.endsWith('/deliveries'))  return Promise.resolve({ data: { data: [] } }) as any
+    if (url.endsWith('/units'))       return Promise.resolve({ data: units }) as any
+    if (url.includes('/warranties/')) return Promise.resolve({ data: warranties }) as any
     return Promise.resolve({ data: ORDER }) as any // the order itself
   })
 }
@@ -107,5 +113,18 @@ describe('OrderDetailView', () => {
     mockGet({ data: [], count: 0 })
     const w = await mountView()
     expect(w.text()).not.toContain('Unités sérialisées')
+  })
+
+  it('lists the warranty contracts generated for the order', async () => {
+    const w = await mountView()
+    expect(w.text()).toContain('Garanties')
+    expect(w.text()).toContain('Garantie 12 mois')
+    expect(w.text()).toContain('Active')
+  })
+
+  it('hides the warranties panel when the order has no contracts', async () => {
+    mockGet(UNITS, { data: [], count: 0 })
+    const w = await mountView()
+    expect(w.text()).not.toContain('Garanties')
   })
 })

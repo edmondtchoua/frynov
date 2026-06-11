@@ -3,6 +3,37 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🛡️ RC-5D : garanties — politique produit + contrat généré à la vente (2026-06-13)
+
+Branche `feature/warranties-contracts` (release `v1.0.0` → `rc.115`).
+Troisième pas des **produits spéciaux** : la garantie devient un objet métier de premier ordre. Nouveau
+module **Warranties**.
+
+### Garanties — du catalogue au contrat
+- **`warranty_policies`** : politique réutilisable (durée en **mois** + couverture), `is_active`.
+- **`products.warranty_policy_id`** : on attache une politique à un produit.
+- **`warranty_contracts`** : contrat **effectif**, généré à la vente, rattaché au client, à la ligne de
+  commande, au produit/variante et — pour le sérialisé — à l'**unité vendue** (`inventory_unit_id` +
+  snapshot `serial_value`). Période **figée** : `starts_at` (date de vente) + durée → `ends_at`.
+- **`WarrantyService::issueForOrder()`** branché dans **`OrderService::fulfill`** (après la vente) :
+  un contrat **par unité sérialisée** vendue (+ horodatage `warranty_started_at/ends_at` sur l'unité),
+  sinon **un par ligne**. **Idempotent** (pas de réémission). Aucun produit sous politique → aucun contrat.
+- **Endpoints** (`/api/warranties`, auth + tenant) : `GET/POST /policies`,
+  `POST /products/{id}/policy` (attacher/détacher), `GET /orders/{id}` (contrats d'une commande, scopé
+  tenant → 404 cross-tenant). Écritures manager/admin.
+
+### Frontend — fiche commande
+- **`OrderDetailView`** : nouveau panneau **« Garanties »** (politique, IMEI/VIN, échéance, statut),
+  affiché seulement si des contrats existent, rechargé après le fulfill. **i18n FR+EN**
+  (`orders.detail.warrantiesTitle`, `warrantyUntil`, `warrantyStatus.*`). Garde i18n ✅, vue-tsc ✅.
+
+### Tests
+- **+7 tests** `WarrantyTest` (contrat/unité sérialisée + client + date de fin, contrat/ligne agrégée,
+  sans politique → 0, idempotence, API politiques + rattachement, liste contrats commande, isolation
+  tenant 404). Orders+Warranties+Catalog+Inventory **229 ✅** (2 skipped).
+- **+2 tests** front `OrderDetailView.spec` (panneau garanties + masquage). Front **266 ✅**.
+- **Suite → RC-5D-bis/E** : SAV (réclamations, void sur retour), produits digitaux, reporting.
+
 ## [Non publié] — 🔗 RC-5C : lien commande ⇄ unité sérialisée ⇄ client — produits spéciaux (2026-06-12)
 
 Branche `feature/orders-serialized-allocation` (release `v1.0.0` → `rc.114`).

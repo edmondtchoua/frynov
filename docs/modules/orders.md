@@ -79,7 +79,7 @@ $line->lineTotalCents() // quantity * unit_price_cents
 
 Fichier : `app/Modules/Orders/Services/OrderService.php`
 
-Dépendances injectées : `StockService`, `SerializedAllocationService` (module Inventory), `AuditService`.
+Dépendances injectées : `StockService`, `SerializedAllocationService` (module Inventory), `AuditService`, `WarrantyService` (module Warranties).
 
 ### create()
 
@@ -139,6 +139,9 @@ public function fulfill(Order $order, string $userId): Order
 - **Consomme le stock** réservé : appelle `StockService::moveOut()` + `StockService::release()` pour chaque ligne
 - **Produit sérialisé (RC-5C)** : les unités réservées passent `reserved → sold` (`sold_at` horodaté) et
   sont **rattachées au client** (`SerializedAllocationService::markSold()`)
+- **Garantie (RC-5D)** : après la vente, `WarrantyService::issueForOrder()` génère les contrats de
+  garantie pour les lignes dont le produit porte une politique (un contrat par unité sérialisée, sinon
+  par ligne ; `ends_at` = `fulfilled_at` + durée)
 - Positionne `fulfilled_at` sur l'heure courante
 - Lance `OrderStateException` si la commande n'est pas en `confirmed`
 

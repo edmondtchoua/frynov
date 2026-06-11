@@ -130,6 +130,8 @@ export const messages: Record<Locale, Dict> = {
         actionError: 'Erreur lors de l’action "{action}".',
         voidTitle: 'Annuler le paiement', voidConfirm: 'Voulez-vous annuler ce paiement ?',
         voidError: "Impossible d'annuler ce paiement.",
+        unitsTitle: 'Unités sérialisées',
+        unitStatus: { in_stock: 'En stock', reserved: 'Réservée', sold: 'Vendue', returned: 'Retournée', repair: 'En réparation', quarantine: 'Quarantaine', lost: 'Perdue', scrapped: 'Rebut' },
       },
       returns: {
         title: 'Retours & SAV', subtitle: '{count} retour(s) enregistré(s)', empty: 'Aucun retour trouvé',
@@ -984,6 +986,8 @@ export const messages: Record<Locale, Dict> = {
         actionError: 'Error during action "{action}".',
         voidTitle: 'Void payment', voidConfirm: 'Do you want to void this payment?',
         voidError: 'Could not void this payment.',
+        unitsTitle: 'Serialized units',
+        unitStatus: { in_stock: 'In stock', reserved: 'Reserved', sold: 'Sold', returned: 'Returned', repair: 'In repair', quarantine: 'Quarantine', lost: 'Lost', scrapped: 'Scrapped' },
       },
       returns: {
         title: 'Returns & After-sales', subtitle: '{count} return(s) recorded', empty: 'No return found',

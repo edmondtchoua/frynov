@@ -1,6 +1,6 @@
 import client from '@/api/client'
 import type { PaginatedResponse } from '@/api/types'
-import type { CreateOrderPayload, Order } from '../types'
+import type { CreateOrderPayload, Order, OrderUnit } from '../types'
 
 export const orderService = {
   list(params?: { status?: string; search?: string; from_date?: string; to_date?: string; warehouse_id?: string; page?: number; per_page?: number }) {
@@ -9,6 +9,11 @@ export const orderService = {
 
   get(id: string) {
     return client.get<Order>(`/api/orders/${id}`).then(r => r.data)
+  },
+
+  // RC-5C — unités sérialisées (IMEI/VIN) rattachées à la commande (traçabilité).
+  units(id: string) {
+    return client.get<{ data: OrderUnit[]; count: number }>(`/api/orders/${id}/units`).then(r => r.data)
   },
 
   create(payload: CreateOrderPayload) {

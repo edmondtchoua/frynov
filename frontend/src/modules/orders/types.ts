@@ -28,6 +28,20 @@ export interface Order {
   lines: OrderLine[]
 }
 
+// RC-5C — unité sérialisée (IMEI/VIN…) rattachée à une ligne de commande.
+export interface OrderUnit {
+  id: string
+  product_id: string
+  variant_id: string | null
+  order_line_id: string | null
+  customer_id: string | null
+  serial_type: string
+  serial_value: string
+  condition: string
+  status: 'in_stock' | 'reserved' | 'sold' | 'returned' | 'repair' | 'quarantine' | 'lost' | 'scrapped'
+  sold_at: string | null
+}
+
 export interface CreateOrderItem {
   product_id: string
   variant_id?: string | null

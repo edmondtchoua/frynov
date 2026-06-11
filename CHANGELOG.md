@@ -3,6 +3,37 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔗 RC-5C : lien commande ⇄ unité sérialisée ⇄ client — produits spéciaux (2026-06-12)
+
+Branche `feature/orders-serialized-allocation` (release `v1.0.0` → `rc.114`).
+Deuxième pas des **produits spéciaux** : on vend désormais des **unités précises** (IMEI/VIN), pas
+seulement une quantité. Socle RC-5A (policy) + RC-5B (`inventory_units`).
+
+### Commandes — réservation/vente d'unités précises
+- **`SerializedAllocationService`** (module Inventory) — lien commande ⇄ unité ⇄ client :
+  - `allocate()` au **confirm** : réserve des unités disponibles **FIFO** (date de réception),
+    `in_stock → reserved`, rattachées à `order_id`/`order_line_id`. **Verrou lecture** → deux commandes
+    concurrentes ne peuvent pas réserver la même unité (**anti double-vente**).
+  - `markSold()` au **fulfill** : `reserved → sold` (`sold_at` horodaté) + **rattachement client**.
+  - `release()` au **cancel** : `reserved → in_stock`, rattachements effacés.
+- **`OrderService`** branche ces étapes pour toute ligne `stock_tracking=serialized`. L'allocation
+  unitaire **fait autorité** : si les unités disponibles manquent → `InsufficientUnitsException` (422,
+  message clair) **avant** le contrôle de stock agrégé. Le **miroir agrégé** (RC-5B) reste maintenu.
+- **Endpoint** : `GET /api/orders/{id}/units` — unités rattachées à la commande (traçabilité vente/SAV),
+  scopé tenant (404 pour une commande d'un autre tenant).
+
+### Frontend — fiche commande
+- **`OrderDetailView`** : nouveau panneau **« Unités sérialisées »** (IMEI/VIN + statut), affiché
+  uniquement pour les commandes qui en portent, rechargé après chaque action. **i18n FR+EN**
+  (`orders.detail.unitsTitle`, `orders.detail.unitStatus.*`). Garde i18n ✅, vue-tsc ✅.
+
+### Tests
+- **+9 tests** `SerializedAllocationTest` (confirm réserve + miroir, fulfill vend + client, cancel
+  relâche, insuffisance → rollback atomique, anti double-vente concurrente, produit non sérialisé,
+  endpoint 422, `GET /{id}/units` + isolation tenant). Orders+Inventory **131 ✅** (2 skipped).
+- **+2 tests** front `OrderDetailView.spec` (liste des unités + masquage si aucune). Front **264 ✅**.
+- **Suite → RC-5D/E** : garanties (politiques/contrats/SAV), produits digitaux, reporting.
+
 ## [Non publié] — 🔢 RC-5B : unités sérialisées (IMEI / VIN) — produits spéciaux (2026-06-12)
 
 Branche `feature/inventory-serialized-units` (release `v1.0.0` → `rc.113`).

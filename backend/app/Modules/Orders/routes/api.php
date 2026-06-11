@@ -20,6 +20,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'module:orders'])
         Route::get('/',              [OrderController::class, 'index']);
         Route::post('/',             [OrderController::class, 'store'])->middleware(['role_or_permission:manager|admin|orders.create', 'quota:orders']);
         Route::get('/{id}',          [OrderController::class, 'show']);
+        Route::get('/{id}/units',    [OrderController::class, 'units']);   // RC-5C — unités sérialisées rattachées
         Route::middleware('role_or_permission:manager|admin|orders.manage')->group(function () {
             Route::post('/{id}/confirm', [OrderController::class, 'confirm']);
             Route::post('/{id}/fulfill', [OrderController::class, 'fulfill']);

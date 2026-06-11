@@ -2,6 +2,7 @@
 
 namespace App\Modules\Orders\Providers;
 
+use App\Modules\Inventory\Services\SerializedAllocationService;
 use App\Modules\Inventory\Services\StockService;
 use App\Modules\Orders\Services\OrderService;
 use App\Modules\Platform\Services\AuditService;
@@ -18,6 +19,7 @@ class OrdersServiceProvider extends ModuleServiceProvider
             return new OrderService(
                 $app->make(StockService::class),
                 $app->make(AuditService::class),
+                $app->make(SerializedAllocationService::class),
             );
         });
     }

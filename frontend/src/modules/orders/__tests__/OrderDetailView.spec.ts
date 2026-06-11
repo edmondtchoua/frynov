@@ -30,12 +30,18 @@ const PAYMENTS = {
   data: [{ id: 'pay-1', method: 'cash', amount_cents: 500000, currency: 'XOF', reference: 'R1', paid_at: '2026-06-01T11:00:00Z' }],
   balance: 500000, is_fully_paid: false,
 }
+// RC-5C — unités sérialisées rattachées à la commande.
+const UNITS = {
+  data: [{ id: 'u1', product_id: 'p1', variant_id: null, order_line_id: 'l1', customer_id: null, serial_type: 'imei', serial_value: '359000000000001', condition: 'new', status: 'reserved', sold_at: null }],
+  count: 1,
+}
 
-// Dispatch client.get by URL (order / payments / deliveries)
-function mockGet() {
+// Dispatch client.get by URL (order / payments / deliveries / units)
+function mockGet(units: any = UNITS) {
   vi.mocked(client.get).mockImplementation((url: string) => {
     if (url.endsWith('/payments'))   return Promise.resolve({ data: PAYMENTS }) as any
     if (url.endsWith('/deliveries')) return Promise.resolve({ data: { data: [] } }) as any
+    if (url.endsWith('/units'))      return Promise.resolve({ data: units }) as any
     return Promise.resolve({ data: ORDER }) as any // the order itself
   })
 }
@@ -87,5 +93,19 @@ describe('OrderDetailView', () => {
   it('shows the Fulfill action for a confirmed order', async () => {
     const w = await mountView()
     expect(w.text()).toContain('Marquer livrée')
+  })
+
+  it('lists the serialized units (IMEI) attached to the order with their status', async () => {
+    const w = await mountView()
+    expect(w.text()).toContain('Unités sérialisées')
+    expect(w.text()).toContain('359000000000001')
+    expect(w.text()).toContain('IMEI')
+    expect(w.text()).toContain('Réservée')
+  })
+
+  it('hides the units panel when the order has no serialized units', async () => {
+    mockGet({ data: [], count: 0 })
+    const w = await mountView()
+    expect(w.text()).not.toContain('Unités sérialisées')
   })
 })

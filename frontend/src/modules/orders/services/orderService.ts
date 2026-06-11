@@ -1,6 +1,6 @@
 import client from '@/api/client'
 import type { PaginatedResponse } from '@/api/types'
-import type { CreateOrderPayload, Order, OrderUnit, OrderWarranty, OrderEntitlement } from '../types'
+import type { CreateOrderPayload, Order, OrderUnit, OrderWarranty, OrderEntitlement, OrderWarrantyClaim } from '../types'
 
 export const orderService = {
   list(params?: { status?: string; search?: string; from_date?: string; to_date?: string; warehouse_id?: string; page?: number; per_page?: number }) {
@@ -24,6 +24,16 @@ export const orderService = {
   // RC-5E — droits d'accès digitaux (download/license) générés pour la commande.
   entitlements(id: string) {
     return client.get<{ data: OrderEntitlement[]; count: number }>(`/api/digital/orders/${id}/entitlements`).then(r => r.data)
+  },
+
+  // RC-5F — réclamations SAV rattachées aux contrats de garantie de la commande.
+  warrantyClaims(id: string) {
+    return client.get<{ data: OrderWarrantyClaim[]; count: number }>(`/api/warranties/orders/${id}/claims`).then(r => r.data)
+  },
+
+  // RC-5F — ouvre une réclamation SAV sur un contrat de garantie.
+  openWarrantyClaim(contractId: string, payload: { reason: string; description?: string; override?: boolean }) {
+    return client.post<{ data: OrderWarrantyClaim }>(`/api/warranties/contracts/${contractId}/claims`, payload).then(r => r.data)
   },
 
   create(payload: CreateOrderPayload) {

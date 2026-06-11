@@ -180,13 +180,27 @@
               <span class="badge badge-gray" style="font-size: 0.72rem;">{{ warranties.length }}</span>
             </div>
             <div class="unit-list">
-              <div v-for="w in warranties" :key="w.id" class="unit-item">
-                <span class="unit-serial">{{ w.policy_name || w.product_name }}</span>
-                <span v-if="w.serial_value" class="unit-type">{{ w.serial_value }}</span>
-                <span class="warranty-until">{{ $t('orders.detail.warrantyUntil', { date: fmtDateShort(w.ends_at) }) }}</span>
-                <span :class="`badge ${warrantyStatusBadge(w.status)}`" style="font-size: 0.72rem; margin-left: auto;">
-                  {{ warrantyStatusLabel(w.status) }}
-                </span>
+              <div v-for="w in warranties" :key="w.id" class="warranty-row">
+                <div class="unit-item">
+                  <span class="unit-serial">{{ w.policy_name || w.product_name }}</span>
+                  <span v-if="w.serial_value" class="unit-type">{{ w.serial_value }}</span>
+                  <span class="warranty-until">{{ $t('orders.detail.warrantyUntil', { date: fmtDateShort(w.ends_at) }) }}</span>
+                  <span :class="`badge ${warrantyStatusBadge(w.status)}`" style="font-size: 0.72rem; margin-left: auto;">
+                    {{ warrantyStatusLabel(w.status) }}
+                  </span>
+                </div>
+                <!-- RC-5F — SAV : statut de réclamation, ou action d'ouverture -->
+                <div class="claim-line">
+                  <template v-if="claimFor(w.id)">
+                    <span class="unit-type">{{ $t('orders.detail.savReasons.' + claimFor(w.id)!.reason) }}</span>
+                    <span :class="`badge ${claimStatusBadge(claimFor(w.id)!.status)}`" style="font-size: 0.7rem;">
+                      {{ claimStatusLabel(claimFor(w.id)!.status) }}
+                    </span>
+                  </template>
+                  <button v-else-if="w.status === 'active'" class="btn btn-ghost btn-sm" @click="openClaimModal(w.id)">
+                    {{ $t('orders.detail.savOpen') }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -314,6 +328,33 @@
         </button>
       </template>
     </BaseModal>
+
+    <!-- ── Open after-sales claim modal (RC-5F) ──────────────────────────────── -->
+    <BaseModal v-model="claimModal.open" :title="$t('orders.detail.savTitle')">
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div class="form-group">
+          <label class="form-label">{{ $t('orders.detail.savReason') }} <span style="color:#dc2626;">*</span></label>
+          <select v-model="claimForm.reason" class="form-input">
+            <option value="defect">{{ $t('orders.detail.savReasons.defect') }}</option>
+            <option value="breakage">{{ $t('orders.detail.savReasons.breakage') }}</option>
+            <option value="malfunction">{{ $t('orders.detail.savReasons.malfunction') }}</option>
+            <option value="other">{{ $t('orders.detail.savReasons.other') }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ $t('orders.detail.savDescription') }}</label>
+          <textarea v-model="claimForm.description" class="form-input" rows="3" :placeholder="$t('orders.detail.savDescriptionPlaceholder')"></textarea>
+        </div>
+        <p v-if="claimModal.error" style="color:#dc2626; font-size:0.875rem;">{{ claimModal.error }}</p>
+      </div>
+      <template #footer>
+        <button class="btn btn-ghost" @click="claimModal.open = false">{{ $t('common.cancel') }}</button>
+        <button class="btn btn-primary" :disabled="claimModal.saving" @click="submitClaim">
+          <span v-if="claimModal.saving" class="spinner-sm"></span>
+          {{ $t('orders.detail.savSubmit') }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -330,7 +371,7 @@ import { fetchPublicPaymentMethods, type PublicPaymentMethod } from '@/services/
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { t } from '@/i18n'
-import type { Order, OrderUnit, OrderWarranty, OrderEntitlement } from '../types'
+import type { Order, OrderUnit, OrderWarranty, OrderEntitlement, OrderWarrantyClaim } from '../types'
 import type { Payment, PaymentMethod } from '@/modules/payments/types'
 import type { Delivery, DeliveryStatus } from '@/modules/deliveries/types'
 
@@ -378,6 +419,14 @@ const warranties = ref<OrderWarranty[]>([])
 
 // ── Digital entitlements (RC-5E) — empty unless a digital product was sold ─────────
 const entitlements = ref<OrderEntitlement[]>([])
+
+// ── After-sales claims (RC-5F) — claims attached to this order's warranty contracts ─
+const claims = ref<OrderWarrantyClaim[]>([])
+const claimModal = reactive({ open: false, saving: false, error: '', contractId: '' })
+const claimForm  = reactive({ reason: 'defect', description: '' })
+function claimFor(contractId: string): OrderWarrantyClaim | undefined {
+  return claims.value.find(c => c.warranty_contract_id === contractId)
+}
 
 // ── Load ───────────────────────────────────────────────────────────────────────
 async function load() {
@@ -445,6 +494,41 @@ async function loadEntitlements() {
   }
 }
 
+// RC-5F — réclamations SAV rattachées aux contrats de garantie de la commande.
+async function loadClaims() {
+  try {
+    claims.value = (await orderService.warrantyClaims(id)).data
+  } catch {
+    claims.value = []
+  }
+}
+
+function openClaimModal(contractId: string) {
+  claimModal.contractId = contractId
+  claimModal.error = ''
+  claimModal.saving = false
+  claimForm.reason = 'defect'
+  claimForm.description = ''
+  claimModal.open = true
+}
+
+async function submitClaim() {
+  claimModal.saving = true
+  claimModal.error  = ''
+  try {
+    await orderService.openWarrantyClaim(claimModal.contractId, {
+      reason: claimForm.reason,
+      description: claimForm.description || undefined,
+    })
+    claimModal.open = false
+    loadClaims()
+  } catch (e: any) {
+    claimModal.error = e?.response?.data?.message ?? t('orders.detail.savError')
+  } finally {
+    claimModal.saving = false
+  }
+}
+
 // ── Order actions ──────────────────────────────────────────────────────────────
 async function act(action: 'confirm' | 'fulfill' | 'cancel') {
   actionLoading.value = action
@@ -454,6 +538,7 @@ async function act(action: 'confirm' | 'fulfill' | 'cancel') {
     loadUnits()         // RC-5C — les statuts d'unités changent (réservé/vendu/dispo) selon l'action.
     loadWarranties()    // RC-5D — le fulfill génère les contrats de garantie.
     loadEntitlements()  // RC-5E — le fulfill génère les droits d'accès digitaux.
+    loadClaims()        // RC-5F — recharge l'état SAV.
   } catch (e: any) {
     actionError.value = e?.response?.data?.message ?? t('orders.detail.actionError', { action })
   } finally {
@@ -551,13 +636,19 @@ function entitlementStatusLabel(s: OrderEntitlement['status']): string {
 function entitlementStatusBadge(s: OrderEntitlement['status']): string {
   return ({ active: 'badge-success', revoked: 'badge-error', expired: 'badge-gray' } as Record<OrderEntitlement['status'], string>)[s] ?? 'badge-gray'
 }
+function claimStatusLabel(s: OrderWarrantyClaim['status']): string {
+  return t(`orders.detail.claimStatus.${s}`)
+}
+function claimStatusBadge(s: OrderWarrantyClaim['status']): string {
+  return ({ open: 'badge-warning', in_repair: 'badge-blue', resolved: 'badge-success', replaced: 'badge-success', rejected: 'badge-error' } as Record<OrderWarrantyClaim['status'], string>)[s] ?? 'badge-gray'
+}
 function fmt(cents: number) {
   return formatMoney(cents, order.value?.currency ?? 'XOF')
 }
 const fmtDate = formatDateTime
 const fmtDateShort = formatDateShort
 
-onMounted(() => { load(); loadPayments(); loadDeliveries(); loadUnits(); loadWarranties(); loadEntitlements(); loadMarketMethods() })
+onMounted(() => { load(); loadPayments(); loadDeliveries(); loadUnits(); loadWarranties(); loadEntitlements(); loadClaims(); loadMarketMethods() })
 </script>
 
 <style scoped>
@@ -657,5 +748,13 @@ onMounted(() => { load(); loadPayments(); loadDeliveries(); loadUnits(); loadWar
 .warranty-until {
   font-size: 0.78rem;
   color: var(--gray-500);
+}
+.warranty-row { display: flex; flex-direction: column; gap: 4px; }
+.claim-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 2px;
+  min-height: 22px;
 }
 </style>

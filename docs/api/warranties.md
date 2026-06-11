@@ -84,6 +84,28 @@ livrée ou si aucun produit vendu n'avait de politique.
 
 ---
 
+## SAV — réclamations (RC-5F)
+
+### POST /api/warranties/contracts/{contractId}/claims  *(manager/admin)*
+
+Ouvre une réclamation SAV. Refusée (**422**) si le contrat est **expiré** (sauf `override: true`) ou
+**`void`** (toujours).
+
+**Corps** : `{ "reason": "defect|breakage|malfunction|other", "description": "…", "override": false }`
+
+**Réponse 201** : `{ "data": { ...claim, "status": "open", "out_of_warranty": false } }`
+
+### GET /api/warranties/contracts/{contractId}/claims · GET /api/warranties/orders/{orderId}/claims
+
+Réclamations d'un contrat / d'une commande (scopées tenant → 404 sinon).
+
+### POST /api/warranties/claims/{id}/transition  *(manager/admin)*
+
+Fait avancer une réclamation : `{ "status": "in_repair|resolved|replaced|rejected", "diagnostic": "…",
+"resolution": "…", "resolution_note": "…" }`. **422** si la réclamation est déjà dans un statut terminal.
+
+---
+
 ## Génération automatique
 
 Les contrats ne se créent pas via l'API : ils sont **émis au `fulfill`** de la commande

@@ -42,7 +42,8 @@
 | RC-5C | spécial | lien commande ⇄ unité ⇄ client : allocation au confirm/fulfill/cancel (anti double-vente) + endpoint `GET /orders/{id}/units` + UI | ✅ **rc.114** |
 | RC-5D | spécial | garanties : `warranty_policies` + `warranty_contracts` + contrat auto au `fulfill` (par unité sérialisée / par ligne) + endpoints + UI | ✅ **rc.115** |
 | RC-5E | spécial | digital : commande **sans stock** (fix `stock_tracking=none`) + `digital_entitlements` (accès download/license, jeton opaque, révocation) au `fulfill` + endpoints + UI | ✅ **rc.116** |
-| RC-5D-bis / RC-5F | spécial | SAV (`warranty_claims`, void sur retour) · reporting produits spéciaux (valorisation unité/lot) | ⬜ |
+| RC-5F | spécial | SAV : `warranty_claims` (ouverture gardée période + override audité, transitions open→réparation→résolution) + endpoints + UI | ✅ **rc.117** |
+| RC-5G | spécial | reporting produits spéciaux (valorisation unité/lot, exclusion services/digitaux) · `void` auto garantie sur retour | ⬜ |
 
 ## ⚠️ Risques (rappels)
 - Proration **dépend** de la périodicité (interval persisté + tarif annuel en base) → ordre strict.

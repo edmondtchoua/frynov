@@ -46,13 +46,14 @@ const ENTITLEMENTS = {
   count: 1,
 }
 
-// Dispatch client.get by URL (order / payments / deliveries / units / warranties / entitlements)
-function mockGet(units: any = UNITS, warranties: any = WARRANTIES, entitlements: any = ENTITLEMENTS) {
+// Dispatch client.get by URL (order / payments / deliveries / units / warranties / entitlements / claims)
+function mockGet(units: any = UNITS, warranties: any = WARRANTIES, entitlements: any = ENTITLEMENTS, claims: any = { data: [], count: 0 }) {
   vi.mocked(client.get).mockImplementation((url: string) => {
     if (url.endsWith('/payments'))     return Promise.resolve({ data: PAYMENTS }) as any
     if (url.endsWith('/deliveries'))   return Promise.resolve({ data: { data: [] } }) as any
     if (url.endsWith('/units'))        return Promise.resolve({ data: units }) as any
     if (url.endsWith('/entitlements')) return Promise.resolve({ data: entitlements }) as any
+    if (url.endsWith('/claims'))       return Promise.resolve({ data: claims }) as any   // before /warranties/ catch-all
     if (url.includes('/warranties/'))  return Promise.resolve({ data: warranties }) as any
     return Promise.resolve({ data: ORDER }) as any // the order itself
   })
@@ -145,5 +146,20 @@ describe('OrderDetailView', () => {
     mockGet(UNITS, WARRANTIES, { data: [], count: 0 })
     const w = await mountView()
     expect(w.text()).not.toContain('Accès digital')
+  })
+
+  it('offers to open an after-sales claim on an active warranty without a claim', async () => {
+    const w = await mountView()
+    expect(w.text()).toContain('Ouvrir un SAV')
+  })
+
+  it('shows the claim status when a claim exists for the contract', async () => {
+    mockGet(UNITS, WARRANTIES, ENTITLEMENTS, {
+      data: [{ id: 'c1', warranty_contract_id: 'w1', reason: 'defect', status: 'in_repair', out_of_warranty: false }],
+      count: 1,
+    })
+    const w = await mountView()
+    expect(w.text()).toContain('En réparation')
+    expect(w.text()).not.toContain('Ouvrir un SAV')
   })
 })

@@ -7,6 +7,7 @@ use App\Shared\Traits\HasTenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -51,6 +52,11 @@ class WarrantyContract extends Model
     public function policy(): BelongsTo
     {
         return $this->belongsTo(WarrantyPolicy::class, 'warranty_policy_id');
+    }
+
+    public function claims(): HasMany
+    {
+        return $this->hasMany(WarrantyClaim::class, 'warranty_contract_id');
     }
 
     public function toApiArray(): array

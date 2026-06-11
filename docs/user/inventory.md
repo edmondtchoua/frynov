@@ -307,7 +307,9 @@ sans entrée de stock.
 À la **livraison** de la commande, un **droit d'accès** est accordé au client :
 
 - pour une **licence**, une **clé** est générée automatiquement ;
-- l'accès est porté par un **jeton sécurisé** (jamais un lien de fichier en clair) ;
+- vous attachez les **fichiers** au produit (onglet **« Fichiers digitaux »** de la fiche produit) ; le
+  client les télécharge via un **lien sécurisé, signé et expirable** (jamais un chemin de fichier en clair) ;
+- l'accès est porté par un **jeton sécurisé** ;
 - vous pouvez **révoquer** un accès à tout moment (le client ne peut plus télécharger/activer) ;
 - la fiche commande affiche le panneau **« Accès digital »** (produit, type, statut).
 

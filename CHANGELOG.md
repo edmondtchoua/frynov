@@ -3,6 +3,34 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 📥 RC-5I : produits digitaux — fichiers privés + téléchargement par lien signé (2026-06-16)
+
+Branche `feature/digital-assets-download` (release `v1.0.0` → `rc.120`).
+Complète RC-5E : un produit digital porte désormais de **vrais fichiers** livrés au client par un **lien
+signé et expirable**. Aucun chemin de fichier n'est jamais exposé.
+
+### Digital — du fichier au client
+- **`digital_assets`** : fichier **privé** rattaché à un produit digital (disque privé `local`, taille,
+  mime, **checksum sha256**, version). Le `path` n'est **jamais** renvoyé en API.
+- **`DigitalAssetService`** : `attach()` (upload), `forProduct()`, `signedLinksFor()` (liens
+  `temporarySignedRoute` 15 min pour les assets actifs d'un entitlement accessible), `findActiveAsset()`.
+- **`GET /api/digital/access/{token}`** renvoie désormais `download_urls` (liens signés) en plus de la clé.
+- **`GET /api/digital/download/{token}/{asset}`** — route **signée (hors auth)** : le client n'est pas un
+  user du tenant, la signature porte la capacité ; l'accessibilité de l'entitlement est **revérifiée**
+  (la **révocation prime** même sur un lien déjà émis → 403). Tenant dérivé du jeton (globalement unique).
+- **Endpoints assets** (manager/admin) : `POST/GET /api/digital/products/{id}/assets`.
+
+### Frontend — fiche produit
+- **`ProductShowPage`** : onglet **« Fichiers digitaux »** (visible pour les produits digital) — upload +
+  liste (nom, taille, statut). **i18n FR+EN** (`catalog.productShow.digital.*`). Au passage, le type
+  **`digital`** est ajouté au `ProductType` front (manquait) + libellé de badge.
+
+### Tests
+- **+6 tests** `DigitalAssetTest` (upload sur disque privé + checksum + `path` non exposé ; non-digital
+  refusé ; lien signé télécharge le fichier ; révoqué → 403 ; non signé → 403 ; jeton ≠ produit de
+  l'asset → 404). Digital+Orders **69 ✅**.
+- Front **271 ✅**, garde i18n + vue-tsc OK.
+
 ## [Non publié] — ↩️ RC-5H : retour (RMA) défait les artefacts spéciaux — void garantie / révoque accès / unité retournée (2026-06-16)
 
 Branche `feature/returns-void-special` (release `v1.0.0` → `rc.119`).

@@ -151,6 +151,36 @@
 
       </div>
 
+      <!-- ── Special products report (RC-5G) ──────────────────────────────── -->
+      <div v-if="special" class="card" style="margin-top:1.25rem">
+        <h3 class="section-title">{{ $t('reports.special.title') }}</h3>
+        <p class="text-muted" style="font-size:var(--text-xs);margin:-0.4rem 0 0.9rem">{{ $t('reports.special.subtitle') }}</p>
+        <div class="special-grid">
+          <div class="special-tile">
+            <div class="special-value">{{ formatMoneyCompact(special.total_inventory_value) }}</div>
+            <div class="special-label">{{ $t('reports.special.totalValue') }}</div>
+          </div>
+          <div class="special-tile">
+            <div class="special-value">{{ formatMoneyCompact(special.serialized.in_stock_value) }}</div>
+            <div class="special-label">{{ $t('reports.special.serializedValue') }}</div>
+            <div class="special-sub">{{ $t('reports.special.serializedCounts', { in_stock: special.serialized.in_stock, reserved: special.serialized.reserved, sold: special.serialized.sold }) }}</div>
+          </div>
+          <div class="special-tile">
+            <div class="special-value">{{ special.warranties.active_contracts }}</div>
+            <div class="special-label">{{ $t('reports.special.activeWarranties') }}</div>
+            <div class="special-sub" :class="special.warranties.open_claims > 0 ? 'special-warn' : ''">{{ $t('reports.special.openClaims', { n: special.warranties.open_claims }) }}</div>
+          </div>
+          <div class="special-tile">
+            <div class="special-value">{{ special.digital.active_entitlements }}</div>
+            <div class="special-label">{{ $t('reports.special.activeEntitlements') }}</div>
+          </div>
+          <div class="special-tile">
+            <div class="special-value">{{ special.non_stockable_excluded }}</div>
+            <div class="special-label">{{ $t('reports.special.excluded') }}</div>
+          </div>
+        </div>
+      </div>
+
     </template>
 
     <div v-else class="alert alert-error" style="margin-top:1.5rem">
@@ -164,12 +194,13 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import ReportsTabNav from '../components/ReportsTabNav.vue'
-import { reportService, formatMoneyCompact, type StockData } from '../services/reportService'
+import { reportService, formatMoneyCompact, type StockData, type SpecialProductsData } from '../services/reportService'
 import { useWarehouses } from '@/composables/useWarehouses'
 import { t } from '@/i18n'
 
 const loading = ref(true)
 const data    = ref<StockData | null>(null)
+const special = ref<SpecialProductsData | null>(null)  // RC-5G — produits spéciaux
 const { warehouses, loadWarehouses } = useWarehouses()
 const warehouseId = ref('')
 
@@ -181,6 +212,12 @@ async function load() {
     data.value = null
   } finally {
     loading.value = false
+  }
+  // RC-5G — chargé séparément (silencieux) : n'empêche pas l'affichage du rapport de stock.
+  try {
+    special.value = await reportService.specialProducts(warehouseId.value)
+  } catch {
+    special.value = null
   }
 }
 
@@ -266,6 +303,22 @@ function movementLabel(type: string): string {
 .alert-qty { text-align: right; font-size: var(--text-sm); font-weight: 700; }
 .qty-warn  { color: #ea580c; }
 .qty-error { color: var(--color-error); }
+
+/* Special products (RC-5G) */
+.special-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+.special-tile {
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+}
+.special-value { font-size: 1.35rem; font-weight: 700; color: var(--gray-900); line-height: 1; }
+.special-label { font-size: var(--text-xs); color: var(--gray-500); margin-top: 0.35rem; font-weight: 500; }
+.special-sub { font-size: var(--text-xs); color: var(--gray-400); margin-top: 0.25rem; }
+.special-sub.special-warn { color: #ea580c; font-weight: 600; }
 
 /* Movements */
 .movements-list { display: flex; flex-direction: column; gap: 0.75rem; }

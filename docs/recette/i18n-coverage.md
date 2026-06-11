@@ -88,7 +88,7 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 | billing | `BillingView` | `billing.*` + `common.currencyName` | rc.82 |
 | billing | `UpgradeView` | `billing.plan.*` + `common.loading/retry` | rc.82 |
 | deliveries | `DeliveryListView` | `deliveries.*` + `common.pageOf/prev/next` | rc.26 / rc.70 |
-| reports | `SalesReportView` / `StockReportView` | `reports.*` (+ `top10`) | rc.30 / rc.70 |
+| reports | `SalesReportView` / `StockReportView` | `reports.*` (+ `top10`, + `reports.special.*` RC-5G) | rc.30 / rc.70 / rc.118 |
 
 *(+ `NotFoundView` pilote — chrome partagé — complet.)*
 

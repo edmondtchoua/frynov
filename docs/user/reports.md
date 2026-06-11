@@ -104,6 +104,22 @@ Résumé des opérations de stock sur le dernier mois, par type :
 
 ---
 
+## Produits spéciaux (rapport stock)
+
+En bas du **rapport de stock**, le bloc **« Produits spéciaux »** consolide :
+
+- la **valeur totale** valorisée (stock classique **+ unités sérialisées en stock**) ;
+- le détail **sérialisé** : unités en stock, réservées, vendues ;
+- les **garanties actives** et le nombre de **SAV ouverts** ;
+- les **accès digitaux actifs** ;
+- le nombre de produits **non stockables exclus** (services, digital).
+
+> Les **services et produits digitaux** ne sont jamais comptés dans la valeur de stock (ils n'ont pas de
+> stock physique). Les **produits sérialisés** sont valorisés **par unité réellement en stock**, pas par
+> une simple quantité.
+
+---
+
 ## Conseils d'utilisation
 
 1. **Consultez le tableau de bord chaque matin** pour avoir les chiffres du jour avant.

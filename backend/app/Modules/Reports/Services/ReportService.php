@@ -3,11 +3,15 @@
 namespace App\Modules\Reports\Services;
 
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Digital\Models\DigitalEntitlement;
+use App\Modules\Inventory\Models\InventoryUnit;
 use App\Modules\Inventory\Models\Stock;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderLine;
 use App\Modules\Payments\Models\Payment;
+use App\Modules\Warranties\Models\WarrantyClaim;
+use App\Modules\Warranties\Models\WarrantyContract;
 use Illuminate\Support\Collection;
 
 class ReportService
@@ -172,6 +176,81 @@ class ReportService
             'low_stock_count'  => $lowStockItems->count(),
             'low_stock_items'  => $lowStockItems,
             'recent_movements' => $recentMovements,
+        ];
+    }
+
+    // ── Special products report (RC-5G) ───────────────────────────────────────
+
+    /**
+     * Reporting **produits spéciaux** (audit §8.6) :
+     *  - valorise le stock **agrégé/lot** au coût (CMUP → prix en repli) ;
+     *  - valorise le **sérialisé par UNITÉ** en stock (pas via le miroir agrégé, pour ne pas
+     *    double-compter) ;
+     *  - **exclut** les non stockables (services/digital, `stock_tracking=none`) de la valorisation ;
+     *  - rappelle l'état garanties (contrats actifs, réclamations ouvertes) et digital (accès actifs).
+     */
+    public function specialProducts(string $tenantId, ?array $warehouseIds = null): array
+    {
+        // Valorisation agrégée — produits stockables NON sérialisés (aggregate | batch).
+        $aggregateValue = (int) (Stock::join('products', 'stocks.product_id', '=', 'products.id')
+            ->where('stocks.tenant_id', $tenantId)
+            ->whereNull('products.deleted_at')
+            ->whereIn('products.stock_tracking', [Product::STOCK_TRACKING_AGGREGATE, Product::STOCK_TRACKING_BATCH])
+            ->when($warehouseIds !== null, fn ($q) => $q->whereIn('stocks.warehouse_id', $warehouseIds))
+            ->selectRaw('SUM(stocks.quantity * COALESCE(NULLIF(products.cost_amount, 0), products.price_amount)) as v')
+            ->value('v') ?? 0);
+
+        // Sérialisé — décompte par statut + valeur des unités EN STOCK (au coût produit).
+        $unitsByStatus = InventoryUnit::where('tenant_id', $tenantId)
+            ->when($warehouseIds !== null, fn ($q) => $q->whereIn('warehouse_id', $warehouseIds))
+            ->selectRaw('status, COUNT(*) as c')
+            ->groupBy('status')
+            ->pluck('c', 'status');
+
+        $serializedInStockValue = (int) (InventoryUnit::join('products', 'inventory_units.product_id', '=', 'products.id')
+            ->where('inventory_units.tenant_id', $tenantId)
+            ->where('inventory_units.status', InventoryUnit::STATUS_IN_STOCK)
+            ->when($warehouseIds !== null, fn ($q) => $q->whereIn('inventory_units.warehouse_id', $warehouseIds))
+            ->selectRaw('SUM(COALESCE(NULLIF(products.cost_amount, 0), products.price_amount)) as v')
+            ->value('v') ?? 0);
+
+        // Non stockables exclus de la valorisation (services/digital).
+        $nonStockableExcluded = Product::where('tenant_id', $tenantId)
+            ->where('stock_tracking', Product::STOCK_TRACKING_NONE)
+            ->count();
+
+        // Garanties & SAV.
+        $activeContracts = WarrantyContract::where('tenant_id', $tenantId)
+            ->where('status', WarrantyContract::STATUS_ACTIVE)
+            ->where('ends_at', '>', now())
+            ->count();
+        $openClaims = WarrantyClaim::where('tenant_id', $tenantId)
+            ->whereNotIn('status', WarrantyClaim::TERMINAL)
+            ->count();
+
+        // Digital.
+        $activeEntitlements = DigitalEntitlement::where('tenant_id', $tenantId)
+            ->where('status', DigitalEntitlement::STATUS_ACTIVE)
+            ->count();
+
+        return [
+            'aggregate_stock_value' => $aggregateValue,
+            'serialized' => [
+                'in_stock'       => (int) ($unitsByStatus[InventoryUnit::STATUS_IN_STOCK] ?? 0),
+                'reserved'       => (int) ($unitsByStatus[InventoryUnit::STATUS_RESERVED] ?? 0),
+                'sold'           => (int) ($unitsByStatus[InventoryUnit::STATUS_SOLD] ?? 0),
+                'in_stock_value' => $serializedInStockValue,
+            ],
+            'non_stockable_excluded' => $nonStockableExcluded,
+            'warranties' => [
+                'active_contracts' => $activeContracts,
+                'open_claims'      => $openClaims,
+            ],
+            'digital' => [
+                'active_entitlements' => $activeEntitlements,
+            ],
+            // Valorisation totale = stock agrégé + unités sérialisées en stock (digital/services exclus).
+            'total_inventory_value' => $aggregateValue + $serializedInStockValue,
         ];
     }
 

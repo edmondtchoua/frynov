@@ -23,4 +23,12 @@ describe('reportService — warehouse scoping', () => {
     await reportService.sales('7d')
     expect(client.get).toHaveBeenCalledWith('/api/reports/sales', { params: { period: '7d', warehouse_id: undefined } })
   })
+
+  // RC-5G — special products report
+  it('fetches the special-products report scoped by warehouse', async () => {
+    vi.mocked(client.get).mockResolvedValue({ data: { total_inventory_value: 1005000 } } as any)
+    const res = await reportService.specialProducts('wh-1')
+    expect(client.get).toHaveBeenCalledWith('/api/reports/special-products', { params: { warehouse_id: 'wh-1' } })
+    expect(res.total_inventory_value).toBe(1005000)
+  })
 })

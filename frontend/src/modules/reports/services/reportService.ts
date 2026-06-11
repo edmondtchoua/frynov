@@ -84,6 +84,16 @@ export interface StockData {
 
 export type SalesPeriod = '7d' | '30d' | '90d' | '1y'
 
+// RC-5G — reporting produits spéciaux (valorisation agrégé + sérialisé, hors services/digital).
+export interface SpecialProductsData {
+  aggregate_stock_value: number
+  serialized: { in_stock: number; reserved: number; sold: number; in_stock_value: number }
+  non_stockable_excluded: number
+  warranties: { active_contracts: number; open_claims: number }
+  digital: { active_entitlements: number }
+  total_inventory_value: number
+}
+
 // ── Service ───────────────────────────────────────────────────────────────────
 
 export const reportService = {
@@ -97,6 +107,10 @@ export const reportService = {
 
   stock(warehouseId?: string): Promise<StockData> {
     return client.get('/api/reports/stock', { params: { warehouse_id: warehouseId || undefined } }).then(r => r.data)
+  },
+
+  specialProducts(warehouseId?: string): Promise<SpecialProductsData> {
+    return client.get('/api/reports/special-products', { params: { warehouse_id: warehouseId || undefined } }).then(r => r.data)
   },
 }
 

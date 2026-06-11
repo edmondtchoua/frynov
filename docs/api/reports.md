@@ -151,6 +151,34 @@ Rapport de stock : valeur, ruptures, alertes.
 
 ---
 
+## GET /api/reports/special-products  *(RC-5G)*
+
+Reporting **produits spéciaux** : valorise le stock **agrégé/lot** au coût et le **sérialisé par unité
+en stock**, **exclut** les services/digital (`stock_tracking=none`), et rappelle l'état garanties / SAV /
+digital. Accepte `warehouse_id` (scope multi-sites).
+
+### Réponse 200
+
+```json
+{
+  "aggregate_stock_value": 5000,
+  "serialized": { "in_stock": 2, "reserved": 0, "sold": 1, "in_stock_value": 1000000 },
+  "non_stockable_excluded": 2,
+  "warranties": { "active_contracts": 1, "open_claims": 1 },
+  "digital": { "active_entitlements": 1 },
+  "total_inventory_value": 1005000
+}
+```
+
+**Notes :**
+- `aggregate_stock_value` : produits `aggregate`/`batch` uniquement (le sérialisé est valorisé par unité,
+  pas via son miroir agrégé → pas de double-comptage).
+- `serialized.in_stock_value` : `SUM(COALESCE(cost_amount, price_amount))` sur les unités `in_stock`.
+- `non_stockable_excluded` : nombre de produits `stock_tracking=none` (services/digital) écartés de la valorisation.
+- `total_inventory_value` = `aggregate_stock_value` + `serialized.in_stock_value`.
+
+---
+
 ## Erreurs communes
 
 | Code | Cause |

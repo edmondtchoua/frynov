@@ -108,6 +108,13 @@ export const messages: Record<Locale, Dict> = {
       period: { '7d': '7J', '30d': '30J', '90d': '90J', '1y': '1 an' },
       periodLong: { '7d': '7 derniers jours', '30d': '30 derniers jours', '90d': '90 derniers jours', '1y': 'Dernière année' },
       movement: { in: 'Entrées', out: 'Sorties', adjustment: 'Ajustements', return: 'Retours' },
+      special: {
+        title: 'Produits spéciaux', subtitle: 'Valorisation hors services et digital (non stockables).',
+        totalValue: 'Valeur totale', serializedValue: 'Valeur sérialisé (en stock)',
+        serializedCounts: '{in_stock} en stock · {reserved} réservées · {sold} vendues',
+        activeWarranties: 'Garanties actives', openClaims: '{n} SAV ouvert(s)',
+        activeEntitlements: 'Accès digitaux actifs', excluded: 'Non stockables exclus',
+      },
     },
     orders: {
       title: 'Commandes', new: 'Nouvelle commande', searchPlaceholder: 'N° commande, client...',
@@ -976,6 +983,13 @@ export const messages: Record<Locale, Dict> = {
       period: { '7d': '7d', '30d': '30d', '90d': '90d', '1y': '1y' },
       periodLong: { '7d': 'Last 7 days', '30d': 'Last 30 days', '90d': 'Last 90 days', '1y': 'Last year' },
       movement: { in: 'Inflows', out: 'Outflows', adjustment: 'Adjustments', return: 'Returns' },
+      special: {
+        title: 'Special products', subtitle: 'Valuation excluding services and digital (non-stockable).',
+        totalValue: 'Total value', serializedValue: 'Serialized value (in stock)',
+        serializedCounts: '{in_stock} in stock · {reserved} reserved · {sold} sold',
+        activeWarranties: 'Active warranties', openClaims: '{n} open claim(s)',
+        activeEntitlements: 'Active digital access', excluded: 'Non-stockable excluded',
+      },
     },
     orders: {
       title: 'Orders', new: 'New order', searchPlaceholder: 'Order no., customer...',

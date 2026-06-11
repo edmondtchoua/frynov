@@ -85,6 +85,24 @@ Retourne :
 
 **Valeur stock :** `SUM(quantity * COALESCE(NULLIF(cost_amount, 0), price_amount))` — utilise le coût d'achat si renseigné, sinon le prix de vente.
 
+### `specialProducts(string $tenantId, ?array $warehouseIds): array`  *(RC-5G)*
+
+Reporting **produits spéciaux** (audit §8.6) — lit Catalog, Inventory (`inventory_units`), Warranties et
+Digital :
+```php
+[
+  'aggregate_stock_value'  => int,   // produits aggregate|batch (le sérialisé est valorisé par unité)
+  'serialized'             => ['in_stock' => int, 'reserved' => int, 'sold' => int, 'in_stock_value' => int],
+  'non_stockable_excluded' => int,   // services/digital (stock_tracking=none) écartés
+  'warranties'             => ['active_contracts' => int, 'open_claims' => int],
+  'digital'                => ['active_entitlements' => int],
+  'total_inventory_value'  => int,   // aggregate + unités sérialisées en stock
+]
+```
+
+Évite le **double-comptage** : les produits sérialisés ne sont **pas** valorisés via leur miroir agrégé
+mais par unité `in_stock`. Les services/digital sont **exclus** de la valorisation.
+
 ## Helpers privés
 
 ### `revenueByDay(string $tenantId, int $days): array`

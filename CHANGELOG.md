@@ -3,6 +3,32 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 📊 RC-5G : reporting produits spéciaux — valorisation unité/agrégé (2026-06-15)
+
+Branche `feature/reports-special-products` (release `v1.0.0` → `rc.118`).
+Sixième et dernier pas des **produits spéciaux** : le reporting. **Clôt le chantier RC-5A→G.**
+
+### Reporting — valoriser juste
+- **`ReportService::specialProducts()`** (+ `GET /api/reports/special-products`) — valorise le stock
+  **agrégé/lot** au coût et le **sérialisé par UNITÉ en stock** (pas via le miroir agrégé → **pas de
+  double-comptage**), **exclut** les services/digital (`stock_tracking=none`), et rappelle l'état
+  garanties (contrats actifs / SAV ouverts) et digital (accès actifs). Scopable par entrepôt.
+
+### Frontend — rapport de stock
+- **`StockReportView`** : bloc **« Produits spéciaux »** (valeur totale, sérialisé in stock/réservé/vendu,
+  garanties actives + SAV ouverts, accès digitaux, non stockables exclus). Chargé séparément (silencieux).
+  **i18n FR+EN** (`reports.special.*`). Garde i18n ✅, vue-tsc ✅.
+
+### Tests
+- **+3 tests** `SpecialProductsReportTest` (valorisation mixte exacte agrégé+sérialisé+exclusions+garanties/SAV/digital,
+  zéros sans données, auth requise). Suite backend complète **793 ✅** (2 skipped).
+- **+1 test** front `reportService.spec`. Front **271 ✅**.
+
+> 🎉 **Chantier produits spéciaux complet (RC-5A→G)** : policy stock/livraison · unités sérialisées
+> IMEI/VIN · allocation commande↔unité↔client · garanties (politique→contrat) · SAV · digital
+> (entitlements) · reporting. Hors périmètre restant : `void` auto garantie sur retour, portail
+> téléchargement client (lien signé), pool de licences, extensions de garantie.
+
 ## [Non publié] — 🔧 RC-5F : SAV — réclamations rattachées au contrat de garantie (2026-06-15)
 
 Branche `feature/warranty-claims-sav` (release `v1.0.0` → `rc.117`).

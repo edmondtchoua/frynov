@@ -51,4 +51,16 @@ class ReportController extends Controller
             $this->service->stock($request->user()->tenant_id, WarehouseScope::resolve($request->user(), $request->query('warehouse_id')))
         );
     }
+
+    /**
+     * GET /api/reports/special-products
+     * RC-5G — valorisation produits spéciaux : stock agrégé + unités sérialisées en stock, exclut
+     * services/digital ; rappel garanties/SAV/digital.
+     */
+    public function specialProducts(Request $request): JsonResponse
+    {
+        return response()->json(
+            $this->service->specialProducts($request->user()->tenant_id, WarehouseScope::resolve($request->user(), $request->query('warehouse_id')))
+        );
+    }
 }

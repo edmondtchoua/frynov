@@ -105,9 +105,47 @@ Détail d'une commande avec ses lignes.
 
 ---
 
+## GET /api/orders/{id}/units  *(RC-5C — produits sérialisés)*
+
+Liste les **unités sérialisées** (IMEI/VIN…) rattachées à la commande — réservées au `confirm`,
+vendues au `fulfill`. Vide (`[]`) pour les commandes sans produit `stock_tracking=serialized`.
+Accessible en lecture (mêmes droits que `GET /{id}`).
+
+**Réponse 200**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "product_id": "uuid",
+      "variant_id": null,
+      "order_line_id": "uuid",
+      "customer_id": null,
+      "serial_type": "imei",
+      "serial_value": "359123456789012",
+      "condition": "new",
+      "status": "reserved",
+      "sold_at": null
+    }
+  ],
+  "count": 1
+}
+```
+
+**Réponse 404** : commande inconnue pour ce tenant (isolation multi-tenant).
+
+---
+
 ## POST /api/orders/{id}/confirm
 
 Confirme une commande draft et **réserve le stock** de chaque ligne.
+
+Pour une ligne de produit **sérialisé** (`stock_tracking=serialized`, RC-5C), des **unités précises**
+(IMEI/VIN) sont en plus réservées (FIFO par date de réception) : statut `in_stock → reserved`,
+rattachées à `order_id`/`order_line_id`. Le verrou lecture empêche deux commandes concurrentes de
+réserver la même unité (anti double-vente). L'allocation unitaire fait autorité : si les unités
+disponibles manquent, l'erreur 422 « unités sérialisées disponibles insuffisantes » prime sur le
+contrôle de stock agrégé.
 
 **Corps** : aucun
 
@@ -119,7 +157,7 @@ Confirme une commande draft et **réserve le stock** de chaque ligne.
 |------|---------------------------------------------------|
 | 404  | Commande introuvable                              |
 | 422  | Statut invalide (déjà confirmée, annulée, …)     |
-| 422  | `{ "message": "...", "available": 12 }` — stock insuffisant |
+| 422  | `{ "message": "...", "available": 12 }` — stock agrégé **ou** unités sérialisées insuffisantes |
 | 503  | Verrou Redis non acquis (réessayer dans 1 s)      |
 
 ---
@@ -127,6 +165,10 @@ Confirme une commande draft et **réserve le stock** de chaque ligne.
 ## POST /api/orders/{id}/fulfill
 
 Marque une commande **livrée** — consomme le stock réservé (moveOut + release).
+
+Pour une ligne **sérialisée** (RC-5C), les unités réservées passent `reserved → sold` (`sold_at`
+horodaté) et sont **rattachées au client** de la commande (`customer_id`) — base de la traçabilité
+vente/SAV.
 
 **Corps** : aucun
 
@@ -139,6 +181,9 @@ Marque une commande **livrée** — consomme le stock réservé (moveOut + relea
 ## POST /api/orders/{id}/cancel
 
 Annule une commande (`draft` ou `confirmed`). Libère les réservations si confirmée.
+
+Pour une ligne **sérialisée** (RC-5C), les unités réservées repassent `reserved → in_stock` et
+perdent tout rattachement commande/client (réutilisables immédiatement).
 
 **Corps** : aucun
 

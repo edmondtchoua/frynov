@@ -79,7 +79,7 @@ $line->lineTotalCents() // quantity * unit_price_cents
 
 Fichier : `app/Modules/Orders/Services/OrderService.php`
 
-Dépendance injectée : `StockService` (module Inventory).
+Dépendances injectées : `StockService`, `SerializedAllocationService` (module Inventory), `AuditService`.
 
 ### create()
 
@@ -118,8 +118,13 @@ public function confirm(Order $order, string $userId): Order
 
 - Transition : `draft` → `confirmed`
 - **Réserve le stock** de chaque ligne via `StockService::reserve()`
+- **Produit sérialisé (RC-5C)** : réserve d'abord des **unités précises** (IMEI/VIN) via
+  `SerializedAllocationService::allocate()` — `in_stock → reserved`, rattachées à la ligne ; l'allocation
+  unitaire fait autorité (erreur claire avant le contrôle agrégé) et le verrou lecture interdit la
+  double-réservation concurrente
 - Lance `OrderStateException` si la commande n'est pas en `draft`
-- Lance `InsufficientStockException` si stock insuffisant pour une ligne
+- Lance `InsufficientUnitsException` (RC-5C) si pas assez d'unités sérialisées disponibles
+- Lance `InsufficientStockException` si stock agrégé insuffisant pour une ligne
 - Lance `StockLockException` (503) si verrou Redis non acquis
 
 ---
@@ -132,6 +137,8 @@ public function fulfill(Order $order, string $userId): Order
 
 - Transition : `confirmed` → `fulfilled`
 - **Consomme le stock** réservé : appelle `StockService::moveOut()` + `StockService::release()` pour chaque ligne
+- **Produit sérialisé (RC-5C)** : les unités réservées passent `reserved → sold` (`sold_at` horodaté) et
+  sont **rattachées au client** (`SerializedAllocationService::markSold()`)
 - Positionne `fulfilled_at` sur l'heure courante
 - Lance `OrderStateException` si la commande n'est pas en `confirmed`
 
@@ -145,8 +152,26 @@ public function cancel(Order $order, string $userId): Order
 
 - Transition : `draft|confirmed` → `cancelled`
 - Si `confirmed` : libère les réservations via `StockService::release()` pour chaque ligne
+- **Produit sérialisé (RC-5C)** : les unités réservées repassent `reserved → in_stock` et perdent leurs
+  rattachements commande/client (`SerializedAllocationService::release()`)
 - Si `draft` : aucun impact sur le stock
 - Positionne `cancelled_at` sur l'heure courante
+
+---
+
+### Unités sérialisées rattachées (RC-5C)
+
+`SerializedAllocationService` (module Inventory) gère le lien **commande ⇄ unité sérialisée ⇄ client**
+pour les produits `stock_tracking=serialized` (téléphones IMEI, véhicules VIN…) :
+
+| Méthode      | Appelée par | Effet sur l'unité (`inventory_units`)                              |
+|--------------|-------------|--------------------------------------------------------------------|
+| `allocate()` | `confirm`   | `in_stock → reserved` (FIFO date de réception), pose `order_id`/`order_line_id`, verrou lecture anti double-vente |
+| `markSold()` | `fulfill`   | `reserved → sold`, `sold_at` + `customer_id`                       |
+| `release()`  | `cancel`    | `reserved → in_stock`, efface `order_id`/`order_line_id`/`customer_id` |
+| `forOrder()` | `GET /{id}/units` | unités rattachées à la commande (traçabilité vente/SAV)      |
+
+Le stock **agrégé** reste mis à jour en miroir (RC-5B) — les vues de stock existantes restent cohérentes.
 
 ---
 
@@ -165,7 +190,8 @@ public function paginate(string $tenantId, int $perPage, ?string $status): Lengt
 |-------------------------|-----------|------------------------------------------------|
 | `OrderNotFoundException`| 404       | Commande non trouvée pour ce tenant            |
 | `OrderStateException`   | 422       | Action invalide pour le statut actuel          |
-| `InsufficientStockException` | 422  | (de Inventory) Stock insuffisant à la confirmation |
+| `InsufficientUnitsException` | 422 | (de Inventory, RC-5C) Pas assez d'unités sérialisées disponibles |
+| `InsufficientStockException` | 422  | (de Inventory) Stock agrégé insuffisant à la confirmation |
 | `StockLockException`    | 503       | (de Inventory) Verrou Redis non acquis         |
 
 ---
@@ -189,6 +215,9 @@ draft ──[confirm]──► confirmed ──[fulfill]──► fulfilled
 | fulfill | −qty      | −qty (libération)   |
 | cancel (draft) | — | —                  |
 | cancel (confirmed) | — | −qty (libération) |
+
+> **Produit sérialisé (RC-5C)** : en plus du miroir agrégé ci-dessus, chaque unité change de statut
+> (`reserved` au confirm, `sold` au fulfill, retour `in_stock` au cancel) dans `inventory_units`.
 
 ---
 
@@ -218,6 +247,19 @@ Fichier : `app/Modules/Orders/Tests/Modular/OrderModuleTest.php`
 - Annulation confirmed → stock restauré
 - Confirm sur stock insuffisant
 - Anti-oversell : deux commandes concurrentes
+
+### Integration — `SerializedAllocationTest` (RC-5C)
+Fichier : `app/Modules/Orders/Tests/Integration/SerializedAllocationTest.php`
+
+9 tests du lien commande ⇄ unité ⇄ client :
+- confirm réserve des unités précises + miroir agrégé
+- fulfill marque vendues + rattache le client
+- cancel relâche les unités
+- confirm échoue et annule tout si unités insuffisantes (atomicité)
+- deux commandes ne peuvent réserver la même unité (anti double-vente)
+- produit non sérialisé : aucune unité créée
+- endpoint confirm → 422 si unités insuffisantes
+- `GET /{id}/units` liste les unités rattachées + isolation multi-tenant (404)
 
 ---
 

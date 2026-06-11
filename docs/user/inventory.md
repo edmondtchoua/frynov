@@ -1,6 +1,6 @@
 # Guide utilisateur — Stock & Inventaire
 
-> **Dernière mise à jour :** 2026-06-06 — filtre multi-sites sur les listes.
+> **Dernière mise à jour :** 2026-06-12 — RC-5C : réservation/vente d'unités sérialisées précises (IMEI/VIN) liées aux commandes.
 
 ---
 
@@ -272,9 +272,23 @@ par son **VIN** (numéro de châssis), un équipement par son **numéro de séri
 - Vous pouvez **rechercher une unité par son IMEI/VIN** pour retrouver instantanément son produit et son
   statut (en stock, vendu, en réparation…).
 
-> 🔜 La **réservation/vente d'une unité précise** (lier un IMEI à une commande), les **garanties**
-> (contrat généré à la vente + SAV) et les **produits digitaux** (licences, téléchargements) arrivent
-> dans les prochaines versions.
+### Lier une unité à une commande (RC-5C)
+
+Quand vous vendez un produit sérialisé, le système **réserve automatiquement des unités précises** :
+
+- À la **confirmation** de la commande, le système réserve les unités les plus anciennes en stock
+  (premier reçu, premier vendu) : leur statut passe à **« Réservée »** et elles sont rattachées à la
+  commande. Une **même unité ne peut jamais être réservée par deux commandes** simultanées.
+- S'il **n'y a pas assez d'unités disponibles**, la confirmation est refusée avec un message clair —
+  rien n'est réservé.
+- À la **livraison**, les unités passent à **« Vendue »** et sont **rattachées au client** (base de la
+  garantie et du SAV à venir).
+- Si vous **annulez** une commande confirmée, les unités **redeviennent disponibles**.
+- La fiche commande (**Ventes → détail**) affiche la liste des **unités sérialisées rattachées** avec
+  leur IMEI/VIN et leur statut.
+
+> 🔜 Les **garanties** (contrat généré à la vente + SAV rattaché à l'unité) et les **produits digitaux**
+> (licences, téléchargements) arrivent dans les prochaines versions.
 
 ---
 

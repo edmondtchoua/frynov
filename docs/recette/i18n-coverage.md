@@ -76,7 +76,7 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 | inventory | `MovementHistoryView` | `inventory.history.*` + `common.pageOf/prev/next` | rc.84 |
 | payments | `PaymentListView` | `payments.*` + `common.pageOf` | rc.28 / rc.70 |
 | orders | `OrderListView` | `orders.*` + `common.pageOf` | rc.34 / rc.70 |
-| orders | `OrderDetailView` | `orders.detail.*` | rc.74 |
+| orders | `OrderDetailView` | `orders.detail.*` (+ `unitsTitle`/`unitStatus.*` RC-5C) | rc.74 / rc.114 |
 | orders | `ReturnsView` | `orders.returns.*` | rc.74 |
 | orders | `OrderCreateView` | `orders.create.*` | rc.75 |
 | pos | `PosView` | `pos.*` | rc.76 |

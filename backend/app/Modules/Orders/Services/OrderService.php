@@ -5,8 +5,10 @@ namespace App\Modules\Orders\Services;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Catalog\Models\ProductVariant;
 use App\Modules\Inventory\Exceptions\InsufficientStockException;
+use App\Modules\Inventory\Exceptions\InsufficientUnitsException;
 use App\Modules\Inventory\Exceptions\StockLockException;
 use App\Modules\Inventory\Models\StockMovement;
+use App\Modules\Inventory\Services\SerializedAllocationService;
 use App\Modules\Inventory\Services\StockService;
 use App\Modules\Orders\Exceptions\OrderNotFoundException;
 use App\Modules\Orders\Exceptions\OrderStateException;
@@ -21,6 +23,7 @@ class OrderService
     public function __construct(
         private readonly StockService $stockService,
         private readonly AuditService $auditService,
+        private readonly SerializedAllocationService $allocation,
     ) {}
 
     // ── Queries ────────────────────────────────────────────────────────────
@@ -130,8 +133,13 @@ class OrderService
     /**
      * Confirm a draft order — reserves stock for each line.
      *
+     * Pour une ligne de produit sérialisé (RC-5C), on réserve EN PLUS des unités précises (IMEI/VIN) :
+     * le stock agrégé garde la cohérence des vues existantes, l'allocation unitaire garantit la
+     * traçabilité et empêche la double-vente d'une même unité.
+     *
      * @throws OrderStateException
      * @throws InsufficientStockException
+     * @throws InsufficientUnitsException
      * @throws StockLockException
      */
     public function confirm(Order $order, string $userId): Order
@@ -144,12 +152,26 @@ class OrderService
             $order->load('lines');
 
             foreach ($order->lines as $line) {
+                // RC-5C — produit sérialisé : réserver D'ABORD des unités précises (autorité serveur du
+                // stock sérialisé → message d'erreur clair sur l'unitaire avant la réservation agrégée).
+                if ($this->isSerializedLine($line, $order->tenant_id)) {
+                    $this->allocation->allocate(
+                        $order->tenant_id,
+                        $order->id,
+                        $line->id,
+                        $line->product_id,
+                        $line->variant_id,
+                        $line->quantity,
+                        $order->warehouse_id,
+                    ); // throws InsufficientUnitsException
+                }
+
                 $stock = $this->stockService->findOrCreate(
                     $order->tenant_id,
                     $line->product_id,
                     $line->variant_id,
                 );
-                // throws InsufficientStockException or StockLockException
+                // Miroir agrégé : garde les vues de stock cohérentes (throws InsufficientStockException / StockLockException).
                 $this->stockService->reserve($stock, $line->quantity);
             }
 
@@ -207,6 +229,11 @@ class OrderService
                     null,
                     $userId,
                 );
+
+                // RC-5C — produit sérialisé : marquer vendues les unités réservées + rattacher le client.
+                if ($this->isSerializedLine($line, $order->tenant_id)) {
+                    $this->allocation->markSold($order->tenant_id, $line->id, $order->customer_id);
+                }
             }
 
             $order->update([
@@ -252,6 +279,11 @@ class OrderService
                         $line->variant_id,
                     );
                     $this->stockService->release($stock, $line->quantity);
+
+                    // RC-5C — produit sérialisé : relâcher les unités réservées (redeviennent disponibles).
+                    if ($this->isSerializedLine($line, $order->tenant_id)) {
+                        $this->allocation->release($order->tenant_id, $line->id);
+                    }
                 }
             }
 
@@ -276,6 +308,25 @@ class OrderService
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
+
+    /** @var array<string,string> cache product_id → stock_tracking (par opération de commande) */
+    private array $trackingCache = [];
+
+    /**
+     * Une ligne porte-t-elle un produit à suivi sérialisé (RC-5C) ? Résolu via `stock_tracking`
+     * (autorité serveur), avec un petit cache pour éviter une requête par ligne répétée.
+     */
+    private function isSerializedLine(OrderLine $line, string $tenantId): bool
+    {
+        if (! array_key_exists($line->product_id, $this->trackingCache)) {
+            $this->trackingCache[$line->product_id] = (string) (Product::withoutTenantScope()
+                ->where('tenant_id', $tenantId)
+                ->where('id', $line->product_id)
+                ->value('stock_tracking') ?? Product::STOCK_TRACKING_AGGREGATE);
+        }
+
+        return $this->trackingCache[$line->product_id] === Product::STOCK_TRACKING_SERIALIZED;
+    }
 
     /**
      * Generate the next order number atomically using the sku_sequences table.

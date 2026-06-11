@@ -155,6 +155,23 @@
               </div>
             </div>
           </div>
+
+          <!-- ── Serialized units panel (RC-5C) — only for serialized products ─── -->
+          <div v-if="units.length > 0" class="card">
+            <div class="panel-header">
+              <h4 class="panel-title">{{ $t('orders.detail.unitsTitle') }}</h4>
+              <span class="badge badge-gray" style="font-size: 0.72rem;">{{ units.length }}</span>
+            </div>
+            <div class="unit-list">
+              <div v-for="u in units" :key="u.id" class="unit-item">
+                <span class="unit-type">{{ u.serial_type.toUpperCase() }}</span>
+                <span class="unit-serial">{{ u.serial_value }}</span>
+                <span :class="`badge ${unitStatusBadge(u.status)}`" style="font-size: 0.72rem; margin-left: auto;">
+                  {{ unitStatusLabel(u.status) }}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Right column — actions -->
@@ -278,7 +295,7 @@ import { fetchPublicPaymentMethods, type PublicPaymentMethod } from '@/services/
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { t } from '@/i18n'
-import type { Order } from '../types'
+import type { Order, OrderUnit } from '../types'
 import type { Payment, PaymentMethod } from '@/modules/payments/types'
 import type { Delivery, DeliveryStatus } from '@/modules/deliveries/types'
 
@@ -317,6 +334,9 @@ async function loadMarketMethods() {
 // ── Deliveries ─────────────────────────────────────────────────────────────────
 const deliveries      = ref<Delivery[]>([])
 const deliveryLoading = ref(false)
+
+// ── Serialized units (RC-5C) — empty unless the order carries serialized products ─
+const units = ref<OrderUnit[]>([])
 
 // ── Load ───────────────────────────────────────────────────────────────────────
 async function load() {
@@ -357,12 +377,22 @@ async function loadDeliveries() {
   }
 }
 
+// RC-5C — unités sérialisées rattachées (silencieux : vide pour les produits non sérialisés).
+async function loadUnits() {
+  try {
+    units.value = (await orderService.units(id)).data
+  } catch {
+    units.value = []
+  }
+}
+
 // ── Order actions ──────────────────────────────────────────────────────────────
 async function act(action: 'confirm' | 'fulfill' | 'cancel') {
   actionLoading.value = action
   actionError.value   = null
   try {
     order.value = await orderService[action](id)
+    loadUnits() // RC-5C — les statuts d'unités changent (réservé/vendu/dispo) selon l'action.
   } catch (e: any) {
     actionError.value = e?.response?.data?.message ?? t('orders.detail.actionError', { action })
   } finally {
@@ -442,13 +472,19 @@ function deliveryStatusLabel(s: DeliveryStatus): string {
 function deliveryStatusBadge(s: DeliveryStatus): string {
   return ({ pending: 'badge-gray', dispatched: 'badge-blue', in_transit: 'badge-blue', delivered: 'badge-success', failed: 'badge-error' } as Record<DeliveryStatus, string>)[s] ?? 'badge-gray'
 }
+function unitStatusLabel(s: OrderUnit['status']): string {
+  return t(`orders.detail.unitStatus.${s}`)
+}
+function unitStatusBadge(s: OrderUnit['status']): string {
+  return ({ in_stock: 'badge-gray', reserved: 'badge-blue', sold: 'badge-success', returned: 'badge-warning', repair: 'badge-warning', quarantine: 'badge-gray', lost: 'badge-error', scrapped: 'badge-error' } as Record<OrderUnit['status'], string>)[s] ?? 'badge-gray'
+}
 function fmt(cents: number) {
   return formatMoney(cents, order.value?.currency ?? 'XOF')
 }
 const fmtDate = formatDateTime
 const fmtDateShort = formatDateShort
 
-onMounted(() => { load(); loadPayments(); loadDeliveries(); loadMarketMethods() })
+onMounted(() => { load(); loadPayments(); loadDeliveries(); loadUnits(); loadMarketMethods() })
 </script>
 
 <style scoped>
@@ -521,5 +557,28 @@ onMounted(() => { load(); loadPayments(); loadDeliveries(); loadMarketMethods() 
   background: var(--gray-50);
   font-size: 0.82rem;
   flex-wrap: wrap;
+}
+
+/* Serialized units list (RC-5C) */
+.unit-list { display: flex; flex-direction: column; gap: 6px; }
+.unit-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--gray-50);
+  font-size: 0.82rem;
+}
+.unit-type {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--gray-500);
+}
+.unit-serial {
+  font-family: monospace;
+  font-size: 0.82rem;
+  color: var(--gray-700);
 }
 </style>

@@ -114,6 +114,43 @@ class SerializedAllocationService
             ]);
     }
 
+    /**
+     * RC-5H — traite le RETOUR de `quantity` unités vendues d'une ligne (FIFO par date de vente).
+     *  - **resalable** : l'unité redevient `in_stock`, rattachements vente/garantie effacés (réutilisable) ;
+     *  - sinon : l'unité passe `returned` (conservée pour traçabilité, hors stock vendable).
+     *
+     * @return array<int,string> ids des unités traitées (vide pour un produit non sérialisé)
+     */
+    public function returnUnits(string $tenantId, string $orderLineId, int $quantity, bool $resalable): array
+    {
+        $units = InventoryUnit::withoutTenantScope()
+            ->where('tenant_id', $tenantId)
+            ->where('order_line_id', $orderLineId)
+            ->where('status', InventoryUnit::STATUS_SOLD)
+            ->orderBy('sold_at')
+            ->limit($quantity)
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($units as $unit) {
+            if ($resalable) {
+                $unit->update([
+                    'status'              => InventoryUnit::STATUS_IN_STOCK,
+                    'order_id'            => null,
+                    'order_line_id'       => null,
+                    'customer_id'         => null,
+                    'sold_at'             => null,
+                    'warranty_started_at' => null,
+                    'warranty_ends_at'    => null,
+                ]);
+            } else {
+                $unit->update(['status' => InventoryUnit::STATUS_RETURNED]);
+            }
+        }
+
+        return $units->pluck('id')->all();
+    }
+
     /** Unités (réservées ou vendues) rattachées à une commande — traçabilité vente/SAV. */
     public function forOrder(string $tenantId, string $orderId): Collection
     {

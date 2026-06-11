@@ -70,6 +70,23 @@ class DigitalService
         return $entitlement;
     }
 
+    /**
+     * RC-5H — révoque les accès digitaux d'une ligne retournée (le client perd le téléchargement/la licence).
+     *
+     * @return int nombre d'accès révoqués
+     */
+    public function revokeForOrderLine(string $tenantId, string $orderLineId): int
+    {
+        return DigitalEntitlement::withoutTenantScope()
+            ->where('tenant_id', $tenantId)
+            ->where('order_line_id', $orderLineId)
+            ->where('status', DigitalEntitlement::STATUS_ACTIVE)
+            ->update([
+                'status'     => DigitalEntitlement::STATUS_REVOKED,
+                'revoked_at' => now(),
+            ]);
+    }
+
     /** Retrouve un accès par son jeton opaque (scopé tenant). */
     public function findByToken(string $tenantId, string $token): ?DigitalEntitlement
     {

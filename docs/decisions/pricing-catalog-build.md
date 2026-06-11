@@ -44,10 +44,11 @@
 | RC-5E | spécial | digital : commande **sans stock** (fix `stock_tracking=none`) + `digital_entitlements` (accès download/license, jeton opaque, révocation) au `fulfill` + endpoints + UI | ✅ **rc.116** |
 | RC-5F | spécial | SAV : `warranty_claims` (ouverture gardée période + override audité, transitions open→réparation→résolution) + endpoints + UI | ✅ **rc.117** |
 | RC-5G | spécial | reporting produits spéciaux : `GET /reports/special-products` (valorisation agrégé + sérialisé par unité, exclusion services/digital, rappel garanties/SAV/digital) + carte StockReportView | ✅ **rc.118** |
+| RC-5H | spécial | retour (RMA) défait les artefacts : unité sérialisée `in_stock`/`returned`, garantie `void`, accès digital révoqué (au `restock`) | ✅ **rc.119** |
 
-> 🎉 **Chantier « produits spéciaux » complet (RC-5A→G).** Reste hors périmètre (à planifier) : `void`
-> **automatique** de garantie sur retour/annulation, portail de téléchargement client (lien signé,
-> fichiers privés), pool de clés de licence, extensions de garantie.
+> 🎉 **Chantier « produits spéciaux » complet (RC-5A→H).** Reste hors périmètre (à planifier) : portail
+> de téléchargement client (lien signé, fichiers privés), pool de clés de licence, extensions de garantie,
+> caractéristiques spéciales dynamiques (`special_attribute_definitions`).
 
 ## ⚠️ Risques (rappels)
 - Proration **dépend** de la périodicité (interval persisté + tarif annuel en base) → ordre strict.

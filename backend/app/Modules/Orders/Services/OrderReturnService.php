@@ -2,23 +2,35 @@
 
 namespace App\Modules\Orders\Services;
 
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Digital\Services\DigitalService;
 use App\Modules\Inventory\Models\Stock;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Services\PeriodLockService;
+use App\Modules\Inventory\Services\SerializedAllocationService;
 use App\Modules\Inventory\Services\StockService;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderReturn;
 use App\Modules\Orders\Models\OrderReturnLine;
+use App\Modules\Warranties\Services\WarrantyService;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Sprint 10 — Order return / RMA service.
  * State machine: pending → approved → restocked (+ optional stock replenishment)
  * On restock: only 'resalable' items are re-added to stock via StockService::moveIn().
+ *
+ * RC-5H — au restock, les artefacts spéciaux de la ligne retournée sont défaits : unités sérialisées
+ * remises en stock/marquées retournées, contrats de garantie annulés (void), accès digitaux révoqués.
  */
 class OrderReturnService
 {
-    public function __construct(private readonly StockService $stocks) {}
+    public function __construct(
+        private readonly StockService $stocks,
+        private readonly SerializedAllocationService $allocation,
+        private readonly WarrantyService $warranties,
+        private readonly DigitalService $digital,
+    ) {}
 
     // ── 1. CREATE (pending) ───────────────────────────────────────────────
 
@@ -121,8 +133,24 @@ class OrderReturnService
 
         DB::transaction(function () use ($return, $processedBy, $warehouseId) {
             foreach ($return->lines->where('quantity_approved', '>', 0) as $line) {
-                // Only resalable items are returned to stock
-                if ($line->condition !== 'resalable') {
+                $resalable = $line->condition === 'resalable';
+
+                // RC-5H — défaire les artefacts spéciaux de la ligne retournée (quelle que soit la
+                // condition : le client ne possède plus l'article).
+                // 1) Unités sérialisées → in_stock (resalable) ou returned. Renvoie les unités traitées.
+                $unitIds = $this->allocation->returnUnits($return->tenant_id, $line->order_line_id, $line->quantity_approved, $resalable);
+                // 2) Garanties → void (cible les unités si sérialisé, sinon la ligne).
+                $this->warranties->voidForReturn($return->tenant_id, $line->order_line_id, $unitIds);
+                // 3) Accès digitaux → révoqués.
+                $this->digital->revokeForOrderLine($return->tenant_id, $line->order_line_id);
+
+                // Only resalable items are returned to stock (le miroir agrégé du sérialisé suit aussi).
+                // RC-5H — un produit non stockable (service/digital) n'a pas de stock à réabonder.
+                $product = Product::withoutTenantScope()
+                    ->where('tenant_id', $return->tenant_id)
+                    ->where('id', $line->product_id)
+                    ->first(['id', 'product_type', 'stock_tracking']);
+                if (! $resalable || ($product && ! $product->isStockable())) {
                     continue;
                 }
 

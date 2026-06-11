@@ -228,6 +228,14 @@ draft ──[confirm]──► confirmed ──[fulfill]──► fulfilled
 > **Produit sérialisé (RC-5C)** : en plus du miroir agrégé ci-dessus, chaque unité change de statut
 > (`reserved` au confirm, `sold` au fulfill, retour `in_stock` au cancel) dans `inventory_units`.
 
+### Retours / RMA — défait les artefacts spéciaux (RC-5H)
+
+`OrderReturnService::restock()` (étape `approved → restocked`) défait les artefacts spéciaux de chaque
+ligne **approuvée** : unités sérialisées remises `in_stock` (resalable) ou `returned`, contrats de
+garantie **annulés** (`void`), accès digitaux **révoqués**. Le réabondement de stock agrégé reste
+réservé aux lignes **resalable** et **stockables** (un produit `stock_tracking=none` n'a pas de stock).
+Dépendances injectées : `SerializedAllocationService`, `WarrantyService`, `DigitalService`.
+
 ---
 
 ## Tests

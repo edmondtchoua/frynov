@@ -38,6 +38,8 @@ lignes (`Product::isStockable()` fait autorité).
   produit se livre en `download`/`license`, **accorde un droit d'accès** (jeton + clé si licence).
   Idempotent (une ligne déjà dotée n'est pas réémise).
 - **`revoke(entitlement, userId)`** — `status → revoked` (`revoked_at`). L'accès est immédiatement refusé.
+- **`revokeForOrderLine(tenantId, orderLineId)`** *(RC-5H)* — révoque les accès actifs d'une ligne
+  **retournée** (appelé par `OrderReturnService::restock()`).
 - **`findByToken(tenantId, token)`** — résout un accès par son jeton (scopé tenant).
 - **`forOrder(tenantId, orderId)`** — entitlements rattachés à une commande.
 

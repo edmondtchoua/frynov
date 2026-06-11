@@ -90,6 +90,28 @@ class WarrantyService
         return $created;
     }
 
+    /**
+     * RC-5H — annule (`void`) les contrats de garantie d'une ligne retournée. Cible les contrats des
+     * unités sérialisées retournées (`$unitIds`) ou, à défaut (produit agrégé), ceux de la ligne.
+     *
+     * @param array<int,string> $unitIds unités sérialisées concernées (vide → cible la ligne)
+     * @return int nombre de contrats annulés
+     */
+    public function voidForReturn(string $tenantId, string $orderLineId, array $unitIds = []): int
+    {
+        $query = WarrantyContract::withoutTenantScope()
+            ->where('tenant_id', $tenantId)
+            ->where('status', WarrantyContract::STATUS_ACTIVE);
+
+        if (! empty($unitIds)) {
+            $query->whereIn('inventory_unit_id', $unitIds);
+        } else {
+            $query->where('order_line_id', $orderLineId);
+        }
+
+        return $query->update(['status' => WarrantyContract::STATUS_VOID]);
+    }
+
     /** Contrats de garantie rattachés à une commande (traçabilité). */
     public function forOrder(string $tenantId, string $orderId): Collection
     {

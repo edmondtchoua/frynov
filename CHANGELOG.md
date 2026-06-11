@@ -3,6 +3,35 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔧 RC-5F : SAV — réclamations rattachées au contrat de garantie (2026-06-15)
+
+Branche `feature/warranty-claims-sav` (release `v1.0.0` → `rc.117`).
+Cinquième pas des **produits spéciaux** : le SAV. **Clôt le chantier garanties** (politique → contrat →
+réclamation). Étend le module **Warranties**.
+
+### SAV — du contrat à la réclamation
+- **`warranty_claims`** : réclamation rattachée à un contrat (reprend `customer_id` / `inventory_unit_id`),
+  `reason` (defect/breakage/malfunction/other), `status`, `resolution`, `out_of_warranty`, diagnostic.
+- **`WarrantyClaimService::open()`** — **gardé par la période** : contrat `void` → refus ; contrat
+  **expiré** → refus **sauf `override=true`** (alors `out_of_warranty=true` + **audit**
+  `warranty.claim.out_of_period_override`).
+- **`transition()`** — `open → in_repair → resolved | replaced | rejected` ; les terminaux verrouillent
+  (toute transition depuis un terminal → 422). Statut terminal → `resolution`/`resolved_at` posés.
+- **Endpoints** (`/api/warranties`) : `POST /contracts/{id}/claims`, `POST /claims/{id}/transition`
+  (manager/admin), `GET /contracts/{id}/claims`, `GET /orders/{id}/claims`.
+
+### Frontend — fiche commande
+- **`OrderDetailView`** : sur chaque garantie active du panneau **Garanties**, action **« Ouvrir un SAV »**
+  (modale motif + description) et affichage du **statut de réclamation** quand elle existe. **i18n FR+EN**
+  (`orders.detail.savOpen/savTitle/savReason/savReasons.*/claimStatus.*`). Garde i18n ✅, vue-tsc ✅.
+
+### Tests
+- **+8 tests** `WarrantyClaimTest` (ouverture contrat actif, parcours réparation→résolution, blocage
+  terminal, expiré sans/avec override, `void` refusé, liste par commande, motif invalide 422, isolation
+  tenant 404). Warranties **15 ✅**.
+- **+2 tests** front `OrderDetailView.spec`. Front **270 ✅**.
+- **Suite → RC-5G** : reporting produits spéciaux, `void` auto garantie sur retour.
+
 ## [Non publié] — 💾 RC-5E : produits digitaux — vente sans stock + droits d'accès (2026-06-14)
 
 Branche `feature/digital-entitlements` (release `v1.0.0` → `rc.116`).

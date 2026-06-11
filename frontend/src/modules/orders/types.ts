@@ -71,6 +71,15 @@ export interface OrderEntitlement {
   product_name: string | null
 }
 
+// RC-5F — réclamation SAV rattachée à un contrat de garantie.
+export interface OrderWarrantyClaim {
+  id: string
+  warranty_contract_id: string
+  reason: 'defect' | 'breakage' | 'malfunction' | 'other'
+  status: 'open' | 'in_repair' | 'resolved' | 'replaced' | 'rejected'
+  out_of_warranty: boolean
+}
+
 export interface CreateOrderItem {
   product_id: string
   variant_id?: string | null

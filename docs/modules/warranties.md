@@ -73,8 +73,30 @@ Contrats rattachés à une commande (traçabilité, alimente `GET /api/warrantie
 | `POST /policies` | manager/admin | Crée une politique |
 | `POST /products/{productId}/policy` | manager/admin | Attache (ou détache si null) une politique à un produit |
 | `GET /orders/{orderId}` | tous | Contrats générés pour une commande (scopé tenant → 404 cross-tenant) |
+| `GET /contracts/{id}/claims` | tous | Réclamations SAV d'un contrat (RC-5F) |
+| `GET /orders/{orderId}/claims` | tous | Réclamations SAV rattachées à une commande (RC-5F) |
+| `POST /contracts/{id}/claims` | manager/admin | Ouvre une réclamation SAV (RC-5F) |
+| `POST /claims/{id}/transition` | manager/admin | Fait avancer une réclamation (RC-5F) |
 
 > Pas de gate `module:` dédié : la garantie est transverse aux produits spéciaux.
+
+---
+
+## SAV — réclamations (RC-5F)
+
+`WarrantyClaimService` gère les **réclamations** (`warranty_claims`) rattachées à un contrat.
+
+**Ouverture gardée par la période** (`open()`) :
+- contrat **`void`** → refus (`OutOfWarrantyException`, 422), même avec override ;
+- contrat **expiré** (`ends_at` passé ou statut `expired`) → refus **sauf `override=true`**, qui ouvre la
+  réclamation en la marquant `out_of_warranty=true` et **trace un audit** (`warranty.claim.out_of_period_override`) ;
+- la réclamation reprend `customer_id` et `inventory_unit_id` du contrat (traçabilité vente/SAV).
+
+**Cycle de vie** (`transition()`) : `open → in_repair → resolved | replaced | rejected`. Les trois
+derniers sont **terminaux** (toute transition depuis un terminal → `ClaimStateException`, 422). Le passage
+à un statut terminal pose `resolution` (défaut : `repair`/`replacement`/`rejected`), `resolved_at`, `resolved_by`.
+
+Motifs (`reason`) : `defect`, `breakage`, `malfunction`, `other`.
 
 ---
 
@@ -86,7 +108,9 @@ rattachées à la ligne. Dépendance injectée : `WarrantyService` (via `OrdersS
 
 ---
 
-## Tests — `app/Modules/Warranties/Tests/Integration/WarrantyTest.php`
+## Tests
+
+### `WarrantyTest.php` — politiques + contrats (RC-5D)
 
 7 tests :
 - fulfill d'une commande sérialisée → un contrat par unité, rattaché au client, `ends_at` = vente + durée, période horodatée sur l'unité ;
@@ -97,11 +121,17 @@ rattachées à la ligne. Dépendance injectée : `WarrantyService` (via `OrdersS
 - API : liste des contrats d'une commande ;
 - isolation multi-tenant (404).
 
+### `WarrantyClaimTest.php` — SAV (RC-5F)
+
+8 tests : ouverture sur contrat actif, parcours réparation → résolution, blocage d'un terminal,
+contrat expiré refusé sans override / accepté avec override (tracé hors garantie), contrat `void` refusé,
+liste par commande, motif invalide (422), isolation multi-tenant (404).
+
 ---
 
 ## Limites V1 / suite
 
 - Durée exprimée en **mois** uniquement.
 - Produit non sérialisé : **un contrat par ligne** (pas par exemplaire).
-- À venir : **réclamations SAV** (`warranty_claims`), `void` automatique sur retour/annulation,
-  extensions de garantie, UI de gestion des politiques.
+- SAV livré (RC-5F) ; à venir : `void` **automatique** sur retour/annulation, extensions de garantie,
+  pièces/coûts de réparation, UI de gestion des politiques.

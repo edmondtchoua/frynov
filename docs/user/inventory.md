@@ -1,6 +1,6 @@
 # Guide utilisateur — Stock & Inventaire
 
-> **Dernière mise à jour :** 2026-06-14 — RC-5E : produits digitaux (vente sans stock + droits d'accès download/licence).
+> **Dernière mise à jour :** 2026-06-15 — RC-5F : SAV (réclamations rattachées au contrat de garantie).
 
 ---
 
@@ -311,8 +311,13 @@ sans entrée de stock.
 - vous pouvez **révoquer** un accès à tout moment (le client ne peut plus télécharger/activer) ;
 - la fiche commande affiche le panneau **« Accès digital »** (produit, type, statut).
 
-> 🔜 Le **SAV** (réclamations rattachées au contrat de garantie, retours sous garantie) et le **portail
-> de téléchargement client** (lien signé, fichiers privés) arrivent dans les prochaines versions.
+**SAV (réclamations).** Depuis la fiche commande, sur une garantie active, ouvrez une **réclamation
+SAV** (motif + description). Elle reprend le client et l'unité (IMEI/VIN) concernés, puis suit un cycle
+**Ouvert → En réparation → Résolu / Remplacé / Rejeté**. Une réclamation sur une **garantie expirée**
+n'est possible qu'en la **forçant** explicitement (action tracée).
+
+> 🔜 Le **portail de téléchargement client** (lien signé, fichiers privés) et l'annulation automatique
+> de garantie sur retour arrivent dans les prochaines versions.
 
 ---
 

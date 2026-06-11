@@ -3,6 +3,34 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — ↩️ RC-5H : retour (RMA) défait les artefacts spéciaux — void garantie / révoque accès / unité retournée (2026-06-16)
+
+Branche `feature/returns-void-special` (release `v1.0.0` → `rc.119`).
+Ferme le trou de cohérence ouvert par RC-5D→F : un **retour** laissait la garantie active et l'accès
+digital actif. (Le `cancel` n'était pas concerné : contrats/accès naissent au `fulfill`, et on n'annule
+que `draft|confirmed`.)
+
+### Au restock d'un retour (RMA)
+- **`SerializedAllocationService::returnUnits()`** : les unités vendues de la ligne repassent `in_stock`
+  (resalable, rattachements vente/garantie effacés → réutilisables) ou `returned` (sinon, conservées
+  pour traçabilité).
+- **`WarrantyService::voidForReturn()`** : les contrats de la ligne (ou des unités sérialisées
+  concernées) passent `active → void`.
+- **`DigitalService::revokeForOrderLine()`** : les accès digitaux de la ligne passent `active → revoked`.
+- **`OrderReturnService::restock()`** orchestre les trois pour **chaque** ligne approuvée (toute
+  condition) ; le réabondement de stock agrégé reste réservé aux lignes **resalable** et **stockables**
+  (un produit `stock_tracking=none` n'a pas de stock — fix : plus de `firstOrFail` sur un retour digital).
+
+### Frontend
+- **Aucun changement** : la fiche commande reflète déjà les nouveaux états via les libellés existants
+  (garantie « Annulée », accès « Révoqué », unité « Retournée » ; le bouton SAV ne s'affiche que sur
+  garantie active).
+
+### Tests
+- **+4 tests** `ReturnVoidSpecialTest` (sérialisé resalable → in_stock + void + réabondement ;
+  sérialisé non-resalable → returned sans réabondement ; digital → révoqué sans crash ; agrégé sous
+  garantie → void par ligne). Orders **56 ✅**.
+
 ## [Non publié] — 📊 RC-5G : reporting produits spéciaux — valorisation unité/agrégé (2026-06-15)
 
 Branche `feature/reports-special-products` (release `v1.0.0` → `rc.118`).

@@ -63,6 +63,11 @@ politique **active** :
 
 Contrats rattachés à une commande (traçabilité, alimente `GET /api/warranties/orders/{id}`).
 
+### voidForReturn(string $tenantId, string $orderLineId, array $unitIds = []): int  *(RC-5H)*
+
+Annule (`active → void`) les contrats d'une ligne retournée — ciblés par unité sérialisée (`$unitIds`)
+ou, à défaut (produit agrégé), par `order_line_id`. Appelé par `OrderReturnService::restock()`.
+
 ---
 
 ## Endpoints — `routes/api.php` (prefix `api/warranties`, middleware `auth:sanctum` + `tenant`)

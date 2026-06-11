@@ -79,7 +79,7 @@ $line->lineTotalCents() // quantity * unit_price_cents
 
 Fichier : `app/Modules/Orders/Services/OrderService.php`
 
-Dépendances injectées : `StockService`, `SerializedAllocationService` (module Inventory), `AuditService`, `WarrantyService` (module Warranties).
+Dépendances injectées : `StockService`, `SerializedAllocationService` (module Inventory), `AuditService`, `WarrantyService` (module Warranties), `DigitalService` (module Digital).
 
 ### create()
 
@@ -117,7 +117,9 @@ public function confirm(Order $order, string $userId): Order
 ```
 
 - Transition : `draft` → `confirmed`
-- **Réserve le stock** de chaque ligne via `StockService::reserve()`
+- **Réserve le stock** de chaque ligne **stockable** via `StockService::reserve()`
+- **Produit non stockable (RC-5E)** : `stock_tracking=none` (service/digital) → **aucune réservation**
+  (`Product::isStockable()` fait autorité ; sinon `confirm` échouerait sur un stock à 0)
 - **Produit sérialisé (RC-5C)** : réserve d'abord des **unités précises** (IMEI/VIN) via
   `SerializedAllocationService::allocate()` — `in_stock → reserved`, rattachées à la ligne ; l'allocation
   unitaire fait autorité (erreur claire avant le contrôle agrégé) et le verrou lecture interdit la
@@ -139,9 +141,12 @@ public function fulfill(Order $order, string $userId): Order
 - **Consomme le stock** réservé : appelle `StockService::moveOut()` + `StockService::release()` pour chaque ligne
 - **Produit sérialisé (RC-5C)** : les unités réservées passent `reserved → sold` (`sold_at` horodaté) et
   sont **rattachées au client** (`SerializedAllocationService::markSold()`)
+- **Produit non stockable (RC-5E)** : ni libération ni sortie de stock pour `stock_tracking=none`
 - **Garantie (RC-5D)** : après la vente, `WarrantyService::issueForOrder()` génère les contrats de
   garantie pour les lignes dont le produit porte une politique (un contrat par unité sérialisée, sinon
   par ligne ; `ends_at` = `fulfilled_at` + durée)
+- **Digital (RC-5E)** : `DigitalService::issueForOrder()` accorde les **droits d'accès** (download/license)
+  au client pour les lignes digitales
 - Positionne `fulfilled_at` sur l'heure courante
 - Lance `OrderStateException` si la commande n'est pas en `confirmed`
 
@@ -157,6 +162,7 @@ public function cancel(Order $order, string $userId): Order
 - Si `confirmed` : libère les réservations via `StockService::release()` pour chaque ligne
 - **Produit sérialisé (RC-5C)** : les unités réservées repassent `reserved → in_stock` et perdent leurs
   rattachements commande/client (`SerializedAllocationService::release()`)
+- **Produit non stockable (RC-5E)** : rien à libérer (aucune réservation n'avait été posée)
 - Si `draft` : aucun impact sur le stock
 - Positionne `cancelled_at` sur l'heure courante
 

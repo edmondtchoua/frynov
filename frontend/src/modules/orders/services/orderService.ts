@@ -1,6 +1,6 @@
 import client from '@/api/client'
 import type { PaginatedResponse } from '@/api/types'
-import type { CreateOrderPayload, Order, OrderUnit, OrderWarranty } from '../types'
+import type { CreateOrderPayload, Order, OrderUnit, OrderWarranty, OrderEntitlement } from '../types'
 
 export const orderService = {
   list(params?: { status?: string; search?: string; from_date?: string; to_date?: string; warehouse_id?: string; page?: number; per_page?: number }) {
@@ -19,6 +19,11 @@ export const orderService = {
   // RC-5D — contrats de garantie générés pour la commande.
   warranties(id: string) {
     return client.get<{ data: OrderWarranty[]; count: number }>(`/api/warranties/orders/${id}`).then(r => r.data)
+  },
+
+  // RC-5E — droits d'accès digitaux (download/license) générés pour la commande.
+  entitlements(id: string) {
+    return client.get<{ data: OrderEntitlement[]; count: number }>(`/api/digital/orders/${id}/entitlements`).then(r => r.data)
   },
 
   create(payload: CreateOrderPayload) {

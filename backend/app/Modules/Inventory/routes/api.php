@@ -2,6 +2,7 @@
 
 use App\Modules\Inventory\Http\Controllers\FiscalPeriodController;
 use App\Modules\Inventory\Http\Controllers\InventoryController;
+use App\Modules\Inventory\Http\Controllers\SerializedUnitController;
 use App\Modules\Inventory\Http\Controllers\StockAdjustmentController;
 use App\Modules\Inventory\Http\Controllers\StockTransferController;
 use App\Modules\Inventory\Http\Controllers\WarehouseController;
@@ -15,6 +16,10 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
     Route::get('stock/{productId}/movements',        [InventoryController::class, 'movements']);
     Route::get('alerts',                             [InventoryController::class, 'alerts']);
 
+    // ── Unités sérialisées (RC-5B) — consultation + recherche par IMEI/VIN ──
+    Route::get('products/{productId}/units',         [SerializedUnitController::class, 'index']);
+    Route::get('units/search',                       [SerializedUnitController::class, 'search']);
+
     // ── Stock operations (manager/admin only) ─────────────────────────
     Route::middleware('role_or_permission:manager|admin|inventory.adjust|inventory.receive')->group(function () {
         Route::post('stock/{productId}/move-in',         [InventoryController::class, 'moveIn']);
@@ -27,6 +32,9 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
         // ── Batch operations ────────────────────────────────────────────
         Route::post('deliveries',                        [InventoryController::class, 'receiveDelivery']);
         Route::post('count',                             [InventoryController::class, 'inventoryCount']);
+
+        // ── Réception d'unités sérialisées (IMEI/VIN…) ─────────────────
+        Route::post('products/{productId}/units',        [SerializedUnitController::class, 'store']);
     });
 
     // ── Stock adjustment requests (dual-approval workflow) ─────────────

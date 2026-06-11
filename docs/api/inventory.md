@@ -286,6 +286,47 @@ La grille frontend collecte les quantités saisies par cellule puis POST le tout
 
 ---
 
+## Unités sérialisées (RC-5B — IMEI / VIN / numéro de série)
+
+Pour les produits **`stock_tracking=serialized`** (téléphones, véhicules, équipements), chaque unité
+physique est tracée individuellement avec un identifiant **unique par tenant**.
+
+### POST `/api/inventory/products/{productId}/units`
+
+Réceptionne des unités sérialisées (le produit doit être `serialized`, sinon **422**). Atomique : un
+doublon (dans la requête ou déjà en base) annule tout le lot et renvoie **422**.
+
+```json
+{
+  "items": [
+    { "serial_type": "imei", "serial_value": "359123456789012", "warehouse_id": "uuid", "condition": "new", "unit_cost_cents": 80000000 },
+    { "serial_type": "imei", "serial_value": "359123456789013" }
+  ]
+}
+```
+
+| Champ | Règle |
+|---|---|
+| `serial_type` | requis — `imei` \| `vin` \| `serial` \| `custom`… (libre, normalisation par défaut sinon) |
+| `serial_value` | requis — saisie brute (normalisée serveur-side avant unicité/recherche) |
+| `variant_id`, `warehouse_id` | optionnels (validés tenant ; entrepôt soumis au périmètre d'accès → 403) |
+| `condition` | `new` \| `used` \| `refurbished` \| `damaged` |
+
+> **Normalisation** : `imei` → chiffres uniquement ; `vin` → alphanumérique majuscules ; autres → sans
+> espaces, majuscules. `« 35-9123 45678/901.2 »` et `« 359123456789012 »` sont donc le **même** IMEI.
+> Chaque unité incrémente aussi le **stock agrégé** (+1) pour cohérence avec les vues existantes.
+
+### GET `/api/inventory/products/{productId}/units`
+Liste paginée des unités d'un produit (scopée tenant + périmètre entrepôt ; filtre `?status=`).
+
+### GET `/api/inventory/units/search?type=imei&serial=...`
+Retrouve une unité par identifiant (recherche sur la valeur **normalisée**). **404** si introuvable.
+
+> **Suite RC-5** : réservation/vente d'une unité précise (lien commande ⇄ unité), garanties
+> (contrats + SAV), produits digitaux (assets/entitlements/licences).
+
+---
+
 ### POST `/api/inventory/count`
 
 Inventaire physique batch — ajuste chaque produit à la quantité comptée.

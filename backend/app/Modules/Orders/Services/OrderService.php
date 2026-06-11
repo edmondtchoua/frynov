@@ -14,6 +14,7 @@ use App\Modules\Orders\Exceptions\OrderNotFoundException;
 use App\Modules\Orders\Exceptions\OrderStateException;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderLine;
+use App\Modules\Digital\Services\DigitalService;
 use App\Modules\Platform\Services\AuditService;
 use App\Modules\Warranties\Services\WarrantyService;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -26,6 +27,7 @@ class OrderService
         private readonly AuditService $auditService,
         private readonly SerializedAllocationService $allocation,
         private readonly WarrantyService $warranties,
+        private readonly DigitalService $digital,
     ) {}
 
     // ── Queries ────────────────────────────────────────────────────────────
@@ -168,13 +170,16 @@ class OrderService
                     ); // throws InsufficientUnitsException
                 }
 
-                $stock = $this->stockService->findOrCreate(
-                    $order->tenant_id,
-                    $line->product_id,
-                    $line->variant_id,
-                );
-                // Miroir agrégé : garde les vues de stock cohérentes (throws InsufficientStockException / StockLockException).
-                $this->stockService->reserve($stock, $line->quantity);
+                // RC-5E — produit non stockable (service/digital, stock_tracking=none) : aucune réservation.
+                if ($this->isStockableLine($line, $order->tenant_id)) {
+                    $stock = $this->stockService->findOrCreate(
+                        $order->tenant_id,
+                        $line->product_id,
+                        $line->variant_id,
+                    );
+                    // Miroir agrégé : garde les vues de stock cohérentes (throws InsufficientStockException / StockLockException).
+                    $this->stockService->reserve($stock, $line->quantity);
+                }
             }
 
             $order->update([
@@ -215,25 +220,28 @@ class OrderService
             $order->load('lines');
 
             foreach ($order->lines as $line) {
-                $stock = $this->stockService->findOrCreate(
-                    $order->tenant_id,
-                    $line->product_id,
-                    $line->variant_id,
-                );
-                // Release the reservation FIRST so available() rises back to the
-                // physical quantity. Otherwise, when this order fully reserves the
-                // stock (available == 0), moveOut()'s availability check would throw
-                // InsufficientStockException on the order's OWN reserved stock.
-                $this->stockService->release($stock, $line->quantity);
-                // Then consume the physical stock (decrements quantity).
-                $this->stockService->moveOut(
-                    $stock,
-                    $line->quantity,
-                    StockMovement::REASON_SALE,
-                    $order->number,
-                    null,
-                    $userId,
-                );
+                // RC-5E — non stockable (service/digital) : ni libération ni sortie de stock.
+                if ($this->isStockableLine($line, $order->tenant_id)) {
+                    $stock = $this->stockService->findOrCreate(
+                        $order->tenant_id,
+                        $line->product_id,
+                        $line->variant_id,
+                    );
+                    // Release the reservation FIRST so available() rises back to the
+                    // physical quantity. Otherwise, when this order fully reserves the
+                    // stock (available == 0), moveOut()'s availability check would throw
+                    // InsufficientStockException on the order's OWN reserved stock.
+                    $this->stockService->release($stock, $line->quantity);
+                    // Then consume the physical stock (decrements quantity).
+                    $this->stockService->moveOut(
+                        $stock,
+                        $line->quantity,
+                        StockMovement::REASON_SALE,
+                        $order->number,
+                        null,
+                        $userId,
+                    );
+                }
 
                 // RC-5C — produit sérialisé : marquer vendues les unités réservées + rattacher le client.
                 if ($this->isSerializedLine($line, $order->tenant_id)) {
@@ -250,6 +258,9 @@ class OrderService
             // RC-5D — garanties : générer les contrats après la vente (date de vente = fulfilled_at,
             // rattachés au client et, pour le sérialisé, à chaque unité vendue).
             $this->warranties->issueForOrder($order->fresh('lines'), $userId);
+
+            // RC-5E — produits digitaux : accorder les droits d'accès (download/license) au client.
+            $this->digital->issueForOrder($order->fresh('lines'), $userId);
         });
 
         $fulfilled = $order->fresh('lines');
@@ -282,12 +293,15 @@ class OrderService
                 $order->load('lines');
 
                 foreach ($order->lines as $line) {
-                    $stock = $this->stockService->findOrCreate(
-                        $order->tenant_id,
-                        $line->product_id,
-                        $line->variant_id,
-                    );
-                    $this->stockService->release($stock, $line->quantity);
+                    // RC-5E — non stockable : aucune réservation à libérer.
+                    if ($this->isStockableLine($line, $order->tenant_id)) {
+                        $stock = $this->stockService->findOrCreate(
+                            $order->tenant_id,
+                            $line->product_id,
+                            $line->variant_id,
+                        );
+                        $this->stockService->release($stock, $line->quantity);
+                    }
 
                     // RC-5C — produit sérialisé : relâcher les unités réservées (redeviennent disponibles).
                     if ($this->isSerializedLine($line, $order->tenant_id)) {
@@ -318,23 +332,38 @@ class OrderService
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
-    /** @var array<string,string> cache product_id → stock_tracking (par opération de commande) */
-    private array $trackingCache = [];
+    /** @var array<string,?Product> cache product_id → produit (colonnes de politique), par opération */
+    private array $productCache = [];
 
-    /**
-     * Une ligne porte-t-elle un produit à suivi sérialisé (RC-5C) ? Résolu via `stock_tracking`
-     * (autorité serveur), avec un petit cache pour éviter une requête par ligne répétée.
-     */
-    private function isSerializedLine(OrderLine $line, string $tenantId): bool
+    /** Produit d'une ligne (politiques stock/livraison), mis en cache pour éviter N requêtes. */
+    private function productFor(OrderLine $line, string $tenantId): ?Product
     {
-        if (! array_key_exists($line->product_id, $this->trackingCache)) {
-            $this->trackingCache[$line->product_id] = (string) (Product::withoutTenantScope()
+        if (! array_key_exists($line->product_id, $this->productCache)) {
+            $this->productCache[$line->product_id] = Product::withoutTenantScope()
                 ->where('tenant_id', $tenantId)
                 ->where('id', $line->product_id)
-                ->value('stock_tracking') ?? Product::STOCK_TRACKING_AGGREGATE);
+                ->first(['id', 'product_type', 'stock_tracking', 'fulfillment_type', 'warranty_policy_id']);
         }
 
-        return $this->trackingCache[$line->product_id] === Product::STOCK_TRACKING_SERIALIZED;
+        return $this->productCache[$line->product_id];
+    }
+
+    /** Une ligne porte-t-elle un produit à suivi sérialisé (RC-5C) ? */
+    private function isSerializedLine(OrderLine $line, string $tenantId): bool
+    {
+        return $this->productFor($line, $tenantId)?->stock_tracking === Product::STOCK_TRACKING_SERIALIZED;
+    }
+
+    /**
+     * La ligne suit-elle réellement du stock (RC-5E) ? Les produits `stock_tracking=none`
+     * (services, digital) ne sont pas réservés/sortis — sinon `confirm` échouerait sur un stock à 0.
+     * Défaut rétro-compatible : stockable si le produit est introuvable.
+     */
+    private function isStockableLine(OrderLine $line, string $tenantId): bool
+    {
+        $product = $this->productFor($line, $tenantId);
+
+        return $product ? $product->isStockable() : true;
     }
 
     /**

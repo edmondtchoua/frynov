@@ -57,6 +57,20 @@ export interface OrderWarranty {
   policy_name: string | null
 }
 
+// RC-5E — droit d'accès digital (téléchargement/licence) accordé pour la commande. Sans secret
+// dans la liste scopée commande (le jeton/la clé ne s'obtiennent que via l'endpoint d'accès).
+export interface OrderEntitlement {
+  id: string
+  product_id: string
+  order_line_id: string
+  customer_id: string | null
+  fulfillment_type: 'download' | 'license'
+  status: 'active' | 'revoked' | 'expired'
+  granted_at: string | null
+  expires_at: string | null
+  product_name: string | null
+}
+
 export interface CreateOrderItem {
   product_id: string
   variant_id?: string | null

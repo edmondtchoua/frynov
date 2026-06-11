@@ -190,6 +190,23 @@
               </div>
             </div>
           </div>
+
+          <!-- ── Digital access panel (RC-5E) — only for digital products ──────── -->
+          <div v-if="entitlements.length > 0" class="card">
+            <div class="panel-header">
+              <h4 class="panel-title">{{ $t('orders.detail.entitlementsTitle') }}</h4>
+              <span class="badge badge-gray" style="font-size: 0.72rem;">{{ entitlements.length }}</span>
+            </div>
+            <div class="unit-list">
+              <div v-for="e in entitlements" :key="e.id" class="unit-item">
+                <span class="unit-serial">{{ e.product_name }}</span>
+                <span class="unit-type">{{ $t('orders.detail.entitlementType.' + e.fulfillment_type) }}</span>
+                <span :class="`badge ${entitlementStatusBadge(e.status)}`" style="font-size: 0.72rem; margin-left: auto;">
+                  {{ entitlementStatusLabel(e.status) }}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Right column — actions -->
@@ -313,7 +330,7 @@ import { fetchPublicPaymentMethods, type PublicPaymentMethod } from '@/services/
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { t } from '@/i18n'
-import type { Order, OrderUnit, OrderWarranty } from '../types'
+import type { Order, OrderUnit, OrderWarranty, OrderEntitlement } from '../types'
 import type { Payment, PaymentMethod } from '@/modules/payments/types'
 import type { Delivery, DeliveryStatus } from '@/modules/deliveries/types'
 
@@ -358,6 +375,9 @@ const units = ref<OrderUnit[]>([])
 
 // ── Warranty contracts (RC-5D) — empty unless a sold product had a warranty policy ─
 const warranties = ref<OrderWarranty[]>([])
+
+// ── Digital entitlements (RC-5E) — empty unless a digital product was sold ─────────
+const entitlements = ref<OrderEntitlement[]>([])
 
 // ── Load ───────────────────────────────────────────────────────────────────────
 async function load() {
@@ -416,14 +436,24 @@ async function loadWarranties() {
   }
 }
 
+// RC-5E — droits d'accès digitaux (silencieux : vide pour les produits non digitaux).
+async function loadEntitlements() {
+  try {
+    entitlements.value = (await orderService.entitlements(id)).data
+  } catch {
+    entitlements.value = []
+  }
+}
+
 // ── Order actions ──────────────────────────────────────────────────────────────
 async function act(action: 'confirm' | 'fulfill' | 'cancel') {
   actionLoading.value = action
   actionError.value   = null
   try {
     order.value = await orderService[action](id)
-    loadUnits()       // RC-5C — les statuts d'unités changent (réservé/vendu/dispo) selon l'action.
-    loadWarranties()  // RC-5D — le fulfill génère les contrats de garantie.
+    loadUnits()         // RC-5C — les statuts d'unités changent (réservé/vendu/dispo) selon l'action.
+    loadWarranties()    // RC-5D — le fulfill génère les contrats de garantie.
+    loadEntitlements()  // RC-5E — le fulfill génère les droits d'accès digitaux.
   } catch (e: any) {
     actionError.value = e?.response?.data?.message ?? t('orders.detail.actionError', { action })
   } finally {
@@ -515,13 +545,19 @@ function warrantyStatusLabel(s: OrderWarranty['status']): string {
 function warrantyStatusBadge(s: OrderWarranty['status']): string {
   return ({ active: 'badge-success', expired: 'badge-gray', void: 'badge-error' } as Record<OrderWarranty['status'], string>)[s] ?? 'badge-gray'
 }
+function entitlementStatusLabel(s: OrderEntitlement['status']): string {
+  return t(`orders.detail.entitlementStatus.${s}`)
+}
+function entitlementStatusBadge(s: OrderEntitlement['status']): string {
+  return ({ active: 'badge-success', revoked: 'badge-error', expired: 'badge-gray' } as Record<OrderEntitlement['status'], string>)[s] ?? 'badge-gray'
+}
 function fmt(cents: number) {
   return formatMoney(cents, order.value?.currency ?? 'XOF')
 }
 const fmtDate = formatDateTime
 const fmtDateShort = formatDateShort
 
-onMounted(() => { load(); loadPayments(); loadDeliveries(); loadUnits(); loadWarranties(); loadMarketMethods() })
+onMounted(() => { load(); loadPayments(); loadDeliveries(); loadUnits(); loadWarranties(); loadEntitlements(); loadMarketMethods() })
 </script>
 
 <style scoped>

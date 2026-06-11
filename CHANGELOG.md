@@ -3,6 +3,39 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 💾 RC-5E : produits digitaux — vente sans stock + droits d'accès (2026-06-14)
+
+Branche `feature/digital-entitlements` (release `v1.0.0` → `rc.116`).
+Quatrième pas des **produits spéciaux** : on vend de l'**immatériel** (ebook, logiciel, licence).
+Nouveau module **Digital**.
+
+### Prérequis levé — commande sans stock
+- **`OrderService`** ne réserve/sort plus de stock pour les lignes **`stock_tracking=none`** (services
+  **et** digital). Avant : confirmer une commande de service/digital échouait
+  (`InsufficientStockException` sur un stock à 0). `Product::isStockable()` fait autorité.
+
+### Digital — du catalogue à l'accès client
+- **`digital_entitlements`** : droit d'accès accordé au client à la vente — `access_token` **opaque**
+  (jamais un chemin de fichier), `license_key` si licence, `status` (active/revoked/expired), rattaché
+  client/commande/ligne/produit.
+- **`DigitalService::issueForOrder()`** branché dans **`OrderService::fulfill`** : accorde un accès par
+  ligne `download`/`license` (clé générée si licence). **Idempotent**.
+- **Endpoints** (`/api/digital`) : `GET /orders/{id}/entitlements` (**sans secret**),
+  `GET /access/{token}` (révèle le secret si **actif**, **403** si révoqué/expiré, **404** cross-tenant),
+  `POST /entitlements/{id}/revoke` (manager/admin).
+
+### Frontend — fiche commande
+- **`OrderDetailView`** : panneau **« Accès digital »** (produit, type download/licence, statut),
+  affiché seulement si des accès existent. **i18n FR+EN** (`orders.detail.entitlementsTitle`,
+  `entitlementType.*`, `entitlementStatus.*`). Garde i18n ✅, vue-tsc ✅.
+
+### Tests
+- **+7 tests** `DigitalEntitlementTest` (digital/service commandables sans stock, accès actif→révoqué→403,
+  clé licence, isolation jeton 404, liste sans secret, physique → 0 accès).
+  Orders+Digital+Warranties+Inventory+Catalog+Pos **246 ✅** (2 skipped).
+- **+2 tests** front `OrderDetailView.spec`. Front **268 ✅**.
+- **Suite → RC-5D-bis/RC-5F** : SAV (réclamations, void sur retour), reporting produits spéciaux.
+
 ## [Non publié] — 🛡️ RC-5D : garanties — politique produit + contrat généré à la vente (2026-06-13)
 
 Branche `feature/warranties-contracts` (release `v1.0.0` → `rc.115`).

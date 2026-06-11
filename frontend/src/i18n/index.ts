@@ -135,6 +135,9 @@ export const messages: Record<Locale, Dict> = {
         warrantiesTitle: 'Garanties',
         warrantyUntil: "Jusqu'au {date}",
         warrantyStatus: { active: 'Active', expired: 'Expirée', void: 'Annulée' },
+        entitlementsTitle: 'Accès digital',
+        entitlementType: { download: 'Téléchargement', license: 'Licence' },
+        entitlementStatus: { active: 'Actif', revoked: 'Révoqué', expired: 'Expiré' },
       },
       returns: {
         title: 'Retours & SAV', subtitle: '{count} retour(s) enregistré(s)', empty: 'Aucun retour trouvé',
@@ -994,6 +997,9 @@ export const messages: Record<Locale, Dict> = {
         warrantiesTitle: 'Warranties',
         warrantyUntil: 'Until {date}',
         warrantyStatus: { active: 'Active', expired: 'Expired', void: 'Void' },
+        entitlementsTitle: 'Digital access',
+        entitlementType: { download: 'Download', license: 'License' },
+        entitlementStatus: { active: 'Active', revoked: 'Revoked', expired: 'Expired' },
       },
       returns: {
         title: 'Returns & After-sales', subtitle: '{count} return(s) recorded', empty: 'No return found',

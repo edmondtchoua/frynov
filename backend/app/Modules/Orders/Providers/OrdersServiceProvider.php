@@ -2,6 +2,7 @@
 
 namespace App\Modules\Orders\Providers;
 
+use App\Modules\Digital\Services\DigitalService;
 use App\Modules\Inventory\Services\SerializedAllocationService;
 use App\Modules\Inventory\Services\StockService;
 use App\Modules\Orders\Services\OrderService;
@@ -22,6 +23,7 @@ class OrdersServiceProvider extends ModuleServiceProvider
                 $app->make(AuditService::class),
                 $app->make(SerializedAllocationService::class),
                 $app->make(WarrantyService::class),
+                $app->make(DigitalService::class),
             );
         });
     }

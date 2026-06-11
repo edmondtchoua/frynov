@@ -1,6 +1,6 @@
 # Guide utilisateur — Stock & Inventaire
 
-> **Dernière mise à jour :** 2026-06-13 — RC-5D : garanties générées automatiquement à la vente (politique produit → contrat par unité/ligne).
+> **Dernière mise à jour :** 2026-06-14 — RC-5E : produits digitaux (vente sans stock + droits d'accès download/licence).
 
 ---
 
@@ -298,8 +298,21 @@ produit**. Dès qu'un tel produit est **livré** dans une commande, un **contrat
 - la **date de fin** est calculée à partir de la date de vente + la durée de la politique ;
 - le contrat est **rattaché au client** et visible sur la fiche commande (panneau **« Garanties »**).
 
-> 🔜 Le **SAV** (réclamations rattachées au contrat, gestion des retours sous garantie) et les
-> **produits digitaux** (licences, téléchargements) arrivent dans les prochaines versions.
+### Produits digitaux — téléchargement & licences (RC-5E)
+
+Les produits **immatériels** (ebook, logiciel, licence) se vendent **sans stock**. Créez un produit de
+type **digital** (livraison **téléchargement** ou **licence**) : il devient commandable directement,
+sans entrée de stock.
+
+À la **livraison** de la commande, un **droit d'accès** est accordé au client :
+
+- pour une **licence**, une **clé** est générée automatiquement ;
+- l'accès est porté par un **jeton sécurisé** (jamais un lien de fichier en clair) ;
+- vous pouvez **révoquer** un accès à tout moment (le client ne peut plus télécharger/activer) ;
+- la fiche commande affiche le panneau **« Accès digital »** (produit, type, statut).
+
+> 🔜 Le **SAV** (réclamations rattachées au contrat de garantie, retours sous garantie) et le **portail
+> de téléchargement client** (lien signé, fichiers privés) arrivent dans les prochaines versions.
 
 ---
 

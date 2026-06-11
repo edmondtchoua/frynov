@@ -40,7 +40,8 @@
 | RC-2C | pricing | UI upgrade : reliquat/net affichés par carte + i18n FR+EN | ✅ **rc.112** |
 | RC-5B | spécial | unités sérialisées (IMEI/VIN) : `inventory_units` + normalisation + unicité par tenant | ✅ **rc.113** |
 | RC-5C | spécial | lien commande ⇄ unité ⇄ client : allocation au confirm/fulfill/cancel (anti double-vente) + endpoint `GET /orders/{id}/units` + UI | ✅ **rc.114** |
-| RC-5D–E | spécial | garanties (politiques/contrats/SAV) · digital (assets/entitlements/licences) · reporting | ⬜ |
+| RC-5D | spécial | garanties : `warranty_policies` + `warranty_contracts` + contrat auto au `fulfill` (par unité sérialisée / par ligne) + endpoints + UI | ✅ **rc.115** |
+| RC-5D-bis–E | spécial | SAV (`warranty_claims`, void sur retour) · digital (assets/entitlements/licences) · reporting | ⬜ |
 
 ## ⚠️ Risques (rappels)
 - Proration **dépend** de la périodicité (interval persisté + tarif annuel en base) → ordre strict.

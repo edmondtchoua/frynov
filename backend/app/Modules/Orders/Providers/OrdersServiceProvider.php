@@ -6,6 +6,7 @@ use App\Modules\Inventory\Services\SerializedAllocationService;
 use App\Modules\Inventory\Services\StockService;
 use App\Modules\Orders\Services\OrderService;
 use App\Modules\Platform\Services\AuditService;
+use App\Modules\Warranties\Services\WarrantyService;
 use App\Shared\ModuleServiceProvider;
 
 class OrdersServiceProvider extends ModuleServiceProvider
@@ -20,6 +21,7 @@ class OrdersServiceProvider extends ModuleServiceProvider
                 $app->make(StockService::class),
                 $app->make(AuditService::class),
                 $app->make(SerializedAllocationService::class),
+                $app->make(WarrantyService::class),
             );
         });
     }

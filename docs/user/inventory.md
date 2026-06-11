@@ -1,6 +1,6 @@
 # Guide utilisateur — Stock & Inventaire
 
-> **Dernière mise à jour :** 2026-06-12 — RC-5C : réservation/vente d'unités sérialisées précises (IMEI/VIN) liées aux commandes.
+> **Dernière mise à jour :** 2026-06-13 — RC-5D : garanties générées automatiquement à la vente (politique produit → contrat par unité/ligne).
 
 ---
 
@@ -287,8 +287,19 @@ Quand vous vendez un produit sérialisé, le système **réserve automatiquement
 - La fiche commande (**Ventes → détail**) affiche la liste des **unités sérialisées rattachées** avec
   leur IMEI/VIN et leur statut.
 
-> 🔜 Les **garanties** (contrat généré à la vente + SAV rattaché à l'unité) et les **produits digitaux**
-> (licences, téléchargements) arrivent dans les prochaines versions.
+### Garanties générées à la vente (RC-5D)
+
+Vous pouvez créer des **politiques de garantie** (ex. « Garantie 12 mois ») et en **attacher une à un
+produit**. Dès qu'un tel produit est **livré** dans une commande, un **contrat de garantie** est
+**généré automatiquement** :
+
+- pour un produit **sérialisé**, **un contrat par appareil vendu** (rattaché à son IMEI/VIN) ;
+- sinon, un contrat pour la ligne de commande ;
+- la **date de fin** est calculée à partir de la date de vente + la durée de la politique ;
+- le contrat est **rattaché au client** et visible sur la fiche commande (panneau **« Garanties »**).
+
+> 🔜 Le **SAV** (réclamations rattachées au contrat, gestion des retours sous garantie) et les
+> **produits digitaux** (licences, téléchargements) arrivent dans les prochaines versions.
 
 ---
 

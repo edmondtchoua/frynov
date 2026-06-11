@@ -172,6 +172,24 @@
               </div>
             </div>
           </div>
+
+          <!-- ── Warranty contracts panel (RC-5D) — only when contracts exist ──── -->
+          <div v-if="warranties.length > 0" class="card">
+            <div class="panel-header">
+              <h4 class="panel-title">{{ $t('orders.detail.warrantiesTitle') }}</h4>
+              <span class="badge badge-gray" style="font-size: 0.72rem;">{{ warranties.length }}</span>
+            </div>
+            <div class="unit-list">
+              <div v-for="w in warranties" :key="w.id" class="unit-item">
+                <span class="unit-serial">{{ w.policy_name || w.product_name }}</span>
+                <span v-if="w.serial_value" class="unit-type">{{ w.serial_value }}</span>
+                <span class="warranty-until">{{ $t('orders.detail.warrantyUntil', { date: fmtDateShort(w.ends_at) }) }}</span>
+                <span :class="`badge ${warrantyStatusBadge(w.status)}`" style="font-size: 0.72rem; margin-left: auto;">
+                  {{ warrantyStatusLabel(w.status) }}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Right column — actions -->
@@ -295,7 +313,7 @@ import { fetchPublicPaymentMethods, type PublicPaymentMethod } from '@/services/
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { t } from '@/i18n'
-import type { Order, OrderUnit } from '../types'
+import type { Order, OrderUnit, OrderWarranty } from '../types'
 import type { Payment, PaymentMethod } from '@/modules/payments/types'
 import type { Delivery, DeliveryStatus } from '@/modules/deliveries/types'
 
@@ -337,6 +355,9 @@ const deliveryLoading = ref(false)
 
 // ── Serialized units (RC-5C) — empty unless the order carries serialized products ─
 const units = ref<OrderUnit[]>([])
+
+// ── Warranty contracts (RC-5D) — empty unless a sold product had a warranty policy ─
+const warranties = ref<OrderWarranty[]>([])
 
 // ── Load ───────────────────────────────────────────────────────────────────────
 async function load() {
@@ -386,13 +407,23 @@ async function loadUnits() {
   }
 }
 
+// RC-5D — contrats de garantie générés (silencieux : vide si aucun produit sous garantie vendu).
+async function loadWarranties() {
+  try {
+    warranties.value = (await orderService.warranties(id)).data
+  } catch {
+    warranties.value = []
+  }
+}
+
 // ── Order actions ──────────────────────────────────────────────────────────────
 async function act(action: 'confirm' | 'fulfill' | 'cancel') {
   actionLoading.value = action
   actionError.value   = null
   try {
     order.value = await orderService[action](id)
-    loadUnits() // RC-5C — les statuts d'unités changent (réservé/vendu/dispo) selon l'action.
+    loadUnits()       // RC-5C — les statuts d'unités changent (réservé/vendu/dispo) selon l'action.
+    loadWarranties()  // RC-5D — le fulfill génère les contrats de garantie.
   } catch (e: any) {
     actionError.value = e?.response?.data?.message ?? t('orders.detail.actionError', { action })
   } finally {
@@ -478,13 +509,19 @@ function unitStatusLabel(s: OrderUnit['status']): string {
 function unitStatusBadge(s: OrderUnit['status']): string {
   return ({ in_stock: 'badge-gray', reserved: 'badge-blue', sold: 'badge-success', returned: 'badge-warning', repair: 'badge-warning', quarantine: 'badge-gray', lost: 'badge-error', scrapped: 'badge-error' } as Record<OrderUnit['status'], string>)[s] ?? 'badge-gray'
 }
+function warrantyStatusLabel(s: OrderWarranty['status']): string {
+  return t(`orders.detail.warrantyStatus.${s}`)
+}
+function warrantyStatusBadge(s: OrderWarranty['status']): string {
+  return ({ active: 'badge-success', expired: 'badge-gray', void: 'badge-error' } as Record<OrderWarranty['status'], string>)[s] ?? 'badge-gray'
+}
 function fmt(cents: number) {
   return formatMoney(cents, order.value?.currency ?? 'XOF')
 }
 const fmtDate = formatDateTime
 const fmtDateShort = formatDateShort
 
-onMounted(() => { load(); loadPayments(); loadDeliveries(); loadUnits(); loadMarketMethods() })
+onMounted(() => { load(); loadPayments(); loadDeliveries(); loadUnits(); loadWarranties(); loadMarketMethods() })
 </script>
 
 <style scoped>
@@ -580,5 +617,9 @@ onMounted(() => { load(); loadPayments(); loadDeliveries(); loadUnits(); loadMar
   font-family: monospace;
   font-size: 0.82rem;
   color: var(--gray-700);
+}
+.warranty-until {
+  font-size: 0.78rem;
+  color: var(--gray-500);
 }
 </style>

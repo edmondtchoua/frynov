@@ -38,7 +38,8 @@
 | RC-2A | pricing | `ProrationCalculator` (pur) + `previewProration` + endpoint preview-upgrade | ✅ **rc.110** |
 | RC-2B | pricing | application réelle du crédit au commit (acompte virtuel : client paie le net) | ✅ **rc.111** |
 | RC-2C | pricing | UI upgrade : reliquat/net affichés par carte + i18n FR+EN | ✅ **rc.112** |
-| RC-5B–E | spécial | digital · assets/entitlements · licences/garanties · reporting | ⬜ |
+| RC-5B | spécial | unités sérialisées (IMEI/VIN) : `inventory_units` + normalisation + unicité par tenant | ✅ **rc.113** |
+| RC-5C–E | spécial | lien commande ⇄ unité · garanties (contrats/SAV) · digital (assets/entitlements/licences) · reporting | ⬜ |
 
 ## ⚠️ Risques (rappels)
 - Proration **dépend** de la périodicité (interval persisté + tarif annuel en base) → ordre strict.

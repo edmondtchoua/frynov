@@ -3,6 +3,30 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔢 RC-5B : unités sérialisées (IMEI / VIN) — produits spéciaux (2026-06-12)
+
+Branche `feature/inventory-serialized-units` (release `v1.0.0` → `rc.113`).
+Premier pas concret des **produits spéciaux** (téléphones IMEI, véhicules VIN), sur le socle RC-5A.
+
+### Inventaire — chaque unité physique tracée individuellement
+- **Table `inventory_units`** : une ligne par unité (serial_type/value + **normalized_serial**, condition,
+  statut de cycle de vie, entrepôt, rattachements commande/client/garantie réservés pour la suite).
+  **Unicité PAR TENANT** : `UNIQUE(tenant_id, serial_type, normalized_serial)` — le même IMEI peut
+  exister chez un autre tenant, jamais deux fois chez le même.
+- **`SerialNormalizer`** : `imei` → chiffres seuls ; `vin` → alphanumérique majuscules ; sinon sans
+  espaces/majuscules. `« 35-9123 45678/901.2 »` ≡ `« 359123456789012 »`.
+- **`InventoryUnitService::registerMany`** (atomique : doublon dans la requête **ou** en base → tout
+  annulé ; verrou lecture anti-course) + incrément du **stock agrégé** (+1/unité) pour cohérence.
+- **Endpoints** : `POST /inventory/products/{id}/units` (produit `serialized` only → 422 sinon ;
+  périmètre entrepôt → 403), `GET …/units` (liste scopée), `GET /inventory/units/search` (par IMEI/VIN
+  normalisé).
+
+### Tests
+- **+8 tests** `SerializedUnitTest` (réception + stock agrégé, doublon tenant → 422, normalisation,
+  rollback lot, unicité par-tenant, produit non-sérialisé → 422, recherche normalisée, isolation tenant).
+  Inventory+Catalog **175 ✅**.
+- **Suite → RC-5C/D/E** : lien commande ⇄ unité (réserver/vendre une unité précise), garanties, digital.
+
 ## [Non publié] — 🧮 RC-2C : aperçu du reliquat dans l'écran d'upgrade + i18n (2026-06-11)
 
 Branche `feature/billing-proration-ui` (release `v1.0.0` → `rc.112`).

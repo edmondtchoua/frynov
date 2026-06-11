@@ -258,6 +258,26 @@ Le scan fonctionne avec les codes-barres Code128 et les QR codes imprimés sur l
 
 ---
 
+## Produits sérialisés — IMEI, VIN, numéro de série (RC-5)
+
+Certains produits doivent être suivis **unité par unité** : un téléphone par son **IMEI**, un véhicule
+par son **VIN** (numéro de châssis), un équipement par son **numéro de série**. Pour ces produits
+(type de suivi **« sérialisé »**), chaque exemplaire reçu est enregistré avec son identifiant unique.
+
+- À la **réception**, vous saisissez (ou scannez) l'**IMEI / VIN** de chaque unité. Le système
+  **normalise** automatiquement la saisie : `35-9123 45678/901.2` et `359123456789012` sont reconnus
+  comme le **même** IMEI.
+- Un **identifiant déjà enregistré** chez vous est **refusé** (pas de double vente possible). Le même
+  identifiant peut en revanche exister chez une autre entreprise — l'unicité est propre à votre compte.
+- Vous pouvez **rechercher une unité par son IMEI/VIN** pour retrouver instantanément son produit et son
+  statut (en stock, vendu, en réparation…).
+
+> 🔜 La **réservation/vente d'une unité précise** (lier un IMEI à une commande), les **garanties**
+> (contrat généré à la vente + SAV) et les **produits digitaux** (licences, téléchargements) arrivent
+> dans les prochaines versions.
+
+---
+
 ## Questions fréquentes
 
 **Q : Mon nouveau produit n'apparaît pas dans la liste Stock, pourquoi ?**

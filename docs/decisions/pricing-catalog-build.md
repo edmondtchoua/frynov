@@ -45,9 +45,10 @@
 | RC-5F | spécial | SAV : `warranty_claims` (ouverture gardée période + override audité, transitions open→réparation→résolution) + endpoints + UI | ✅ **rc.117** |
 | RC-5G | spécial | reporting produits spéciaux : `GET /reports/special-products` (valorisation agrégé + sérialisé par unité, exclusion services/digital, rappel garanties/SAV/digital) + carte StockReportView | ✅ **rc.118** |
 | RC-5H | spécial | retour (RMA) défait les artefacts : unité sérialisée `in_stock`/`returned`, garantie `void`, accès digital révoqué (au `restock`) | ✅ **rc.119** |
+| RC-5I | spécial | digital — fichiers privés (`digital_assets`) + **téléchargement par lien signé** (revérif révocation) + onglet fiche produit | ✅ **rc.120** |
 
-> 🎉 **Chantier « produits spéciaux » complet (RC-5A→H).** Reste hors périmètre (à planifier) : portail
-> de téléchargement client (lien signé, fichiers privés), pool de clés de licence, extensions de garantie,
+> 🎉 **Chantier « produits spéciaux » complet (RC-5A→I).** Reste hors périmètre (à planifier) : portail
+> client self-service (saisie jeton + auth client), pool de clés de licence, extensions de garantie,
 > caractéristiques spéciales dynamiques (`special_attribute_definitions`).
 
 ## ⚠️ Risques (rappels)

@@ -44,7 +44,7 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 | catalog | `ProductFormView` | `catalog.productForm.*` | rc.69 |
 | catalog | `AttributesView` | `catalog.attributes.*` | rc.72 |
 | catalog | `VariantsView` | `catalog.variants.*` | rc.72 |
-| catalog | `ProductShowPage` | `catalog.productShow.*` | rc.73 |
+| catalog | `ProductShowPage` | `catalog.productShow.*` (+ `digital.*` RC-5I) | rc.73 / rc.120 |
 | catalog | `LabelPrintView` | `catalog.labelPrint.*` | rc.73 |
 | catalog | `ProductListView` | `catalog.*` | rc.44 |
 | catalog | `CategoryListView` | `catalog.*` | rc.45 |

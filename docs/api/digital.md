@@ -40,8 +40,8 @@ Droits d'accès générés pour une commande. **Sans secret** (ni jeton ni clé 
 ## GET /api/digital/access/{token}
 
 Vérifie un droit d'accès via son **jeton opaque** et — si l'accès est **actif** — **révèle le secret**
-(clé de licence et/ou lien de téléchargement signé à venir). C'est le point qui **remplace** l'exposition
-directe d'un fichier privé.
+(clé de licence) et les **liens de téléchargement signés** (`download_urls`, RC-5I) des fichiers privés
+du produit. C'est le point qui **remplace** l'exposition directe d'un fichier privé.
 
 **Réponse 200** (accès actif)
 ```json
@@ -51,7 +51,11 @@ directe d'un fichier privé.
     "fulfillment_type": "license",
     "status": "active",
     "access_token": "uuid",
-    "license_key": "A1B2-C3D4-E5F6-G7H8"
+    "license_key": "A1B2-C3D4-E5F6-G7H8",
+    "download_urls": [
+      { "asset_id": "uuid", "name": "ebook.pdf", "size_bytes": 12345, "expires_in": 900,
+        "url": "https://…/api/digital/download/{token}/{asset}?expires=…&signature=…" }
+    ]
   }
 }
 ```
@@ -70,6 +74,28 @@ Révoque un accès : `status → revoked`. Tout appel d'accès ultérieur renvoi
 
 **Réponse 200** : `{ "data": { ...entitlement, "status": "revoked" } }`
 **Réponse 404** : accès inconnu pour ce tenant.
+
+---
+
+## Fichiers privés (RC-5I)
+
+### POST /api/digital/products/{productId}/assets  *(manager/admin)*
+
+Upload **multipart** (`file`, ≤ 50 Mo) d'un fichier privé attaché à un produit **digital** (sinon 422).
+Stocké sur un disque privé ; le `path` n'est jamais renvoyé.
+
+**Réponse 201** : `{ "data": { "id", "name", "size_bytes", "mime", "version", "is_active" } }`
+
+### GET /api/digital/products/{productId}/assets
+
+Liste les fichiers d'un produit (sans `path`/`disk`).
+
+### GET /api/digital/download/{token}/{asset}  *(lien signé, hors auth)*
+
+Télécharge le fichier via un **lien signé et expirable** (généré par `GET /access/{token}`). Le tenant
+est dérivé du jeton ; l'accessibilité de l'entitlement est **revérifiée** (révocation → 403 même si la
+signature est encore valide). Codes : **200** (flux fichier) · **403** (signature invalide/expirée, ou
+accès révoqué/expiré) · **404** (jeton inconnu, ou asset n'appartenant pas au produit de l'entitlement).
 
 ---
 

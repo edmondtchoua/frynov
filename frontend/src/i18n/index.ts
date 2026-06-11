@@ -325,7 +325,14 @@ export const messages: Record<Locale, Dict> = {
         printError: "Erreur lors de l'impression : ",
         tabs: { overview: "Vue d'ensemble", variants: 'Variantes', stock: 'Stock', prices: 'Prix' },
         stockTabs: { current: 'Stock actuel', movements: 'Mouvements' },
-        type: { simple: 'Simple', variable: 'Variable', service: 'Service', kit: 'Kit' },
+        digital: {
+          tab: 'Fichiers digitaux', title: 'Fichiers du produit digital',
+          hint: 'Fichiers privés livrés au client après achat, via un lien de téléchargement signé et expirable.',
+          upload: 'Ajouter un fichier', uploading: 'Envoi…', uploaded: 'Fichier ajouté.',
+          uploadError: "Échec de l'envoi du fichier.",
+          empty: 'Aucun fichier pour ce produit.', fileName: 'Fichier', size: 'Taille', inactive: 'Inactif',
+        },
+        type: { simple: 'Simple', variable: 'Variable', service: 'Service', kit: 'Kit', digital: 'Digital' },
         mvtType: { in: 'Entrée', out: 'Sortie', adjustment: 'Ajustement', return: 'Retour' },
       },
       labelPrint: {
@@ -1200,7 +1207,14 @@ export const messages: Record<Locale, Dict> = {
         printError: 'Print error: ',
         tabs: { overview: 'Overview', variants: 'Variants', stock: 'Stock', prices: 'Prices' },
         stockTabs: { current: 'Current stock', movements: 'Movements' },
-        type: { simple: 'Simple', variable: 'Variable', service: 'Service', kit: 'Kit' },
+        digital: {
+          tab: 'Digital files', title: 'Digital product files',
+          hint: 'Private files delivered to the customer after purchase, via a signed, expiring download link.',
+          upload: 'Add a file', uploading: 'Uploading…', uploaded: 'File added.',
+          uploadError: 'File upload failed.',
+          empty: 'No file for this product.', fileName: 'File', size: 'Size', inactive: 'Inactive',
+        },
+        type: { simple: 'Simple', variable: 'Variable', service: 'Service', kit: 'Kit', digital: 'Digital' },
         mvtType: { in: 'In', out: 'Out', adjustment: 'Adjustment', return: 'Return' },
       },
       labelPrint: {

@@ -1,5 +1,5 @@
 export type ProductStatus = 'draft' | 'active' | 'archived'
-export type ProductType   = 'simple' | 'variable' | 'service' | 'kit'
+export type ProductType   = 'simple' | 'variable' | 'service' | 'kit' | 'digital'
 
 export interface ProductPrice {
   amount: number

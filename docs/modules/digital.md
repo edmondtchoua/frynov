@@ -78,10 +78,21 @@ transaction, `fulfilled_at` posé). Dépendance injectée via `OrdersServiceProv
 
 ---
 
+## Fichiers privés & téléchargement signé (RC-5I)
+
+- **`digital_assets`** : fichier privé rattaché à un produit digital (disque `local`, taille, mime,
+  checksum sha256, version). `DigitalAsset::toApiArray()` n'expose **jamais** `path`/`disk`.
+- **`DigitalAssetService`** : `attach()` (upload), `forProduct()`, `signedLinksFor(entitlement)` (liens
+  `URL::temporarySignedRoute('digital.download', +15 min)` pour les assets actifs d'un entitlement
+  accessible), `findActiveAsset()`.
+- **`GET /access/{token}`** renvoie `download_urls` (liens signés) ; **`GET /download/{token}/{asset}`**
+  (middleware `signed`, hors auth) revérifie l'accessibilité de l'entitlement avant de streamer le fichier
+  → la **révocation prime** sur un lien déjà émis.
+
 ## Limites V1 / suite
 
-- **Pas de stockage de fichier réel** : `GET /access/{token}` renvoie le droit + la clé ; le **lien de
-  téléchargement signé** (stockage privé, expiration) sera branché ultérieurement.
 - Un entitlement **par ligne** (pas par exemplaire) ; pool de clés de licence non géré.
-- Accès en **contexte tenant** (opérateur). Le portail **client** (lien signé, auth client) viendra ensuite.
-- À venir : journalisation fine des téléchargements, expiration automatique, `digital_assets`.
+- L'endpoint `GET /access/{token}` (révélant clé + liens) reste en **contexte tenant** (opérateur) ; un
+  **portail client** self-service (saisie du jeton, auth client) viendra ensuite. Le **téléchargement**,
+  lui, est déjà client-facing (lien signé hors auth).
+- À venir : journalisation fine des téléchargements, versions multiples d'asset, antivirus à l'upload.

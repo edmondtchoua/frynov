@@ -3,6 +3,7 @@
 namespace App\Modules\Digital\Http\Controllers;
 
 use App\Modules\Digital\Models\DigitalEntitlement;
+use App\Modules\Digital\Services\DigitalAssetService;
 use App\Modules\Digital\Services\DigitalService;
 use App\Modules\Orders\Models\Order;
 use Illuminate\Http\JsonResponse;
@@ -14,7 +15,10 @@ use Illuminate\Routing\Controller;
  */
 class DigitalController extends Controller
 {
-    public function __construct(private readonly DigitalService $digital) {}
+    public function __construct(
+        private readonly DigitalService $digital,
+        private readonly DigitalAssetService $assets,
+    ) {}
 
     /** GET /api/digital/orders/{orderId}/entitlements — accès générés pour une commande (sans secret). */
     public function forOrder(Request $request, string $orderId): JsonResponse
@@ -52,9 +56,12 @@ class DigitalController extends Controller
             return response()->json(['message' => 'Accès révoqué ou expiré.', 'status' => $entitlement->status], 403);
         }
 
-        // Accès accordé : on révèle le secret (clé de licence et/ou lien de téléchargement signé — à
-        // brancher sur un stockage privé dans un incrément ultérieur).
-        return response()->json(['data' => $entitlement->toApiArray(withSecret: true)]);
+        // Accès accordé : on révèle le secret (clé de licence) + les liens de téléchargement SIGNÉS et
+        // expirables des fichiers privés du produit (RC-5I). Aucun chemin de fichier n'est exposé.
+        return response()->json(['data' => array_merge(
+            $entitlement->toApiArray(withSecret: true),
+            ['download_urls' => $this->assets->signedLinksFor($entitlement)],
+        )]);
     }
 
     /** POST /api/digital/entitlements/{id}/revoke — révoque un accès (manager/admin). */

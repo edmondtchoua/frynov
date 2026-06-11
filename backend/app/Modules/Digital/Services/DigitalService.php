@@ -96,6 +96,17 @@ class DigitalService
             ->first();
     }
 
+    /**
+     * RC-5I — résout un accès par son seul jeton (globalement unique), sans contexte tenant. Réservé à
+     * la route de téléchargement signée (hors auth) ; le tenant est ensuite dérivé de l'entitlement.
+     */
+    public function findByTokenGlobal(string $token): ?DigitalEntitlement
+    {
+        return DigitalEntitlement::withoutTenantScope()
+            ->where('access_token', $token)
+            ->first();
+    }
+
     /** Entitlements rattachés à une commande (traçabilité). */
     public function forOrder(string $tenantId, string $orderId): \Illuminate\Database\Eloquent\Collection
     {

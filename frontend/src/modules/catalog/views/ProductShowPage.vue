@@ -561,6 +561,42 @@
         </div>
       </div>
 
+      <!-- ── Digital assets tab (RC-5I) ─────────────────────────────── -->
+      <div v-if="activeTab === 'digital'" class="tab-content">
+        <div class="card">
+          <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h3 class="card-section-title" style="margin:0">{{ $t('catalog.productShow.digital.title') }}</h3>
+            <label v-if="isManagerOrAbove" class="btn btn-primary btn-sm" :class="{ 'is-disabled': assetUploading }">
+              <span v-if="assetUploading" class="spinner-sm"></span>
+              {{ assetUploading ? $t('catalog.productShow.digital.uploading') : $t('catalog.productShow.digital.upload') }}
+              <input type="file" style="display:none" :disabled="assetUploading" @change="onAssetSelected" />
+            </label>
+          </div>
+          <p class="text-muted" style="font-size:0.8rem;margin:-4px 0 12px">{{ $t('catalog.productShow.digital.hint') }}</p>
+
+          <div v-if="!assets.length" class="empty-state">{{ $t('catalog.productShow.digital.empty') }}</div>
+          <table v-else class="data-table">
+            <thead><tr>
+              <th>{{ $t('catalog.productShow.digital.fileName') }}</th>
+              <th style="text-align:right">{{ $t('catalog.productShow.digital.size') }}</th>
+              <th>{{ $t('common.status') }}</th>
+            </tr></thead>
+            <tbody>
+              <tr v-for="a in assets" :key="a.id">
+                <td>{{ a.name }}</td>
+                <td style="text-align:right">{{ formatBytes(a.size_bytes) }}</td>
+                <td>
+                  <span class="badge" :class="a.is_active ? 'badge-success' : 'badge-gray'">
+                    {{ a.is_active ? $t('catalog.status.active') : $t('catalog.productShow.digital.inactive') }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p v-if="assetError" class="form-error" style="margin-top:10px">{{ assetError }}</p>
+        </div>
+      </div>
+
     </template>
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -784,6 +820,13 @@ const visibleTabs = computed(() => {
   if (product.value?.product_type === 'service') {
     return tabs.filter(t => t.key !== 'stock')
   }
+  // RC-5I — produit digital : pas de stock/variantes, mais un onglet « Fichiers digitaux ».
+  if (product.value?.product_type === 'digital') {
+    return [
+      ...tabs.filter(t => t.key === 'overview' || t.key === 'prices'),
+      { key: 'digital', label: t('catalog.productShow.digital.tab'), badge: assets.value.length || undefined },
+    ]
+  }
   return tabs
 })
 
@@ -847,6 +890,47 @@ async function loadProduct() {
   } finally {
     loading.value = false
   }
+}
+
+// ── Digital assets (RC-5I) ───────────────────────────────────────────────────
+interface DigitalAsset { id: string; name: string; size_bytes: number; is_active: boolean }
+const assets         = ref<DigitalAsset[]>([])
+const assetUploading = ref(false)
+const assetError     = ref<string | null>(null)
+
+async function loadAssets() {
+  if (product.value?.product_type !== 'digital') return
+  try {
+    assets.value = (await client.get(`/api/digital/products/${productId}/assets`)).data.data
+  } catch {
+    assets.value = []
+  }
+}
+
+async function onAssetSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file  = input.files?.[0]
+  if (!file) return
+  assetUploading.value = true
+  assetError.value     = null
+  try {
+    const form = new FormData()
+    form.append('file', file)
+    await client.post(`/api/digital/products/${productId}/assets`, form)
+    await loadAssets()
+    pushToast(t('catalog.productShow.digital.uploaded'), 'info')
+  } catch (err: any) {
+    assetError.value = err?.response?.data?.message ?? t('catalog.productShow.digital.uploadError')
+  } finally {
+    assetUploading.value = false
+    input.value = ''
+  }
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} o`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
 }
 
 async function loadStockSummary() {
@@ -1067,7 +1151,7 @@ const fmtCents = (c: number) => formatMoney(c)
 // ── Init ───────────────────────────────────────────────────────────────────
 onMounted(async () => {
   await loadProduct()
-  await Promise.all([loadStockSummary(), loadWarehouses()])
+  await Promise.all([loadStockSummary(), loadWarehouses(), loadAssets()])
 })
 </script>
 

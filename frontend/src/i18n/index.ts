@@ -419,13 +419,8 @@ export const messages: Record<Locale, Dict> = {
         successMsg: '{count} mouvement(s) enregistré(s). Redirection vers le stock…',
         error: 'Erreur lors de la réception. Vérifiez les données et réessayez.',
       },
-      history: {
-        title: 'Historique des mouvements', allTypes: 'Tous les types', empty: 'Aucun mouvement',
-        emptyAll: 'Aucun mouvement enregistré pour ce produit.',
-        emptyTypeFiltered: 'Aucun mouvement de ce type pour ce produit.',
-        type: { in: 'Entrée', out: 'Sortie', adjustment: 'Ajustement', return: 'Retour' },
-        reason: { delivery: 'Livraison', sale: 'Vente', return: 'Retour', loss: 'Perte', count: 'Inventaire', manual: 'Manuel' },
-      },
+      // NB: la clé `history` (objet) était masquée par la clé string `history` plus bas
+      // (doublon TS1117) — bloc retiré à iso-comportement, cf. RC-7B.
       kpi: { skus: 'SKUs', total: 'Total', value: 'Valeur' },
       emptyStock: 'Aucun stock trouvé', emptySearch: 'Aucun résultat pour cette recherche.',
       emptyDefault: 'Les articles apparaîtront ici une fois synchronisés.',
@@ -440,7 +435,7 @@ export const messages: Record<Locale, Dict> = {
       reference: 'Référence', referencePlaceholder: 'N° bon de livraison, commande…',
       notePlaceholder: 'Commentaire optionnel…',
       submitIn: 'Enregistrer l’entrée', submitOut: 'Enregistrer la sortie', submitAdjust: 'Appliquer l’ajustement',
-      ship: 'Expédier', shipTransferTitle: 'Expédier le transfert', shipTransferConfirm: 'Expédier le transfert {number} ?',
+      shipTransferTitle: 'Expédier le transfert', shipTransferConfirm: 'Expédier le transfert {number} ?',
       alertsTitle: 'Alertes stock bas', itemsBelowThreshold: '{count} article(s) sous le seuil',
       backToStock: 'Retour au stock',
       allGood: 'Tout est en ordre !', allGoodHint: 'Aucun article ne se trouve sous son seuil de stock minimum.',
@@ -1379,13 +1374,8 @@ export const messages: Record<Locale, Dict> = {
         successMsg: '{count} movement(s) recorded. Redirecting to stock…',
         error: 'Error during receipt. Check the data and try again.',
       },
-      history: {
-        title: 'Movement history', allTypes: 'All types', empty: 'No movement',
-        emptyAll: 'No movement recorded for this product.',
-        emptyTypeFiltered: 'No movement of this type for this product.',
-        type: { in: 'In', out: 'Out', adjustment: 'Adjustment', return: 'Return' },
-        reason: { delivery: 'Delivery', sale: 'Sale', return: 'Return', loss: 'Loss', count: 'Stock count', manual: 'Manual' },
-      },
+      // NB: the `history` object key was shadowed by the string `history` key below
+      // (TS1117 duplicate) — block removed with identical runtime behavior, see RC-7B.
       kpi: { skus: 'SKUs', total: 'Total', value: 'Value' },
       emptyStock: 'No stock found', emptySearch: 'No results for this search.',
       emptyDefault: 'Items will appear here once synced.',
@@ -1400,7 +1390,7 @@ export const messages: Record<Locale, Dict> = {
       reference: 'Reference', referencePlaceholder: 'Delivery note no., order…',
       notePlaceholder: 'Optional comment…',
       submitIn: 'Save inflow', submitOut: 'Save outflow', submitAdjust: 'Apply adjustment',
-      ship: 'Ship', shipTransferTitle: 'Ship transfer', shipTransferConfirm: 'Ship transfer {number}?',
+      shipTransferTitle: 'Ship transfer', shipTransferConfirm: 'Ship transfer {number}?',
       alertsTitle: 'Low stock alerts', itemsBelowThreshold: '{count} item(s) below threshold',
       backToStock: 'Back to stock',
       allGood: 'All good!', allGoodHint: 'No item is below its minimum stock threshold.',

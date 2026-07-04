@@ -129,6 +129,8 @@ export interface ProductVariantFull {
 export interface CreateVariantPayload {
   sku?: string
   name?: string
+  /** Libellé combiné multi-axes ("S / Rouge") — colonne `label` de product_variants côté backend. */
+  label?: string
   attributes?: Record<string, string>
   price_amount?: number | null
   price_currency?: string

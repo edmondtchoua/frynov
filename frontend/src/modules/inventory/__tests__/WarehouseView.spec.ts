@@ -26,7 +26,7 @@ async function mountView() {
 }
 
 describe('WarehouseView', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('lists warehouses with name and code', async () => {
     const w = await mountView()

@@ -170,7 +170,7 @@ const { confirm } = useConfirm()
 async function doApprove(p: AdminManualPayment) {
   if (!(await confirm({
     title: t('admin.approvePayment'),
-    message: t('admin.approveConfirm', { name: p.tenant_name, plan: p.plan_code }),
+    message: t('admin.approveConfirm', { name: p.tenant_name ?? '', plan: p.plan_code ?? '' }),
     confirmLabel: t('admin.approve'),
   }))) return
   actionError.value = ''

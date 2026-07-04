@@ -4,7 +4,7 @@ import { authService } from '@/modules/auth/services/authService'
 
 // Sprint 20 multi-sites: managers assign the warehouses a member's data access is scoped to.
 describe('authService.setUserWarehouses', () => {
-  afterEach(() => vi.clearAllMocks())
+  afterEach(() => { vi.clearAllMocks() })
 
   it('PUTs the selected warehouse ids for the member', async () => {
     vi.mocked(client.put).mockResolvedValue({ data: { data: { id: 'u1', warehouse_ids: ['w1', 'w2'] } } } as any)

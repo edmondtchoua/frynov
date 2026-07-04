@@ -4,7 +4,7 @@ import { reportService } from '@/modules/reports/services/reportService'
 
 // Sprint 20 multi-sites: report views can scope sales/stock by warehouse.
 describe('reportService — warehouse scoping', () => {
-  afterEach(() => vi.clearAllMocks())
+  afterEach(() => { vi.clearAllMocks() })
 
   it('forwards warehouse_id to the sales report', async () => {
     vi.mocked(client.get).mockResolvedValue({ data: {} } as any)

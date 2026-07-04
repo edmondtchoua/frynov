@@ -175,7 +175,9 @@ export const adminService = {
     return data
   },
 
-  async updatePlan(id: string, payload: Partial<AdminPlan> & { limits?: Partial<AdminPlanLimits> }) {
+  // `limits` accepte un sous-ensemble des limites (PATCH partiel) — d'où l'Omit,
+  // sinon l'intersection avec `Partial<AdminPlan>` exigerait l'objet complet.
+  async updatePlan(id: string, payload: Omit<Partial<AdminPlan>, 'limits'> & { limits?: Partial<AdminPlanLimits> | null }) {
     const { data } = await client.patch<AdminPlan>(`/api/admin/plans/${id}`, payload)
     return data
   },

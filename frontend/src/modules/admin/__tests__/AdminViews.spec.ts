@@ -42,7 +42,7 @@ async function mountView(view: any) {
 
 const page = (rows: any[]) => ({ data: rows, meta: { current_page: 1, last_page: 1, per_page: 20, total: rows.length } })
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => { vi.clearAllMocks() })
 
 describe('Admin back-office — smoke', () => {
   it('AdminDashboardView renders platform KPIs', async () => {

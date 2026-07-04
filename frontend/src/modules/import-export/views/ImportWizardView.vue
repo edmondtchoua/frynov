@@ -160,7 +160,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(systemField, fileCol) in localMapping" :key="fileCol">
+              <tr v-for="(_systemField, fileCol) in localMapping" :key="fileCol">
                 <td class="file-col-name">{{ fileCol }}</td>
                 <td>
                   <select v-model="localMapping[fileCol]" class="mapping-select">
@@ -296,7 +296,8 @@
         </div>
 
         <!-- Completed summary -->
-        <div v-if="session.isTerminal || ['completed','partial','failed','cancelled'].includes(session.status)" class="result-section">
+        <!-- `isTerminal` n'est jamais sérialisé par l'API (méthode du modèle backend) : le test de statut suffit -->
+        <div v-if="['completed','partial','failed','cancelled'].includes(session.status)" class="result-section">
           <div :class="['result-card', `result-${session.status}`]">
             <div class="result-icon">{{ resultIcon }}</div>
             <div class="result-info">
@@ -319,7 +320,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, watch, onUnmounted } from 'vue'
+import { ref, computed, reactive, onUnmounted } from 'vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { pushToast } from '@/composables/useNotifications'
 import { useRouter } from 'vue-router'
@@ -411,7 +412,8 @@ const canExecute = computed(() =>
 
 const resultIcon = computed(() => {
   if (!session.value) return ''
-  return { completed: '✅', partial: '⚠️', failed: '❌', cancelled: '🚫' }[session.value.status] ?? ''
+  const icons: Record<string, string> = { completed: '✅', partial: '⚠️', failed: '❌', cancelled: '🚫' }
+  return icons[session.value.status] ?? ''
 })
 
 const rowFilters = computed(() => ([

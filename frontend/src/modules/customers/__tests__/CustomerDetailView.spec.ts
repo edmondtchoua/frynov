@@ -39,7 +39,7 @@ async function mountView() {
 }
 
 describe('CustomerDetailView', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('renders the customer name, contact, imported address and notes', async () => {
     const w = await mountView()

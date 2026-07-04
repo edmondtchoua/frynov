@@ -4,7 +4,7 @@ import { authService } from '@/modules/auth/services/authService'
 
 // RBAC Phase C: managers grant a time-boxed role; it auto-expires server-side.
 describe('authService temporary access', () => {
-  afterEach(() => vi.clearAllMocks())
+  afterEach(() => { vi.clearAllMocks() })
 
   it('grants a temporary role with an expiry', async () => {
     vi.mocked(client.post).mockResolvedValue({ data: { message: 'ok' } } as any)

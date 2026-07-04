@@ -47,7 +47,7 @@ async function mountView(page = STOCK_PAGE) {
 }
 
 describe('StockListView', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('renders stock rows with product name, SKU and available qty', async () => {
     const w = await mountView()

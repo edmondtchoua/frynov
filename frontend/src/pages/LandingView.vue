@@ -558,7 +558,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useGeoContent } from '@/composables/useGeoContent'
-import { fetchPublicPricing, type PublicPlan } from '@/services/publicPricingService'
+import { fetchPublicPricing, type PublicPlan, type PricingInterval } from '@/services/publicPricingService'
 import FrynovLogo from '@/shared/components/FrynovLogo.vue'
 
 const auth       = useAuthStore()
@@ -568,7 +568,7 @@ const openFaq    = ref<string | null>(null)
 
 // ── Geo-personalization ────────────────────────────────────────────────────
 // Default: global (neutral). Updates reactively once IP detection resolves.
-const { region, market, isAfrica, selectableMarkets, selectedMarket } = useGeoContent()
+const { market, isAfrica, selectableMarkets, selectedMarket } = useGeoContent()
 
 function onScroll() { scrolled.value = window.scrollY > 40 }
 onMounted(()   => window.addEventListener('scroll', onScroll, { passive: true }))

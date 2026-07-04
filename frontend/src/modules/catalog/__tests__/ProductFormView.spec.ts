@@ -25,7 +25,7 @@ async function mountCreate() {
 }
 
 describe('ProductFormView (create mode)', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('renders the "Nouveau produit" form (not edit)', async () => {
     const w = await mountCreate()

@@ -3,7 +3,7 @@ import client from '@/api/client'
 import { stockAdjustmentService } from '@/modules/inventory/services/stockAdjustmentService'
 
 describe('stockAdjustmentService', () => {
-  afterEach(() => vi.clearAllMocks())
+  afterEach(() => { vi.clearAllMocks() })
 
   it('lists the pending review queue', async () => {
     vi.mocked(client.get).mockResolvedValue({ data: { data: [{ id: 'a1' }], current_page: 1 } } as any)

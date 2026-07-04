@@ -6,7 +6,6 @@ import type {
   Product,
   ProductAttribute,
   ProductStockSummary,
-  StockMovementItem,
 } from '../types'
 import type { CreateVariantPayload, LabelBatchPayload, ProductVariantFull } from '../types'
 

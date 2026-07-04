@@ -39,7 +39,7 @@ async function mountView() {
 }
 
 describe('SupplierListView', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
   afterEach(() => setLocale('fr'))   // reset locale for other tests in this file
 
   it('renders suppliers with code and name', async () => {

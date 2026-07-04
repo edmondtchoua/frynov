@@ -3,7 +3,7 @@ import client from '@/api/client'
 import { useWarehouses } from '@/composables/useWarehouses'
 
 describe('useWarehouses', () => {
-  afterEach(() => vi.clearAllMocks())
+  afterEach(() => { vi.clearAllMocks() })
 
   it('loads the tenant warehouses from the inventory endpoint', async () => {
     const list = [{ id: 'w1', name: 'Dépôt A', code: 'WH-A', type: 'main', is_default: true }]

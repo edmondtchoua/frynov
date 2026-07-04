@@ -36,7 +36,7 @@ async function mountView() {
 }
 
 describe('SettingsView', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('lazy-loads company settings on mount and populates the form', async () => {
     const w = await mountView()

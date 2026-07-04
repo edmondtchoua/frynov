@@ -236,6 +236,16 @@ class OrderService
                         $stock = $this->stockService->findOrCreate($order->tenant_id, $c->component_product_id, $c->component_variant_id);
                         $this->stockService->release($stock, $qty);
                         $this->stockService->moveOut($stock, $qty, StockMovement::REASON_SALE, $order->number, "Kit {$line->sku}", $userId);
+
+                        // RC-7A — un composant suivi PAR LOT est aussi consommé en FEFO (limite levée
+                        // de la recette QA : la traçabilité lot vaut aussi à travers un kit).
+                        $componentTracking = Product::withoutTenantScope()
+                            ->where('tenant_id', $order->tenant_id)
+                            ->where('id', $c->component_product_id)
+                            ->value('stock_tracking');
+                        if ($componentTracking === Product::STOCK_TRACKING_BATCH) {
+                            $this->batches->allocateFefo($order->tenant_id, $c->component_product_id, $c->component_variant_id, $qty);
+                        }
                     }
                 }
                 // RC-5E — non stockable (service/digital) : ni libération ni sortie de stock.

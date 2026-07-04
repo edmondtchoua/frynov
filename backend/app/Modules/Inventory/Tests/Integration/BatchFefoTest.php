@@ -146,6 +146,25 @@ class BatchFefoTest extends TestCase
     }
 
     #[Test]
+    public function the_expire_command_marks_overdue_batches_and_alerts_the_tenant(): void
+    {
+        // RC-7A — démarque automatique + alerte (canal log configuré pour capter l'outbox).
+        \App\Modules\Notifications\Models\NotificationChannel::create([
+            'tenant_id' => $this->tenant->id, 'channel' => 'email', 'provider' => 'log',
+            'name' => 'Log', 'is_active' => true, 'is_default' => true,
+        ]);
+        $this->receiveBatch('LOT-MORT', 4, now()->subDays(2)->toDateString())->assertCreated();
+        $this->receiveBatch('LOT-VIF', 4, now()->addDays(30)->toDateString())->assertCreated();
+
+        $this->artisan('inventory:expire-batches')->assertSuccessful();
+
+        $this->assertSame(ProductBatch::STATUS_EXPIRED, ProductBatch::withoutTenantScope()->where('batch_number', 'LOT-MORT')->first()->status);
+        $this->assertSame(ProductBatch::STATUS_ACTIVE, ProductBatch::withoutTenantScope()->where('batch_number', 'LOT-VIF')->first()->status);
+        $this->assertNotNull(\App\Modules\Notifications\Models\NotificationOutbox::withoutTenantScope()
+            ->where('template_code', 'inventory.batches_expired')->first());
+    }
+
+    #[Test]
     public function a_duplicate_batch_number_for_the_same_product_is_rejected(): void
     {
         $this->receiveBatch('LOT-A', 5, null)->assertCreated();

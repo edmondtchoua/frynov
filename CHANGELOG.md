@@ -3,6 +3,18 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧹 RC-7A : suites de recette — démarque automatique des lots + FEFO des composants de kits (2026-06-27)
+
+Branche `feature/batch-expiry-followups` (release `v1.0.0` → `rc.133`).
+Lève deux **limites connues** du rapport de recette.
+
+- **`inventory:expire-batches`** (cron quotidien 00:45) : les lots `active` à DLC dépassée passent
+  **`expired`** + **alerte récapitulative** au tenant (template `inventory.batches_expired` — lots à
+  retirer physiquement). Ils étaient déjà exclus de la vente (fix QA) ; le statut est désormais aligné.
+- **FEFO à travers les kits** : un composant de kit suivi **par lot** consomme désormais ses lots en
+  FEFO au fulfill (traçabilité complète kit → lot).
+- **+2 tests** (commande de démarque + alerte ; kit à composant `batch` → FEFO). BatchFefo+Kit **15 ✅**.
+
 ## [Non publié] — 🧪 QA : recette complète rc.114→131 — 6 correctifs (2 sécurité, 4 logique) (2026-06-26)
 
 Branche `feature/qa-recette-phase-2` (release `v1.0.0` → `rc.132`).

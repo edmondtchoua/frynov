@@ -43,9 +43,9 @@
 ## 4. Limites connues (assumées, documentées — pas des blocages)
 
 - Un entitlement digital **par ligne** (pas par exemplaire) — la révocation au retour suit ce modèle.
-- FEFO non appliqué aux **composants de kits** suivis par lot (kit → composants agrégés seulement).
-- Lots périmés : exclus de la vente mais le statut `expired` n'est pas posé automatiquement (job de
-  démarque à planifier).
+- ~~FEFO non appliqué aux composants de kits~~ ✅ **levée en RC-7A (rc.133)**.
+- ~~Statut `expired` des lots non posé automatiquement~~ ✅ **levée en RC-7A (rc.133)** — cron
+  `inventory:expire-batches` quotidien + alerte de retrait.
 - Canaux SMS/WhatsApp : infrastructure proxy prête, aucun agrégateur réel branché (config à saisir).
 - Emails texte brut (pas de layout HTML) ; locale `fr` seule seedée pour les templates.
 - Baseline vue-tsc (~180 lignes de dette pré-existante, hors périmètre de ces RC).

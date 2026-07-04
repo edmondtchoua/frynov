@@ -155,6 +155,32 @@ class KitTest extends TestCase
     }
 
     #[Test]
+    public function a_batch_tracked_component_of_a_kit_is_consumed_fefo(): void
+    {
+        // RC-7A — la traçabilité lot vaut aussi à travers un kit : le composant `batch` consomme FEFO.
+        $serum = Product::create([
+            'tenant_id' => $this->tenant->id, 'sku' => 'SERUM', 'name' => 'Serum', 'price_amount' => 2000,
+            'price_currency' => 'XOF', 'status' => 'active', 'product_type' => Product::TYPE_SIMPLE,
+            'stock_tracking' => Product::STOCK_TRACKING_BATCH,
+        ]);
+        $this->postJson("/api/inventory/products/{$serum->id}/batches", ['batch_number' => 'S-PROCHE', 'quantity' => 5, 'expiry_date' => now()->addDays(5)->toDateString()], $this->auth())->assertCreated();
+        $this->postJson("/api/inventory/products/{$serum->id}/batches", ['batch_number' => 'S-LOIN', 'quantity' => 5, 'expiry_date' => now()->addDays(60)->toDateString()], $this->auth())->assertCreated();
+
+        $this->putJson("/api/catalog/products/{$this->kit->id}/components", ['components' => [
+            ['product_id' => $serum->id, 'quantity' => 2],
+        ]], $this->auth())->assertOk();
+
+        $order = $this->orders->create(['items' => [['product_id' => $this->kit->id, 'quantity' => 2]]], $this->tenant->id, $this->user->id);
+        $order = $this->orders->confirm($order, $this->user->id);
+        $this->orders->fulfill($order, $this->user->id); // 2 kits × 2 = 4 unités
+
+        $proche = \App\Modules\Inventory\Models\ProductBatch::withoutTenantScope()->where('batch_number', 'S-PROCHE')->first();
+        $loin   = \App\Modules\Inventory\Models\ProductBatch::withoutTenantScope()->where('batch_number', 'S-LOIN')->first();
+        $this->assertSame(1, $proche->quantity); // FEFO : le plus proche d'abord (5 - 4)
+        $this->assertSame(5, $loin->quantity);
+    }
+
+    #[Test]
     public function a_kit_without_bom_behaves_like_a_standard_stocked_product(): void
     {
         // Pas de nomenclature : le kit est traité comme un produit stocké classique (compat RC-5A).

@@ -39,3 +39,9 @@ Schedule::command('notifications:flush-outbox')
     ->everyFiveMinutes()
     ->name('notifications:flush-outbox')
     ->withoutOverlapping();
+
+// ── RC-7A — démarque : lots périmés → expired + alerte de retrait physique ─
+Schedule::command('inventory:expire-batches')
+    ->dailyAt('00:45')
+    ->name('inventory:expire-batches')
+    ->withoutOverlapping(30);

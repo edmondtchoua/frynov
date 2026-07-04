@@ -341,7 +341,13 @@
 
           <!-- ── Type & politique produit (RC-5K) ─────────────────────── -->
           <div class="card">
-            <h3 class="card-title">{{ $t('catalog.productForm.policy.title') }}</h3>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <h3 class="card-title">{{ $t('catalog.productForm.policy.title') }}</h3>
+              <!-- RC-6J — assistant optionnel (création uniquement) -->
+              <button v-if="!isEdit" type="button" class="btn btn-ghost btn-sm" @click="showWizard = true">
+                ✨ {{ $t('catalog.wizard.open') }}
+              </button>
+            </div>
 
             <div class="form-group">
               <label class="form-label">{{ $t('catalog.productForm.policy.type') }}</label>
@@ -511,6 +517,9 @@
       </template>
     </BaseModal>
 
+    <!-- ── Assistant de création (RC-6J — optionnel) ─────────────────────── -->
+    <ProductWizardModal v-model="showWizard" @apply="onWizardApply" />
+
   </div>
 </template>
 
@@ -519,6 +528,7 @@ import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { productService } from '../services/productService'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import ProductWizardModal from '../components/ProductWizardModal.vue'
 import { getAuthToken } from '@/api/authToken'
 import client from '@/api/client'
 import type { Category, Product } from '../types'
@@ -582,6 +592,19 @@ watch(() => form.product_type, () => {
   form.stock_tracking   = ''
   form.fulfillment_type = ''
 })
+
+// ── RC-6J — assistant optionnel : pré-remplit la politique sans remplacer le formulaire ──
+const showWizard = ref(false)
+async function onWizardApply(r: { product_type: string; stock_tracking: string; fulfillment_type: string; wantsWarranty: boolean; hasVariants: boolean }) {
+  form.product_type = r.product_type as typeof form.product_type
+  form.has_variants = r.hasVariants
+  await nextTick() // laisser le watch(product_type) remettre à zéro avant d'appliquer
+  form.stock_tracking   = r.stock_tracking as typeof form.stock_tracking
+  form.fulfillment_type = r.fulfillment_type as typeof form.fulfillment_type
+  if (r.wantsWarranty && !form.warranty_policy_id && warrantyPolicies.value.length) {
+    form.warranty_policy_id = warrantyPolicies.value[0].id // première politique active en suggestion
+  }
+}
 
 // ── Unsaved-changes guard (UX-07) ───────────────────────────────────────────
 const dirty      = ref(false)

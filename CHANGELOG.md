@@ -3,6 +3,25 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — ✨ RC-6J : assistant de création produit (optionnel) — 🎉 clôture Phase 2 (2026-06-26)
+
+Branche `feature/product-wizard` (release `v1.0.0` → `rc.131`).
+Arbitrage fondateur C : **assistant optionnel** (n'impose rien, ne remplace pas le formulaire).
+
+### Frontend — `ProductWizardModal` (bouton « ✨ Assistant », création uniquement)
+- **4 questions métier** (audit §7.1) : *Que vendez-vous ?* (physique / déclinaisons / service /
+  digital / kit) → *Suivi du stock ?* (globale / par unité / par lot — sauté pour service/digital) →
+  *Garantie ?* → *Livraison ?* (options filtrées par nature).
+- **« Appliquer au formulaire »** pré-remplit la carte « Type & politique » (RC-5K) : type, suivi,
+  livraison, toggle variantes, et **suggère la première politique de garantie active** si souhaité.
+  **i18n FR+EN** (`catalog.wizard.*`). Garde i18n ✅, vue-tsc ✅, front **271 ✅**.
+
+### 🎉 Phase 2 complète (RC-6A → RC-6J, rc.123 → rc.131)
+Notifications multi-canal + SPA · portail client (3 modes) · identifiants dynamiques (18 seedés) ·
+pool de licences par plan · garanties+ (jours/années, par exemplaire, extensions) · billing 6 règles
+configurables · lots FEFO · kits à nomenclature · assistant produit. Voir
+`docs/decisions/phase-2-arbitrages.md` (suivi ✅ complet).
+
 ## [Non publié] — 🧩 RC-6I : kits/bundles — nomenclature + consommation des composants à la vente (2026-06-25)
 
 Branche `feature/kits-bom` (release `v1.0.0` → `rc.130`).

@@ -46,6 +46,7 @@
 | RC-5G | spécial | reporting produits spéciaux : `GET /reports/special-products` (valorisation agrégé + sérialisé par unité, exclusion services/digital, rappel garanties/SAV/digital) + carte StockReportView | ✅ **rc.118** |
 | RC-5H | spécial | retour (RMA) défait les artefacts : unité sérialisée `in_stock`/`returned`, garantie `void`, accès digital révoqué (au `restock`) | ✅ **rc.119** |
 | RC-5I | spécial | digital — fichiers privés (`digital_assets`) + **téléchargement par lien signé** (revérif révocation) + onglet fiche produit | ✅ **rc.120** |
+| RC-5J | billing | **renouvellement & relance** (cron `billing:process-renewals` quotidien) : rappels J-7/3/1 audités et idempotents, échéance → `past_due`, plans gratuits roulés, grâce 7 j → suspension (acomptes échelonnés épargnés) | ✅ **rc.121** |
 
 > 🎉 **Chantier « produits spéciaux » complet (RC-5A→I).** Reste hors périmètre (à planifier) : portail
 > client self-service (saisie jeton + auth client), pool de clés de licence, extensions de garantie,
@@ -55,7 +56,7 @@
 - Proration **dépend** de la périodicité (interval persisté + tarif annuel en base) → ordre strict.
 - Socle données `subscriptions` livré **une seule fois** (RC-0) ; proration n'ajoute que `credit_balance`.
 - Tolérance FX **±1 %** indispensable (mobile money) ; arrondi **par exposant devise** (XOF/XAF = 0).
-- Pas de **job de renouvellement/relance** (cron billing) — hors périmètre, à planifier après.
+- ~~Pas de **job de renouvellement/relance** (cron billing)~~ ✅ **RC-5J (rc.121)** — `billing:process-renewals` quotidien.
 - **DoD i18n** : tout RC touchant une vue livre FR+EN + met à jour le tracker (garde CI).
 
 ## 🔭 Reporté à RC-2 (issu de la revue adverse RC-1C)

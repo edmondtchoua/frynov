@@ -111,6 +111,22 @@ Le système **reconnaît tout seul** ce que vous payez à partir du **montant** 
 
 La source backend officielle pour préparer la landing et la page d'upgrade est maintenant l'API publique `GET /api/public/pricing`. La page frontend ne doit plus maintenir durablement une grille de prix séparée.
 
+## Renouvellement et relance (RC-5J)
+
+Les paiements étant **manuels** (mobile money approuvé par l'équipe), il n'y a pas de prélèvement
+automatique. Chaque nuit, le système :
+
+1. **rappelle** les échéances proches des plans payants (**J-7, J-3, J-1** — chaque rappel n'est émis
+   qu'une fois par période, et tracé dans le journal d'audit) ;
+2. à **échéance dépassée**, passe l'abonnement payant en **« paiement en retard »** (`past_due`) —
+   l'accès reste ouvert pendant la **grâce de 7 jours** ; les plans **gratuits** sont automatiquement
+   reconduits ;
+3. après la grâce, **suspend** l'abonnement (motif `renewal_overdue`) — la réactivation se fait après
+   régularisation, par l'équipe (écran d'administration habituel).
+
+> ℹ️ Les **acomptes échelonnés** en cours (paiement partiel accepté, période non démarrée) ne sont
+> jamais suspendus par ce mécanisme.
+
 ## Limites d'utilisation
 
 - Les limites sont vérifiées côté backend.

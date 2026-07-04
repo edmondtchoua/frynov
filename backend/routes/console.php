@@ -25,3 +25,11 @@ Schedule::command('access:revoke-expired')
     ->everyMinute()
     ->name('access:revoke-expired')
     ->withoutOverlapping();
+
+// ── RC-5J — renouvellement & relance des abonnements (dunning) ─────────────
+// Quotidien à 01:30 : rappels J-7/J-3/J-1 (audités), périodes échues → past_due
+// (plans gratuits roulés), past_due au-delà de la grâce (7 j) → suspendu.
+Schedule::command('billing:process-renewals')
+    ->dailyAt('01:30')
+    ->name('billing:process-renewals')
+    ->withoutOverlapping(30);

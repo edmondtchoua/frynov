@@ -64,6 +64,12 @@ class DigitalService
         return $created;
     }
 
+    /** RC-6C — lien magique du portail client pour un accès. */
+    public function portalLink(DigitalEntitlement $entitlement): string
+    {
+        return rtrim((string) config('app.frontend_url'), '/') . '/portal?token=' . $entitlement->access_token;
+    }
+
     /** RC-6A — email de livraison digitale au client (jeton + clé), si son email est connu. */
     private function notifyDelivery(Order $order, Product $product, DigitalEntitlement $entitlement): void
     {
@@ -84,6 +90,7 @@ class DigitalService
                 'product_name'  => $product->name,
                 'order_number'  => $order->number,
                 'access_token'  => $entitlement->access_token,
+                'portal_link'   => $this->portalLink($entitlement), // RC-6C — lien magique
                 'license_line'  => $entitlement->license_key ? "Clé de licence : {$entitlement->license_key}" : '',
                 'tenant_name'   => $tenant?->name ?? '',
             ]);

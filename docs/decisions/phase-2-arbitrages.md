@@ -22,7 +22,7 @@
 > | RC | Contenu | État |
 > |----|---------|------|
 > | RC-6A/6B | Notifications : canaux (SMTP/proxy API/log, config chiffrée) + templates dynamiques (global→tenant) + outbox/retry + branchements billing & digital + **SPA Paramètres → Notifications** | ✅ **rc.123** |
-> | RC-6C | Portail client (3 modes) | ⬜ |
+> | RC-6C | Portail client `/portal` : jeton + lien magique + « mes achats » par email (anti-énumération, throttle) | ✅ **rc.124** |
 > | RC-6D | Attributs spéciaux dynamiques (catalogue exhaustif seedé) | ⬜ |
 > | RC-6E | Pool de licences (plan-gated) | ⬜ |
 > | RC-6F | Garanties+ (extensions, jours/années, par exemplaire) | ⬜ |

@@ -318,8 +318,12 @@ SAV** (motif + description). Elle reprend le client et l'unité (IMEI/VIN) conce
 **Ouvert → En réparation → Résolu / Remplacé / Rejeté**. Une réclamation sur une **garantie expirée**
 n'est possible qu'en la **forçant** explicitement (action tracée).
 
-> 🔜 Le **portail de téléchargement client** (lien signé, fichiers privés) et l'annulation automatique
-> de garantie sur retour arrivent dans les prochaines versions.
+**Portail client (RC-6C).** Vos clients accèdent à leurs achats digitaux sur la page publique
+**`/portal`** : en collant leur **jeton d'accès**, via le **lien magique** reçu dans l'email de
+livraison, ou en saisissant leur **email** pour recevoir la liste de tous leurs achats. Ils y trouvent
+leurs **fichiers** (liens sécurisés) et leur **clé de licence**.
+
+> ℹ️ L'annulation de garantie sur retour est automatique depuis RC-5H (voir section Garanties).
 
 ---
 

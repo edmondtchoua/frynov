@@ -54,6 +54,9 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // RC-6C — base des liens client-facing (portail digital). Défaut : APP_URL.
+    'frontend_url' => env('FRONTEND_URL', env('APP_URL', 'http://localhost')),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

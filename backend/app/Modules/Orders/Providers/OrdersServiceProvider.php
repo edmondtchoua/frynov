@@ -25,6 +25,7 @@ class OrdersServiceProvider extends ModuleServiceProvider
                 $app->make(WarrantyService::class),
                 $app->make(DigitalService::class),
                 $app->make(\App\Modules\Inventory\Services\BatchService::class),
+                $app->make(\App\Modules\Catalog\Services\KitService::class),
             );
         });
     }

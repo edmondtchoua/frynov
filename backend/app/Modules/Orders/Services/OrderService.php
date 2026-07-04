@@ -29,6 +29,7 @@ class OrderService
         private readonly WarrantyService $warranties,
         private readonly DigitalService $digital,
         private readonly \App\Modules\Inventory\Services\BatchService $batches,
+        private readonly \App\Modules\Catalog\Services\KitService $kits,
     ) {}
 
     // ── Queries ────────────────────────────────────────────────────────────
@@ -171,8 +172,15 @@ class OrderService
                     ); // throws InsufficientUnitsException
                 }
 
+                // RC-6I — kit à nomenclature (virtuel) : réserver le stock des COMPOSANTS, pas du kit.
+                if ($components = $this->kitComponentsFor($line, $order->tenant_id)) {
+                    foreach ($components as $c) {
+                        $stock = $this->stockService->findOrCreate($order->tenant_id, $c->component_product_id, $c->component_variant_id);
+                        $this->stockService->reserve($stock, $line->quantity * $c->quantity);
+                    }
+                }
                 // RC-5E — produit non stockable (service/digital, stock_tracking=none) : aucune réservation.
-                if ($this->isStockableLine($line, $order->tenant_id)) {
+                elseif ($this->isStockableLine($line, $order->tenant_id)) {
                     $stock = $this->stockService->findOrCreate(
                         $order->tenant_id,
                         $line->product_id,
@@ -221,8 +229,17 @@ class OrderService
             $order->load('lines');
 
             foreach ($order->lines as $line) {
+                // RC-6I — kit à nomenclature : consommer le stock des COMPOSANTS (release puis moveOut).
+                if ($components = $this->kitComponentsFor($line, $order->tenant_id)) {
+                    foreach ($components as $c) {
+                        $qty   = $line->quantity * $c->quantity;
+                        $stock = $this->stockService->findOrCreate($order->tenant_id, $c->component_product_id, $c->component_variant_id);
+                        $this->stockService->release($stock, $qty);
+                        $this->stockService->moveOut($stock, $qty, StockMovement::REASON_SALE, $order->number, "Kit {$line->sku}", $userId);
+                    }
+                }
                 // RC-5E — non stockable (service/digital) : ni libération ni sortie de stock.
-                if ($this->isStockableLine($line, $order->tenant_id)) {
+                elseif ($this->isStockableLine($line, $order->tenant_id)) {
                     $stock = $this->stockService->findOrCreate(
                         $order->tenant_id,
                         $line->product_id,
@@ -299,8 +316,15 @@ class OrderService
                 $order->load('lines');
 
                 foreach ($order->lines as $line) {
+                    // RC-6I — kit à nomenclature : libérer les réservations des COMPOSANTS.
+                    if ($components = $this->kitComponentsFor($line, $order->tenant_id)) {
+                        foreach ($components as $c) {
+                            $stock = $this->stockService->findOrCreate($order->tenant_id, $c->component_product_id, $c->component_variant_id);
+                            $this->stockService->release($stock, $line->quantity * $c->quantity);
+                        }
+                    }
                     // RC-5E — non stockable : aucune réservation à libérer.
-                    if ($this->isStockableLine($line, $order->tenant_id)) {
+                    elseif ($this->isStockableLine($line, $order->tenant_id)) {
                         $stock = $this->stockService->findOrCreate(
                             $order->tenant_id,
                             $line->product_id,
@@ -364,6 +388,24 @@ class OrderService
     private function isBatchLine(OrderLine $line, string $tenantId): bool
     {
         return $this->productFor($line, $tenantId)?->stock_tracking === Product::STOCK_TRACKING_BATCH;
+    }
+
+    /** @var array<string,\Illuminate\Database\Eloquent\Collection|null> cache product_id → nomenclature */
+    private array $kitComponentsCache = [];
+
+    /**
+     * RC-6I — nomenclature d'une ligne KIT (null si le produit n'est pas un kit ou n'a pas de
+     * nomenclature — il se comporte alors comme un produit stocké classique, compat RC-5A).
+     */
+    private function kitComponentsFor(OrderLine $line, string $tenantId): ?\Illuminate\Database\Eloquent\Collection
+    {
+        if (! array_key_exists($line->product_id, $this->kitComponentsCache)) {
+            $isKit = $this->productFor($line, $tenantId)?->product_type === Product::TYPE_KIT;
+            $components = $isKit ? $this->kits->componentsFor($tenantId, $line->product_id) : null;
+            $this->kitComponentsCache[$line->product_id] = ($components && $components->isNotEmpty()) ? $components : null;
+        }
+
+        return $this->kitComponentsCache[$line->product_id];
     }
 
     /**

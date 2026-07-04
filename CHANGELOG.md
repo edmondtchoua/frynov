@@ -3,6 +3,27 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧩 RC-6I : kits/bundles — nomenclature + consommation des composants à la vente (2026-06-25)
+
+Branche `feature/kits-bom` (release `v1.0.0` → `rc.130`).
+Arbitrage fondateur H : le `product_type=kit` (annoncé depuis Sprint 17, jamais opérationnel) devient
+un **kit virtuel à nomenclature**.
+
+### Kits — la vente opère les COMPOSANTS
+- **`kit_components`** : nomenclature (composant produit/variante + quantité par kit), remplacement
+  idempotent via `PUT /api/catalog/products/{id}/components` (produit `kit` only → 422, un kit ne peut
+  pas se contenir), lecture `GET …/components`.
+- **`OrderService`** — un kit **avec nomenclature** est virtuel : `confirm` **réserve** le stock de
+  chaque composant (qty ligne × qty composant, atomique — un composant insuffisant annule tout),
+  `fulfill` **consomme** (release + moveOut référencé « Kit {sku} »), `cancel` **libère**. Un kit
+  **sans** nomenclature reste un produit stocké classique (compat RC-5A).
+- Garanties/digital par ligne (RC-5D/5E) continuent de s'appliquer au kit lui-même.
+
+### Tests
+- **+6 tests** `KitTest` (BOM refusée hors type kit, confirm réserve 3×(2+1), fulfill consomme,
+  cancel libère, composant insuffisant → 422 atomique, kit sans BOM = produit standard).
+  Catalog+Orders+Inventory **248 ✅**.
+
 ## [Non publié] — 📦 RC-6H : lots & péremption — réception par lot + consommation FEFO (2026-06-24)
 
 Branche `feature/batch-fefo` (release `v1.0.0` → `rc.129`).

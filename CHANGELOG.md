@@ -3,6 +3,35 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧬 RC-6D : identifiants métier dynamiques — catalogue exhaustif configurable (2026-06-20)
+
+Branche `feature/special-attributes` (release `v1.0.0` → `rc.125`).
+Arbitrage fondateur D : sortir du `serial_type` libre. Normalisation, **validation (regex)** et
+**unicité** des unités sérialisées sont désormais pilotées par des **définitions configurables sans
+code** (audit produits-spéciaux §6.2).
+
+### `special_attribute_definitions`
+- **Catalogue global seedé (18 définitions)** : IMEI, IMEI 2, n° de série constructeur, **adresse
+  MAC**, ICCID, IMSI, MSISDN, VIN, châssis, moteur, plaque, **compteur (eau/électricité)**, batterie,
+  **UDI médical**, certificat, carte de garantie, clé boîte, **lot fabricant (non unique)** + `custom`.
+  Chaque définition : stratégie de normalisation (`digits_only`/`alnum_upper`/`upper_trim`/`none`),
+  regex de validation, `is_unique`, aide.
+- **Définitions par tenant** : création/modification via `POST/PATCH /api/inventory/special-attributes`
+  (les globales sont en lecture seule) ; résolution **tenant → globale** par code.
+
+### Réception d'unités (RC-5B) pilotée par les définitions
+- `InventoryUnitService` : normalisation par définition (MAC `aa:bb:cc…` ≡ `AABBCC…`), **rejet des
+  valeurs invalides** (`InvalidSerialException` → 422 avec l'aide de la définition), unicité **désactivable**
+  (`lot_number` partagé par plusieurs unités). Recherche `findBySerial` alignée. Types inconnus →
+  comportement RC-5B inchangé (compat).
+- Migration : l'index DB strict `UNIQUE(tenant, type, valeur)` devient un index simple — l'unicité des
+  types uniques reste garantie par le contrôle transactionnel applicatif (`lockForUpdate`).
+
+### Tests
+- **+7 tests** `SpecialAttributeTest` (catalogue seedé listé, MAC normalisée/dédupliquée multi-formats,
+  regex IMEI rejette les invalides, lot non unique partagé, définition custom créée+utilisée+regex,
+  globales en lecture seule, type inconnu → fallback). Inventory+Orders **142 ✅**.
+
 ## [Non publié] — 🌐 RC-6C : portail client digital — jeton, lien magique, « mes achats » par email (2026-06-19)
 
 Branche `feature/digital-client-portal` (release `v1.0.0` → `rc.124`).

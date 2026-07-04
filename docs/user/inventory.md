@@ -271,6 +271,12 @@ par son **VIN** (numéro de châssis), un équipement par son **numéro de séri
   identifiant peut en revanche exister chez une autre entreprise — l'unicité est propre à votre compte.
 - Vous pouvez **rechercher une unité par son IMEI/VIN** pour retrouver instantanément son produit et son
   statut (en stock, vendu, en réparation…).
+- **Identifiants disponibles (RC-6D)** : IMEI (et IMEI 2), numéro de série, **adresse MAC**, ICCID/IMSI,
+  VIN/châssis, moteur, plaque, **numéro de compteur**, batterie, référence médicale (UDI), certificat,
+  carte de garantie, numéro de lot… Chaque identifiant a son **format contrôlé automatiquement**
+  (ex. un IMEI doit faire 14 à 16 chiffres) et sa règle d'unicité (un numéro de lot peut être partagé,
+  un IMEI jamais). Vous pouvez **créer vos propres identifiants** métier (ex. « Réf pompe ») sans
+  développement.
 
 ### Lier une unité à une commande (RC-5C)
 

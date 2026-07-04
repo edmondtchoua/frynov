@@ -20,6 +20,13 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
     Route::get('products/{productId}/units',         [SerializedUnitController::class, 'index']);
     Route::get('units/search',                       [SerializedUnitController::class, 'search']);
 
+    // ── Définitions d'identifiants métier (RC-6D) — fusion globales + tenant ──
+    Route::get('special-attributes',                 [\App\Modules\Inventory\Http\Controllers\SpecialAttributeController::class, 'index']);
+    Route::middleware('role_or_permission:manager|admin')->group(function () {
+        Route::post('special-attributes',            [\App\Modules\Inventory\Http\Controllers\SpecialAttributeController::class, 'store']);
+        Route::patch('special-attributes/{id}',      [\App\Modules\Inventory\Http\Controllers\SpecialAttributeController::class, 'update']);
+    });
+
     // ── Stock operations (manager/admin only) ─────────────────────────
     Route::middleware('role_or_permission:manager|admin|inventory.adjust|inventory.receive')->group(function () {
         Route::post('stock/{productId}/move-in',         [InventoryController::class, 'moveIn']);

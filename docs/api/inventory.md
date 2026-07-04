@@ -322,8 +322,26 @@ Liste paginée des unités d'un produit (scopée tenant + périmètre entrepôt 
 ### GET `/api/inventory/units/search?type=imei&serial=...`
 Retrouve une unité par identifiant (recherche sur la valeur **normalisée**). **404** si introuvable.
 
-> **Suite RC-5** : réservation/vente d'une unité précise (lien commande ⇄ unité), garanties
-> (contrats + SAV), produits digitaux (assets/entitlements/licences).
+## Définitions d'identifiants métier (RC-6D)
+
+La réception d'unités est pilotée par des **définitions** (normalisation, regex de validation,
+unicité) : 18 définitions **globales seedées** (imei, imei2, serial_number, mac_address, iccid, imsi,
+msisdn, vin, chassis_number, engine_number, plate_number, meter_number, battery_serial,
+medical_device_ref, certificate_number, warranty_card_no, license_key, lot_number *(non unique)*,
+custom) + définitions **propres au tenant** (résolution tenant → globale par `code`).
+
+### GET `/api/inventory/special-attributes`
+Fusion globales + tenant (le tenant prime par code), triée par `sort_order`.
+
+### POST `/api/inventory/special-attributes` *(manager/admin)*
+Crée une définition tenant : `{ code (a-z0-9_), label, normalization_strategy?
+(digits_only|alnum_upper|upper_trim|none), validation_regex?, is_unique?, help_text? }` → **201**.
+
+### PATCH `/api/inventory/special-attributes/{id}` *(manager/admin)*
+Modifie une définition **du tenant** (les globales sont en lecture seule → **404**).
+
+> Une valeur invalide pour la regex de sa définition est refusée à la réception (**422**, message +
+> aide). Une définition `is_unique=false` (ex. `lot_number`) accepte des valeurs partagées.
 
 ---
 

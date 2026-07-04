@@ -41,7 +41,7 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 
 | Module | Vue | Namespace | RC |
 |---|---|---|---|
-| catalog | `ProductFormView` | `catalog.productForm.*` (+ `policy.*` RC-5K) | rc.69 / rc.122 |
+| catalog | `ProductFormView` | `catalog.productForm.*` (+ `policy.*` RC-5K, + `catalog.wizard.*` RC-6J) | rc.69 / rc.122 / rc.131 |
 | catalog | `AttributesView` | `catalog.attributes.*` | rc.72 |
 | catalog | `VariantsView` | `catalog.variants.*` | rc.72 |
 | catalog | `ProductShowPage` | `catalog.productShow.*` (+ `digital.*` RC-5I) | rc.73 / rc.120 |

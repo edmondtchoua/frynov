@@ -29,7 +29,9 @@
 > | RC-6G | Billing : les 6 règles (`config/billing.php → rules.*`, défaut ON) — ledger `tenant_credits`, promo nette auto, sièges k≤100 sur intervalle déclaré, devise↔moyen strict, acompte abondé en place, rétro-action | ✅ **rc.128** |
 > | RC-6H | Lots : réception par lot (miroir agrégé), consommation **FEFO** au fulfill, `exhausted`, alerte `expiring` | ✅ **rc.129** |
 > | RC-6I | Kits : `kit_components` (PUT/GET), kit **virtuel** — confirm réserve / fulfill consomme / cancel libère les composants (atomique) ; sans BOM = produit standard | ✅ **rc.130** |
-> | RC-6J | Assistant produit optionnel | ⬜ |
+> | RC-6J | Assistant produit optionnel : 4 questions métier → pré-remplit « Type & politique » (+ suggestion garantie) | ✅ **rc.131** |
+>
+> 🎉 **Phase 2 complète (RC-6A → RC-6J).**
 
 ---
 

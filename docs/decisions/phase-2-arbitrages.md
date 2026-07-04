@@ -31,7 +31,16 @@
 > | RC-6I | Kits : `kit_components` (PUT/GET), kit **virtuel** — confirm réserve / fulfill consomme / cancel libère les composants (atomique) ; sans BOM = produit standard | ✅ **rc.130** |
 > | RC-6J | Assistant produit optionnel : 4 questions métier → pré-remplit « Type & politique » (+ suggestion garantie) | ✅ **rc.131** |
 >
-> 🎉 **Phase 2 complète (RC-6A → RC-6J).**
+> 🎉 **Phase 2 complète (RC-6A → RC-6J).** Recette QA : ✅ GO (rc.132) + suites (rc.133).
+>
+> ## Phase 3 — arbitrée le 2026-06-27 (ordre fondateur : 5 → 4 → 2 → 1)
+>
+> | RC | Contenu | État |
+> |----|---------|------|
+> | RC-7B | **Dette vue-tsc** (~180 lignes pré-existantes) → 0 erreur, sans changement de comportement | ⬜ |
+> | RC-7C | **Comptes clients** à mot de passe sur le portail (`/portal`) — en plus du jeton/lien magique | ⬜ |
+> | RC-7D | **Entitlement par exemplaire** (qty 3 → 3 accès ; révocation au prorata des retours) | ⬜ |
+> | RC-7E | **Crédits de communication** (NOUVELLE exigence fondateur) : solde prépayé par tenant × canal (email/SMS/WhatsApp), **décompte à l'envoi**, **recharge payante** (packs, rail de paiement manuel), solde + recharge visibles dans la SPA Notifications. Puis branchement d'un **agrégateur réel** (config à fournir). | ⬜ |
 
 ---
 

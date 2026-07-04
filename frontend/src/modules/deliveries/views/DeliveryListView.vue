@@ -236,7 +236,7 @@ async function doDeliver(d: Delivery) {
 
 function openFail(d: Delivery) {
   failModal.deliveryId = d.id
-  failModal.orderRef   = d.order_number ?? d.order_id
+  failModal.orderRef   = d.order_number ?? d.order_id ?? ''
   failModal.reason     = ''
   failModal.error      = ''
   failModal.saving     = false

@@ -5,12 +5,12 @@ export function usePermission() {
   const auth = useAuthStore()
   const roles = computed(() => auth.user?.roles ?? [])
 
-  function hasRole(role) {
+  function hasRole(role: string) {
     return roles.value.includes(role)
   }
 
-  function hasAnyRole(roleList) {
-    return roleList.some(r => roles.value.includes(r))
+  function hasAnyRole(roleList: string[]) {
+    return roleList.some((r: string) => roles.value.includes(r))
   }
 
   const canManageStock    = computed(() => hasAnyRole(["admin", "manager"]))

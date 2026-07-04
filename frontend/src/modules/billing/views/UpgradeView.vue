@@ -200,7 +200,6 @@ import { useRouter } from 'vue-router'
 import { authService } from '@/modules/auth/services/authService'
 import { useGeoContent } from '@/composables/useGeoContent'
 import { fetchPublicPricing, fetchPublicPaymentMethods, type PublicPlan, type PublicPaymentMethod, type PricingInterval } from '@/services/publicPricingService'
-import type { Subscription } from '@/modules/auth/types'
 import client from '@/api/client'
 import { t } from '@/i18n'
 

@@ -28,7 +28,8 @@
           @input="debouncedLoad"
         />
       </div>
-      <select v-model="filterStatus" class="form-input filter-sel" @change="load">
+      <!-- `load()` sans argument : sinon Vue passe l'Event comme `page` (TS2345) -->
+      <select v-model="filterStatus" class="form-input filter-sel" @change="load()">
         <option value="">{{ $t('common.allStatuses') }}</option>
         <option value="active">{{ $t('catalog.variants.statusActiveProduct') }}</option>
         <option value="draft">{{ $t('catalog.status.draft') }}</option>

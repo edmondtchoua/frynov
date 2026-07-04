@@ -4,7 +4,7 @@ import { fetchPublicPricing, fetchPublicPaymentMethods } from '@/services/public
 // The landing is a PUBLIC page: pricing is fetched via a raw fetch (no auth token,
 // no axios 401-redirect interceptor) from the backend source of truth.
 describe('publicPricingService.fetchPublicPricing', () => {
-  afterEach(() => vi.restoreAllMocks())
+  afterEach(() => { vi.restoreAllMocks() })
 
   it('requests /api/public/pricing with the selected market and parses the response', async () => {
     const payload = {
@@ -41,7 +41,7 @@ describe('publicPricingService.fetchPublicPricing', () => {
 })
 
 describe('publicPricingService.fetchPublicPaymentMethods (P6)', () => {
-  afterEach(() => vi.restoreAllMocks())
+  afterEach(() => { vi.restoreAllMocks() })
 
   it('requests /api/public/payment-methods for the market and parses the methods', async () => {
     const payload = {

@@ -53,7 +53,7 @@ async function scan(w: any, product = SIMPLE_PRODUCT) {
 }
 
 describe('PosView', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('shows the open-session screen when no session is open', async () => {
     posService.current.mockResolvedValue(null)

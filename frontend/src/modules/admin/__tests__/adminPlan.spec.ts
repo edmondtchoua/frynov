@@ -3,7 +3,7 @@ import client from '@/api/client'
 import { adminService } from '@/modules/admin/services/adminService'
 
 describe('adminService.updatePlan', () => {
-  afterEach(() => vi.clearAllMocks())
+  afterEach(() => { vi.clearAllMocks() })
 
   it('PATCHes plan limits (null = unlimited)', async () => {
     vi.mocked(client.patch).mockResolvedValue({ data: { id: 'p1' } } as any)

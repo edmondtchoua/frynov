@@ -199,7 +199,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePermission } from '@/composables/usePermission'
@@ -225,14 +225,6 @@ const openGroups = reactive(new Set<string>())
 
 function isGroupActive(item: { name: string; to: string }): boolean {
   return route.path === item.to || route.path.startsWith(item.to + '/')
-}
-
-function toggleGroup(name: string): void {
-  if (openGroups.has(name)) {
-    openGroups.delete(name)
-  } else {
-    openGroups.add(name)
-  }
 }
 
 // Auto-open the group of the current route on mount and route change

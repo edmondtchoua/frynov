@@ -152,7 +152,8 @@ const productId = route.params.productId as string
 
 // ── State ──────────────────────────────────────────────────────────────────────
 const movements = ref<StockMovement[]>([])
-const stockInfo = ref<{ stock: any; available: number; is_low_stock: boolean } | null>(null)
+// `product` est optionnel : présent seulement si le backend hydrate la relation (affichage best-effort via `?.`)
+const stockInfo = ref<{ stock: any; available: number; is_low_stock: boolean; product?: { name?: string; sku?: string } | null } | null>(null)
 const loading   = ref(false)
 const meta      = reactive({ current_page: 1, last_page: 1, per_page: 30, total: 0 })
 const filters   = reactive({ type: '', page: 1 })

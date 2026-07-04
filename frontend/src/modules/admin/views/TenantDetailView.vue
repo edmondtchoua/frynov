@@ -160,7 +160,7 @@ const changingPlan   = ref(false)
 
 const tenant          = ref<AdminTenant | null>(null)
 const subscription    = ref<any>(null)
-const users           = ref<AdminTenant['users']>([])
+const users           = ref<NonNullable<AdminTenant['users']>>([])   // jamais undefined : l'assignation fait `?? []`
 const modules         = ref<ErpModule[]>([])
 const plans           = ref<AdminPlan[]>([])
 const selectedPlanCode = ref('')

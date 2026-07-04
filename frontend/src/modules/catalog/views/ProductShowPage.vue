@@ -831,8 +831,8 @@ const visibleTabs = computed(() => {
 })
 
 const stockSubTabs = computed(() => [
-  { key: 'current',   label: t('catalog.productShow.stockTabs.current') },
-  { key: 'movements', label: t('catalog.productShow.stockTabs.movements') },
+  { key: 'current' as const,   label: t('catalog.productShow.stockTabs.current') },
+  { key: 'movements' as const, label: t('catalog.productShow.stockTabs.movements') },
 ])
 
 // ── Derived ────────────────────────────────────────────────────────────────
@@ -844,7 +844,7 @@ const productHasVariants = computed(() =>
 // ── Grille de stock multi-variantes × entrepôt (RC-4) ──────────────────────
 const showGridDrawer = ref(false)
 async function onGridSaved() {
-  pushToast({ type: 'success', message: t('catalog.stockGrid.saved') })
+  pushToast(t('catalog.stockGrid.saved'), 'info')
   await Promise.all([loadStockSummary(), loadProduct()])
 }
 

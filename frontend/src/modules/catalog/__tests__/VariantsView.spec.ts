@@ -37,7 +37,7 @@ async function mountView(paginator = PAGINATOR) {
 }
 
 describe('VariantsView', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('formats the variant price in major units (÷100 — regression)', async () => {
     const w = await mountView()

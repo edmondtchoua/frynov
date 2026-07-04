@@ -44,7 +44,7 @@ async function mountView(products = PRODUCTS) {
 }
 
 describe('ProductListView', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('renders products with name, SKU and formatted price', async () => {
     const w = await mountView()

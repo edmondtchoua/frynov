@@ -198,17 +198,14 @@ const error   = ref<string | null>(null)
 // ── Product search ──────────────────────────────────────────────────────────
 const productResults   = ref<Product[]>([])
 const productSearching  = ref(false)
-let   activeLine        = -1
 let   productTimer: ReturnType<typeof setTimeout> | null = null
 
 function openProductDropdown(i: number) {
-  activeLine = i
   items.value.forEach((it, idx) => it._open = idx === i)
   if (productResults.value.length === 0) loadProducts('')
 }
 
 function onProductSearch(i: number) {
-  activeLine = i
   items.value[i]._open = true
   items.value[i].product_id = '' // typing invalidates selection
   if (productTimer) clearTimeout(productTimer)

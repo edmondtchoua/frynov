@@ -899,8 +899,8 @@ async function checkPromo() {
       await authService.applyPromo(promoCode.value, auth.user?.subscription?.plan_code)
       promoApplied.value  = true
       const label = result.discount_type === 'percent'
-        ? t('settings.billing.promoPercent', { value: result.discount_value })
-        : t('settings.billing.promoFixed', { value: result.discount_value })
+        ? t('settings.billing.promoPercent', { value: result.discount_value ?? 0 })
+        : t('settings.billing.promoFixed', { value: result.discount_value ?? 0 })
       promoFeedback.value = t('settings.billing.promoOk', { label })
     } catch (err: any) {
       promoFeedback.value = err?.response?.data?.message ?? t('settings.billing.promoApplyError')

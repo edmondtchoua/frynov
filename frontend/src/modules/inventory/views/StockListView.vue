@@ -254,7 +254,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
 import { t } from '@/i18n'

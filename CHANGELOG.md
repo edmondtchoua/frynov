@@ -3,6 +3,35 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 💳 RC-6G : billing — les 6 règles reportées, toutes configurables (2026-06-23)
+
+Branche `feature/billing-rules` (release `v1.0.0` → `rc.128`).
+Arbitrage fondateur G : « tout implémenter, mais configurable » — chaque règle a son flag
+(`config/billing.php → rules.*`, pilotable par .env, défaut **ON**).
+
+### Les 6 règles (reliquats de la revue RC-1C/RC-2)
+1. **`tenant_credits`** (ledger d'avoirs signé, par devise — un avoir ne franchit jamais une devise) :
+   les trop-perçus y vivent désormais (plus de `metadata['overpaid_minor']`). `TenantCreditService`
+   (balance / credit / consume borné au solde).
+2. **Promo → cible nette** : une promo **validée** (dates, usages, plan) rend les cibles nettes
+   (`Promotion::applyDiscount`) → le paiement promo est **résolu automatiquement** (matched/partial…)
+   et l'usage est enregistré à l'activation ; promo invalide → `needs_review` comme avant.
+3. **Sièges additionnels** : le matching reconnaît `base + k × extra_user_amount_minor`
+   (**k ≤ 100**, uniquement sur l'**intervalle déclaré** — anti-faux-positifs), sièges tracés
+   (`metadata['extra_users']`, `PaymentPeriodResult::$extraUsers`).
+4. **Devise ↔ moyen strict** : un moyen de paiement déclaré au référentiel (`market_payment_methods`)
+   pour une autre devise → approuvé **sans activation** (`needs_review`).
+5. **Acompte abondé en place** : les tranches suivantes d'un échelonnement mettent à jour le
+   `past_due` existant (fini la ligne `cancelled` par tranche).
+6. **Rétro-action d'acompte** : rejeter un acompte **imputé non soldé** décrémente le cumul du
+   `past_due` (un paiement d'un cycle **soldé** reste non rejetable).
+
+### Tests
+- **+8 tests** `BillingRulesTest` (promo nette activée + usage, promo invalide → review, 2 sièges
+  détectés, devise↔moyen → review, 2 tranches → 1 seule ligne past_due abondée, reversal décrémente,
+  cycle soldé protégé, consommation d'avoir bornée). Test RC-1C trop-perçu adapté au ledger.
+  Billing **116 ✅**.
+
 ## [Non publié] — 🛡️ RC-6F : garanties+ — durées jours/années, contrat par exemplaire, extensions (2026-06-22)
 
 Branche `feature/warranties-plus` (release `v1.0.0` → `rc.127`).

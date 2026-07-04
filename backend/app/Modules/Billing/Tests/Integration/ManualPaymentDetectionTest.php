@@ -151,7 +151,9 @@ class ManualPaymentDetectionTest extends TestCase
         $sub = $this->sub();
         $this->assertSame('active', $sub->status);
         $this->assertSame('yearly', $sub->interval);
-        $this->assertSame(100000, $sub->metadata['overpaid_minor'] ?? null);
+        // RC-6G (règle 1) : l'avoir vit désormais dans le LEDGER tenant_credits (plus en metadata).
+        $this->assertSame(100000, app(\App\Modules\Billing\Services\TenantCreditService::class)->balance($this->tenant->id, 'XOF'));
+        $this->assertNull($sub->metadata['overpaid_minor'] ?? null);
         $this->assertSame(100000, $mp->fresh()->overpaid_minor);
         $this->assertSame('overpaid', $mp->fresh()->resolution_status);
     }

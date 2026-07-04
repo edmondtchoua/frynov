@@ -63,7 +63,7 @@
 - ~~Pas de **job de renouvellement/relance** (cron billing)~~ ✅ **RC-5J (rc.121)** — `billing:process-renewals` quotidien.
 - **DoD i18n** : tout RC touchant une vue livre FR+EN + met à jour le tracker (garde CI).
 
-## 🔭 Reporté à RC-2 (issu de la revue adverse RC-1C)
+## 🔭 Reporté à RC-2 (issu de la revue adverse RC-1C) — ✅ **tout livré en RC-6G (rc.128), configurable (`config/billing.php → rules.*`)**
 - **Abondement d'acompte en place** (`applyDeposit`) au lieu d'annuler/recréer l'abonnement à chaque
   tranche (évite la multiplication des lignes `cancelled`). RC-1C reprend déjà `current_period_start` du
   1er acompte au solde — mitigation suffisante en V1.

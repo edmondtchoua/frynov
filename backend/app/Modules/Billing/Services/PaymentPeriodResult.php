@@ -26,5 +26,6 @@ final class PaymentPeriodResult
         public readonly int     $remainingDueMinor,   // >= 0
         public readonly int     $overpaidMinor,       // >= 0 (avoir)
         public readonly string  $resolutionStatus,
+        public readonly int     $extraUsers = 0,      // RC-6G — sièges additionnels détectés dans le montant
     ) {}
 }

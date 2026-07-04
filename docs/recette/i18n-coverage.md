@@ -83,7 +83,7 @@ d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
 | import-export | `ImportHistoryView` | `importExport.*` | rc.77 |
 | import-export | `ImportWizardView` | `importExport.wizard.*` | rc.78 |
 | marketplace | `MarketplaceListingsView` | `marketplace.*` | rc.79 |
-| settings | `SettingsView` | `settings.*` + `geo.*` | rc.80 |
+| settings | `SettingsView` | `settings.*` + `geo.*` (+ `settings.notif.*` RC-6B) | rc.80 / rc.123 |
 | onboarding | `OnboardingView` | `onboarding.*` + `geo.country/timezone` + `common.currencyName` | rc.81 |
 | billing | `BillingView` | `billing.*` + `common.currencyName` | rc.82 |
 | billing | `UpgradeView` | `billing.plan.*` + `common.loading/retry` | rc.82 |

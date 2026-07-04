@@ -384,15 +384,9 @@
           </div>
         </section>
 
-        <!-- Notifications -->
+        <!-- Notifications (RC-6A/6B — canaux, modèles, journal) -->
         <section v-else-if="activeTab === 'notifications'">
-          <div class="panel-header">
-            <h3>{{ $t('settings.notifications') }}</h3>
-            <p>{{ $t('settings.notificationsDesc') }}</p>
-          </div>
-          <div style="text-align:center;padding:40px;color:#94a3b8;">
-            <p style="font-size:0.95rem;">{{ $t('settings.comingSoon') }}</p>
-          </div>
+          <NotificationSettingsPanel />
         </section>
 
       </div>
@@ -600,6 +594,7 @@ import { roleService, type TenantRole } from '@/modules/settings/services/roleSe
 import { fetchPublicPricing, type PublicPlan } from '@/services/publicPricingService'
 import RolesPanel from '@/modules/settings/components/RolesPanel.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
+import NotificationSettingsPanel from '../components/NotificationSettingsPanel.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { pushToast } from '@/composables/useNotifications'
 import { useWarehouses } from '@/composables/useWarehouses'

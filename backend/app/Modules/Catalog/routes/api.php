@@ -48,6 +48,9 @@ Route::prefix('catalog')->name('catalog.')->group(function () {
         // Product attributes — read
         Route::get('products/{productId}/attributes', [ProductAttributeController::class, 'index'])->name('attributes.index');
 
+        // ── Nomenclature de kit (RC-6I) — lecture ─────────────────────────
+        Route::get('products/{productId}/components', [\App\Modules\Catalog\Http\Controllers\KitController::class, 'index'])->name('kits.components.index');
+
         // ── WRITE routes (manager/admin, or a custom role with a granular
         //    catalog-write permission — RBAC B2.2) ──────────────────────
         Route::middleware('role_or_permission:manager|admin|products.create|products.update|products.delete|products.archive')->group(function () {
@@ -62,6 +65,8 @@ Route::prefix('catalog')->name('catalog.')->group(function () {
             Route::patch('products/{id}/activate',     [CatalogController::class, 'activate'])->name('products.activate');
             // Sprint 17: initial stock entry for newly created products
             Route::post('products/{id}/initial-stock', [CatalogController::class, 'initialStock'])->name('products.initial-stock');
+            // RC-6I — nomenclature de kit (remplacement idempotent)
+            Route::put('products/{productId}/components', [\App\Modules\Catalog\Http\Controllers\KitController::class, 'upsert'])->name('kits.components.upsert');
 
             // Product variants — write
             // Sprint 16: generate variants from multiple axes (cartesian product)

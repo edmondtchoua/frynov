@@ -150,6 +150,27 @@ class BillingRulesTest extends TestCase
     }
 
     #[Test]
+    public function a_deposit_in_another_currency_never_tops_up_the_previous_markets_deposit(): void
+    {
+        // Recette QA — un acompte EUR ne doit JAMAIS abonder « en place » le dépôt XOF existant
+        // (avant correctif, existingDeposit ignorait market_code : le dépôt waemu de 300 000 XOF
+        // aurait été écrasé à 100 en devenant europe — perte financière directe).
+        $xof = $this->submit(300000, 'monthly');                     // waemu (XOF) → dépôt A
+        $this->svc->approve($xof, $this->admin);
+        $eur = $this->submit(100, 'monthly', null, 'card', 'EUR');   // europe (EUR)
+        $this->svc->approve($eur, $this->admin);
+
+        // Le dépôt courant est bien europe/100 (mono-abonnement : changePlan a remplacé le waemu) —
+        // jamais un montant mélangé 300100 ni un waemu réétiqueté europe.
+        $current = Subscription::withoutTenantScope()->where('tenant_id', $this->tenant->id)
+            ->where('status', Subscription::STATUS_PAST_DUE)->firstOrFail();
+        $this->assertSame('europe', $current->market_code);
+        $this->assertSame(100, $current->amount_paid_minor);
+        $this->assertSame(0, Subscription::withoutTenantScope()->where('tenant_id', $this->tenant->id)
+            ->where('market_code', 'waemu')->where('status', Subscription::STATUS_PAST_DUE)->count());
+    }
+
+    #[Test]
     public function rejecting_a_payment_of_a_settled_cycle_stays_forbidden(): void
     {
         $mp = $this->submit(990000, 'monthly'); // solde → actif

@@ -133,6 +133,19 @@ class BatchFefoTest extends TestCase
     }
 
     #[Test]
+    public function an_expired_batch_is_never_allocated_to_a_sale(): void
+    {
+        // Recette QA — un lot périmé encore « active » ne doit JAMAIS partir au client.
+        $this->receiveBatch('LOT-PERIME', 5, now()->subDay()->toDateString())->assertCreated();
+        $this->receiveBatch('LOT-VALIDE', 5, now()->addDays(30)->toDateString())->assertCreated();
+
+        $this->sell(4);
+
+        $this->assertSame(5, ProductBatch::withoutTenantScope()->where('batch_number', 'LOT-PERIME')->first()->quantity);
+        $this->assertSame(1, ProductBatch::withoutTenantScope()->where('batch_number', 'LOT-VALIDE')->first()->quantity);
+    }
+
+    #[Test]
     public function a_duplicate_batch_number_for_the_same_product_is_rejected(): void
     {
         $this->receiveBatch('LOT-A', 5, null)->assertCreated();

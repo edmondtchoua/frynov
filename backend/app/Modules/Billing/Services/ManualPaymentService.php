@@ -261,6 +261,9 @@ class ManualPaymentService
                     ? Subscription::withoutTenantScope()
                         ->where('tenant_id', $payment->tenant_id)
                         ->where('plan_id', $payment->plan_id)
+                        // Recette QA — le cycle d'acompte est identifié par (tenant, plan, MARCHÉ) :
+                        // sans ce filtre, un tenant multi-devises abonderait le mauvais dépôt.
+                        ->where('market_code', $res->marketCode)
                         ->where('status', Subscription::STATUS_PAST_DUE)
                         ->whereNull('current_period_end')
                         ->latest()
@@ -331,6 +334,9 @@ class ManualPaymentService
                 ? Subscription::withoutTenantScope()
                     ->where('tenant_id', $payment->tenant_id)
                     ->where('plan_id', $payment->plan_id)
+                    // Recette QA — cibler le dépôt du MÊME marché/devise que le paiement rejeté
+                    // (un tenant multi-devises décrémenterait sinon le mauvais cycle).
+                    ->where('market_code', $payment->market_code)
                     ->where('status', Subscription::STATUS_PAST_DUE)
                     ->whereNull('current_period_end')   // période jamais démarrée = acompte en cours
                     ->latest()

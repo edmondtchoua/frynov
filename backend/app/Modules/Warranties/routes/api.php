@@ -23,5 +23,8 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('api/warranties')->group(f
         // RC-5F — SAV (écritures)
         Route::post('contracts/{contractId}/claims', [WarrantyClaimController::class, 'store']);
         Route::post('claims/{id}/transition',        [WarrantyClaimController::class, 'transition']);
+
+        // RC-6F — extension de garantie (vendue ou geste commercial)
+        Route::post('contracts/{contractId}/extend', [WarrantyController::class, 'extend']);
     });
 });

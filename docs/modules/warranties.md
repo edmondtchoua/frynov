@@ -134,9 +134,16 @@ liste par commande, motif invalide (422), isolation multi-tenant (404).
 
 ---
 
+## Garanties+ (RC-6F)
+
+- **Durées** : `duration_unit` = `day` / `month` / `year` (`WarrantyPolicy::endsAtFrom()`).
+- **Un contrat par exemplaire** : vente agrégée qty N → N contrats (chaque appareil a sa vie SAV).
+- **Extensions** : `WarrantyService::extend()` + `POST /contracts/{id}/extend` — base = échéance
+  courante si couverte sinon maintenant ; expiré → réactivé ; void → refus (422) ; audit
+  `warranty.extended` (durée, unité, raison).
+
 ## Limites V1 / suite
 
-- Durée exprimée en **mois** uniquement.
-- Produit non sérialisé : **un contrat par ligne** (pas par exemplaire).
-- SAV livré (RC-5F) ; à venir : `void` **automatique** sur retour/annulation, extensions de garantie,
-  pièces/coûts de réparation, UI de gestion des politiques.
+- `void` automatique sur retour livré (RC-5H) ; extensions livrées (RC-6F).
+- À venir : pièces/coûts de réparation SAV, UI de gestion des politiques (RC-6J), lien automatique
+  produit-extension vendable.

@@ -39,6 +39,7 @@ class WarrantyController extends Controller
         $data = $request->validate([
             'name'            => ['required', 'string', 'max:120'],
             'duration_months' => ['required', 'integer', 'min:1', 'max:600'],
+            'duration_unit'   => ['nullable', Rule::in(WarrantyPolicy::UNITS)], // RC-6F — day|month|year
             'coverage'        => ['nullable', 'string', 'max:2000'],
             'is_active'       => ['nullable', 'boolean'],
         ]);
@@ -47,11 +48,37 @@ class WarrantyController extends Controller
             'tenant_id'       => $request->user()->tenant_id,
             'name'            => $data['name'],
             'duration_months' => $data['duration_months'],
+            'duration_unit'   => $data['duration_unit'] ?? WarrantyPolicy::UNIT_MONTH,
             'coverage'        => $data['coverage'] ?? null,
             'is_active'       => $data['is_active'] ?? true,
         ]);
 
         return response()->json(['data' => $policy->toApiArray()], 201);
+    }
+
+    /** POST /api/warranties/contracts/{contractId}/extend — prolonge un contrat (RC-6F, manager/admin). */
+    public function extend(Request $request, string $contractId): JsonResponse
+    {
+        $tenantId = $request->user()->tenant_id;
+
+        $contract = WarrantyContract::where('tenant_id', $tenantId)->where('id', $contractId)->first();
+        if (! $contract) {
+            return response()->json(['message' => 'Contrat de garantie introuvable.'], 404);
+        }
+
+        $data = $request->validate([
+            'duration' => ['required', 'integer', 'min:1', 'max:600'],
+            'unit'     => ['required', Rule::in(WarrantyPolicy::UNITS)],
+            'reason'   => ['nullable', 'string', 'max:500'],
+        ]);
+
+        try {
+            $this->warranties->extend($contract, $data['duration'], $data['unit'], $data['reason'] ?? null, $request->user()->id);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['data' => $contract->fresh()->toApiArray()]);
     }
 
     /** POST /api/warranties/products/{productId}/policy — attache (ou détache) une politique (manager/admin). */

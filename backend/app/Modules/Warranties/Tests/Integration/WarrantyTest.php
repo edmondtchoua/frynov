@@ -120,7 +120,7 @@ class WarrantyTest extends TestCase
     }
 
     #[Test]
-    public function a_non_serialized_product_with_a_policy_issues_one_contract_per_line(): void
+    public function a_non_serialized_product_with_a_policy_issues_one_contract_per_unit_sold(): void
     {
         $policy = $this->policy(24);
         $simple = Product::create([
@@ -134,7 +134,7 @@ class WarrantyTest extends TestCase
         $order = $this->sell($simple, 3);
 
         $contracts = WarrantyContract::withoutTenantScope()->where('order_id', $order->id)->get();
-        $this->assertCount(1, $contracts); // un contrat pour la ligne (agrégé)
+        $this->assertCount(3, $contracts); // RC-6F : un contrat PAR EXEMPLAIRE (qty 3 → 3 contrats)
         $this->assertNull($contracts->first()->inventory_unit_id);
         $this->assertEquals(24, $contracts->first()->starts_at->diffInMonths($contracts->first()->ends_at));
     }

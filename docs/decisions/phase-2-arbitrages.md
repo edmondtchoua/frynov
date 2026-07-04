@@ -25,7 +25,7 @@
 > | RC-6C | Portail client `/portal` : jeton + lien magique + « mes achats » par email (anti-énumération, throttle) | ✅ **rc.124** |
 > | RC-6D | Attributs dynamiques : 18 définitions seedées (IMEI/MAC/VIN/compteur/UDI…), normalisation+regex+unicité pilotées, customs par tenant | ✅ **rc.125** |
 > | RC-6E | Pool de licences éditeur : import limité par plan, FIFO, épuisement generate/block (surcharge tenant), alerte | ✅ **rc.126** |
-> | RC-6F | Garanties+ (extensions, jours/années, par exemplaire) | ⬜ |
+> | RC-6F | Garanties+ : durées jours/mois/années, contrat **par exemplaire**, `POST /contracts/{id}/extend` (expiré→réactivé, void refusé, audité) | ✅ **rc.127** |
 > | RC-6G | Billing configurable (6 règles) | ⬜ |
 > | RC-6H | Lots / péremption (FEFO) | ⬜ |
 > | RC-6I | Kits / nomenclature | ⬜ |

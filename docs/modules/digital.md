@@ -21,6 +21,7 @@ lignes (`Product::isStockable()` fait autorité).
 | tenant_id        | uuid           | Locataire                                            |
 | product_id / variant_id | uuid (/null) | Produit digital vendu                            |
 | order_id / order_line_id | uuid      | Commande / ligne d'origine                          |
+| unit_index       | int (déf. 1)   | *(RC-7D)* rang de l'exemplaire (1..N) dans sa ligne  |
 | customer_id      | uuid nullable  | Client bénéficiaire                                  |
 | fulfillment_type | string 16      | `download` \| `license` (snapshot)                   |
 | access_token     | uuid **unique**| Jeton opaque d'accès (jamais un chemin de fichier)   |
@@ -100,6 +101,22 @@ Page publique **`/portal`** (front) + endpoints publics throttlés :
 - `DigitalService::portalLink()` construit le lien magique (`FRONTEND_URL` + `/portal?token=…`) —
   inclus dans l'email de livraison (`{{portal_link}}`).
 
+## Un accès par exemplaire (RC-7D)
+
+Une ligne de **qty N** accorde désormais **N entitlements** (un `access_token` — et une clé de licence —
+distincts par exemplaire), au lieu d'un seul par ligne. `unit_index` (1..N) trace le rang.
+
+- **Émission** (`DigitalService::issueForOrder`) : boucle sur la quantité ; **idempotente par exemplaire**
+  (ne crée que les rangs manquants → un `fulfill` rejoué n'ajoute rien).
+- **Licences** : chaque exemplaire **consomme une clé du pool** (FIFO), ou en génère une selon la
+  politique d'épuisement — inchangée, mais appliquée par unité.
+- **Retour au prorata** (`revokeDownToActive`) : au restock, on ne conserve actifs que
+  `quantité − cumul retourné` accès (les plus anciens d'abord). Un retour partiel révoque autant
+  d'accès que d'exemplaires rendus ; le client garde l'accès des exemplaires qu'il conserve.
+  Remplace l'ancien comportement « tout ou rien » porté par la ligne (RC-5H).
+- **Front** : le panneau « Accès digital » de la commande affiche le n° d'exemplaire quand la ligne en
+  compte plusieurs ; le portail « mes achats » liste un accès (lien magique) par exemplaire.
+
 ## Comptes clients du portail (RC-7C)
 
 Troisième mode d'accès, **au choix** du client, en plus du jeton et du lien magique.
@@ -136,6 +153,6 @@ sur 401). i18n **FR+EN** (`portal.account.*`).
 
 ## Limites V1 / suite
 
-- Un entitlement **par ligne** (pas par exemplaire) — *levée prévue en RC-7D*.
+- Un entitlement **par exemplaire** (RC-7D) — révocation au prorata des retours partiels.
 - Accès portail : jeton **ou** lien magique **ou** compte à mot de passe (RC-7C) — les 3 cohabitent.
 - À venir : journalisation fine des téléchargements, versions multiples d'asset, antivirus à l'upload.

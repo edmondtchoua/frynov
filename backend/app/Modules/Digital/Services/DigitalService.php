@@ -51,18 +51,23 @@ class DigitalService
                 continue;
             }
 
-            // Idempotence : ne pas réémettre un accès pour une ligne déjà dotée.
+            // RC-7D — un accès PAR EXEMPLAIRE : une ligne de qty N accorde N entitlements
+            // (jeton/clé distincts). Idempotence : ne créer que les exemplaires manquants (le
+            // nombre déjà émis est le rang du dernier), donc un fulfill rejoué n'ajoute rien.
+            $quantity = max(1, (int) $line->quantity);
             $already = DigitalEntitlement::withoutTenantScope()
                 ->where('tenant_id', $order->tenant_id)
                 ->where('order_line_id', $line->id)
-                ->exists();
-            if ($already) {
+                ->count();
+            if ($already >= $quantity) {
                 continue;
             }
 
-            $entitlement = $this->grant($order, $line, $product, $userId);
-            $this->notifyDelivery($order, $product, $entitlement); // RC-6A — best-effort
-            $created[] = $entitlement;
+            for ($unitIndex = $already + 1; $unitIndex <= $quantity; $unitIndex++) {
+                $entitlement = $this->grant($order, $line, $product, $userId, $unitIndex);
+                $this->notifyDelivery($order, $product, $entitlement); // RC-6A — best-effort, un envoi par exemplaire
+                $created[] = $entitlement;
+            }
         }
 
         return $created;
@@ -115,7 +120,7 @@ class DigitalService
     }
 
     /**
-     * RC-5H — révoque les accès digitaux d'une ligne retournée (le client perd le téléchargement/la licence).
+     * RC-5H — révoque TOUS les accès digitaux actifs d'une ligne (le client perd tout accès de cette ligne).
      *
      * @return int nombre d'accès révoqués
      */
@@ -129,6 +134,39 @@ class DigitalService
                 'status'     => DigitalEntitlement::STATUS_REVOKED,
                 'revoked_at' => now(),
             ]);
+    }
+
+    /**
+     * RC-7D — révocation AU PRORATA : ne conserve que `keepActive` exemplaires actifs pour la ligne
+     * (les plus anciens d'abord), révoque le surplus. Idempotent : rejoué, ne révoque plus rien.
+     * Un produit non digital (0 entitlement) est un no-op sûr.
+     *
+     * @return int nombre d'accès révoqués lors de cet appel
+     */
+    public function revokeDownToActive(string $tenantId, string $orderLineId, int $keepActive, ?string $userId = null): int
+    {
+        $active = DigitalEntitlement::withoutTenantScope()
+            ->where('tenant_id', $tenantId)
+            ->where('order_line_id', $orderLineId)
+            ->where('status', DigitalEntitlement::STATUS_ACTIVE)
+            ->orderBy('unit_index')
+            ->orderBy('granted_at')
+            ->get();
+
+        $toRevoke = $active->count() - max(0, $keepActive);
+        if ($toRevoke <= 0) {
+            return 0;
+        }
+
+        $ids = $active->take($toRevoke)->pluck('id')->all();
+        DigitalEntitlement::withoutTenantScope()
+            ->whereIn('id', $ids)
+            ->update([
+                'status'     => DigitalEntitlement::STATUS_REVOKED,
+                'revoked_at' => now(),
+            ]);
+
+        return count($ids);
     }
 
     /** Retrouve un accès par son jeton opaque (scopé tenant). */
@@ -158,10 +196,11 @@ class DigitalService
             ->where('tenant_id', $tenantId)
             ->where('order_id', $orderId)
             ->orderBy('order_line_id')
+            ->orderBy('unit_index')
             ->get();
     }
 
-    private function grant(Order $order, OrderLine $line, Product $product, ?string $userId): DigitalEntitlement
+    private function grant(Order $order, OrderLine $line, Product $product, ?string $userId, int $unitIndex = 1): DigitalEntitlement
     {
         $isLicense = $product->fulfillment_type === Product::FULFILLMENT_LICENSE;
 
@@ -177,6 +216,7 @@ class DigitalService
             'variant_id'       => $line->variant_id,
             'order_id'         => $order->id,
             'order_line_id'    => $line->id,
+            'unit_index'       => $unitIndex,
             'customer_id'      => $order->customer_id,
             'fulfillment_type' => $product->fulfillment_type,
             'access_token'     => (string) Str::uuid(),

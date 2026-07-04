@@ -1,6 +1,6 @@
 # Guide utilisateur — Notifications (email, SMS, WhatsApp)
 
-> **Dernière mise à jour :** 2026-06-18 — RC-6A/6B.
+> **Dernière mise à jour :** 2026-06-28 — RC-6A/6B + RC-7E (crédits).
 
 Frynov peut prévenir automatiquement **vous** (rappels d'abonnement) et **vos clients** (livraison de
 leurs achats digitaux : jeton d'accès, clé de licence). Tout se configure dans
@@ -30,7 +30,21 @@ nom du client, produit, jeton d'accès…).
 ## 3. Suivre les envois
 
 Onglet **Journal** : chaque message avec son statut — **En attente** (départ sous 5 minutes),
-**Envoyé**, **Échec** (après 3 tentatives ; le détail de l'erreur s'affiche au survol).
+**Envoyé**, **Échec** (après 3 tentatives ; le détail de l'erreur s'affiche au survol), **Crédit
+épuisé** (voir ci-dessous).
+
+## 4. Gérer vos crédits de communication
+
+Onglet **Crédits** : chaque envoi sur un canal **facturé** (email, SMS, WhatsApp) consomme **un
+crédit**. Vous voyez votre **solde par canal** et l'historique des mouvements.
+
+- **À court de crédit ?** L'envoi passe en **« Crédit épuisé »** — il ne part pas, mais votre activité
+  (ventes, commandes…) n'est **jamais** interrompue. Rechargez, les prochains envois repartent.
+- **Recharger** : cliquez **Recharger** sur le canal voulu, choisissez un **pack** (ex. 1 000 SMS),
+  indiquez la **référence de votre paiement** (reçu, transaction Mobile Money…). Dès que votre
+  opérateur confirme l'encaissement, le solde est **crédité** et tracé dans les mouvements.
+- Un envoi qui **échoue** (fournisseur indisponible) est **remboursé** automatiquement : vous ne payez
+  que les messages réellement partis.
 
 ## Ce qui est envoyé automatiquement
 

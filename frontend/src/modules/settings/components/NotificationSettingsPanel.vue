@@ -7,7 +7,7 @@
 
     <!-- Sub-tabs -->
     <div class="ntf-tabs">
-      <button v-for="st in ['channels', 'templates', 'outbox']" :key="st"
+      <button v-for="st in ['channels', 'templates', 'outbox', 'credits']" :key="st"
               class="ntf-tab" :class="{ active: tab === st }" @click="switchTab(st as any)">
         {{ $t('settings.notif.tab.' + st) }}
       </button>
@@ -70,7 +70,7 @@
     </div>
 
     <!-- ── Outbox / journal ────────────────────────────────────────────── -->
-    <div v-else>
+    <div v-else-if="tab === 'outbox'">
       <div v-if="!outbox.length" class="ntf-empty">{{ $t('settings.notif.noOutbox') }}</div>
       <table v-else class="data-table">
         <thead><tr>
@@ -85,7 +85,7 @@
             <td style="font-size:0.82rem">{{ o.recipient }}</td>
             <td style="font-size:0.82rem">{{ o.subject || o.template_code }}</td>
             <td>
-              <span class="badge" :class="{ sent: 'badge-success', failed: 'badge-error', pending: 'badge-warning' }[o.status]"
+              <span class="badge" :class="{ sent: 'badge-success', failed: 'badge-error', pending: 'badge-warning', no_credit: 'badge-error' }[o.status]"
                     :title="o.last_error || ''">
                 {{ $t('settings.notif.outboxStatus.' + o.status) }}
               </span>
@@ -94,6 +94,72 @@
         </tbody>
       </table>
     </div>
+
+    <!-- ── Crédits de communication (RC-7E) ────────────────────────────── -->
+    <div v-else-if="tab === 'credits'">
+      <p class="ntf-credit-intro">{{ $t('settings.notif.credit.intro') }}</p>
+
+      <div class="ntf-credit-grid">
+        <div v-for="ch in (['email', 'sms', 'whatsapp'] as const)" :key="ch" class="ntf-credit-card">
+          <div class="ntf-credit-head">
+            <span class="ntf-credit-channel">{{ $t('settings.notif.channelName.' + ch) }}</span>
+            <span v-if="credits.metered.includes(ch)" class="badge badge-blue" style="font-size:0.66rem">{{ $t('settings.notif.credit.metered') }}</span>
+            <span v-else class="badge badge-gray" style="font-size:0.66rem">{{ $t('settings.notif.credit.free') }}</span>
+          </div>
+          <div class="ntf-credit-balance">{{ (credits.balances[ch] ?? 0).toLocaleString() }}</div>
+          <div class="ntf-credit-unit">{{ $t('settings.notif.credit.sends') }}</div>
+          <button class="btn btn-primary btn-sm" style="margin-top:8px" @click="openRecharge(ch)">{{ $t('settings.notif.credit.recharge') }}</button>
+        </div>
+      </div>
+
+      <h4 class="ntf-credit-subtitle">{{ $t('settings.notif.credit.movements') }}</h4>
+      <div v-if="!movements.length" class="ntf-empty">{{ $t('settings.notif.credit.noMovement') }}</div>
+      <table v-else class="data-table">
+        <thead><tr>
+          <th>{{ $t('common.date') }}</th>
+          <th>{{ $t('settings.notif.channelType') }}</th>
+          <th>{{ $t('settings.notif.credit.reason') }}</th>
+          <th style="text-align:right">{{ $t('settings.notif.credit.delta') }}</th>
+          <th style="text-align:right">{{ $t('settings.notif.credit.balanceAfter') }}</th>
+        </tr></thead>
+        <tbody>
+          <tr v-for="m in movements" :key="m.id">
+            <td style="font-size:0.8rem">{{ new Date(m.created_at).toLocaleString() }}</td>
+            <td>{{ $t('settings.notif.channelName.' + m.channel) }}</td>
+            <td>{{ $t('settings.notif.credit.reasonName.' + m.reason) }}</td>
+            <td style="text-align:right" :style="{ color: m.delta < 0 ? '#dc2626' : '#059669' }">{{ m.delta > 0 ? '+' : '' }}{{ m.delta.toLocaleString() }}</td>
+            <td style="text-align:right">{{ m.balance_after.toLocaleString() }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── Recharge modal (RC-7E) ──────────────────────────────────────── -->
+    <BaseModal v-model="rechargeModal.open" :title="$t('settings.notif.credit.rechargeTitle')">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <p class="hint">{{ $t('settings.notif.credit.rechargeHint') }}</p>
+        <div class="form-group">
+          <label class="form-label">{{ $t('settings.notif.credit.pack') }}</label>
+          <select v-model="rechargeForm.pack_code" class="form-input">
+            <option v-for="p in packsForChannel(rechargeModal.channel)" :key="p.code" :value="p.code">
+              {{ p.credits.toLocaleString() }} {{ $t('settings.notif.credit.sends') }} — {{ (p.price_cents / 100).toLocaleString() }} {{ p.currency }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ $t('settings.notif.credit.paymentRef') }}</label>
+          <input v-model="rechargeForm.payment_reference" class="form-input" :placeholder="$t('settings.notif.credit.paymentRefPlaceholder')" />
+        </div>
+        <p v-if="rechargeModal.error" style="color:#dc2626;font-size:0.85rem">{{ rechargeModal.error }}</p>
+      </div>
+      <template #footer>
+        <button class="btn btn-ghost" @click="rechargeModal.open = false">{{ $t('common.cancel') }}</button>
+        <button class="btn btn-primary" :disabled="rechargeModal.saving || !rechargeForm.pack_code" @click="submitRecharge">
+          <span v-if="rechargeModal.saving" class="spinner-sm"></span>
+          {{ $t('settings.notif.credit.confirmRecharge') }}
+        </button>
+      </template>
+    </BaseModal>
 
     <!-- ── Channel modal ───────────────────────────────────────────────── -->
     <BaseModal v-model="channelModal.open" :title="channelModal.id ? $t('settings.notif.editChannel') : $t('settings.notif.addChannel')">
@@ -238,24 +304,75 @@ import client from '@/api/client'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { t } from '@/i18n'
 
-interface Channel { id: string; channel: 'email' | 'sms' | 'whatsapp'; provider: string; name: string; from_name: string | null; from_address: string | null; config_keys: string[]; is_active: boolean; is_default: boolean }
+type ChannelKind = 'email' | 'sms' | 'whatsapp'
+interface Channel { id: string; channel: ChannelKind; provider: string; name: string; from_name: string | null; from_address: string | null; config_keys: string[]; is_active: boolean; is_default: boolean }
 interface Template { id: string; code: string; channel: string; locale: string; subject: string | null; body: string; is_global: boolean }
-interface OutboxItem { id: string; recipient: string; subject: string | null; template_code: string | null; status: 'pending' | 'sent' | 'failed'; attempts: number; last_error: string | null; created_at: string }
+interface OutboxItem { id: string; recipient: string; subject: string | null; template_code: string | null; status: 'pending' | 'sent' | 'failed' | 'no_credit'; attempts: number; last_error: string | null; created_at: string }
+interface CreditPack { code: string; channel: ChannelKind; credits: number; price_cents: number; currency: string }
+interface CreditMovement { id: string; channel: ChannelKind; delta: number; balance_after: number; reason: string; reference: string | null; created_at: string }
 
-const tab       = ref<'channels' | 'templates' | 'outbox'>('channels')
+const tab       = ref<'channels' | 'templates' | 'outbox' | 'credits'>('channels')
 const channels  = ref<Channel[]>([])
 const templates = ref<Template[]>([])
 const outbox    = ref<OutboxItem[]>([])
 
-function switchTab(next: 'channels' | 'templates' | 'outbox') {
+function switchTab(next: 'channels' | 'templates' | 'outbox' | 'credits') {
   tab.value = next
   if (next === 'templates' && !templates.value.length) loadTemplates()
   if (next === 'outbox') loadOutbox()
+  if (next === 'credits') loadCredits()
 }
 
 async function loadChannels()  { try { channels.value  = (await client.get('/api/notifications/channels')).data.data } catch { channels.value = [] } }
 async function loadTemplates() { try { templates.value = (await client.get('/api/notifications/templates')).data.data } catch { templates.value = [] } }
 async function loadOutbox()    { try { outbox.value    = (await client.get('/api/notifications/outbox')).data.data } catch { outbox.value = [] } }
+
+// ── Crédits de communication (RC-7E) ───────────────────────────────────────
+const credits   = reactive({ enabled: true, balances: {} as Record<string, number>, metered: [] as string[], packs: [] as CreditPack[] })
+const movements = ref<CreditMovement[]>([])
+
+async function loadCredits() {
+  try {
+    const { data } = await client.get('/api/notifications/credits')
+    credits.enabled  = data.data.enabled
+    credits.balances = data.data.balances
+    credits.metered  = data.data.metered
+    credits.packs    = data.data.packs
+  } catch { /* silencieux : panneau vide */ }
+  try { movements.value = (await client.get('/api/notifications/credits/movements')).data.data } catch { movements.value = [] }
+}
+
+function packsForChannel(channel: ChannelKind): CreditPack[] {
+  return credits.packs.filter(p => p.channel === channel)
+}
+
+const rechargeModal = reactive({ open: false, saving: false, error: '', channel: 'sms' as ChannelKind })
+const rechargeForm  = reactive({ pack_code: '', payment_reference: '' })
+
+function openRecharge(channel: ChannelKind) {
+  rechargeModal.channel = channel
+  rechargeModal.error = ''
+  rechargeForm.pack_code = packsForChannel(channel)[0]?.code ?? ''
+  rechargeForm.payment_reference = ''
+  rechargeModal.open = true
+}
+
+async function submitRecharge() {
+  rechargeModal.saving = true
+  rechargeModal.error = ''
+  try {
+    await client.post('/api/notifications/credits/recharge', {
+      pack_code: rechargeForm.pack_code,
+      payment_reference: rechargeForm.payment_reference || undefined,
+    })
+    rechargeModal.open = false
+    loadCredits()
+  } catch (e: any) {
+    rechargeModal.error = e?.response?.data?.message ?? t('common.genericError')
+  } finally {
+    rechargeModal.saving = false
+  }
+}
 
 // ── Channel form ─────────────────────────────────────────────────────────
 const channelModal = reactive({ open: false, saving: false, error: '', id: '' })
@@ -391,4 +508,12 @@ onMounted(loadChannels)
 .ntf-empty { text-align: center; padding: 32px; color: var(--gray-400); font-size: 0.9rem; }
 .hint { font-size: 0.75rem; color: var(--gray-400); }
 .text-muted { color: var(--gray-400); }
+.ntf-credit-intro { color: var(--gray-500); font-size: 0.85rem; margin: 0 0 14px; }
+.ntf-credit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.ntf-credit-card { border: 1px solid var(--gray-200); border-radius: 10px; padding: 14px; text-align: center; }
+.ntf-credit-head { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 8px; }
+.ntf-credit-channel { font-weight: 600; font-size: 0.9rem; }
+.ntf-credit-balance { font-size: 1.8rem; font-weight: 700; color: var(--brand-primary); line-height: 1.1; }
+.ntf-credit-unit { font-size: 0.72rem; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.04em; }
+.ntf-credit-subtitle { margin: 0 0 10px; font-size: 0.92rem; }
 </style>

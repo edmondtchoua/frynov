@@ -17,7 +17,7 @@ class FlushNotificationOutbox extends Command
     {
         $result = $notifications->flush((int) $this->option('limit'));
 
-        $this->info("Notifications — envoyées: {$result['sent']}, échecs: {$result['failed']}");
+        $this->info("Notifications — envoyées: {$result['sent']}, échecs: {$result['failed']}, bloquées (crédit): {$result['blocked']}");
 
         return self::SUCCESS;
     }

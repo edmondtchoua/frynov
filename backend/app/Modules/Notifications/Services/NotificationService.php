@@ -2,6 +2,7 @@
 
 namespace App\Modules\Notifications\Services;
 
+use App\Modules\Notifications\Models\CommunicationCreditMovement;
 use App\Modules\Notifications\Models\NotificationChannel;
 use App\Modules\Notifications\Models\NotificationOutbox;
 use App\Modules\Notifications\Models\NotificationTemplate;
@@ -24,6 +25,8 @@ use Illuminate\Support\Facades\Mail;
  */
 class NotificationService
 {
+    public function __construct(private readonly CommunicationCreditService $credits) {}
+
     // ── Émission ────────────────────────────────────────────────────────────
 
     public function notify(
@@ -96,11 +99,12 @@ class NotificationService
 
     // ── Expédition (cron) ───────────────────────────────────────────────────
 
-    /** @return array{sent:int,failed:int} */
+    /** @return array{sent:int,failed:int,blocked:int} */
     public function flush(int $limit = 50): array
     {
         $sent = 0;
         $failed = 0;
+        $blocked = 0;
 
         $batch = NotificationOutbox::withoutTenantScope()
             ->where('status', NotificationOutbox::STATUS_PENDING)
@@ -112,10 +116,36 @@ class NotificationService
         foreach ($batch as $item) {
             $channel = NotificationChannel::withoutTenantScope()->find($item->channel_id);
 
+            // RC-7E — décompte d'un crédit de communication pour les canaux facturés. On RÉSERVE le
+            // crédit avant l'envoi (débit atomique) et on le REMBOURSE si l'envoi échoue : jamais de
+            // crédit perdu sur un échec, jamais de double décompte. Solde à zéro → envoi bloqué
+            // (statut terminal `no_credit`, sans nouvelle tentative ni interruption du flux métier).
+            $metered = $channel && $this->credits->isMetered($item->channel);
+            $debited = false;
+
             try {
                 if (! $channel || ! $channel->is_active) {
                     throw new \RuntimeException('Canal indisponible ou désactivé.');
                 }
+
+                if ($metered) {
+                    $debited = $this->credits->debit(
+                        $item->tenant_id,
+                        $item->channel,
+                        1,
+                        CommunicationCreditMovement::REASON_SEND,
+                        $item->id,
+                    );
+                    if (! $debited) {
+                        $item->update([
+                            'status'     => NotificationOutbox::STATUS_NO_CREDIT,
+                            'last_error' => 'Crédit de communication insuffisant pour ce canal.',
+                        ]);
+                        $blocked++;
+                        continue;
+                    }
+                }
+
                 $this->deliver($channel, $item);
                 $item->update([
                     'status'   => NotificationOutbox::STATUS_SENT,
@@ -124,6 +154,17 @@ class NotificationService
                 ]);
                 $sent++;
             } catch (\Throwable $e) {
+                // Remboursement du crédit réservé si l'envoi a échoué après le débit.
+                if ($debited) {
+                    $this->credits->credit(
+                        $item->tenant_id,
+                        $item->channel,
+                        1,
+                        CommunicationCreditMovement::REASON_REFUND,
+                        $item->id,
+                    );
+                }
+
                 $attempts = $item->attempts + 1;
                 $item->update([
                     'attempts'   => $attempts,
@@ -137,7 +178,7 @@ class NotificationService
             }
         }
 
-        return ['sent' => $sent, 'failed' => $failed];
+        return ['sent' => $sent, 'failed' => $failed, 'blocked' => $blocked];
     }
 
     /** Envoi de test immédiat sur un canal (bouton « Tester » de la SPA). @throws \Throwable */

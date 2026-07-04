@@ -324,6 +324,9 @@ class CatalogController extends Controller
             'product_type'            => ['nullable', Rule::in(self::PRODUCT_TYPES)],
             'stock_tracking'          => ['nullable', Rule::in(self::STOCK_TRACKINGS)],
             'fulfillment_type'        => ['nullable', Rule::in(self::FULFILLMENT_TYPES)],
+            // RC-5K — politique de garantie attachée (doit appartenir au tenant)
+            'warranty_policy_id'      => ['nullable', 'uuid',
+                Rule::exists('warranty_policies', 'id')->where('tenant_id', $tenantId)],
         ]);
 
         $product  = $this->catalog->createProduct($tenantId, $data);
@@ -355,6 +358,9 @@ class CatalogController extends Controller
             'product_type'            => ['sometimes', Rule::in(self::PRODUCT_TYPES)],
             'stock_tracking'          => ['sometimes', Rule::in(self::STOCK_TRACKINGS)],
             'fulfillment_type'        => ['sometimes', Rule::in(self::FULFILLMENT_TYPES)],
+            // RC-5K — attacher/détacher (null) une politique de garantie du tenant
+            'warranty_policy_id'      => ['nullable', 'uuid',
+                Rule::exists('warranty_policies', 'id')->where('tenant_id', $tenantId)],
         ]);
 
         $product = $this->catalog->updateProduct($product, $data);

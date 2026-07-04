@@ -24,6 +24,7 @@ class CatalogResource extends JsonResource
             // Politique serveur de stock & livraison (RC-5A)
             'stock_tracking'   => $this->stock_tracking ?? 'aggregate',
             'fulfillment_type' => $this->fulfillment_type ?? 'delivery',
+            'warranty_policy_id' => $this->warranty_policy_id, // RC-5K
             'is_stockable'     => $this->isStockable(),
             'is_serialized'    => $this->isSerialized(),
             'category'     => new CategoryResource($this->whenLoaded('category')),

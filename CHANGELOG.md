@@ -3,6 +3,38 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧾 RC-5K : formulaire produit — type & politique pilotables depuis l'UI (2026-06-17)
+
+Branche `feature/catalog-product-policy-form` (release `v1.0.0` → `rc.122`).
+Dernier maillon UX du chantier produits spéciaux : un opérateur peut désormais **créer un service, un
+produit digital, un produit sérialisé ou sous garantie sans passer par l'API**.
+
+### Frontend — carte « Type & politique » (ProductFormView)
+- Sélecteurs **« Que vendez-vous ? »** (simple/service/digital/kit — `variable` dérivé du toggle
+  variantes), **suivi du stock** (auto/quantité globale/par unité IMEI-VIN, masqué pour service/digital),
+  **livraison** (options filtrées par type : download/license pour digital, manual/appointment pour
+  service…), **garantie** (politiques actives du tenant).
+- `''` = **auto** → champ non envoyé, le serveur dérive du type (défauts RC-5A). Changer de type
+  réinitialise stock/livraison. Mode édition : politique rechargée depuis l'API.
+- **Stock initial masqué** pour les types non stockables (service/digital).
+- **i18n FR+EN** (`catalog.productForm.policy.*`). Types front complétés (`StockTracking`,
+  `FulfillmentType`, `warranty_policy_id` dans `Product`/`CreateProductPayload`).
+
+### Backend
+- `CatalogController` (store/update) : validation **`warranty_policy_id`** (uuid + appartenance tenant,
+  `null` pour détacher). `CatalogResource` expose `warranty_policy_id`.
+
+### Tests
+- **+3 tests** `ProductWarrantyPolicyApiTest` (création politique complète persistée + exposée ;
+  politique d'un autre tenant → 422 ; détachement par null). Catalog **94 ✅**, front **271 ✅**,
+  garde i18n + vue-tsc OK.
+
+### 📋 Phase 2 — plan d'arbitrages
+- Nouveau : `docs/decisions/phase-2-arbitrages.md` — consolide **toutes les questions nécessitant une
+  décision fondateur** (canal de notifications, portail client digital, wizard produit, attributs
+  dynamiques, pool de licences, extensions de garantie, reliquats billing, lots/kits) avec options,
+  recommandations et ordre conseillé. **Rien de cette liste n'est lancé sans indications.**
+
 ## [Non publié] — 🔁 RC-5J : billing — renouvellement & relance (cron quotidien) (2026-06-17)
 
 Branche `feature/billing-renewals` (release `v1.0.0` → `rc.121`).

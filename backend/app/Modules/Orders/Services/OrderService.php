@@ -28,6 +28,7 @@ class OrderService
         private readonly SerializedAllocationService $allocation,
         private readonly WarrantyService $warranties,
         private readonly DigitalService $digital,
+        private readonly \App\Modules\Inventory\Services\BatchService $batches,
     ) {}
 
     // ── Queries ────────────────────────────────────────────────────────────
@@ -247,6 +248,11 @@ class OrderService
                 if ($this->isSerializedLine($line, $order->tenant_id)) {
                     $this->allocation->markSold($order->tenant_id, $line->id, $order->customer_id);
                 }
+
+                // RC-6H — produit par lot : consommation FEFO (péremption la plus proche d'abord).
+                if ($this->isBatchLine($line, $order->tenant_id)) {
+                    $this->batches->allocateFefo($order->tenant_id, $line->product_id, $line->variant_id, $line->quantity);
+                }
             }
 
             $order->update([
@@ -352,6 +358,12 @@ class OrderService
     private function isSerializedLine(OrderLine $line, string $tenantId): bool
     {
         return $this->productFor($line, $tenantId)?->stock_tracking === Product::STOCK_TRACKING_SERIALIZED;
+    }
+
+    /** RC-6H — une ligne porte-t-elle un produit suivi par lot (FEFO) ? */
+    private function isBatchLine(OrderLine $line, string $tenantId): bool
+    {
+        return $this->productFor($line, $tenantId)?->stock_tracking === Product::STOCK_TRACKING_BATCH;
     }
 
     /**

@@ -3,6 +3,28 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 📦 RC-6H : lots & péremption — réception par lot + consommation FEFO (2026-06-24)
+
+Branche `feature/batch-fefo` (release `v1.0.0` → `rc.129`).
+Arbitrage fondateur H : le `stock_tracking=batch` (valeur posée en RC-5A, scaffold `product_batches`
+jamais exploité) devient **opérationnel de bout en bout**.
+
+### Lots — du fournisseur à la vente
+- **Réception par lot** (`POST /api/inventory/products/{id}/batches`, produit `batch` only → 422) :
+  n° de lot (unique par produit), DLC/DLUO, quantité — + **miroir stock agrégé** (moveIn référencé
+  `batch:{n°}`), CMUP au coût du lot.
+- **Consommation FEFO au fulfill** (`BatchService::allocateFefo`, branché dans `OrderService`) :
+  péremption la plus proche d'abord, lots **sans date en dernier**, lot vidé → `exhausted`. Verrou
+  lecture ; best-effort de traçabilité (le stock agrégé a déjà validé la quantité — un drift
+  historique de lots ne bloque jamais une vente).
+- **Alerte péremption** : `GET /api/inventory/batches/expiring?days=30` (lots actifs, `days_left`).
+- `GET /api/inventory/products/{id}/batches` : lots du produit triés FEFO.
+
+### Tests
+- **+6 tests** `BatchFefoTest` (réception + miroir, non-batch → 422, vente 7 sur 2 lots → le plus
+  proche vidé/`exhausted` puis l'autre entamé, lots sans date consommés en dernier, fenêtre
+  `expiring`, doublon de n° de lot → 422). Inventory+Orders **148 ✅**.
+
 ## [Non publié] — 💳 RC-6G : billing — les 6 règles reportées, toutes configurables (2026-06-23)
 
 Branche `feature/billing-rules` (release `v1.0.0` → `rc.128`).

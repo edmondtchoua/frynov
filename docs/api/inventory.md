@@ -322,6 +322,20 @@ Liste paginée des unités d'un produit (scopée tenant + périmètre entrepôt 
 ### GET `/api/inventory/units/search?type=imei&serial=...`
 Retrouve une unité par identifiant (recherche sur la valeur **normalisée**). **404** si introuvable.
 
+## Lots & péremption (RC-6H)
+
+### POST `/api/inventory/products/{productId}/batches` *(manager/admin)*
+Réceptionne un lot (produit `stock_tracking=batch` sinon **422**) : `{ batch_number (unique/produit),
+expiry_date?, manufacturing_date?, variant_id?, warehouse_id?, quantity, unit_cost_cents?, notes? }`
+→ **201**. Incrémente aussi le stock agrégé (mouvement référencé `batch:{n°}`).
+
+### GET `/api/inventory/products/{productId}/batches`
+Lots du produit, triés FEFO (péremption la plus proche d'abord, sans date en dernier).
+
+### GET `/api/inventory/batches/expiring?days=30`
+Lots **actifs** expirant dans la fenêtre (`days_left` calculé). À la **vente** (fulfill), les lots d'un
+produit `batch` sont consommés en **FEFO** ; un lot vidé passe `exhausted`.
+
 ## Définitions d'identifiants métier (RC-6D)
 
 La réception d'unités est pilotée par des **définitions** (normalisation, regex de validation,

@@ -1,9 +1,39 @@
-# Phase 2 — Plan d'arbitrages (à valider avant lancement)
+# Phase 2 — Plan d'arbitrages (ARBITRÉ — 2026-06-17)
 
-> **Statut : EN ATTENTE D'INDICATIONS.** Ce document consolide toutes les questions qui demandent une
-> décision fondateur, rencontrées pendant le build autonome RC-5C → RC-5K (rc.114 → rc.122). Chaque
-> item liste le contexte, la question, les options (avec recommandation ⭐) et la taille estimée.
-> Rien ici n'est lancé sans arbitrage ; tout le reste (défauts raisonnables) a déjà été livré.
+> **Statut : ✅ ARBITRÉ par le fondateur, build lancé.** Décisions :
+>
+> | Item | Décision fondateur |
+> |------|--------------------|
+> | **A. Notifications** | **Email d'abord**, mais infrastructure **complète et très dynamique** : écrans (SPA) de configuration — proxy email (SMTP), proxy API (email/WhatsApp/SMS), **modèles d'email et de notification** éditables, adresse/nom d'envoi, sujet, numéro court / sender ID / titre. |
+> | **B. Portail client** | **Les 3 modes au choix** (saisie de jeton + lien magique + comptes clients) — configurable. |
+> | **C. Wizard produit** | **Assistant optionnel** (panneau d'aide, ne remplace pas le formulaire). |
+> | **D. Attributs dynamiques** | Oui — catalogue **exhaustif** de définitions seedées (IMEI, VIN, MAC, n° série constructeur, n° moteur, châssis, plaque, IMSI/ICCID, certificat, réf. équipement médical, n° lot fabricant…), extensible sans code. |
+> | **E. Pool de licences** | Comportement à épuisement **et** format d'import **variables selon l'abonnement (plan) du tenant**. |
+> | **F. Garanties+** | **Oui** : extensions payantes + durées jours/années + contrat par exemplaire. |
+> | **G. Billing** | **Tout implémenter, mais configurable** (chaque règle activable par réglage). |
+> | **H. Structurel** | **Lots ET kits.** |
+>
+> Ordre de build : **RC-6A/6B** (notifications back+SPA) → **RC-6C** (portail client) → **RC-6D**
+> (attributs dynamiques) → **RC-6E** (licences) → **RC-6F** (garanties+) → **RC-6G** (billing config)
+> → **RC-6H** (lots) → **RC-6I** (kits) → **RC-6J** (assistant produit).
+>
+> **Suivi Phase 2 :**
+>
+> | RC | Contenu | État |
+> |----|---------|------|
+> | RC-6A/6B | Notifications : canaux (SMTP/proxy API/log, config chiffrée) + templates dynamiques (global→tenant) + outbox/retry + branchements billing & digital + **SPA Paramètres → Notifications** | ✅ **rc.123** |
+> | RC-6C | Portail client (3 modes) | ⬜ |
+> | RC-6D | Attributs spéciaux dynamiques (catalogue exhaustif seedé) | ⬜ |
+> | RC-6E | Pool de licences (plan-gated) | ⬜ |
+> | RC-6F | Garanties+ (extensions, jours/années, par exemplaire) | ⬜ |
+> | RC-6G | Billing configurable (6 règles) | ⬜ |
+> | RC-6H | Lots / péremption (FEFO) | ⬜ |
+> | RC-6I | Kits / nomenclature | ⬜ |
+> | RC-6J | Assistant produit optionnel | ⬜ |
+
+---
+
+*Contexte d'origine des questions (conservé pour référence) :*
 
 ## 🔔 A. Notifications sortantes (email / SMS / WhatsApp) — **prérequis transverse**
 

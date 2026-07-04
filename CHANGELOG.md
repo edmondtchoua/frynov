@@ -3,6 +3,38 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 📣 RC-6A/6B : notifications sortantes multi-canal + SPA de configuration (2026-06-18)
+
+Branche `feature/notifications-core` (release `v1.0.0` → `rc.123`). **Ouvre la Phase 2** (arbitrages
+fondateur du 2026-06-17 — cf. `docs/decisions/phase-2-arbitrages.md`). Nouveau module **Notifications**.
+
+### Backend — infrastructure complète et dynamique
+- **`notification_channels`** (par tenant) : email/SMS/WhatsApp × providers `smtp` / `http_api`
+  (proxy agrégateur générique : URL + headers + payload template `{{to}}`/`{{message}}`/`{{from}}`…) /
+  `log`. Config **chiffrée au repos**, `from_name`/`from_address` (nom d'expéditeur, sender ID, n° court),
+  un canal **par défaut** par type.
+- **`notification_templates`** : modèles `{{placeholders}}`, **globaux seedés (FR)** + **surcharge par
+  tenant** (résolution tenant → global — fix `IN (…, NULL)` → `orWhereNull`).
+- **`notification_outbox`** : messages rendus, envoi **asynchrone** (cron 5 min
+  `notifications:flush-outbox`), retry borné (3) puis `failed`, journal consultable.
+- **Émetteurs branchés (best-effort, jamais bloquants)** : RC-5J (rappel/échéance/suspension → email
+  de facturation du tenant) et vente **digitale** (jeton + clé de licence → email du client).
+- **Endpoints** `/api/notifications` : CRUD canaux (secrets jamais exposés — `config_keys` only ;
+  PATCH partiel **conserve** les secrets), test d'envoi immédiat, templates (fusion + upsert de
+  surcharge), outbox paginée.
+
+### Frontend — SPA de configuration (Paramètres → Notifications)
+- **`NotificationSettingsPanel`** (remplace le placeholder « bientôt ») : 3 onglets — **Canaux**
+  (formulaire adaptatif SMTP / proxy API / log, test d'envoi, défaut par type), **Modèles** (éditeur
+  sujet/corps avec hint des variables, badge Global/Personnalisé), **Journal** (statuts + erreurs).
+  **i18n FR+EN** (`settings.notif.*`). Garde i18n ✅, vue-tsc ✅.
+
+### Tests
+- **+9 tests** `NotificationTest` (rendu global, surcharge tenant, noop sans canal, flush http_api
+  succès/3 échecs→failed, secrets protégés/conservés, endpoint test, rappel RC-5J → outbox, vente
+  digitale → email client, isolation tenant). Billing+Digital+Orders+Notifications **186 ✅**.
+  Front **271 ✅**.
+
 ## [Non publié] — 🧾 RC-5K : formulaire produit — type & politique pilotables depuis l'UI (2026-06-17)
 
 Branche `feature/catalog-product-policy-form` (release `v1.0.0` → `rc.122`).

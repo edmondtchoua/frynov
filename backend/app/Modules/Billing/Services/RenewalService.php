@@ -4,6 +4,7 @@ namespace App\Modules\Billing\Services;
 
 use App\Modules\Billing\Models\Plan;
 use App\Modules\Billing\Models\Subscription;
+use App\Modules\Notifications\Services\NotificationService;
 use App\Modules\Platform\Services\AuditService;
 use App\Modules\Tenants\Models\Tenant;
 
@@ -29,6 +30,7 @@ class RenewalService
     public function __construct(
         private readonly SubscriptionService $subscriptions,
         private readonly AuditService $audit,
+        private readonly NotificationService $notifications,
     ) {}
 
     /** @return array{reminders:int,past_due:int,rolled:int,suspended:int} */
@@ -85,6 +87,8 @@ class RenewalService
                 subject: $sub,
                 newValues: ['days_left' => $daysLeft, 'bucket' => $bucket, 'period_end' => $sub->current_period_end?->toISOString()],
             );
+            // RC-6A — email de relance (best-effort : sans canal configuré, seul l'audit trace).
+            $this->notifyBilling($sub, 'billing.renewal_reminder', ['days_left' => $daysLeft]);
             $count++;
         }
 
@@ -133,6 +137,7 @@ class RenewalService
                 subject: $sub,
                 newValues: ['period_end' => $sub->current_period_end?->toISOString(), 'grace_days' => self::GRACE_DAYS],
             );
+            $this->notifyBilling($sub, 'billing.renewal_overdue'); // RC-6A
             $pastDue++;
         }
 
@@ -167,6 +172,7 @@ class RenewalService
                 oldValues: ['status' => Subscription::STATUS_PAST_DUE],
                 newValues: ['status' => Subscription::STATUS_SUSPENDED, 'reason' => 'renewal_overdue'],
             );
+            $this->notifyBilling($sub, 'billing.renewal_suspended'); // RC-6A
             $count++;
         }
 
@@ -195,5 +201,37 @@ class RenewalService
         Tenant::withoutGlobalScopes()
             ->where('id', $sub->tenant_id)
             ->update(['subscription_status' => $status]);
+    }
+
+    /**
+     * RC-6A — email billing du tenant : `settings['billing_email']` sinon l'email du premier
+     * utilisateur. Émission best-effort (jamais bloquante pour le job).
+     */
+    private function notifyBilling(Subscription $sub, string $templateCode, array $extra = []): void
+    {
+        try {
+            $tenant = Tenant::withoutGlobalScopes()->find($sub->tenant_id);
+            if (! $tenant) {
+                return;
+            }
+
+            $recipient = (string) ($tenant->settings['billing_email']
+                ?? \App\Models\User::where('tenant_id', $tenant->id)->orderBy('created_at')->value('email')
+                ?? '');
+            if ($recipient === '') {
+                return;
+            }
+
+            $plan = $sub->plan ?? Plan::find($sub->plan_id);
+
+            $this->notifications->notify($tenant->id, $templateCode, $recipient, array_merge([
+                'tenant_name' => $tenant->name,
+                'plan'        => $plan?->name ?? $tenant->plan,
+                'period_end'  => $sub->current_period_end?->format('d/m/Y') ?? '',
+                'grace_days'  => self::GRACE_DAYS,
+            ], $extra));
+        } catch (\Throwable) {
+            // best-effort : l'échec de notification n'interrompt jamais le dunning
+        }
     }
 }

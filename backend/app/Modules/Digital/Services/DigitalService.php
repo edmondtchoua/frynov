@@ -4,6 +4,7 @@ namespace App\Modules\Digital\Services;
 
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Digital\Models\DigitalEntitlement;
+use App\Modules\Notifications\Services\NotificationService;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderLine;
 use Illuminate\Support\Str;
@@ -19,6 +20,8 @@ use Illuminate\Support\Str;
 class DigitalService
 {
     private const DIGITAL_FULFILLMENTS = [Product::FULFILLMENT_DOWNLOAD, Product::FULFILLMENT_LICENSE];
+
+    public function __construct(private readonly NotificationService $notifications) {}
 
     /**
      * @return array<int,DigitalEntitlement> entitlements créés
@@ -53,10 +56,40 @@ class DigitalService
                 continue;
             }
 
-            $created[] = $this->grant($order, $line, $product, $userId);
+            $entitlement = $this->grant($order, $line, $product, $userId);
+            $this->notifyDelivery($order, $product, $entitlement); // RC-6A — best-effort
+            $created[] = $entitlement;
         }
 
         return $created;
+    }
+
+    /** RC-6A — email de livraison digitale au client (jeton + clé), si son email est connu. */
+    private function notifyDelivery(Order $order, Product $product, DigitalEntitlement $entitlement): void
+    {
+        try {
+            $customer = $order->customer_id
+                ? \App\Modules\Customers\Models\Customer::withoutTenantScope()
+                    ->where('tenant_id', $order->tenant_id)->find($order->customer_id)
+                : null;
+            $email = (string) ($customer?->email ?? '');
+            if ($email === '') {
+                return;
+            }
+
+            $tenant = \App\Modules\Tenants\Models\Tenant::withoutGlobalScopes()->find($order->tenant_id);
+
+            $this->notifications->notify($order->tenant_id, 'digital.delivery', $email, [
+                'customer_name' => $customer?->name ?? '',
+                'product_name'  => $product->name,
+                'order_number'  => $order->number,
+                'access_token'  => $entitlement->access_token,
+                'license_line'  => $entitlement->license_key ? "Clé de licence : {$entitlement->license_key}" : '',
+                'tenant_name'   => $tenant?->name ?? '',
+            ]);
+        } catch (\Throwable) {
+            // best-effort : ne bloque jamais le fulfillment
+        }
     }
 
     /** Révoque un accès (le client ne peut plus télécharger/activer). */

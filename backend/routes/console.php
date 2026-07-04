@@ -33,3 +33,9 @@ Schedule::command('billing:process-renewals')
     ->dailyAt('01:30')
     ->name('billing:process-renewals')
     ->withoutOverlapping(30);
+
+// ── RC-6A — expédition de l'outbox de notifications (email/SMS/WhatsApp) ───
+Schedule::command('notifications:flush-outbox')
+    ->everyFiveMinutes()
+    ->name('notifications:flush-outbox')
+    ->withoutOverlapping();

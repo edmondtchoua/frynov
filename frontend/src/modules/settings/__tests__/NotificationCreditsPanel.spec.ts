@@ -17,16 +17,20 @@ const CREDITS = {
   ],
 }
 
-function mockGet() {
+// RC-7F — commandes de recharge Mobile Money.
+const ORDERS: any[] = []
+
+function mockGet(orders: any[] = ORDERS) {
   vi.mocked(client.get).mockImplementation((url: string) => {
     if (url.endsWith('/credits'))            return Promise.resolve({ data: { data: CREDITS } }) as any
     if (url.endsWith('/credits/movements'))  return Promise.resolve({ data: { data: [] } }) as any
+    if (url.endsWith('/credits/orders'))     return Promise.resolve({ data: { data: orders } }) as any
     return Promise.resolve({ data: { data: [] } }) as any // channels, etc.
   })
 }
 
-async function mountPanel() {
-  mockGet()
+async function mountPanel(orders: any[] = ORDERS) {
+  mockGet(orders)
   const w = mount(NotificationSettingsPanel, {
     global: { directives: { 'focus-trap': vFocusTrap }, stubs: { teleport: true } },
   })
@@ -61,6 +65,10 @@ describe('NotificationSettingsPanel — credits (RC-7E)', () => {
     await w.findAll('.ntf-credit-card')[1].find('.btn-primary').trigger('click')
     await flushPromises()
 
+    // RC-7F — le mode par défaut est Mobile Money : bascule sur l'encaissement manuel.
+    await w.find('.modal select').setValue('manual')
+    await flushPromises()
+
     await buttonByText(w, 'Valider la recharge').trigger('click')
     await flushPromises()
 
@@ -68,5 +76,42 @@ describe('NotificationSettingsPanel — credits (RC-7E)', () => {
       '/api/notifications/credits/recharge',
       expect.objectContaining({ pack_code: 'sms_1k' }),
     )
+  })
+
+  // RC-7F — mode Mobile Money : génère une commande et affiche la référence payable.
+  it('creates a mobile money order and shows the payable reference', async () => {
+    vi.mocked(client.post).mockResolvedValue({ data: { data: {
+      id: 'o1', reference: 'RCH-ABCD1234', pack_code: 'sms_1k', channel: 'sms',
+      credits: 1000, price_cents: 1500000, currency: 'XOF', status: 'pending', created_at: '2026-06-29T10:00:00Z',
+    } } } as any)
+    const w = await mountPanel()
+    await w.findAll('.ntf-tab')[3].trigger('click')
+    await flushPromises()
+
+    await w.findAll('.ntf-credit-card')[1].find('.btn-primary').trigger('click')
+    await flushPromises()
+
+    await buttonByText(w, 'Générer la référence de paiement').trigger('click')
+    await flushPromises()
+
+    expect(vi.mocked(client.post)).toHaveBeenCalledWith(
+      '/api/notifications/credits/orders',
+      { pack_code: 'sms_1k' },
+    )
+    expect(w.text()).toContain('RCH-ABCD1234')
+    // 1 500 000 centimes → 15 000 XOF (séparateur de milliers dépendant de la locale du runner).
+    expect(w.text().replace(/[\s,  ]/g, '')).toContain('15000XOF')
+  })
+
+  it('lists pending mobile money orders with their status', async () => {
+    const w = await mountPanel([{
+      id: 'o1', reference: 'RCH-WAIT0001', pack_code: 'sms_1k', channel: 'sms',
+      credits: 1000, price_cents: 1500000, currency: 'XOF', status: 'pending', created_at: '2026-06-29T10:00:00Z',
+    }])
+    await w.findAll('.ntf-tab')[3].trigger('click')
+    await flushPromises()
+
+    expect(w.text()).toContain('RCH-WAIT0001')
+    expect(w.text()).toContain('En attente de paiement')
   })
 })

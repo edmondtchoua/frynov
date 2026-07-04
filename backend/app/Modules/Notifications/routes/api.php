@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Notifications\Http\Controllers\CommunicationCreditController;
+use App\Modules\Notifications\Http\Controllers\MobileMoneyWebhookController;
 use App\Modules\Notifications\Http\Controllers\NotificationAdminController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,6 +17,7 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('api/notifications')->grou
     // RC-7E — crédits de communication : soldes/mouvements en lecture, recharge réservée.
     Route::get('credits',            [CommunicationCreditController::class, 'index']);
     Route::get('credits/movements',  [CommunicationCreditController::class, 'movements']);
+    Route::get('credits/orders',     [CommunicationCreditController::class, 'orders']); // RC-7F
 
     Route::middleware('role_or_permission:manager|admin')->group(function () {
         Route::post('channels',              [NotificationAdminController::class, 'storeChannel']);
@@ -24,5 +26,12 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('api/notifications')->grou
         Route::post('channels/{id}/test',    [NotificationAdminController::class, 'testChannel']);
         Route::put('templates',              [NotificationAdminController::class, 'upsertTemplate']);
         Route::post('credits/recharge',      [CommunicationCreditController::class, 'recharge']);
+        // RC-7F — commandes de recharge Mobile Money.
+        Route::post('credits/orders',               [CommunicationCreditController::class, 'storeOrder']);
+        Route::post('credits/orders/{id}/cancel',   [CommunicationCreditController::class, 'cancelOrder']);
     });
 });
+
+// RC-7F — webhook public de confirmation Mobile Money (le fournisseur appelle, signé HMAC).
+Route::post('api/webhooks/mobile-money', [MobileMoneyWebhookController::class, 'handle'])
+    ->middleware('throttle:60,1');

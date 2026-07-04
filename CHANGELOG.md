@@ -3,6 +3,32 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 📲 RC-7F : webhook Mobile Money — recharge automatique des crédits (2026-06-29)
+
+Branche `feature/momo-webhook` (release `v1.0.0` → `rc.138`). Automatise la recharge RC-7E : plus
+besoin d'intervention opérateur quand le paiement Mobile Money est confirmé.
+
+### Backend
+- **`credit_recharge_orders`** : commande de recharge au pack figé (crédits/prix/devise), sous
+  **référence payable unique** `RCH-XXXXXXXX`. Statuts `pending` / `paid` / `cancelled` /
+  `needs_review`.
+- **`POST /api/webhooks/mobile-money`** (public, throttle 60/min) : signature **HMAC-SHA256 du corps
+  brut** (secret `MOMO_WEBHOOK_SECRET`, comparaison temps constant) ; secret absent → **503** (webhook
+  désactivé, jamais de crédit non signé) ; signature invalide → **401**. Champs du payload **mappés
+  par config** (`field_map`, chemins pointés) → Orange Money / Wave / MTN MoMo sans code.
+- **Confirmation idempotente** (`RechargeOrderService::confirmByReference`, verrou de ligne) : replay
+  → `already_processed` (jamais 2 crédits) ; montant/devise divergents → **aucun crédit**, commande
+  `needs_review` (payload en meta) ; statut non final ignoré ; commande annulée non payable ;
+  référence inconnue ignorée sans crash.
+- Endpoints tenant : `GET/POST /credits/orders`, `POST /credits/orders/{id}/cancel` (manager/admin).
+- **+10 tests** `RechargeWebhookTest`. Notifications **30 ✅**.
+
+### Frontend
+- Modale de recharge : mode **Mobile Money (automatique)** par défaut — génère et affiche la
+  **référence payable** + montant — ou **encaissement manuel** (RC-7E, secours). Tableau « Recharges
+  Mobile Money » (statut, annulation d'une commande en attente). i18n FR+EN. +2 tests (4 au total sur
+  le panneau), vue-tsc 0.
+
 ## [Non publié] — 💬 RC-7E : crédits de communication rechargeables par tenant × canal (2026-06-29)
 
 Branche `feature/comm-credits` (release `v1.0.0` → `rc.137`). Item 1 de la Phase 3 + **nouvelle

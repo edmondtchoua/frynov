@@ -3,7 +3,9 @@
 namespace App\Modules\Notifications\Http\Controllers;
 
 use App\Modules\Notifications\Models\CommunicationCreditMovement;
+use App\Modules\Notifications\Models\CreditRechargeOrder;
 use App\Modules\Notifications\Services\CommunicationCreditService;
+use App\Modules\Notifications\Services\RechargeOrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -15,7 +17,10 @@ use Illuminate\Validation\Rule;
  */
 class CommunicationCreditController extends Controller
 {
-    public function __construct(private readonly CommunicationCreditService $credits) {}
+    public function __construct(
+        private readonly CommunicationCreditService $credits,
+        private readonly RechargeOrderService $orders,
+    ) {}
 
     /** GET /api/notifications/credits — soldes par canal + packs disponibles. */
     public function index(Request $request): JsonResponse
@@ -67,5 +72,49 @@ class CommunicationCreditController extends Controller
         );
 
         return response()->json(['data' => $result], 201);
+    }
+
+    // ── RC-7F — commandes de recharge Mobile Money ──────────────────────────
+
+    /** GET /api/notifications/credits/orders — dernières commandes de recharge du tenant. */
+    public function orders(Request $request): JsonResponse
+    {
+        $rows = CreditRechargeOrder::withoutTenantScope()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->latest()
+            ->limit((int) min(100, max(1, (int) $request->query('limit', 20))))
+            ->get()
+            ->map(fn (CreditRechargeOrder $o) => $o->toApiArray());
+
+        return response()->json(['data' => $rows]);
+    }
+
+    /** POST /api/notifications/credits/orders — crée une commande payable par Mobile Money. */
+    public function storeOrder(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'pack_code' => ['required', 'string', Rule::in(array_keys($this->credits->packs()))],
+        ]);
+
+        $order = $this->orders->createOrder($request->user()->tenant_id, $data['pack_code'], $request->user()->id);
+
+        return response()->json(['data' => $order->toApiArray()], 201);
+    }
+
+    /** POST /api/notifications/credits/orders/{id}/cancel — annule une commande en attente. */
+    public function cancelOrder(Request $request, string $id): JsonResponse
+    {
+        $order = CreditRechargeOrder::withoutTenantScope()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->find($id);
+        if (! $order) {
+            return response()->json(['message' => 'Commande introuvable.'], 404);
+        }
+
+        try {
+            return response()->json(['data' => $this->orders->cancel($order)->toApiArray()]);
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
     }
 }

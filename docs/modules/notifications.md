@@ -45,7 +45,11 @@
 | `GET /outbox` | Journal paginé (`?status=`). |
 | `GET /credits` *(RC-7E)* | Soldes par canal + packs de recharge + interrupteur/canaux facturés. |
 | `GET /credits/movements` *(RC-7E)* | Journal des mouvements (`?channel=&limit=`). |
-| `POST /credits/recharge` *(RC-7E, manager/admin)* | Applique un pack (`pack_code`, `payment_reference?`). |
+| `POST /credits/recharge` *(RC-7E, manager/admin)* | Applique un pack (`pack_code`, `payment_reference?`) — rail manuel. |
+| `GET /credits/orders` *(RC-7F)* | Commandes de recharge Mobile Money du tenant. |
+| `POST /credits/orders` *(RC-7F, manager/admin)* | Crée une commande payable (`pack_code`) → référence `RCH-…`. |
+| `POST /credits/orders/{id}/cancel` *(RC-7F, manager/admin)* | Annule une commande **en attente**. |
+| `POST /api/webhooks/mobile-money` *(RC-7F, public signé)* | Confirmation fournisseur → crédit automatique. |
 
 ## Crédits de communication rechargeables (RC-7E)
 
@@ -70,7 +74,28 @@ interrompre le flux métier appelant. Le tenant recharge en achetant un **pack**
 - **SPA** : onglet **Paramètres → Notifications → Crédits** (soldes par canal, badge facturé/offert,
   bouton *Recharger* → choix du pack + réf. de paiement, journal des mouvements).
 
-## Tests — `NotificationTest` (8) + `CommunicationCreditTest` (12)
+## Webhook Mobile Money (RC-7F) — recharge automatique
+
+Flux : le manager crée une **commande de recharge** (`credit_recharge_orders`, pack figé → référence
+payable unique `RCH-XXXXXXXX`) → le client paie via Mobile Money avec cette référence → le fournisseur
+appelle **`POST /api/webhooks/mobile-money`** → la commande passe `paid` et le solde est crédité
+(mouvement lié à la commande), **sans intervention de l'opérateur**.
+
+- **Sécurité** : signature **HMAC-SHA256 du corps brut** (secret `MOMO_WEBHOOK_SECRET`, header
+  `X-Webhook-Signature` configurable) comparée en **temps constant** ; secret absent → webhook
+  **désactivé** (503, jamais de crédit non signé). Signature invalide → 401. Throttle 60/min.
+- **Idempotence** : verrou de ligne sur la commande — un **replay** du webhook renvoie
+  `already_processed` sans jamais créditer deux fois.
+- **Montant strict** : montant/devise divergents → **aucun crédit**, commande **`needs_review`**
+  (payload conservé en `meta` pour arbitrage opérateur). Statuts non finaux (`PENDING`…) ignorés.
+- **Multi-fournisseurs sans code** : `notifications.mobile_money.field_map` mappe les champs du
+  payload (chemins pointés) — s'adapte à Orange Money, Wave, MTN MoMo…
+- **SPA** : la modale de recharge propose **Mobile Money (automatique)** — génère et affiche la
+  référence payable — ou **encaissement manuel** (RC-7E) ; liste des commandes avec statut
+  (en attente / payée / annulée / à vérifier) et annulation d'une commande en attente.
+- Le rail **manuel** (RC-7E) reste disponible en secours.
+
+## Tests — `NotificationTest` (8) + `CommunicationCreditTest` (12) + `RechargeWebhookTest` (10)
 
 Rendu global → outbox · surcharge tenant prioritaire · sans canal = noop silencieux · flush http_api
 (succès + 3 échecs → failed, **crédit consommé 1 / remboursé sur échec**) · secrets jamais exposés +
@@ -78,11 +103,14 @@ conservés au PATCH partiel · endpoint test · rappel RC-5J → outbox · vente
 isolation tenant. **RC-7E** : débit/mouvement · débit insuffisant = `false` sans mouvement · recharge
 pack → canal crédité · pack inconnu rejeté · flush débite 1/envoi · solde nul → `no_credit` (aucun
 appel réseau) · échec → remboursement · API soldes/packs · recharge manager · pack inconnu 422 ·
-isolation tenant.
+isolation tenant. **RC-7F** : commande → référence payable · webhook signé → paid + crédit + mouvement
+lié · replay = 1 seul crédit · signature invalide 401 sans crédit · secret absent 503 · référence
+inconnue ignorée · montant divergent → `needs_review` sans crédit · statut non final ignoré ·
+commande annulée non payable · liste isolée par tenant.
 
 ## Limites V1 / suite
 
 - Rendu texte brut (pas de layout HTML riche) ; locale `fr` seule seedée.
 - Envoi synchrone dans `flush` (pas de queue worker dédiée) — suffisant aux volumes actuels.
-- Recharge par **rail manuel** (l'opérateur confirme l'encaissement) — un paiement en ligne
-  (Mobile Money) automatisé viendra brancher `recharge()` sur un webhook de confirmation.
+- Webhook Mobile Money : secret **unique plateforme** (pas de secret par fournisseur) ; pas
+  d'expiration automatique des commandes en attente (annulation manuelle).

@@ -13,9 +13,10 @@ class NotificationOutbox extends Model
 {
     use HasTenant, HasUuids;
 
-    public const STATUS_PENDING = 'pending';
-    public const STATUS_SENT    = 'sent';
-    public const STATUS_FAILED  = 'failed';
+    public const STATUS_PENDING   = 'pending';
+    public const STATUS_SENT      = 'sent';
+    public const STATUS_FAILED    = 'failed';
+    public const STATUS_NO_CREDIT = 'no_credit'; // RC-7E — bloqué faute de crédit de communication
 
     public const MAX_ATTEMPTS = 3;
 

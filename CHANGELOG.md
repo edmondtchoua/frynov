@@ -3,6 +3,37 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 💬 RC-7E : crédits de communication rechargeables par tenant × canal (2026-06-29)
+
+Branche `feature/comm-credits` (release `v1.0.0` → `rc.137`). Item 1 de la Phase 3 + **nouvelle
+exigence fondateur** : chaque tenant recharge son compte email / SMS / WhatsApp moyennant un montant
+additionnel, et chaque envoi décompte le solde.
+
+### Backend
+- **`communication_credits`** (tenant × canal → `balance`) + **`communication_credit_movements`**
+  (journal append-only : `recharge` / `send` / `refund` / `adjustment`, `delta`, `balance_after`,
+  `reference`, `meta`).
+- **`CommunicationCreditService`** : `debit()` **atomique** (verrou de ligne — jamais négatif, `false`
+  si insuffisant), `credit()`, `recharge(packCode)` (packs `config/notifications.php`), `balances()`,
+  `isMetered()`.
+- **Décompte à l'envoi** dans `NotificationService::flush()` — modèle **réservation → remboursement** :
+  on débite **avant** l'envoi, on **rembourse** si l'envoi échoue (aucun crédit perdu, aucun double
+  décompte). Solde nul → statut outbox **`no_credit`** (terminal, sans nouvelle tentative), le flux
+  métier n'est **jamais** interrompu. Configurable (`credits.enabled` + `metered_channels`).
+- **Recharge par pack** (rail de paiement manuel) : `GET /credits`, `GET /credits/movements`,
+  `POST /credits/recharge` (manager/admin). Packs éditables sans code ; pack inconnu → 422.
+- **Agrégateur réel** : le transport `http_api` couvre tout fournisseur ; presets `aggregator_presets`
+  (Termii, Orange SMS, WhatsApp Cloud) fournis dans `config/notifications.php`.
+- **+12 tests** `CommunicationCreditTest` (débit/mouvement, insuffisance, recharge, pack inconnu,
+  décompte au flush, blocage à zéro sans appel réseau, remboursement sur échec, API soldes/recharge,
+  isolation tenant) ; `NotificationTest` mis à jour (crédit consommé/remboursé). Notifications **20 ✅**,
+  backend complet vert.
+
+### Frontend — onglet Paramètres → Notifications → **Crédits**
+- Soldes par canal (badge facturé/offert), bouton **Recharger** (choix du pack + réf. de paiement),
+  journal des mouvements ; statut **« Crédit épuisé »** dans le journal d'envoi. i18n FR+EN
+  (`settings.notif.credit.*`). +3 tests (274 total), garde i18n ✅, vue-tsc 0.
+
 ## [Non publié] — 🎟️ RC-7D : un accès digital par exemplaire (2026-06-28)
 
 Branche `feature/digital-per-unit` (release `v1.0.0` → `rc.136`). Item 2 de la Phase 3.

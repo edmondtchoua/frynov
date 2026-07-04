@@ -8,6 +8,7 @@ use App\Modules\Billing\Models\Subscription;
 use App\Modules\Billing\Services\RenewalService;
 use App\Modules\Catalog\Models\Product;
 use App\Modules\Customers\Models\Customer;
+use App\Modules\Notifications\Models\CommunicationCredit;
 use App\Modules\Notifications\Models\NotificationChannel;
 use App\Modules\Notifications\Models\NotificationOutbox;
 use App\Modules\Notifications\Models\NotificationTemplate;
@@ -126,6 +127,9 @@ class NotificationTest extends TestCase
             'body' => 'Bonjour {{name}}', 'is_active' => true,
         ]);
 
+        // RC-7E — le canal SMS est facturé : sans crédit l'envoi serait bloqué. On dote le tenant.
+        CommunicationCredit::create(['tenant_id' => $this->tenant->id, 'channel' => 'sms', 'balance' => 10]);
+
         $ok  = $this->svc->notify($this->tenant->id, 'test.sms', '+221770000001', ['name' => 'Awa'], 'sms');
         $ko  = $this->svc->notify($this->tenant->id, 'test.sms', '+221770000002', ['name' => 'Bineta'], 'sms');
 
@@ -138,6 +142,10 @@ class NotificationTest extends TestCase
         $this->assertSame(NotificationOutbox::STATUS_FAILED, $ko->fresh()->status);
         $this->assertSame(3, $ko->fresh()->attempts);
         $this->assertNotNull($ko->fresh()->last_error);
+
+        // RC-7E — seul l'envoi réussi a consommé un crédit ; les échecs sont remboursés (10 → 9).
+        $this->assertSame(9, (int) CommunicationCredit::withoutTenantScope()
+            ->where('tenant_id', $this->tenant->id)->where('channel', 'sms')->value('balance'));
     }
 
     #[Test]

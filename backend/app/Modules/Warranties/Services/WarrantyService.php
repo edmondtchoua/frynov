@@ -67,7 +67,7 @@ class WarrantyService
             }
 
             $startsAt = $order->fulfilled_at ?? now();
-            $endsAt   = $startsAt->copy()->addMonths($policy->duration_months);
+            $endsAt   = $policy->endsAtFrom($startsAt); // RC-6F — jours / mois / années
 
             if ($product->stock_tracking === Product::STOCK_TRACKING_SERIALIZED) {
                 $units = InventoryUnit::withoutTenantScope()
@@ -83,11 +83,55 @@ class WarrantyService
                     ]);
                 }
             } else {
-                $created[] = $this->createContract($order, $line, $product, $policy, $startsAt, $endsAt, $userId, null);
+                // RC-6F — un contrat PAR EXEMPLAIRE vendu (qty 3 → 3 contrats), plus un seul par ligne :
+                // chaque appareil a sa propre vie SAV (retour partiel, réclamation individuelle).
+                for ($i = 0; $i < max(1, (int) $line->quantity); $i++) {
+                    $created[] = $this->createContract($order, $line, $product, $policy, $startsAt, $endsAt, $userId, null);
+                }
             }
         }
 
         return $created;
+    }
+
+    /**
+     * RC-6F — PROLONGE un contrat (extension vendue au client, geste commercial…). Un contrat `void`
+     * n'est jamais prolongeable ; un contrat **expiré** repart de MAINTENANT et redevient actif.
+     * Tracé en audit (`warranty.extended`).
+     *
+     * @throws \DomainException si le contrat est void
+     */
+    public function extend(WarrantyContract $contract, int $duration, string $unit, ?string $reason = null, ?string $userId = null): WarrantyContract
+    {
+        if ($contract->status === WarrantyContract::STATUS_VOID) {
+            throw new \DomainException('Un contrat annulé (void) ne peut pas être prolongé.');
+        }
+
+        // Base de prolongation : l'échéance courante si encore couverte, sinon maintenant.
+        $base = ($contract->ends_at && $contract->ends_at->isFuture()) ? $contract->ends_at->copy() : now();
+
+        $newEnd = match ($unit) {
+            WarrantyPolicy::UNIT_DAY  => $base->addDays($duration),
+            WarrantyPolicy::UNIT_YEAR => $base->addYears($duration),
+            default                   => $base->addMonths($duration),
+        };
+
+        $before = $contract->ends_at?->toISOString();
+        $contract->update([
+            'ends_at' => $newEnd,
+            'status'  => WarrantyContract::STATUS_ACTIVE,
+        ]);
+
+        app(\App\Modules\Platform\Services\AuditService::class)->log(
+            action: 'warranty.extended',
+            tenantId: $contract->tenant_id,
+            userId: $userId,
+            subject: $contract,
+            oldValues: ['ends_at' => $before],
+            newValues: ['ends_at' => $newEnd->toISOString(), 'duration' => $duration, 'unit' => $unit, 'reason' => $reason],
+        );
+
+        return $contract;
     }
 
     /**

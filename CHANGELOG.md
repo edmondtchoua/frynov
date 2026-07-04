@@ -3,6 +3,26 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🛡️ RC-6F : garanties+ — durées jours/années, contrat par exemplaire, extensions (2026-06-22)
+
+Branche `feature/warranties-plus` (release `v1.0.0` → `rc.127`).
+Arbitrage fondateur F : **oui aux trois** évolutions garanties.
+
+### Garanties
+- **Durées en jours / mois / années** : `warranty_policies.duration_unit` (défaut `month` = compat).
+  `WarrantyPolicy::endsAtFrom()` calcule l'échéance selon l'unité (denrées → jours, immobilier → années).
+- **⚠️ Changement de comportement — un contrat PAR EXEMPLAIRE** : une vente agrégée qty 3 émet
+  désormais **3 contrats** (au lieu d'un par ligne) — chaque appareil a sa vie SAV (retour partiel,
+  réclamation individuelle). Test RC-5D mis à jour en conséquence.
+- **Extensions** (`POST /api/warranties/contracts/{id}/extend` `{duration, unit, reason}`,
+  manager/admin) : prolonge l'échéance (base = échéance courante si couverte, sinon **maintenant**) ;
+  un contrat **expiré redevient actif**, un contrat **void n'est jamais prolongeable** (422). Audit
+  `warranty.extended` (avant/après, raison — ex. n° de commande de l'extension vendue).
+
+### Tests
+- **+6 tests** `WarrantyPlusTest` (90 jours, 2 ans, qty 3 → 3 contrats, extension + audit, void
+  refusé, expiré → réactivé depuis maintenant). Warranties+Orders **77 ✅**.
+
 ## [Non publié] — 🔑 RC-6E : pool de clés de licence éditeur — politiques par plan (2026-06-21)
 
 Branche `feature/license-pool` (release `v1.0.0` → `rc.126`).

@@ -31,6 +31,26 @@ return [
     ],
 
     /*
+     * RC-7F — webhook Mobile Money : confirmation automatique des commandes de recharge.
+     * Le fournisseur POST sur `/api/webhooks/mobile-money` avec une signature HMAC-SHA256 du corps
+     * brut (header `signature_header`, secret partagé `webhook_secret`). `field_map` adapte les noms
+     * de champs du payload au fournisseur (chemins pointés acceptés) — aucun code à écrire.
+     */
+    'mobile_money' => [
+        'webhook_secret'   => env('MOMO_WEBHOOK_SECRET', ''),
+        'signature_header' => env('MOMO_SIGNATURE_HEADER', 'X-Webhook-Signature'),
+        'success_values'   => ['success', 'successful', 'paid', 'completed'],
+        'field_map'        => [
+            'reference'    => 'reference',       // référence de la commande (RCH-…)
+            'status'       => 'status',
+            'amount_cents' => 'amount_cents',    // montant payé en unité mineure
+            'currency'     => 'currency',
+            'provider_ref' => 'transaction_id',  // id de transaction Mobile Money
+            'provider'     => 'provider',        // ex. orange_money, wave, mtn_momo
+        ],
+    ],
+
+    /*
      * Agrégateurs réels (SMS / WhatsApp / passerelle email HTTP) — presets de config du canal
      * `http_api`. Le transport générique (`NotificationService::deliverHttpApi`) rend {{to}}, {{message}},
      * {{from}}, {{from_name}}, {{subject}} dans l'URL, les en-têtes et le payload : brancher un

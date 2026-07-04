@@ -112,6 +112,37 @@
         </div>
       </div>
 
+      <!-- RC-7F — commandes de recharge Mobile Money (référence payable → crédit auto au webhook) -->
+      <template v-if="orders.length">
+        <h4 class="ntf-credit-subtitle">{{ $t('settings.notif.credit.orders') }}</h4>
+        <table class="data-table" style="margin-bottom:22px">
+          <thead><tr>
+            <th>{{ $t('common.date') }}</th>
+            <th>{{ $t('settings.notif.credit.reference') }}</th>
+            <th>{{ $t('settings.notif.channelType') }}</th>
+            <th style="text-align:right">{{ $t('settings.notif.credit.amount') }}</th>
+            <th>{{ $t('common.status') }}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            <tr v-for="o in orders" :key="o.id">
+              <td style="font-size:0.8rem">{{ new Date(o.created_at).toLocaleString() }}</td>
+              <td><code style="font-size:0.8rem">{{ o.reference }}</code></td>
+              <td>{{ $t('settings.notif.channelName.' + o.channel) }}</td>
+              <td style="text-align:right">{{ (o.price_cents / 100).toLocaleString() }} {{ o.currency }}</td>
+              <td>
+                <span class="badge" :class="{ pending: 'badge-warning', paid: 'badge-success', cancelled: 'badge-gray', needs_review: 'badge-error' }[o.status]">
+                  {{ $t('settings.notif.credit.orderStatus.' + o.status) }}
+                </span>
+              </td>
+              <td style="text-align:right">
+                <button v-if="o.status === 'pending'" class="btn btn-ghost btn-sm" @click="cancelOrder(o)">{{ $t('common.cancel') }}</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </template>
+
       <h4 class="ntf-credit-subtitle">{{ $t('settings.notif.credit.movements') }}</h4>
       <div v-if="!movements.length" class="ntf-empty">{{ $t('settings.notif.credit.noMovement') }}</div>
       <table v-else class="data-table">
@@ -134,29 +165,49 @@
       </table>
     </div>
 
-    <!-- ── Recharge modal (RC-7E) ──────────────────────────────────────── -->
+    <!-- ── Recharge modal (RC-7E + RC-7F) ──────────────────────────────── -->
     <BaseModal v-model="rechargeModal.open" :title="$t('settings.notif.credit.rechargeTitle')">
       <div style="display:flex;flex-direction:column;gap:12px">
-        <p class="hint">{{ $t('settings.notif.credit.rechargeHint') }}</p>
-        <div class="form-group">
-          <label class="form-label">{{ $t('settings.notif.credit.pack') }}</label>
-          <select v-model="rechargeForm.pack_code" class="form-input">
-            <option v-for="p in packsForChannel(rechargeModal.channel)" :key="p.code" :value="p.code">
-              {{ p.credits.toLocaleString() }} {{ $t('settings.notif.credit.sends') }} — {{ (p.price_cents / 100).toLocaleString() }} {{ p.currency }}
-            </option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">{{ $t('settings.notif.credit.paymentRef') }}</label>
-          <input v-model="rechargeForm.payment_reference" class="form-input" :placeholder="$t('settings.notif.credit.paymentRefPlaceholder')" />
-        </div>
+        <!-- RC-7F — la commande Mobile Money vient d'être créée : afficher la référence payable. -->
+        <template v-if="rechargeModal.createdOrder">
+          <p class="hint">{{ $t('settings.notif.credit.orderCreatedHint') }}</p>
+          <div class="ntf-order-ref">
+            <div class="ntf-order-ref-code">{{ rechargeModal.createdOrder.reference }}</div>
+            <div class="ntf-order-ref-amount">{{ (rechargeModal.createdOrder.price_cents / 100).toLocaleString() }} {{ rechargeModal.createdOrder.currency }}</div>
+          </div>
+        </template>
+
+        <template v-else>
+          <p class="hint">{{ $t('settings.notif.credit.rechargeHint') }}</p>
+          <div class="form-group">
+            <label class="form-label">{{ $t('settings.notif.credit.mode') }}</label>
+            <select v-model="rechargeForm.mode" class="form-input">
+              <option value="mobile_money">{{ $t('settings.notif.credit.modeMomo') }}</option>
+              <option value="manual">{{ $t('settings.notif.credit.modeManual') }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">{{ $t('settings.notif.credit.pack') }}</label>
+            <select v-model="rechargeForm.pack_code" class="form-input">
+              <option v-for="p in packsForChannel(rechargeModal.channel)" :key="p.code" :value="p.code">
+                {{ p.credits.toLocaleString() }} {{ $t('settings.notif.credit.sends') }} — {{ (p.price_cents / 100).toLocaleString() }} {{ p.currency }}
+              </option>
+            </select>
+          </div>
+          <div v-if="rechargeForm.mode === 'manual'" class="form-group">
+            <label class="form-label">{{ $t('settings.notif.credit.paymentRef') }}</label>
+            <input v-model="rechargeForm.payment_reference" class="form-input" :placeholder="$t('settings.notif.credit.paymentRefPlaceholder')" />
+          </div>
+          <p v-else class="hint">{{ $t('settings.notif.credit.momoHint') }}</p>
+        </template>
+
         <p v-if="rechargeModal.error" style="color:#dc2626;font-size:0.85rem">{{ rechargeModal.error }}</p>
       </div>
       <template #footer>
-        <button class="btn btn-ghost" @click="rechargeModal.open = false">{{ $t('common.cancel') }}</button>
-        <button class="btn btn-primary" :disabled="rechargeModal.saving || !rechargeForm.pack_code" @click="submitRecharge">
+        <button class="btn btn-ghost" @click="rechargeModal.open = false">{{ rechargeModal.createdOrder ? $t('common.close') : $t('common.cancel') }}</button>
+        <button v-if="!rechargeModal.createdOrder" class="btn btn-primary" :disabled="rechargeModal.saving || !rechargeForm.pack_code" @click="submitRecharge">
           <span v-if="rechargeModal.saving" class="spinner-sm"></span>
-          {{ $t('settings.notif.credit.confirmRecharge') }}
+          {{ rechargeForm.mode === 'manual' ? $t('settings.notif.credit.confirmRecharge') : $t('settings.notif.credit.createOrder') }}
         </button>
       </template>
     </BaseModal>
@@ -310,6 +361,8 @@ interface Template { id: string; code: string; channel: string; locale: string; 
 interface OutboxItem { id: string; recipient: string; subject: string | null; template_code: string | null; status: 'pending' | 'sent' | 'failed' | 'no_credit'; attempts: number; last_error: string | null; created_at: string }
 interface CreditPack { code: string; channel: ChannelKind; credits: number; price_cents: number; currency: string }
 interface CreditMovement { id: string; channel: ChannelKind; delta: number; balance_after: number; reason: string; reference: string | null; created_at: string }
+// RC-7F — commande de recharge payable par Mobile Money (webhook → crédit auto).
+interface RechargeOrder { id: string; reference: string; pack_code: string; channel: ChannelKind; credits: number; price_cents: number; currency: string; status: 'pending' | 'paid' | 'cancelled' | 'needs_review'; created_at: string }
 
 const tab       = ref<'channels' | 'templates' | 'outbox' | 'credits'>('channels')
 const channels  = ref<Channel[]>([])
@@ -330,6 +383,7 @@ async function loadOutbox()    { try { outbox.value    = (await client.get('/api
 // ── Crédits de communication (RC-7E) ───────────────────────────────────────
 const credits   = reactive({ enabled: true, balances: {} as Record<string, number>, metered: [] as string[], packs: [] as CreditPack[] })
 const movements = ref<CreditMovement[]>([])
+const orders    = ref<RechargeOrder[]>([])
 
 async function loadCredits() {
   try {
@@ -340,18 +394,21 @@ async function loadCredits() {
     credits.packs    = data.data.packs
   } catch { /* silencieux : panneau vide */ }
   try { movements.value = (await client.get('/api/notifications/credits/movements')).data.data } catch { movements.value = [] }
+  try { orders.value    = (await client.get('/api/notifications/credits/orders')).data.data } catch { orders.value = [] }
 }
 
 function packsForChannel(channel: ChannelKind): CreditPack[] {
   return credits.packs.filter(p => p.channel === channel)
 }
 
-const rechargeModal = reactive({ open: false, saving: false, error: '', channel: 'sms' as ChannelKind })
-const rechargeForm  = reactive({ pack_code: '', payment_reference: '' })
+const rechargeModal = reactive({ open: false, saving: false, error: '', channel: 'sms' as ChannelKind, createdOrder: null as RechargeOrder | null })
+const rechargeForm  = reactive({ mode: 'mobile_money' as 'mobile_money' | 'manual', pack_code: '', payment_reference: '' })
 
 function openRecharge(channel: ChannelKind) {
   rechargeModal.channel = channel
   rechargeModal.error = ''
+  rechargeModal.createdOrder = null
+  rechargeForm.mode = 'mobile_money'
   rechargeForm.pack_code = packsForChannel(channel)[0]?.code ?? ''
   rechargeForm.payment_reference = ''
   rechargeModal.open = true
@@ -361,17 +418,28 @@ async function submitRecharge() {
   rechargeModal.saving = true
   rechargeModal.error = ''
   try {
-    await client.post('/api/notifications/credits/recharge', {
-      pack_code: rechargeForm.pack_code,
-      payment_reference: rechargeForm.payment_reference || undefined,
-    })
-    rechargeModal.open = false
+    if (rechargeForm.mode === 'manual') {
+      // RC-7E — rail manuel : l'opérateur a déjà encaissé, le solde est crédité immédiatement.
+      await client.post('/api/notifications/credits/recharge', {
+        pack_code: rechargeForm.pack_code,
+        payment_reference: rechargeForm.payment_reference || undefined,
+      })
+      rechargeModal.open = false
+    } else {
+      // RC-7F — Mobile Money : on génère la référence payable ; le webhook créditera à la confirmation.
+      const { data } = await client.post('/api/notifications/credits/orders', { pack_code: rechargeForm.pack_code })
+      rechargeModal.createdOrder = data.data
+    }
     loadCredits()
   } catch (e: any) {
     rechargeModal.error = e?.response?.data?.message ?? t('common.genericError')
   } finally {
     rechargeModal.saving = false
   }
+}
+
+async function cancelOrder(o: RechargeOrder) {
+  try { await client.post(`/api/notifications/credits/orders/${o.id}/cancel`); loadCredits() } catch { /* surfaced au reload */ }
 }
 
 // ── Channel form ─────────────────────────────────────────────────────────
@@ -516,4 +584,7 @@ onMounted(loadChannels)
 .ntf-credit-balance { font-size: 1.8rem; font-weight: 700; color: var(--brand-primary); line-height: 1.1; }
 .ntf-credit-unit { font-size: 0.72rem; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.04em; }
 .ntf-credit-subtitle { margin: 0 0 10px; font-size: 0.92rem; }
+.ntf-order-ref { border: 1px dashed var(--gray-300); border-radius: 10px; padding: 16px; text-align: center; }
+.ntf-order-ref-code { font-family: monospace; font-size: 1.3rem; font-weight: 700; letter-spacing: 0.06em; }
+.ntf-order-ref-amount { color: var(--gray-500); font-size: 0.95rem; margin-top: 4px; }
 </style>

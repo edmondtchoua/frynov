@@ -1,6 +1,6 @@
 # Guide utilisateur — Notifications (email, SMS, WhatsApp)
 
-> **Dernière mise à jour :** 2026-06-28 — RC-6A/6B + RC-7E (crédits).
+> **Dernière mise à jour :** 2026-06-29 — RC-6A/6B + RC-7E (crédits) + RC-7F (Mobile Money).
 
 Frynov peut prévenir automatiquement **vous** (rappels d'abonnement) et **vos clients** (livraison de
 leurs achats digitaux : jeton d'accès, clé de licence). Tout se configure dans
@@ -40,9 +40,13 @@ crédit**. Vous voyez votre **solde par canal** et l'historique des mouvements.
 
 - **À court de crédit ?** L'envoi passe en **« Crédit épuisé »** — il ne part pas, mais votre activité
   (ventes, commandes…) n'est **jamais** interrompue. Rechargez, les prochains envois repartent.
-- **Recharger** : cliquez **Recharger** sur le canal voulu, choisissez un **pack** (ex. 1 000 SMS),
-  indiquez la **référence de votre paiement** (reçu, transaction Mobile Money…). Dès que votre
-  opérateur confirme l'encaissement, le solde est **crédité** et tracé dans les mouvements.
+- **Recharger par Mobile Money (automatique)** : cliquez **Recharger**, choisissez un **pack** puis
+  **Mobile Money** — une **référence de paiement** (ex. `RCH-A1B2C3D4`) et le montant s'affichent.
+  Payez ce montant par Mobile Money avec cette référence : le solde est **crédité automatiquement**
+  dès la confirmation du paiement (aucune intervention). La commande apparaît dans « Recharges
+  Mobile Money » (en attente → payée) ; vous pouvez annuler une commande non payée.
+- **Recharger en manuel** (secours) : choisissez **Encaissement manuel** et indiquez la référence du
+  paiement déjà reçu — le solde est crédité immédiatement.
 - Un envoi qui **échoue** (fournisseur indisponible) est **remboursé** automatiquement : vous ne payez
   que les messages réellement partis.
 

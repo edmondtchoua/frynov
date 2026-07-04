@@ -41,8 +41,9 @@
 > | RC-7C | **Comptes clients** : `portal_accounts` (vérif par code anti-usurpation), login token Sanctum, `my-purchases` multi-vendeurs + bloc « Mon compte » dans `/portal` (FR+EN) | ✅ **rc.135** |
 > | RC-7D | **Entitlement par exemplaire** (`unit_index` ; qty 3 → 3 accès jeton/clé distincts ; révocation **au prorata** des retours partiels ; n° d'exemplaire dans l'UI commande) | ✅ **rc.136** |
 > | RC-7E | **Crédits de communication** (NOUVELLE exigence fondateur) : `communication_credits` + mouvements ; **décompte atomique à l'envoi** (réservation→remboursement, blocage `no_credit`) ; **recharge par pack** (rail manuel, `POST /credits/recharge`) ; onglet SPA **Crédits** ; agrégateur réel via `http_api` + presets (Termii/Orange/WhatsApp Cloud). | ✅ **rc.137** |
+> | RC-7F | **Webhook Mobile Money** : `credit_recharge_orders` (référence payable `RCH-…`), webhook public **signé HMAC** (`MOMO_WEBHOOK_SECRET`, `field_map` multi-fournisseurs), confirmation **idempotente**, montant strict → `needs_review`, modale SPA Mobile Money + liste des commandes. | ✅ **rc.138** |
 >
-> 🎉 **Phase 3 complète (RC-7B → RC-7E).**
+> 🎉 **Phase 3 complète (RC-7B → RC-7F).** Recette QA Phase 3 : voir `docs/recette/`.
 
 ---
 

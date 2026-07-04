@@ -20,6 +20,14 @@ const router = createRouter({
       meta: { public: true },
     },
 
+    // ── Portail client digital (RC-6C — public : jeton / lien magique / par email) ──
+    {
+      path: '/portal',
+      name: 'portal',
+      component: () => import('@/pages/DigitalPortalView.vue'),
+      meta: { public: true },
+    },
+
     // ── Auth ──────────────────────────────────────────────────────────────
     {
       path: '/login',

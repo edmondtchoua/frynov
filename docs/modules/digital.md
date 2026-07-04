@@ -89,10 +89,19 @@ transaction, `fulfilled_at` posé). Dépendance injectée via `OrdersServiceProv
   (middleware `signed`, hors auth) revérifie l'accessibilité de l'entitlement avant de streamer le fichier
   → la **révocation prime** sur un lien déjà émis.
 
+## Portail client (RC-6C)
+
+Page publique **`/portal`** (front) + endpoints publics throttlés :
+- `POST /api/portal/digital/access` `{token}` — détail de l'achat (produit, vendeur, clé, **liens
+  signés**) ; 404 jeton inconnu, 403 révoqué/expiré.
+- `POST /api/portal/digital/request-links` `{email}` — envoie à ce client, **par le canal de chaque
+  tenant concerné**, la liste de ses achats actifs avec liens magiques (`digital.portal_links`).
+  **Toujours 200** (anti-énumération d'emails), throttle 5/min.
+- `DigitalService::portalLink()` construit le lien magique (`FRONTEND_URL` + `/portal?token=…`) —
+  inclus dans l'email de livraison (`{{portal_link}}`).
+
 ## Limites V1 / suite
 
-- Un entitlement **par ligne** (pas par exemplaire) ; pool de clés de licence non géré.
-- L'endpoint `GET /access/{token}` (révélant clé + liens) reste en **contexte tenant** (opérateur) ; un
-  **portail client** self-service (saisie du jeton, auth client) viendra ensuite. Le **téléchargement**,
-  lui, est déjà client-facing (lien signé hors auth).
+- Un entitlement **par ligne** (pas par exemplaire) ; pool de clés de licence non géré (RC-6E).
+- Accès portail par jeton/email — pas de compte client à mot de passe (extension possible).
 - À venir : journalisation fine des téléchargements, versions multiples d'asset, antivirus à l'upload.

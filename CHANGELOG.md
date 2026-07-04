@@ -3,6 +3,36 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🌐 RC-6C : portail client digital — jeton, lien magique, « mes achats » par email (2026-06-19)
+
+Branche `feature/digital-client-portal` (release `v1.0.0` → `rc.124`).
+Arbitrage fondateur B : **les trois modes d'accès**. Le client final accède à ses achats sans compte
+opérateur.
+
+### Les 3 modes d'accès
+1. **Saisie de jeton** : page publique `/portal` — le client colle son jeton → produit, clé de licence
+   (copiable), **liens de téléchargement signés** (15 min, régénérables).
+2. **Lien magique** : l'email de livraison (`digital.delivery`) porte désormais `{{portal_link}}` —
+   un clic ouvre le portail avec le jeton pré-chargé.
+3. **« Mes achats » par email** : le client saisit son email → il reçoit, **par le canal de chaque
+   vendeur concerné** (multi-tenant), la liste de ses achats actifs avec leurs liens magiques
+   (template global `digital.portal_links`). Réponse toujours générique (anti-énumération).
+
+### Backend
+- **`PortalController`** (public, throttlé 20/min et 5/min) : `POST /api/portal/digital/access`
+  (404 inconnu, 403 révoqué/expiré), `POST /api/portal/digital/request-links` (toujours 200).
+- **`DigitalService::portalLink()`** (base `config('app.frontend_url')`, nouvelle clé FRONTEND_URL).
+- Migration : template `digital.portal_links` + mise à jour de `digital.delivery`.
+
+### Frontend
+- **`DigitalPortalView`** (`/portal`, route publique) : saisie/auto-chargement du jeton, clé copiable,
+  téléchargements, formulaire « retrouver mes achats ». **i18n FR+EN** (`portal.*`). vue-tsc ✅.
+
+### Tests
+- **+5 tests** `PortalTest` (accès public par jeton, révoqué → 403 / inconnu → 404, « mes achats » →
+  liens magiques via canal tenant, email inconnu → réponse générique sans envoi, mail de livraison
+  porte le lien magique). Digital+Notifications **27 ✅**, front **271 ✅**.
+
 ## [Non publié] — 📣 RC-6A/6B : notifications sortantes multi-canal + SPA de configuration (2026-06-18)
 
 Branche `feature/notifications-core` (release `v1.0.0` → `rc.123`). **Ouvre la Phase 2** (arbitrages

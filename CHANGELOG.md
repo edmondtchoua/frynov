@@ -3,6 +3,43 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔐 RC-7C : comptes clients du portail digital (3ᵉ mode d'accès) (2026-06-28)
+
+Branche `feature/portal-accounts` (release `v1.0.0` → `rc.135`). Item 4 de la Phase 3.
+Le client final peut désormais se créer un **compte** (email + mot de passe) en plus du jeton et du
+lien magique — les 3 modes cohabitent sur `/portal`.
+
+### Backend
+- **`portal_accounts`** : compte global (hors multi-tenant, rapproché par email). **Vérification par
+  code obligatoire avant login** — le code part via le canal du/des vendeur(s) connaissant l'email
+  (`portal.verify_code`), empêchant de revendiquer l'email d'autrui.
+- **`PortalAccountController`** : `POST /register` (code envoyé, réponse générique anti-énumération),
+  `POST /verify` (code + expiration 30 min), `POST /login` (refusé si non vérifié → token Sanctum du
+  modèle `PortalAccount`, jamais un user tenant), `GET /my-purchases` (achats digitaux actifs
+  **multi-vendeurs** avec liens magiques). Throttles : 3/10 min, 5/10 min, 10/min.
+- **+5 tests** `PortalAccountTest` (code via canal vendeur + login refusé tant que non vérifié, code
+  faux/expiré, login vérifié → liste des achats, `my-purchases` exige un token, email inconnu →
+  générique sans envoi). Digital+Notifications **38 ✅**.
+
+### Frontend — bloc « Mon compte » dans `/portal`
+- Onglets **Se connecter / Créer un compte** ; inscription → saisie du **code** → login →
+  liste des achats avec liens d'ouverture ; session persistée (token portail en `localStorage`,
+  distinct de l'auth opérateur). Instance axios **dédiée** (pas de redirection login tenant sur 401).
+  **i18n FR+EN** (`portal.account.*`). Garde i18n ✅, vue-tsc **0 erreur**, front **271 ✅**.
+
+## [Non publié] — 🧼 RC-7B : résorption de la dette vue-tsc — 0 erreur (2026-06-27)
+
+Branche `feature/batch-expiry-followups`… en réalité worktree isolé (release `v1.0.0` → `rc.134`).
+Item 5 de la Phase 3. **180 lignes d'erreurs TypeScript → 0**, **sans changement de comportement**.
+
+- Environnement : `node_modules/axios` corrompu (types absents) — réparé (≈109 erreurs fantômes).
+- Familles corrigées : `ImportMeta.env` (`vite-env.d.ts`), `VitestUtils` (accolades dans 17 specs),
+  doublons de clés i18n masqués au runtime (4), `label?` sur `CreateVariantPayload`, code mort (9),
+  gardes de nullabilité, signatures de services, `PricingInterval`.
+- **1 vrai bug attrapé par le type-check** : un toast passait un objet à `pushToast(message: string)`
+  → affichait « [object Object] » au lieu du message de succès (corrigé).
+- Vérifications : vue-tsc 0, vitest **271 ✅**, i18n gate ✅.
+
 ## [Non publié] — 🧹 RC-7A : suites de recette — démarque automatique des lots + FEFO des composants de kits (2026-06-27)
 
 Branche `feature/batch-expiry-followups` (release `v1.0.0` → `rc.133`).

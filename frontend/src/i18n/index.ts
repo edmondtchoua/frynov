@@ -622,6 +622,15 @@ export const messages: Record<Locale, Dict> = {
       linkExpiry: 'Les liens de téléchargement expirent après 15 minutes — rechargez la page pour les régénérer.',
       or: 'ou', lostLabel: 'Jeton perdu ? Recevez tous vos achats par email',
       sendLinks: 'Recevoir mes achats', requested: 'Si des achats existent pour cet email, un message vient de partir.',
+      account: {
+        heading: 'Mon compte', login: 'Se connecter', register: 'Créer un compte',
+        email: 'Email', password: 'Mot de passe', passwordNew: 'Mot de passe (8 caractères min.)',
+        getCode: 'Recevoir un code', registerHint: 'Un code de vérification vous sera envoyé si des achats existent pour cet email.',
+        codeSent: 'Un code a été envoyé à {email}.', code: 'Code reçu', verify: 'Vérifier', verified: 'Compte vérifié — vous pouvez vous connecter.',
+        signedInAs: 'Connecté : {email}', logout: 'Se déconnecter', open: 'Ouvrir',
+        empty: 'Aucun achat digital actif sur ce compte.',
+        badCode: 'Code invalide ou expiré.', badCredentials: 'Identifiants invalides.', genericError: 'Une erreur est survenue.',
+      },
     },
     settings: {
       title: 'Paramètres', subtitle: 'Gérez votre espace de travail et vos préférences', selectPlaceholder: '— Sélectionner —',
@@ -1577,6 +1586,15 @@ export const messages: Record<Locale, Dict> = {
       linkExpiry: 'Download links expire after 15 minutes — reload the page to regenerate them.',
       or: 'or', lostLabel: 'Lost your token? Receive all your purchases by email',
       sendLinks: 'Send my purchases', requested: 'If purchases exist for this email, a message is on its way.',
+      account: {
+        heading: 'My account', login: 'Sign in', register: 'Create an account',
+        email: 'Email', password: 'Password', passwordNew: 'Password (8 characters min.)',
+        getCode: 'Get a code', registerHint: 'A verification code will be sent if purchases exist for this email.',
+        codeSent: 'A code was sent to {email}.', code: 'Code received', verify: 'Verify', verified: 'Account verified — you can now sign in.',
+        signedInAs: 'Signed in: {email}', logout: 'Sign out', open: 'Open',
+        empty: 'No active digital purchase on this account.',
+        badCode: 'Invalid or expired code.', badCredentials: 'Invalid credentials.', genericError: 'Something went wrong.',
+      },
     },
     settings: {
       title: 'Settings', subtitle: 'Manage your workspace and preferences', selectPlaceholder: '— Select —',

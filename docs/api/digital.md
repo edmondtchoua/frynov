@@ -99,6 +99,33 @@ accès révoqué/expiré) · **404** (jeton inconnu, ou asset n'appartenant pas 
 
 ---
 
+## Comptes clients du portail (RC-7C) — préfixe `api/portal`
+
+Endpoints **publics** (le client final, pas l'opérateur). Le token renvoyé par `/login` est un token
+Sanctum du modèle `PortalAccount` — à envoyer en `Authorization: Bearer …` sur `/my-purchases`.
+
+### POST /api/portal/register  *(throttle 3/10 min)*
+
+Body `{ "email", "password" }`. Crée (ou rafraîchit) le compte et envoie un **code de vérification**
+(6 chiffres, 30 min) par le canal du/des vendeur(s) connaissant l'email. **Réponse générique** quel que
+soit le cas (anti-énumération) : `{ "message": "Si l'adresse est reconnue, un code a été envoyé." }`.
+
+### POST /api/portal/verify  *(throttle 5/10 min)*
+
+Body `{ "email", "code" }`. Valide le code. **200** si correct et non expiré ; **422** sinon.
+
+### POST /api/portal/login  *(throttle 10/min)*
+
+Body `{ "email", "password" }`. **403** si le compte n'est pas vérifié. **200** →
+`{ "token": "<sanctum-plain-text>" }`. **401** si identifiants invalides.
+
+### GET /api/portal/my-purchases  *(auth:sanctum — token portail)*
+
+Liste les achats digitaux **actifs** du client, **tous vendeurs confondus** :
+`{ "data": [ { "product_name", "seller_name", "granted_at", "portal_link" } ] }`.
+
+---
+
 ## Notes
 
 1. **Sans stock** : les produits digitaux/services (`stock_tracking=none`) sont **commandables sans

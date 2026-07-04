@@ -100,6 +100,31 @@ Page publique **`/portal`** (front) + endpoints publics throttlés :
 - `DigitalService::portalLink()` construit le lien magique (`FRONTEND_URL` + `/portal?token=…`) —
   inclus dans l'email de livraison (`{{portal_link}}`).
 
+## Comptes clients du portail (RC-7C)
+
+Troisième mode d'accès, **au choix** du client, en plus du jeton et du lien magique.
+
+- **`portal_accounts`** — compte **global** (hors multi-tenant, rapproché par email) :
+  `email` (unique), `password` (hashé), `verification_code` / `verification_expires_at`,
+  `verified_at`, `last_login_at`. Le modèle est **`Authenticatable` + `HasApiTokens`** (jeton Sanctum
+  propre) et **`isSuperAdmin(): bool => false`** (neutralise `TenantScope` qui l'interroge sur tout
+  utilisateur authentifié).
+- **Vérification par code obligatoire avant login** : on ne peut pas revendiquer l'email d'autrui.
+  À l'inscription, un code à 6 chiffres (validité **30 min**) part **par le canal du/des vendeur(s)**
+  connaissant cet email (`portal.verify_code`). Réponse **générique** (anti-énumération).
+
+| Méthode + URL (`api/portal`) | Auth | Throttle | Description |
+|---|---|---|---|
+| `POST /register` `{email,password}` | — | 3/10 min | Crée/rafraîchit le compte, envoie le code. Réponse générique. |
+| `POST /verify` `{email,code}` | — | 5/10 min | Valide le code (et son expiration) → `verified_at`. |
+| `POST /login` `{email,password}` | — | 10/min | **Refusé si non vérifié** ; sinon renvoie un **token Sanctum** du `PortalAccount` (jamais un user tenant). |
+| `GET /my-purchases` | `auth:sanctum` | — | Achats digitaux **actifs, multi-vendeurs**, avec liens magiques (`product_name`, `seller_name`, `granted_at`, `portal_link`). |
+
+**Front** — bloc « Mon compte » dans `/portal` (`DigitalPortalView.vue`) : onglets *Se connecter /
+Créer un compte*, étape de saisie du code, liste des achats. Session persistée (`localStorage`
+`portal_token`), via une **instance axios dédiée** (le client partagé redirige vers le login opérateur
+sur 401). i18n **FR+EN** (`portal.account.*`).
+
 ## Pool de clés éditeur (RC-6E)
 
 - `license_pool_keys` : clés importées (`POST /products/{id}/license-keys`, doublons ignorés, limite
@@ -111,6 +136,6 @@ Page publique **`/portal`** (front) + endpoints publics throttlés :
 
 ## Limites V1 / suite
 
-- Un entitlement **par ligne** (pas par exemplaire).
-- Accès portail par jeton/email — pas de compte client à mot de passe (extension possible).
+- Un entitlement **par ligne** (pas par exemplaire) — *levée prévue en RC-7D*.
+- Accès portail : jeton **ou** lien magique **ou** compte à mot de passe (RC-7C) — les 3 cohabitent.
 - À venir : journalisation fine des téléchargements, versions multiples d'asset, antivirus à l'upload.

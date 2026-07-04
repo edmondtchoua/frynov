@@ -65,6 +65,13 @@ class SerializedUnitController extends Controller
                 'serial_type'  => $e->serialType,
                 'serial_value' => $e->serialValue,
             ], 422);
+        } catch (\App\Modules\Inventory\Exceptions\InvalidSerialException $e) {
+            // RC-6D — valeur invalide pour la définition (regex/format).
+            return response()->json([
+                'message'      => $e->getMessage(),
+                'serial_type'  => $e->serialType,
+                'serial_value' => $e->serialValue,
+            ], 422);
         }
 
         return response()->json([

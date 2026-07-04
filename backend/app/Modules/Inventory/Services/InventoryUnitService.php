@@ -3,7 +3,9 @@
 namespace App\Modules\Inventory\Services;
 
 use App\Modules\Inventory\Exceptions\DuplicateSerialException;
+use App\Modules\Inventory\Exceptions\InvalidSerialException;
 use App\Modules\Inventory\Models\InventoryUnit;
+use App\Modules\Inventory\Models\SpecialAttributeDefinition;
 use App\Modules\Inventory\Models\StockMovement;
 use App\Modules\Inventory\Support\SerialNormalizer;
 use Illuminate\Support\Facades\DB;
@@ -34,28 +36,41 @@ class InventoryUnitService
             foreach ($items as $item) {
                 $type       = (string) $item['serial_type'];
                 $rawValue   = (string) $item['serial_value'];
-                $normalized = SerialNormalizer::normalize($type, $rawValue);
+
+                // RC-6D — la DÉFINITION (tenant → globale) pilote normalisation, validation et unicité.
+                // Sans définition (type legacy inconnu) : normalisation historique + unicité par défaut.
+                $definition = SpecialAttributeDefinition::resolve($tenantId, $type);
+                $normalized = $definition
+                    ? $definition->normalize($rawValue)
+                    : SerialNormalizer::normalize($type, $rawValue);
 
                 if ($normalized === '') {
-                    throw new DuplicateSerialException($type, $rawValue); // valeur vide après normalisation = invalide
+                    throw new InvalidSerialException($type, $rawValue);
+                }
+                if ($definition && ! $definition->validateNormalized($normalized)) {
+                    throw new InvalidSerialException($type, $rawValue, $definition->help_text);
                 }
 
-                // Doublon DANS la requête courante.
-                $batchKey = strtolower($type) . '|' . $normalized;
-                if (isset($seenInBatch[$batchKey])) {
-                    throw new DuplicateSerialException($type, $rawValue);
-                }
-                $seenInBatch[$batchKey] = true;
+                $enforceUnique = $definition ? $definition->is_unique : true;
 
-                // Doublon DÉJÀ en base pour ce tenant (verrou lecture pour éviter la course).
-                $exists = InventoryUnit::withoutTenantScope()
-                    ->where('tenant_id', $tenantId)
-                    ->where('serial_type', strtolower($type))
-                    ->where('normalized_serial', $normalized)
-                    ->lockForUpdate()
-                    ->exists();
-                if ($exists) {
-                    throw new DuplicateSerialException($type, $rawValue);
+                if ($enforceUnique) {
+                    // Doublon DANS la requête courante.
+                    $batchKey = strtolower($type) . '|' . $normalized;
+                    if (isset($seenInBatch[$batchKey])) {
+                        throw new DuplicateSerialException($type, $rawValue);
+                    }
+                    $seenInBatch[$batchKey] = true;
+
+                    // Doublon DÉJÀ en base pour ce tenant (verrou lecture pour éviter la course).
+                    $exists = InventoryUnit::withoutTenantScope()
+                        ->where('tenant_id', $tenantId)
+                        ->where('serial_type', strtolower($type))
+                        ->where('normalized_serial', $normalized)
+                        ->lockForUpdate()
+                        ->exists();
+                    if ($exists) {
+                        throw new DuplicateSerialException($type, $rawValue);
+                    }
                 }
 
                 $variantId   = $item['variant_id'] ?? null;
@@ -95,13 +110,18 @@ class InventoryUnitService
         });
     }
 
-    /** Recherche une unité par identifiant (normalisé), scopée au tenant. */
+    /** Recherche une unité par identifiant (normalisé selon sa définition RC-6D), scopée au tenant. */
     public function findBySerial(string $tenantId, string $type, string $value): ?InventoryUnit
     {
+        $definition = SpecialAttributeDefinition::resolve($tenantId, $type);
+        $normalized = $definition
+            ? $definition->normalize($value)
+            : SerialNormalizer::normalize($type, $value);
+
         return InventoryUnit::withoutTenantScope()
             ->where('tenant_id', $tenantId)
             ->where('serial_type', strtolower($type))
-            ->where('normalized_serial', SerialNormalizer::normalize($type, $value))
+            ->where('normalized_serial', $normalized)
             ->first();
     }
 }

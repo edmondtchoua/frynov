@@ -141,8 +141,21 @@ class OrderReturnService
                 $unitIds = $this->allocation->returnUnits($return->tenant_id, $line->order_line_id, $line->quantity_approved, $resalable);
                 // 2) Garanties → void (cible les unités si sérialisé, sinon la ligne).
                 $this->warranties->voidForReturn($return->tenant_id, $line->order_line_id, $unitIds);
-                // 3) Accès digitaux → révoqués.
-                $this->digital->revokeForOrderLine($return->tenant_id, $line->order_line_id);
+                // 3) Accès digitaux → révoqués UNIQUEMENT si le retour couvre TOUTE la ligne (recette
+                //    QA : l'accès est porté par la ligne — un retour partiel laisse le client avec des
+                //    exemplaires payés, son accès doit survivre). Cumul de tous les retours approuvés.
+                $orderLine = \App\Modules\Orders\Models\OrderLine::withoutTenantScope()
+                    ->where('tenant_id', $return->tenant_id)
+                    ->find($line->order_line_id);
+                $returnedTotal = (int) OrderReturnLine::query()
+                    ->where('order_line_id', $line->order_line_id)
+                    ->whereHas('orderReturn', fn ($q) => $q->whereIn('status', [
+                        OrderReturn::STATUS_APPROVED, OrderReturn::STATUS_PROCESSING, OrderReturn::STATUS_RESTOCKED,
+                    ]))
+                    ->sum('quantity_approved');
+                if ($orderLine && $returnedTotal >= (int) $orderLine->quantity) {
+                    $this->digital->revokeForOrderLine($return->tenant_id, $line->order_line_id);
+                }
 
                 // Only resalable items are returned to stock (le miroir agrégé du sérialisé suit aussi).
                 // RC-5H — un produit non stockable (service/digital) n'a pas de stock à réabonder.

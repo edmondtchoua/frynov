@@ -305,10 +305,14 @@ class DigitalService
         return ['imported' => $imported, 'skipped' => $skipped];
     }
 
-    /** Alerte d'épuisement (best-effort, canal du tenant). */
+    /** Alerte d'épuisement (best-effort, canal du tenant, dédupliquée 24 h — recette QA anti-spam). */
     private function notifyPoolExhausted(string $tenantId, Product $product, string $behavior): void
     {
         try {
+            // Une seule alerte par produit par 24 h, même si les ventes continuent en mode `generate`.
+            if (! \Illuminate\Support\Facades\Cache::add("digital.pool_exhausted:{$tenantId}:{$product->id}", 1, now()->addDay())) {
+                return;
+            }
             $tenant = Tenant::withoutGlobalScopes()->find($tenantId);
             $recipient = (string) ($tenant->settings['billing_email']
                 ?? \App\Models\User::where('tenant_id', $tenantId)->orderBy('created_at')->value('email')

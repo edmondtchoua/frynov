@@ -33,5 +33,5 @@ Route::prefix('api/portal/digital')->group(function () {
     Route::post('access',        [\App\Modules\Digital\Http\Controllers\PortalController::class, 'access'])
         ->middleware('throttle:20,1');
     Route::post('request-links', [\App\Modules\Digital\Http\Controllers\PortalController::class, 'requestLinks'])
-        ->middleware('throttle:5,1'); // anti-énumération d'emails
+        ->middleware('throttle:3,10'); // anti-énumération d'emails (durci en recette QA : 3 / 10 min)
 });

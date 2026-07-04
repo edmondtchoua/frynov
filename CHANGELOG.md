@@ -3,6 +3,32 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧪 QA : recette complète rc.114→131 — 6 correctifs (2 sécurité, 4 logique) (2026-06-26)
+
+Branche `feature/qa-recette-phase-2` (release `v1.0.0` → `rc.132`).
+Campagne de recette (runs de référence + audit sécurité + revue adverse par agents) — rapport :
+`docs/recette/recette-phase-1-2-rc114-131.md`. **Verdict : GO.**
+
+### Sécurité
+- **ReDoS (haute)** : `validation_regex` (RC-6D) est désormais **validée à la création** — compilation
+  + sonde adverse (`safeRegexRule`), longueur ≤ 120 ; erreur PCRE à l'exécution = valeur rejetée.
+- **Anti-énumération (moyenne)** : `POST /portal/digital/request-links` durci `5/min` → **3 / 10 min**.
+
+### Corrections logiques (revue adverse)
+- **Billing multi-devises (critique)** : l'abondement en place ET le reversal (RC-6G) filtrent
+  désormais par **`market_code`** — un acompte EUR ne peut plus écraser/décrémenter un dépôt XOF.
+- **Lot périmé (critique)** : `allocateFefo` (RC-6H) **exclut les lots périmés** de la vente (ils
+  restent en stock pour démarque) — ils partaient en PREMIER par le tri FEFO.
+- **Retour partiel digital (critique)** : l'accès n'est révoqué que lorsque le **cumul des retours
+  approuvés couvre toute la ligne** (RC-5H révoquait l'accès entier dès le premier retour partiel).
+- **Anti-spam** : alerte « pool épuisé » (RC-6E) dédupliquée **24 h par produit**.
+- **SMTP sans hôte** : échec explicite immédiat (visible dans `last_error`) au lieu d'une tentative absurde.
+
+### Tests
+- **+3 tests de régression** (dépôt multi-marché jamais abondé en croisé, lot périmé jamais alloué,
+  retour partiel digital préserve l'accès jusqu'au retour total). Suite backend complète **869 ✅**
+  (2 skipped), front **271 ✅**, i18n gate ✅.
+
 ## [Non publié] — ✨ RC-6J : assistant de création produit (optionnel) — 🎉 clôture Phase 2 (2026-06-26)
 
 Branche `feature/product-wizard` (release `v1.0.0` → `rc.131`).

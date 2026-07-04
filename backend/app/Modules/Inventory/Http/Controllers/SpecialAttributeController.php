@@ -41,7 +41,7 @@ class SpecialAttributeController extends Controller
                 Rule::unique('special_attribute_definitions')->where('tenant_id', $tenantId)->whereNull('deleted_at')],
             'label'                  => ['required', 'string', 'max:120'],
             'normalization_strategy' => ['nullable', Rule::in(SpecialAttributeDefinition::NORMALIZATIONS)],
-            'validation_regex'       => ['nullable', 'string', 'max:190'],
+            'validation_regex'       => ['nullable', 'string', 'max:120', $this->safeRegexRule()],
             'is_unique'              => ['nullable', 'boolean'],
             'help_text'              => ['nullable', 'string', 'max:190'],
         ]);
@@ -69,7 +69,7 @@ class SpecialAttributeController extends Controller
         $data = $request->validate([
             'label'                  => ['sometimes', 'string', 'max:120'],
             'normalization_strategy' => ['sometimes', Rule::in(SpecialAttributeDefinition::NORMALIZATIONS)],
-            'validation_regex'       => ['nullable', 'string', 'max:190'],
+            'validation_regex'       => ['nullable', 'string', 'max:120', $this->safeRegexRule()],
             'is_unique'              => ['sometimes', 'boolean'],
             'is_active'              => ['sometimes', 'boolean'],
             'help_text'              => ['nullable', 'string', 'max:190'],
@@ -78,5 +78,32 @@ class SpecialAttributeController extends Controller
         $def->update($data);
 
         return response()->json(['data' => $def->fresh()->toApiArray()]);
+    }
+
+    /**
+     * Recette QA (audit sécurité) — garde anti-ReDoS sur les regex fournies par le tenant :
+     *  1. la regex doit COMPILER ;
+     *  2. elle doit s'évaluer sur une sonde adverse SANS épuiser le budget de backtracking PCRE
+     *     (une regex catastrophique type `(a+)+$` échoue ici et est refusée à la création).
+     * Défense en profondeur : à l'exécution, `preg_match` reste borné par pcre.backtrack_limit et
+     * une erreur PCRE est traitée comme valeur invalide (fail-closed).
+     */
+    private function safeRegexRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            if ($value === null || $value === '') {
+                return;
+            }
+            $pattern = '/' . str_replace('/', '\/', (string) $value) . '/';
+            $probe   = str_repeat('a', 100) . '!'; // sonde adverse (suffixe non-matchant)
+
+            set_error_handler(static fn () => true); // silence les warnings de compilation
+            $result = preg_match($pattern, $probe);
+            restore_error_handler();
+
+            if ($result === false) {
+                $fail('Expression régulière invalide ou trop coûteuse (refusée).');
+            }
+        };
     }
 }

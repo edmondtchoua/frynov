@@ -75,6 +75,9 @@ class BatchService
             )
             ->where('status', ProductBatch::STATUS_ACTIVE)
             ->where('quantity', '>', 0)
+            // Recette QA — un lot PÉRIMÉ ne part JAMAIS au client (risque sanitaire/légal) : il reste
+            // en stock pour démarque/retrait, seuls les lots encore valides sont allouables.
+            ->where(fn ($q) => $q->whereNull('expiry_date')->orWhere('expiry_date', '>=', now()->toDateString()))
             ->orderByRaw('expiry_date IS NULL')  // datés d'abord
             ->orderBy('expiry_date')             // FEFO
             ->orderBy('created_at')

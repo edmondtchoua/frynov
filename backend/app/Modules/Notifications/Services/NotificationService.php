@@ -169,6 +169,12 @@ class NotificationService
     {
         $cfg = $channel->config ?? [];
 
+        // Recette QA — config incomplète (host manquant après rotation de clé, etc.) : échec explicite
+        // et immédiat, visible dans `last_error` du journal, plutôt qu'une tentative SMTP absurde.
+        if (empty($cfg['host'])) {
+            throw new \RuntimeException('Canal SMTP sans hôte configuré.');
+        }
+
         $mailer = Mail::build([
             'transport'  => 'smtp',
             'host'       => $cfg['host'] ?? '',

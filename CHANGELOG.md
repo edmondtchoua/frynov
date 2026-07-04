@@ -3,6 +3,29 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔁 RC-5J : billing — renouvellement & relance (cron quotidien) (2026-06-17)
+
+Branche `feature/billing-renewals` (release `v1.0.0` → `rc.121`).
+Comble le risque documenté depuis RC-0 : **aucun job de renouvellement**. Paiements manuels → pas de
+prélèvement auto : le job **rappelle, dégrade, puis suspend**.
+
+### Billing — dunning en 3 passes (`billing:process-renewals`, quotidien 01:30)
+- **`RenewalService`** :
+  1. **Rappels** J-7/J-3/J-1 pour les plans payants arrivant à échéance — bucket le plus précis,
+     **idempotent** par période (`metadata['renewal_reminders']`), audité (`billing.renewal_reminder`).
+  2. **Échéance dépassée** (`active|trialing`) : plan **gratuit** → période **roulée** d'un intervalle
+     (rappels remis à zéro) ; plan **payant** → **`past_due`** (accès maintenu pendant la grâce), audité.
+  3. **Grâce expirée** (7 j) : `past_due` → **`suspended`** (`renewal_overdue`) via
+     `SubscriptionService::suspend`. Les **acomptes échelonnés** (`current_period_end` null — période
+     jamais démarrée) ne sont **jamais** suspendus.
+- **Commande** `billing:process-renewals` (résumé chiffré) + **Schedule** quotidien 01:30
+  `withoutOverlapping`. Statut tenant synchronisé (`subscription_status`).
+
+### Tests
+- **+7 tests** `RenewalTest` (payant échu → past_due + audit ; gratuit échu → roulé ; grâce dépassée →
+  suspendu / en grâce → intact ; acompte échelonné épargné ; rappels par bucket **idempotents** ;
+  gratuit sans rappel ; commande artisan). Billing **108 ✅**.
+
 ## [Non publié] — 📥 RC-5I : produits digitaux — fichiers privés + téléchargement par lien signé (2026-06-16)
 
 Branche `feature/digital-assets-download` (release `v1.0.0` → `rc.120`).

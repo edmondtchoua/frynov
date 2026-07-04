@@ -39,7 +39,7 @@
 > |----|---------|------|
 > | RC-7B | **Dette vue-tsc** (~180 lignes pré-existantes) → 0 erreur, sans changement de comportement (+1 vrai bug attrapé) | ✅ **rc.134** |
 > | RC-7C | **Comptes clients** : `portal_accounts` (vérif par code anti-usurpation), login token Sanctum, `my-purchases` multi-vendeurs + bloc « Mon compte » dans `/portal` (FR+EN) | ✅ **rc.135** |
-> | RC-7D | **Entitlement par exemplaire** (qty 3 → 3 accès ; révocation au prorata des retours) | ⬜ |
+> | RC-7D | **Entitlement par exemplaire** (`unit_index` ; qty 3 → 3 accès jeton/clé distincts ; révocation **au prorata** des retours partiels ; n° d'exemplaire dans l'UI commande) | ✅ **rc.136** |
 > | RC-7E | **Crédits de communication** (NOUVELLE exigence fondateur) : solde prépayé par tenant × canal (email/SMS/WhatsApp), **décompte à l'envoi**, **recharge payante** (packs, rail de paiement manuel), solde + recharge visibles dans la SPA Notifications. Puis branchement d'un **agrégateur réel** (config à fournir). | ⬜ |
 
 ---

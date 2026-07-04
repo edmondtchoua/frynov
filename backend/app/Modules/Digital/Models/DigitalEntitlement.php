@@ -21,7 +21,7 @@ class DigitalEntitlement extends Model
     public const STATUS_EXPIRED = 'expired';
 
     protected $fillable = [
-        'tenant_id', 'product_id', 'variant_id', 'order_id', 'order_line_id', 'customer_id',
+        'tenant_id', 'product_id', 'variant_id', 'order_id', 'order_line_id', 'unit_index', 'customer_id',
         'fulfillment_type', 'access_token', 'license_key',
         'status', 'granted_at', 'expires_at', 'revoked_at', 'created_by',
     ];
@@ -29,6 +29,7 @@ class DigitalEntitlement extends Model
     protected function casts(): array
     {
         return [
+            'unit_index' => 'integer',
             'granted_at' => 'datetime',
             'expires_at' => 'datetime',
             'revoked_at' => 'datetime',
@@ -59,6 +60,7 @@ class DigitalEntitlement extends Model
             'variant_id'       => $this->variant_id,
             'order_id'         => $this->order_id,
             'order_line_id'    => $this->order_line_id,
+            'unit_index'       => $this->unit_index,
             'customer_id'      => $this->customer_id,
             'fulfillment_type' => $this->fulfillment_type,
             'status'           => $this->status,

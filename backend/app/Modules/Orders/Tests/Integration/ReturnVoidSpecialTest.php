@@ -144,10 +144,11 @@ class ReturnVoidSpecialTest extends TestCase
     }
 
     #[Test]
-    public function a_partial_digital_return_keeps_the_entitlement_until_the_line_is_fully_returned(): void
+    public function a_partial_digital_return_revokes_access_proportionally(): void
     {
-        // Recette QA — l'accès digital est porté par la LIGNE : un retour partiel laisse le client
-        // avec des exemplaires payés → l'accès survit ; il n'est révoqué qu'au retour TOTAL.
+        // RC-7D — un accès PAR EXEMPLAIRE : une ligne qty 2 accorde 2 accès. Un retour partiel
+        // révoque autant d'accès que d'exemplaires rendus (au prorata) ; le client conserve l'accès
+        // des exemplaires qu'il garde. Le retour du solde révoque le reste.
         $ebook = Product::create([
             'tenant_id' => $this->tenant->id, 'sku' => 'EBOOK2', 'name' => 'Ebook', 'price_amount' => 10000,
             'price_currency' => 'XOF', 'status' => 'active', 'product_type' => Product::TYPE_DIGITAL,
@@ -155,17 +156,22 @@ class ReturnVoidSpecialTest extends TestCase
         $order = $this->sell($ebook, 2);
         $line  = $order->fresh('lines')->lines->first();
 
-        // Retour partiel (1 sur 2) → accès toujours actif.
+        // 2 exemplaires vendus → 2 accès actifs distincts.
+        $active = fn () => DigitalEntitlement::withoutTenantScope()->where('order_id', $order->id)->where('status', DigitalEntitlement::STATUS_ACTIVE)->count();
+        $this->assertSame(2, DigitalEntitlement::withoutTenantScope()->where('order_id', $order->id)->count());
+        $this->assertSame(2, $active());
+
+        // Retour partiel (1 sur 2) → 1 accès révoqué, 1 conservé.
         $r1 = $this->returns->create($order, [['order_line_id' => $line->id, 'quantity' => 1, 'condition' => 'resalable', 'reason' => 'other']], 'other', $this->user->id);
         $this->returns->approve($r1, $this->user->id);
         $this->returns->restock($r1, $this->user->id);
-        $this->assertSame(DigitalEntitlement::STATUS_ACTIVE, DigitalEntitlement::withoutTenantScope()->where('order_id', $order->id)->first()->status);
+        $this->assertSame(1, $active());
 
-        // Retour du solde (2/2 cumulés) → accès révoqué.
+        // Retour du solde (2/2 cumulés) → plus aucun accès actif.
         $r2 = $this->returns->create($order, [['order_line_id' => $line->id, 'quantity' => 1, 'condition' => 'resalable', 'reason' => 'other']], 'other', $this->user->id);
         $this->returns->approve($r2, $this->user->id);
         $this->returns->restock($r2, $this->user->id);
-        $this->assertSame(DigitalEntitlement::STATUS_REVOKED, DigitalEntitlement::withoutTenantScope()->where('order_id', $order->id)->first()->status);
+        $this->assertSame(0, $active());
     }
 
     #[Test]

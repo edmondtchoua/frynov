@@ -131,5 +131,5 @@ Liste les achats digitaux **actifs** du client, **tous vendeurs confondus** :
 1. **Sans stock** : les produits digitaux/services (`stock_tracking=none`) sont **commandables sans
    stock** depuis RC-5E (l'entitlement EST la preuve de livraison).
 2. **Idempotence** : réémettre pour une commande déjà dotée ne crée pas de doublon.
-3. **V1** : pas de stockage de fichier réel ni de lien signé client-facing (à venir) ; un entitlement
-   par ligne.
+3. **Par exemplaire (RC-7D)** : une ligne de qty N accorde **N accès** (jeton/clé distincts,
+   `unit_index` 1..N) ; retour partiel → révocation **au prorata**.

@@ -141,20 +141,22 @@ class OrderReturnService
                 $unitIds = $this->allocation->returnUnits($return->tenant_id, $line->order_line_id, $line->quantity_approved, $resalable);
                 // 2) Garanties → void (cible les unités si sérialisé, sinon la ligne).
                 $this->warranties->voidForReturn($return->tenant_id, $line->order_line_id, $unitIds);
-                // 3) Accès digitaux → révoqués UNIQUEMENT si le retour couvre TOUTE la ligne (recette
-                //    QA : l'accès est porté par la ligne — un retour partiel laisse le client avec des
-                //    exemplaires payés, son accès doit survivre). Cumul de tous les retours approuvés.
+                // 3) Accès digitaux → révocation AU PRORATA (RC-7D : un accès par exemplaire). On ne
+                //    garde actifs que les exemplaires NON encore retournés (qty ligne − cumul retourné).
+                //    Un retour partiel révoque autant d'accès que d'exemplaires rendus ; le client
+                //    conserve l'accès des exemplaires payés qu'il garde. Idempotent, cumule les retours.
                 $orderLine = \App\Modules\Orders\Models\OrderLine::withoutTenantScope()
                     ->where('tenant_id', $return->tenant_id)
                     ->find($line->order_line_id);
-                $returnedTotal = (int) OrderReturnLine::query()
-                    ->where('order_line_id', $line->order_line_id)
-                    ->whereHas('orderReturn', fn ($q) => $q->whereIn('status', [
-                        OrderReturn::STATUS_APPROVED, OrderReturn::STATUS_PROCESSING, OrderReturn::STATUS_RESTOCKED,
-                    ]))
-                    ->sum('quantity_approved');
-                if ($orderLine && $returnedTotal >= (int) $orderLine->quantity) {
-                    $this->digital->revokeForOrderLine($return->tenant_id, $line->order_line_id);
+                if ($orderLine) {
+                    $returnedTotal = (int) OrderReturnLine::query()
+                        ->where('order_line_id', $line->order_line_id)
+                        ->whereHas('orderReturn', fn ($q) => $q->whereIn('status', [
+                            OrderReturn::STATUS_APPROVED, OrderReturn::STATUS_PROCESSING, OrderReturn::STATUS_RESTOCKED,
+                        ]))
+                        ->sum('quantity_approved');
+                    $keepActive = max(0, (int) $orderLine->quantity - $returnedTotal);
+                    $this->digital->revokeDownToActive($return->tenant_id, $line->order_line_id, $keepActive);
                 }
 
                 // Only resalable items are returned to stock (le miroir agrégé du sérialisé suit aussi).

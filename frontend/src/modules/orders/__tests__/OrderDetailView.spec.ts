@@ -42,7 +42,7 @@ const WARRANTIES = {
 }
 // RC-5E — droits d'accès digitaux générés pour la commande.
 const ENTITLEMENTS = {
-  data: [{ id: 'e1', product_id: 'p1', order_line_id: 'l1', customer_id: null, fulfillment_type: 'license', status: 'active', granted_at: '2026-06-01T10:00:00Z', expires_at: null, product_name: 'Ebook PHP' }],
+  data: [{ id: 'e1', product_id: 'p1', order_line_id: 'l1', unit_index: 1, customer_id: null, fulfillment_type: 'license', status: 'active', granted_at: '2026-06-01T10:00:00Z', expires_at: null, product_name: 'Ebook PHP' }],
   count: 1,
 }
 
@@ -146,6 +146,18 @@ describe('OrderDetailView', () => {
     mockGet(UNITS, WARRANTIES, { data: [], count: 0 })
     const w = await mountView()
     expect(w.text()).not.toContain('Accès digital')
+  })
+
+  // RC-7D — un accès par exemplaire : le rang d'exemplaire n'apparaît que si la ligne en a plusieurs.
+  it('shows the per-unit rank when a line grants several accesses', async () => {
+    const perUnit = { data: [
+      { id: 'e1', product_id: 'p1', order_line_id: 'l1', unit_index: 1, customer_id: null, fulfillment_type: 'license', status: 'active', granted_at: '2026-06-01T10:00:00Z', expires_at: null, product_name: 'Ebook PHP' },
+      { id: 'e2', product_id: 'p1', order_line_id: 'l1', unit_index: 2, customer_id: null, fulfillment_type: 'license', status: 'revoked', granted_at: '2026-06-01T10:00:00Z', expires_at: null, product_name: 'Ebook PHP' },
+    ], count: 2 }
+    mockGet(UNITS, WARRANTIES, perUnit)
+    const w = await mountView()
+    expect(w.text()).toContain('Exemplaire n°1')
+    expect(w.text()).toContain('Exemplaire n°2')
   })
 
   it('offers to open an after-sales claim on an active warranty without a claim', async () => {

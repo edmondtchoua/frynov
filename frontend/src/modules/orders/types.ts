@@ -63,6 +63,7 @@ export interface OrderEntitlement {
   id: string
   product_id: string
   order_line_id: string
+  unit_index: number // RC-7D — rang de l'exemplaire (1..N) au sein de sa ligne
   customer_id: string | null
   fulfillment_type: 'download' | 'license'
   status: 'active' | 'revoked' | 'expired'

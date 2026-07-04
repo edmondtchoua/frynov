@@ -3,6 +3,28 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🎟️ RC-7D : un accès digital par exemplaire (2026-06-28)
+
+Branche `feature/digital-per-unit` (release `v1.0.0` → `rc.136`). Item 2 de la Phase 3.
+Aligne le digital sur les garanties **par exemplaire** (RC-6F) : une ligne de **qty N** accorde
+**N droits d'accès** au lieu d'un seul.
+
+### Backend
+- **`digital_entitlements.unit_index`** (1..N) : rang de l'exemplaire dans sa ligne (existants = n°1).
+- **Émission par exemplaire** (`DigitalService::issueForOrder`) : boucle sur la quantité, jeton (et clé
+  de licence issue du **pool FIFO**) distincts par unité. **Idempotence par exemplaire** — un `fulfill`
+  rejoué ne crée que les rangs manquants (donc rien s'ils existent déjà).
+- **Révocation au prorata** (`revokeDownToActive`) : au restock d'un retour, on ne garde actifs que
+  `quantité − cumul retourné` accès (les plus anciens d'abord). **Remplace** le « tout ou rien » porté
+  par la ligne (RC-5H) : un retour partiel révoque autant d'accès que d'exemplaires rendus.
+- **+4 tests** `PerUnitEntitlementTest` (qty 3 → 3 accès distincts + rangs 1/2/3 ; 3 licences → 3 clés de
+  pool ; ré-émission = 0 doublon ; qty 1 = 1 accès inchangé) ; test RC-5H `ReturnVoidSpecialTest`
+  **réécrit** en révocation proportionnelle. Digital+Orders+Notifications **99 ✅**.
+
+### Frontend
+- Panneau « Accès digital » de la commande : affiche **« Exemplaire n°k »** quand une ligne compte
+  plusieurs accès (masqué si un seul). i18n FR+EN (`orders.detail.entitlementUnit`). +1 test. vue-tsc 0.
+
 ## [Non publié] — 🔐 RC-7C : comptes clients du portail digital (3ᵉ mode d'accès) (2026-06-28)
 
 Branche `feature/portal-accounts` (release `v1.0.0` → `rc.135`). Item 4 de la Phase 3.

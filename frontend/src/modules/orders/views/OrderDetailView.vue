@@ -214,6 +214,10 @@
             <div class="unit-list">
               <div v-for="e in entitlements" :key="e.id" class="unit-item">
                 <span class="unit-serial">{{ e.product_name }}</span>
+                <!-- RC-7D — un accès par exemplaire : n° de l'exemplaire si la ligne en compte plusieurs. -->
+                <span v-if="(entitlementUnitCounts[e.order_line_id] ?? 0) > 1" class="badge badge-gray" style="font-size: 0.72rem;">
+                  {{ $t('orders.detail.entitlementUnit', { n: e.unit_index }) }}
+                </span>
                 <span class="unit-type">{{ $t('orders.detail.entitlementType.' + e.fulfillment_type) }}</span>
                 <span :class="`badge ${entitlementStatusBadge(e.status)}`" style="font-size: 0.72rem; margin-left: auto;">
                   {{ entitlementStatusLabel(e.status) }}
@@ -359,7 +363,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { formatDateTime, formatDateShort } from '@/shared/utils/date'
 import { useRoute, RouterLink } from 'vue-router'
 import { formatMoney } from '@/shared/utils/money'
@@ -419,6 +423,14 @@ const warranties = ref<OrderWarranty[]>([])
 
 // ── Digital entitlements (RC-5E) — empty unless a digital product was sold ─────────
 const entitlements = ref<OrderEntitlement[]>([])
+
+// RC-7D — nombre d'accès par ligne : sert à n'afficher le rang d'exemplaire que si la ligne en a plusieurs.
+const entitlementUnitCounts = computed<Record<string, number>>(() =>
+  entitlements.value.reduce((acc, e) => {
+    acc[e.order_line_id] = (acc[e.order_line_id] ?? 0) + 1
+    return acc
+  }, {} as Record<string, number>),
+)
 
 // ── After-sales claims (RC-5F) — claims attached to this order's warranty contracts ─
 const claims = ref<OrderWarrantyClaim[]>([])

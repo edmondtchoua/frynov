@@ -20,6 +20,10 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
     Route::get('products/{productId}/units',         [SerializedUnitController::class, 'index']);
     Route::get('units/search',                       [SerializedUnitController::class, 'search']);
 
+    // ── Lots & péremption (RC-6H) ──────────────────────────────────────
+    Route::get('products/{productId}/batches',       [\App\Modules\Inventory\Http\Controllers\BatchController::class, 'index']);
+    Route::get('batches/expiring',                   [\App\Modules\Inventory\Http\Controllers\BatchController::class, 'expiring']);
+
     // ── Définitions d'identifiants métier (RC-6D) — fusion globales + tenant ──
     Route::get('special-attributes',                 [\App\Modules\Inventory\Http\Controllers\SpecialAttributeController::class, 'index']);
     Route::middleware('role_or_permission:manager|admin')->group(function () {
@@ -42,6 +46,9 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
 
         // ── Réception d'unités sérialisées (IMEI/VIN…) ─────────────────
         Route::post('products/{productId}/units',        [SerializedUnitController::class, 'store']);
+
+        // ── Réception par lot (RC-6H) ──────────────────────────────────
+        Route::post('products/{productId}/batches',      [\App\Modules\Inventory\Http\Controllers\BatchController::class, 'store']);
     });
 
     // ── Stock adjustment requests (dual-approval workflow) ─────────────

@@ -47,6 +47,10 @@
 | RC-5H | spécial | retour (RMA) défait les artefacts : unité sérialisée `in_stock`/`returned`, garantie `void`, accès digital révoqué (au `restock`) | ✅ **rc.119** |
 | RC-5I | spécial | digital — fichiers privés (`digital_assets`) + **téléchargement par lien signé** (revérif révocation) + onglet fiche produit | ✅ **rc.120** |
 | RC-5J | billing | **renouvellement & relance** (cron `billing:process-renewals` quotidien) : rappels J-7/3/1 audités et idempotents, échéance → `past_due`, plans gratuits roulés, grâce 7 j → suspension (acomptes échelonnés épargnés) | ✅ **rc.121** |
+| RC-5K | spécial | formulaire produit : carte **« Type & politique »** (type / suivi stock / livraison / garantie) + validation `warranty_policy_id` + Resource — produits spéciaux créables **sans API** | ✅ **rc.122** |
+
+> 📋 **Suite : arbitrages requis** — cf. `docs/decisions/phase-2-arbitrages.md` (notifications, portail
+> client, wizard, attributs dynamiques, licences, billing, lots/kits). Aucun lancement sans indications.
 
 > 🎉 **Chantier « produits spéciaux » complet (RC-5A→I).** Reste hors périmètre (à planifier) : portail
 > client self-service (saisie jeton + auth client), pool de clés de licence, extensions de garantie,

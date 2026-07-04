@@ -139,8 +139,8 @@
               {{ $t('catalog.productForm.estimatedMargin') }} <strong>{{ margin.toFixed(1) }}%</strong>
             </div>
 
-            <!-- Stock initial — uniquement à la création ET sans variantes -->
-            <div v-if="!isEdit && !form.has_variants" class="form-group" style="margin-top:1rem;margin-bottom:0;padding-top:1rem;border-top:1px solid var(--gray-100)">
+            <!-- Stock initial — création, sans variantes, et type stockable (RC-5K : pas pour service/digital) -->
+            <div v-if="!isEdit && !form.has_variants && isPhysicalType" class="form-group" style="margin-top:1rem;margin-bottom:0;padding-top:1rem;border-top:1px solid var(--gray-100)">
               <label class="form-label">
                 {{ $t('catalog.productForm.initialStock') }}
                 <span class="hint">{{ $t('catalog.productForm.initialStockHint') }}</span>
@@ -339,6 +339,60 @@
             </select>
           </div>
 
+          <!-- ── Type & politique produit (RC-5K) ─────────────────────── -->
+          <div class="card">
+            <h3 class="card-title">{{ $t('catalog.productForm.policy.title') }}</h3>
+
+            <div class="form-group">
+              <label class="form-label">{{ $t('catalog.productForm.policy.type') }}</label>
+              <select v-model="form.product_type" class="form-input">
+                <option value="simple">{{ $t('catalog.productShow.type.simple') }}</option>
+                <option value="service">{{ $t('catalog.productShow.type.service') }}</option>
+                <option value="digital">{{ $t('catalog.productShow.type.digital') }}</option>
+                <option value="kit">{{ $t('catalog.productShow.type.kit') }}</option>
+              </select>
+              <span class="hint">{{ $t('catalog.productForm.policy.typeHint.' + form.product_type) }}</span>
+            </div>
+
+            <div class="form-group" v-if="isPhysicalType">
+              <label class="form-label">{{ $t('catalog.productForm.policy.stockTracking') }}</label>
+              <select v-model="form.stock_tracking" class="form-input">
+                <option value="">{{ $t('catalog.productForm.policy.auto') }}</option>
+                <option value="aggregate">{{ $t('catalog.productForm.policy.tracking.aggregate') }}</option>
+                <option value="serialized">{{ $t('catalog.productForm.policy.tracking.serialized') }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">{{ $t('catalog.productForm.policy.fulfillment') }}</label>
+              <select v-model="form.fulfillment_type" class="form-input">
+                <option value="">{{ $t('catalog.productForm.policy.auto') }}</option>
+                <template v-if="form.product_type === 'digital'">
+                  <option value="download">{{ $t('catalog.productForm.policy.fulfill.download') }}</option>
+                  <option value="license">{{ $t('catalog.productForm.policy.fulfill.license') }}</option>
+                </template>
+                <template v-else-if="form.product_type === 'service'">
+                  <option value="manual">{{ $t('catalog.productForm.policy.fulfill.manual') }}</option>
+                  <option value="appointment">{{ $t('catalog.productForm.policy.fulfill.appointment') }}</option>
+                </template>
+                <template v-else>
+                  <option value="delivery">{{ $t('catalog.productForm.policy.fulfill.delivery') }}</option>
+                  <option value="manual">{{ $t('catalog.productForm.policy.fulfill.manual') }}</option>
+                </template>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">{{ $t('catalog.productForm.policy.warranty') }}</label>
+              <select v-model="form.warranty_policy_id" class="form-input" style="margin-bottom:0">
+                <option value="">{{ $t('catalog.productForm.policy.noWarranty') }}</option>
+                <option v-for="w in warrantyPolicies" :key="w.id" :value="w.id">
+                  {{ w.name }} ({{ w.duration_months }} {{ $t('catalog.productForm.policy.months') }})
+                </option>
+              </select>
+            </div>
+          </div>
+
           <div class="card" v-if="isEdit && product">
             <h3 class="card-title">{{ $t('catalog.productForm.labels') }}</h3>
             <div class="label-actions">
@@ -461,7 +515,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { productService } from '../services/productService'
 import BaseModal from '@/shared/ui/BaseModal.vue'
@@ -503,6 +557,30 @@ const form = reactive({
   barcode_type:   'INTERNAL' as 'INTERNAL' | 'GTIN',
   weight_kg:      '' as number | '',
   has_variants:   false,
+  // RC-5K — politique produit ('' = auto : le serveur dérive du type)
+  product_type:       'simple' as 'simple' | 'service' | 'digital' | 'kit',
+  stock_tracking:     '' as '' | 'aggregate' | 'serialized',
+  fulfillment_type:   '' as '' | 'manual' | 'delivery' | 'download' | 'license' | 'appointment',
+  warranty_policy_id: '',
+})
+
+// RC-5K — type physique = stock possible ; service/digital = jamais stockable.
+const isPhysicalType = computed(() => form.product_type === 'simple' || form.product_type === 'kit')
+
+// Politiques de garantie du tenant (sélecteur ; silencieux si module absent).
+const warrantyPolicies = ref<{ id: string; name: string; duration_months: number }[]>([])
+async function loadWarrantyPolicies() {
+  try {
+    warrantyPolicies.value = (await client.get('/api/warranties/policies', { params: { active_only: 1 } })).data.data
+  } catch {
+    warrantyPolicies.value = []
+  }
+}
+
+// Changer de type invalide les choix stock/livraison précédents (retour à « auto »).
+watch(() => form.product_type, () => {
+  form.stock_tracking   = ''
+  form.fulfillment_type = ''
 })
 
 // ── Unsaved-changes guard (UX-07) ───────────────────────────────────────────
@@ -773,6 +851,11 @@ async function handleSubmit() {
       barcode:                 form.barcode || undefined,
       weight_kg:               form.weight_kg === '' ? undefined : Number(form.weight_kg),
       has_variants:            form.has_variants,
+      // RC-5K — politique produit ('' = auto → on n'envoie rien, le serveur dérive du type)
+      product_type:            form.has_variants ? 'variable' : form.product_type,
+      stock_tracking:          form.stock_tracking || undefined,
+      fulfillment_type:        form.fulfillment_type || undefined,
+      warranty_policy_id:      form.warranty_policy_id || null,
     }
 
     if (showManualIdentifiers.value) {
@@ -934,6 +1017,13 @@ async function loadProduct() {
     form.barcode_type      = (p as any).barcode_type ?? 'INTERNAL'
     form.weight_kg         = p.weight_kg ?? ''
     form.has_variants      = p.has_variants
+    // RC-5K — recharger la politique produit (variable → simple : l'axe variantes est le toggle)
+    form.product_type       = (p.product_type === 'variable' ? 'simple' : p.product_type) as typeof form.product_type
+    form.warranty_policy_id = p.warranty_policy_id ?? ''
+    // après le watch(product_type) qui les remet à zéro : réappliquer les valeurs persistées
+    await nextTick()
+    form.stock_tracking   = (p.stock_tracking === 'none' || p.stock_tracking === 'batch' ? '' : p.stock_tracking ?? '') as typeof form.stock_tracking
+    form.fulfillment_type = (p.fulfillment_type === 'none' ? '' : p.fulfillment_type ?? '') as typeof form.fulfillment_type
 
     if (p.has_variants && p.variants?.length) {
       hydrateVariantsFromProduct(p.variants)
@@ -947,6 +1037,7 @@ async function loadProduct() {
 
 onMounted(async () => {
   categories.value = await productService.categories.list().catch(() => [])
+  loadWarrantyPolicies() // RC-5K — en parallèle du chargement produit
   await loadProduct()
   trackDirty.value = true // ignore the initial edit-mode population; track real edits only
 })

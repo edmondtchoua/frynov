@@ -1,6 +1,6 @@
 # Guide utilisateur — Catalogue & Produits
 
-> **Dernière mise à jour :** 2026-06-01
+> **Dernière mise à jour :** 2026-06-17 — RC-5K : carte « Type & politique » dans le formulaire produit.
 
 ---
 
@@ -77,6 +77,24 @@ La catégorie apparaît immédiatement dans la liste, indentée si elle a une ca
 ---
 
 ## Produits
+
+### Type & politique (RC-5K)
+
+À la création (ou modification) d'un produit, la carte **« Type & politique »** (colonne de droite)
+pilote le comportement du produit dans tout l'ERP :
+
+- **Que vendez-vous ?** — produit **simple** (physique), **service** (sans stock), **digital**
+  (fichier/licence livré après paiement), **kit**. Un produit à variantes se crée en activant le
+  toggle **Variantes** (le type devient « variable » automatiquement).
+- **Suivi du stock** — *Automatique* (recommandé : dérivé du type), *Quantité globale*, ou **Par unité**
+  (IMEI, VIN, n° de série — active la réception d'unités sérialisées et l'anti double-vente).
+- **Livraison** — les options s'adaptent au type : téléchargement/licence pour le digital, remise
+  manuelle/rendez-vous pour un service, expédition pour le physique.
+- **Garantie** — attachez une **politique de garantie** : à chaque vente livrée, un contrat est généré
+  automatiquement (cf. guide Stock & Inventaire, section Garanties).
+
+> 💡 Pour un **service** ou un produit **digital**, le champ « stock initial » disparaît : ces produits
+> se vendent sans stock.
 
 ### Créer un produit — pas à pas
 

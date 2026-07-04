@@ -1,5 +1,8 @@
 export type ProductStatus = 'draft' | 'active' | 'archived'
 export type ProductType   = 'simple' | 'variable' | 'service' | 'kit' | 'digital'
+// RC-5A/5K — politique serveur de stock & livraison
+export type StockTracking   = 'none' | 'aggregate' | 'batch' | 'serialized'
+export type FulfillmentType = 'none' | 'manual' | 'delivery' | 'download' | 'license' | 'appointment'
 
 export interface ProductPrice {
   amount: number
@@ -44,6 +47,12 @@ export interface Product {
   description?: string
   status: ProductStatus
   product_type: ProductType
+  // RC-5A/5K — politique serveur de stock & livraison + garantie attachée
+  stock_tracking?: StockTracking
+  fulfillment_type?: FulfillmentType
+  warranty_policy_id?: string | null
+  is_stockable?: boolean
+  is_serialized?: boolean
   category?: Category | null
   supplier?: ProductSupplierSummary | null
   supplier_id?: string | null
@@ -77,6 +86,10 @@ export interface CreateProductPayload {
   cost_amount?: number
   status?: ProductStatus
   product_type?: ProductType
+  // RC-5K — politique produit pilotable depuis le formulaire
+  stock_tracking?: StockTracking
+  fulfillment_type?: FulfillmentType
+  warranty_policy_id?: string | null
   category_id?: string
   supplier_id?: string
   barcode?: string

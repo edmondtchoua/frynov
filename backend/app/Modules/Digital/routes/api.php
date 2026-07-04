@@ -12,9 +12,13 @@ Route::middleware(['auth:sanctum', 'tenant'])->prefix('api/digital')->group(func
     Route::get('access/{token}',                [DigitalController::class, 'access']);
     Route::get('products/{productId}/assets',   [DigitalAssetController::class, 'index']);
 
+    // RC-6E — pool de clés éditeur
+    Route::get('products/{productId}/license-keys/summary', [\App\Modules\Digital\Http\Controllers\LicensePoolController::class, 'summary']);
+
     Route::middleware('role_or_permission:manager|admin|catalog.manage')->group(function () {
         Route::post('entitlements/{id}/revoke',  [DigitalController::class, 'revoke']);
         Route::post('products/{productId}/assets', [DigitalAssetController::class, 'store']);
+        Route::post('products/{productId}/license-keys', [\App\Modules\Digital\Http\Controllers\LicensePoolController::class, 'import']); // RC-6E
     });
 });
 

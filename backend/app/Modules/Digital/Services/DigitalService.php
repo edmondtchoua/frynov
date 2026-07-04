@@ -2,11 +2,15 @@
 
 namespace App\Modules\Digital\Services;
 
+use App\Modules\Billing\Models\Plan;
 use App\Modules\Catalog\Models\Product;
+use App\Modules\Digital\Exceptions\LicensePoolExhaustedException;
 use App\Modules\Digital\Models\DigitalEntitlement;
+use App\Modules\Digital\Models\LicensePoolKey;
 use App\Modules\Notifications\Services\NotificationService;
 use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Models\OrderLine;
+use App\Modules\Tenants\Models\Tenant;
 use Illuminate\Support\Str;
 
 /**
@@ -161,7 +165,13 @@ class DigitalService
     {
         $isLicense = $product->fulfillment_type === Product::FULFILLMENT_LICENSE;
 
-        return DigitalEntitlement::create([
+        // RC-6E — clé issue du POOL importé (FIFO) si disponible, sinon politique d'épuisement du plan.
+        $poolKey = null;
+        if ($isLicense) {
+            [$licenseKey, $poolKey] = $this->pullLicenseKey($order->tenant_id, $product);
+        }
+
+        $entitlement = DigitalEntitlement::create([
             'tenant_id'        => $order->tenant_id,
             'product_id'       => $product->id,
             'variant_id'       => $line->variant_id,
@@ -170,11 +180,151 @@ class DigitalService
             'customer_id'      => $order->customer_id,
             'fulfillment_type' => $product->fulfillment_type,
             'access_token'     => (string) Str::uuid(),
-            'license_key'      => $isLicense ? $this->generateLicenseKey() : null,
+            'license_key'      => $isLicense ? $licenseKey : null,
             'status'           => DigitalEntitlement::STATUS_ACTIVE,
             'granted_at'       => $order->fulfilled_at ?? now(),
             'created_by'       => $userId,
         ]);
+
+        // Rattacher la clé de pool consommée à son accès (traçabilité éditeur).
+        $poolKey?->update([
+            'status'         => LicensePoolKey::STATUS_ASSIGNED,
+            'entitlement_id' => $entitlement->id,
+            'assigned_at'    => now(),
+        ]);
+
+        return $entitlement;
+    }
+
+    // ── RC-6E — pool de clés éditeur (politiques par plan) ─────────────────
+
+    /**
+     * Prend la prochaine clé du pool (FIFO d'import, verrou lecture anti double-assignation).
+     * Pool vide → politique d'épuisement : `generate` (repli + alerte) ou `block` (exception).
+     *
+     * @return array{0:string,1:?LicensePoolKey} [clé, ligne de pool consommée (null si générée)]
+     * @throws LicensePoolExhaustedException
+     */
+    private function pullLicenseKey(string $tenantId, Product $product): array
+    {
+        $poolKey = LicensePoolKey::withoutTenantScope()
+            ->where('tenant_id', $tenantId)
+            ->where('product_id', $product->id)
+            ->where('status', LicensePoolKey::STATUS_AVAILABLE)
+            ->oldest()
+            ->lockForUpdate()
+            ->first();
+
+        if ($poolKey) {
+            return [$poolKey->license_key, $poolKey];
+        }
+
+        // Pool vide — mais n'alerter que s'il a déjà servi (sinon le pool n'est simplement pas utilisé).
+        $poolEverUsed = LicensePoolKey::withoutTenantScope()
+            ->where('tenant_id', $tenantId)
+            ->where('product_id', $product->id)
+            ->exists();
+
+        $behavior = $this->poolExhaustionBehavior($tenantId);
+
+        if ($poolEverUsed) {
+            $this->notifyPoolExhausted($tenantId, $product, $behavior);
+        }
+        if ($behavior === 'block') {
+            // Politique stricte : jamais de génération, même sans historique de pool.
+            throw new LicensePoolExhaustedException($product->name);
+        }
+
+        return [$this->generateLicenseKey(), null];
+    }
+
+    /** Politique d'épuisement : surcharge tenant → config par plan → défaut `generate`. */
+    public function poolExhaustionBehavior(string $tenantId): string
+    {
+        $tenant = Tenant::withoutGlobalScopes()->find($tenantId);
+
+        $fromTenant = $tenant->settings['license_pool_exhaustion'] ?? null;
+        if (in_array($fromTenant, ['generate', 'block'], true)) {
+            return $fromTenant;
+        }
+
+        $perPlan = (array) config('digital.pool_exhaustion.per_plan', []);
+
+        return $perPlan[$tenant->plan ?? ''] ?? (string) config('digital.pool_exhaustion.default', 'generate');
+    }
+
+    /** Taille maximale d'un import de clés, selon le plan du tenant. */
+    public function poolImportLimit(string $tenantId): int
+    {
+        $tenant  = Tenant::withoutGlobalScopes()->find($tenantId);
+        $perPlan = (array) config('digital.pool_import_limits.per_plan', []);
+
+        return (int) ($perPlan[$tenant->plan ?? ''] ?? config('digital.pool_import_limits.default', 100));
+    }
+
+    /**
+     * Importe des clés (doublons du lot et déjà présents ignorés).
+     *
+     * @param array<int,string> $keys
+     * @return array{imported:int,skipped:int}
+     */
+    public function importPoolKeys(string $tenantId, Product $product, array $keys, ?string $userId = null): array
+    {
+        $imported = 0;
+        $skipped  = 0;
+        $seen     = [];
+
+        foreach ($keys as $key) {
+            $key = trim($key);
+            if ($key === '' || isset($seen[$key])) {
+                $skipped++;
+                continue;
+            }
+            $seen[$key] = true;
+
+            $exists = LicensePoolKey::withoutTenantScope()
+                ->where('tenant_id', $tenantId)
+                ->where('product_id', $product->id)
+                ->where('license_key', $key)
+                ->exists();
+            if ($exists) {
+                $skipped++;
+                continue;
+            }
+
+            LicensePoolKey::create([
+                'tenant_id'   => $tenantId,
+                'product_id'  => $product->id,
+                'license_key' => $key,
+                'status'      => LicensePoolKey::STATUS_AVAILABLE,
+                'imported_by' => $userId,
+            ]);
+            $imported++;
+        }
+
+        return ['imported' => $imported, 'skipped' => $skipped];
+    }
+
+    /** Alerte d'épuisement (best-effort, canal du tenant). */
+    private function notifyPoolExhausted(string $tenantId, Product $product, string $behavior): void
+    {
+        try {
+            $tenant = Tenant::withoutGlobalScopes()->find($tenantId);
+            $recipient = (string) ($tenant->settings['billing_email']
+                ?? \App\Models\User::where('tenant_id', $tenantId)->orderBy('created_at')->value('email')
+                ?? '');
+            if ($recipient === '') {
+                return;
+            }
+
+            $this->notifications->notify($tenantId, 'digital.pool_exhausted', $recipient, [
+                'tenant_name'  => $tenant->name,
+                'product_name' => $product->name,
+                'behavior'     => $behavior === 'block' ? 'ventes bloquées' : 'génération automatique de clés',
+            ]);
+        } catch (\Throwable) {
+            // best-effort
+        }
     }
 
     /** Clé de licence lisible : 4 groupes de 4 caractères (ex. A1B2-C3D4-E5F6-G7H8). */

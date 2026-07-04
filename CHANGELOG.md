@@ -3,6 +3,29 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔑 RC-6E : pool de clés de licence éditeur — politiques par plan (2026-06-21)
+
+Branche `feature/license-pool` (release `v1.0.0` → `rc.126`).
+Arbitrage fondateur E : comportement à épuisement **et** limites d'import **variables selon
+l'abonnement du tenant**.
+
+### Pool de clés (`license_pool_keys`)
+- **Import** (`POST /api/digital/products/{id}/license-keys`, collage/CSV une clé par ligne) :
+  doublons du lot et déjà présents **ignorés** (compte `imported`/`skipped`) ; taille maximale
+  **par plan** (`config/digital.php` : starter 100, pro 1000, enterprise 5000).
+- **Consommation FIFO à la vente** : la clé de l'entitlement vient du pool (verrou anti
+  double-assignation, rattachée à l'accès pour la traçabilité éditeur).
+- **Épuisement** (politique : surcharge tenant `settings['license_pool_exhaustion']` → config par plan
+  → défaut `generate`) : `generate` = repli génération RC-5E + **alerte email** au tenant
+  (`digital.pool_exhausted`, seulement si le pool a déjà servi) ; `block` = la livraison **échoue
+  proprement** (`LicensePoolExhaustedException` → 422, la commande reste confirmée, rollback complet).
+- `GET …/license-keys/summary` : disponibles/assignées + politique + limite d'import.
+
+### Tests
+- **+6 tests** `LicensePoolTest` (import + doublons ignorés, consommation FIFO + traçabilité,
+  épuisement → génération par défaut, politique `block` → échec + rollback (commande confirmée),
+  limite d'import par plan → 422, produit non-licence → 422). Digital+Orders+Notifications **89 ✅**.
+
 ## [Non publié] — 🧬 RC-6D : identifiants métier dynamiques — catalogue exhaustif configurable (2026-06-20)
 
 Branche `feature/special-attributes` (release `v1.0.0` → `rc.125`).

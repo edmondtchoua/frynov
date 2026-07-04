@@ -116,6 +116,9 @@ class OrderController extends Controller
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (InsufficientStockException $e) {
             return response()->json(['message' => $e->getMessage(), 'available' => $e->available], 422);
+        } catch (\App\Modules\Digital\Exceptions\LicensePoolExhaustedException $e) {
+            // RC-6E — politique `block` : pas de clé importée → la livraison attend un réassort du pool.
+            return response()->json(['message' => $e->getMessage()], 422);
         } catch (StockLockException $e) {
             return response()->json(['message' => $e->getMessage()], 503);
         }

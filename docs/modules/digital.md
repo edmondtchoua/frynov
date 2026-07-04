@@ -100,8 +100,17 @@ Page publique **`/portal`** (front) + endpoints publics throttlés :
 - `DigitalService::portalLink()` construit le lien magique (`FRONTEND_URL` + `/portal?token=…`) —
   inclus dans l'email de livraison (`{{portal_link}}`).
 
+## Pool de clés éditeur (RC-6E)
+
+- `license_pool_keys` : clés importées (`POST /products/{id}/license-keys`, doublons ignorés, limite
+  d'import **par plan** — `config/digital.php`), consommées **FIFO** à la vente (verrou), rattachées à
+  l'entitlement. `GET …/license-keys/summary` : disponibilité + politique.
+- **Épuisement** : surcharge tenant `settings['license_pool_exhaustion']` → config par plan → défaut
+  `generate` (repli génération + alerte `digital.pool_exhausted`) ; `block` →
+  `LicensePoolExhaustedException` (422, commande reste confirmée).
+
 ## Limites V1 / suite
 
-- Un entitlement **par ligne** (pas par exemplaire) ; pool de clés de licence non géré (RC-6E).
+- Un entitlement **par ligne** (pas par exemplaire).
 - Accès portail par jeton/email — pas de compte client à mot de passe (extension possible).
 - À venir : journalisation fine des téléchargements, versions multiples d'asset, antivirus à l'upload.

@@ -24,4 +24,29 @@ return [
             'enterprise' => 5000,
         ],
     ],
+
+    /*
+     * RC-9 F-7 — sécurité des uploads de fichiers digitaux (assets servis aux clients finaux).
+     * Liste blanche d'extensions (les types rendus « inline » dangereux — html/svg/js/xml… — sont
+     * volontairement exclus ; le téléchargement force de toute façon une pièce jointe). Extensible
+     * par config sans code.
+     */
+    'upload' => [
+        'max_size_kb' => (int) env('DIGITAL_UPLOAD_MAX_KB', 51200), // 50 Mo
+        'allowed_extensions' => [
+            // documents
+            'pdf', 'epub', 'mobi', 'azw3', 'doc', 'docx', 'odt', 'rtf', 'txt', 'md', 'csv',
+            'xls', 'xlsx', 'ods', 'ppt', 'pptx', 'odp',
+            // archives
+            'zip', 'rar', '7z', 'tar', 'gz',
+            // audio / vidéo
+            'mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a', 'mp4', 'mov', 'avi', 'mkv', 'webm',
+            // images
+            'png', 'jpg', 'jpeg', 'gif', 'webp', 'psd',
+            // logiciels / installeurs (servis en pièce jointe, jamais rendus)
+            'apk', 'exe', 'dmg', 'msi', 'iso',
+            // licences / données
+            'key', 'lic', 'dat',
+        ],
+    ],
 ];

@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // (pas seulement le groupe `api`) : de nombreux modules chargent leurs routes via
         // loadRoutesFrom, hors du groupe `api` — un guard de groupe les manquerait.
         $middleware->append(\App\Modules\Auth\Http\Middleware\GuardPortalPrincipal::class);
+        // RC-9 — en-têtes de sécurité (F-10) + plafond de débit global sur api/* (F-9). Global pour
+        // couvrir aussi les routes de modules hors groupe `api`.
+        $middleware->append(\App\Modules\Auth\Http\Middleware\SecurityHeaders::class);
+        $middleware->append(\App\Modules\Auth\Http\Middleware\ApiRateLimit::class);
 
         // Register named aliases for convenience in route definitions
         $middleware->alias([

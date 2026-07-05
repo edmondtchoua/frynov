@@ -3,6 +3,33 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🛡️ RC-9 : durcissement sécurité — Lot D (plateforme) + Lot B (uploads) (2026-07-01)
+
+Branche `feature/rc9-security-lot-db` (release `v1.0.0` → `rc.141`). Suite du backlog sécurité issu de
+l'audit Phase 3.
+
+### Lot D — durcissement plateforme
+- **F-9** — plafond de débit **global** sur `api/*` : middleware `ApiRateLimit` (clé = utilisateur
+  authentifié sinon IP, défaut **600/min**, `config/security.php` → `API_RATE_LIMIT`, en-têtes
+  `X-RateLimit-*` / `Retry-After`). Global (pas seulement le groupe `api`) pour couvrir les routes de
+  modules chargées via `loadRoutesFrom`. Désactivé en test (`phpunit.xml`).
+- **F-10** — **en-têtes de sécurité** (`SecurityHeaders`) sur toutes les réponses : `X-Content-Type-
+  Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `X-Permitted-Cross-Domain-Policies`,
+  HSTS derrière HTTPS. **CORS restreint** : `config/cors.php` publié (origines via `CORS_ALLOWED_
+  ORIGINS`, défaut origines de dev ; plus de `*`), API par jeton Bearer donc `supports_credentials=false`.
+- **F-11** — le log d'une **signature de webhook invalide** ne divulgue plus le préfixe de la signature
+  attendue (aidait à distinguer « secret faux » de « payload faux »).
+
+### Lot B — sécurité des uploads digitaux
+- **F-7** — upload d'asset digital : **liste blanche d'extensions** (`config/digital.php → upload.
+  allowed_extensions` ; html/svg/js… exclus) + taille max configurable ; **nom de fichier assaini**
+  (retrait de chemin et caractères douteux) ; **MIME dérivé du contenu** (`getMimeType`) et non de la
+  valeur client spoofable.
+
+### Tests
+- **+4 tests** (`SecurityHardeningTest` : en-têtes + 429 global ; `DigitalAssetTest` : rejet d'extension
+  non autorisée, assainissement du nom). Backend vert.
+
 ## [Non publié] — 🛡️ RC-8 : durcissement sécurité — Lot A (tokens portail) + Lot E (cohérence tenant) (2026-07-01)
 
 Branche `feature/rc8-security-lot-ae` (release `v1.0.0` → `rc.140`). Premiers lots du backlog sécurité

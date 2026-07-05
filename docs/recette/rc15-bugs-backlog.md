@@ -20,13 +20,14 @@ suite backend (~1011 tests) + cet audit statique.
 | C-1 | **HAUTE** | Inventory | `warehouse_id` **ignoré** au move-out/adjust → décrément du **mauvais entrepôt** (multi-site) | `InventoryController.php:152,177` + `AdjustStockRequest` |
 | C-2 | **HAUTE** | Inventory | Write-off de litige de transfert = **double décrément** du stock source (les unités ont déjà quitté au ship) | `StockTransferService.php:200` |
 
-## Backlog — à traiter (priorisé)
+## Corrigés dans rc.149 (RC-17)
 
-### Haute
-| # | Zone | Bug | Fichier |
-|---|------|-----|---------|
-| M-1 | Billing | **Ledger `tenant_credits` en écriture seule** : les trop-perçus sont crédités mais **jamais réappliqués** (proration/upgrade lit `metadata`, pas le ledger) → argent client perdu. `consume()`/`balance()` appelés par aucun code applicatif. | `TenantCreditService.php:42`, `ManualPaymentService.php:234`, `SubscriptionService.php:59` |
-| M-2 | Reports | **Code mort applicatif** : `abcClassification`, `inventoryKpis`, `stockReconciliation` développés+testés mais **sans route ni appel front** → exposer ou retirer. | `ReportService.php:310,370,428` |
+| # | Sévérité | Zone | Bug | Correctif |
+|---|----------|------|-----|-----------|
+| M-1 | **HAUTE** | Billing | Ledger `tenant_credits` en écriture seule : trop-perçus jamais réappliqués → argent client perdu. | ✅ `approve()` applique le solde du ledger comme acompte virtuel s'il **solde** la cible (même règle que la proration), puis le **consomme** (ligne négative, référence = paiement, trace metadata). `previewProration` déduit le ledger de l'assiette (fin du double comptage). +4 tests. |
+| M-2 | **HAUTE** | Reports | Code mort : `abcClassification`, `inventoryKpis`, `stockReconciliation` sans route ni front. | ✅ Routes `GET /api/reports/abc|inventory-kpis|reconciliation` + onglet **Analyse d'inventaire** (`/reports/insights`, vue + service + i18n FR/EN). +3 tests API, +3 specs front. |
+
+## Backlog — à traiter (priorisé)
 
 ### Moyenne
 | # | Zone | Bug | Fichier |

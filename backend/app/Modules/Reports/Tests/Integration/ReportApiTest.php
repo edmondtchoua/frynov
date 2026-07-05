@@ -201,4 +201,38 @@ class ReportApiTest extends TestCase
             ->assertJsonPath('stock_value', 60_000)
             ->assertJsonPath('total_skus',  1);
     }
+
+    // ── RC-17 (M-2) — rapports d'analyse d'inventaire (ex-code mort, désormais exposés) ────────
+
+    #[Test]
+    public function abc_classification_endpoint_returns_the_pareto_structure(): void
+    {
+        $this->getJson('/api/reports/abc?days=90', $this->auth())
+            ->assertOk()
+            ->assertJsonStructure(['period_days', 'total_revenue', 'summary', 'items'])
+            ->assertJsonPath('period_days', 90);
+
+        // Une valeur de période hors liste blanche retombe sur 90 jours.
+        $this->getJson('/api/reports/abc?days=7', $this->auth())
+            ->assertOk()->assertJsonPath('period_days', 90);
+    }
+
+    #[Test]
+    public function inventory_kpis_endpoint_returns_dsi_rotation_fill_rate(): void
+    {
+        $this->getJson('/api/reports/inventory-kpis', $this->auth())
+            ->assertOk()
+            ->assertJsonStructure([
+                'period_days', 'dsi', 'rotation_rate', 'fill_rate_pct',
+                'dead_stock_rate_pct', 'cogs_cents', 'total_stock_value',
+            ]);
+    }
+
+    #[Test]
+    public function reconciliation_endpoint_returns_categories_and_movements(): void
+    {
+        $this->getJson('/api/reports/reconciliation', $this->auth())
+            ->assertOk()
+            ->assertJsonStructure(['generated_at', 'total_erp_value', 'lines_by_category', 'movements_summary']);
+    }
 }

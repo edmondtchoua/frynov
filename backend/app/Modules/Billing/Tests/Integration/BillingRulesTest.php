@@ -190,4 +190,77 @@ class BillingRulesTest extends TestCase
         $this->assertSame(30000, $credits->consume($this->tenant->id, 'XOF', 90000, 'conso-2')); // borné
         $this->assertSame(0, $credits->balance($this->tenant->id, 'XOF'));
     }
+
+    // ── RC-17 (M-1) — le ledger n'est plus en écriture seule : les avoirs sont RÉAPPLIQUÉS ────────
+
+    #[Test]
+    public function an_available_ledger_credit_completes_a_partial_payment_and_is_consumed(): void
+    {
+        // Avoir de 200 000 XOF (ex. trop-perçu d'un cycle antérieur).
+        app(TenantCreditService::class)->credit($this->tenant->id, 'XOF', 200000, 'overpaid', 'ancien-cycle');
+
+        // Cash 790 000 < cible 990 000, mais cash + avoir = exactement la cible → activation.
+        $mp = $this->submit(790000, 'monthly');
+        $this->svc->approve($mp, $this->admin);
+
+        $this->assertSame('matched', $mp->fresh()->resolution_status);
+        $sub = $this->sub();
+        $this->assertSame('active', $sub->status);
+        $this->assertSame(790000, $sub->amount_paid_minor);                       // cash réel, hors avoir
+        $this->assertSame(200000, $sub->metadata['ledger_credit_applied_minor'] ?? null);
+
+        // L'avoir est consommé : solde 0 + ligne négative référencée au paiement.
+        $this->assertSame(0, app(TenantCreditService::class)->balance($this->tenant->id, 'XOF'));
+        $this->assertDatabaseHas('tenant_credits', [
+            'tenant_id' => $this->tenant->id, 'amount_minor' => -200000, 'reference' => $mp->id,
+        ]);
+    }
+
+    #[Test]
+    public function a_ledger_credit_that_cannot_settle_the_target_stays_intact(): void
+    {
+        // Avoir 100 000 ; cash 500 000 → 600 000 < 990 000 : acompte partiel, avoir NON consommé
+        // (même règle que la proration : pas de consommation partielle en dépôt).
+        app(TenantCreditService::class)->credit($this->tenant->id, 'XOF', 100000, 'overpaid', 'x');
+
+        $mp = $this->submit(500000, 'monthly');
+        $this->svc->approve($mp, $this->admin);
+
+        $this->assertSame('partial', $mp->fresh()->resolution_status);
+        $this->assertSame(Subscription::STATUS_PAST_DUE, $this->sub()->status);
+        $this->assertSame(100000, app(TenantCreditService::class)->balance($this->tenant->id, 'XOF'));
+    }
+
+    #[Test]
+    public function a_ledger_credit_in_another_currency_is_never_applied(): void
+    {
+        // Un avoir EUR ne solde JAMAIS une cible XOF (l'avoir ne franchit pas les devises).
+        app(TenantCreditService::class)->credit($this->tenant->id, 'EUR', 200000, 'overpaid', 'x');
+
+        $mp = $this->submit(790000, 'monthly');
+        $this->svc->approve($mp, $this->admin);
+
+        $this->assertSame('partial', $mp->fresh()->resolution_status);
+        $this->assertSame(200000, app(TenantCreditService::class)->balance($this->tenant->id, 'EUR'));
+    }
+
+    #[Test]
+    public function an_overpayment_credits_the_ledger_then_settles_the_next_cycle(): void
+    {
+        // Cycle 1 : sur-paiement AU-DELÀ de la plus grande cible (annuel 9 900 000) — c'est le seul
+        // cas 'overpaid' par conception RC-6G (entre mensuel et annuel = acompte vers l'annuel).
+        // 10 100 000 → activation annuelle + avoir 200 000 au ledger.
+        $mp1 = $this->submit(10100000, 'monthly');
+        $this->svc->approve($mp1, $this->admin);
+        $this->assertSame('overpaid', $mp1->fresh()->resolution_status);
+        $this->assertSame(200000, app(TenantCreditService::class)->balance($this->tenant->id, 'XOF'));
+
+        // Cycle suivant : le client ne vire que 790 000 — l'avoir comble l'écart vers la cible
+        // mensuelle (990 000) → activation, solde consommé à 0. (Avant RC-17 : partial + avoir perdu.)
+        $mp2 = $this->submit(790000, 'monthly');
+        $this->svc->approve($mp2, $this->admin);
+
+        $this->assertSame('matched', $mp2->fresh()->resolution_status);
+        $this->assertSame(0, app(TenantCreditService::class)->balance($this->tenant->id, 'XOF'));
+    }
 }

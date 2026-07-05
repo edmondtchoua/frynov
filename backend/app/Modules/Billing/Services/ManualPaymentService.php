@@ -182,6 +182,30 @@ class ManualPaymentService
                 $matchExtraUsers,   // RC-6G — sièges additionnels
             );
 
+            // ── RC-17 (M-1) — avoirs du LEDGER (trop-perçus crédités) : le solde disponible agit
+            //    comme acompte virtuel s'il permet de SOLDER la cible. Même règle que la proration :
+            //    pas de consommation partielle en dépôt (le crédit reste intact si la cible n'est pas
+            //    atteinte). Consommé plus bas UNIQUEMENT à l'activation effective. ────────────────────
+            $ledgerApplied = 0;
+            if (config('billing.rules.tenant_credits_table')
+                && ! $res->isComplete
+                && $res->remainingDueMinor > 0
+                && ! in_array($res->resolutionStatus, [ManualPayment::RESOLUTION_UNMATCHED, ManualPayment::RESOLUTION_NEEDS_REVIEW], true)) {
+                $balance = $this->credits->balance($payment->tenant_id, $payment->currency);
+                $needed  = min($balance, $res->remainingDueMinor);
+                if ($needed > 0) {
+                    $withLedger = $this->resolver->resolve(
+                        $payment->plan, (int) $payment->amount_cents, $payment->currency, $payment->market_code,
+                        $targetInterval, $alreadyPaid + $virtualCredit + $needed, $payment->promo_code_used !== null,
+                        $netOfPromo, $matchExtraUsers,
+                    );
+                    if ($withLedger->isComplete) {
+                        $res           = $withLedger;
+                        $ledgerApplied = $needed;
+                    }
+                }
+            }
+
             // Cash RÉELLEMENT encaissé (le crédit n'est PAS du cash et ne gonfle pas amount_paid_minor).
             $realCash = $alreadyPaid + (int) $payment->amount_cents;
 
@@ -242,6 +266,14 @@ class ManualPaymentService
                 }
                 if ($res->extraUsers > 0) {
                     $meta['extra_users'] = $res->extraUsers; // RC-6G (règle 3) — sièges détectés
+                }
+                // RC-17 (M-1) — l'avoir ledger réellement appliqué est CONSOMMÉ (ligne négative,
+                // référence = paiement) et tracé dans la metadata pour l'admin.
+                if ($ledgerApplied > 0) {
+                    $this->credits->consume(
+                        $payment->tenant_id, $payment->currency, $ledgerApplied, $payment->id, $admin->id,
+                    );
+                    $meta['ledger_credit_applied_minor'] = $ledgerApplied;
                 }
                 $sub->update([
                     'currency'          => $payment->currency,

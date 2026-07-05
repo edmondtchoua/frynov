@@ -3,6 +3,23 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🩹 RC-17 : correctifs HAUTE — avoirs réappliqués + rapports d'inventaire exposés (2026-07-05)
+
+Branche `feature/rc17-billing-reports-fixes` (release `v1.0.0` → `rc.149`). Les deux bugs **HAUTE** du
+backlog rc.147 :
+
+- **[M-1] Ledger `tenant_credits` réappliqué** : les avoirs (trop-perçus) n'étaient **jamais consommés**
+  (argent client perdu). Désormais, à l'approbation d'un paiement manuel, le solde d'avoirs (même devise)
+  agit comme **acompte virtuel s'il permet de solder la cible** — puis il est **consommé** (ligne négative
+  référencée au paiement, trace `ledger_credit_applied_minor` dans la metadata). Pas de consommation
+  partielle en dépôt (même règle que la proration). `previewProration` déduit le ledger de l'assiette
+  (le trop-perçu ne compte plus double). +4 tests (`BillingRulesTest`).
+- **[M-2] Rapports d'inventaire exposés** : `abcClassification` (Pareto 80/15/5), `inventoryKpis`
+  (DSI, rotation, fill rate, stock mort) et `stockReconciliation` (valorisation par catégorie) étaient
+  développés+testés **sans route ni vue**. Nouvelles routes `GET /api/reports/abc|inventory-kpis|reconciliation`
+  + onglet **Analyse d'inventaire** (`/reports/insights`) avec sélecteur de période, i18n FR/EN.
+  +3 tests API, +3 specs front.
+
 ## [Non publié] — 🧾 RC-16 : caisse approfondie — fondation backend (split · mouvements · remboursement) (2026-07-05)
 
 Branche `feature/rc16-pos` (release `v1.0.0` → `rc.148`). Première tranche du chantier **« caisse

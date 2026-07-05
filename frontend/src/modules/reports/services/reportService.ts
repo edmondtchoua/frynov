@@ -94,6 +94,55 @@ export interface SpecialProductsData {
   total_inventory_value: number
 }
 
+// RC-17 (M-2) — analyse d'inventaire (ABC / KPIs / réconciliation), ex-code mort désormais exposé.
+export interface AbcItem {
+  product_id: string
+  product_name: string
+  sku: string
+  revenue_cents: number
+  revenue_share_pct: number
+  cumulative_pct: number
+  total_qty_sold: number
+  abc_class: 'A' | 'B' | 'C'
+}
+
+export interface AbcData {
+  period_days: number
+  total_revenue: number
+  summary: { class: 'A' | 'B' | 'C'; product_count: number; revenue_cents: number; revenue_share_pct: number }[]
+  items: AbcItem[]
+}
+
+export interface InventoryKpisData {
+  period_days: number
+  dsi: number | null
+  rotation_rate: number | null
+  fill_rate_pct: number | null
+  dead_stock_rate_pct: number
+  cogs_cents: number
+  total_stock_value: number
+  total_orders: number
+  fulfilled_orders: number
+}
+
+export interface ReconciliationLine {
+  category_name: string
+  sku_count: number
+  total_qty: number
+  available_qty: number
+  erp_value_cents: number
+  avg_cmup_cents: number
+}
+
+export interface ReconciliationData {
+  generated_at: string
+  total_erp_value: number
+  lines_by_category: ReconciliationLine[]
+  movements_summary: { reason: string; type: string; count: number; total_qty: number }[]
+}
+
+export type InsightsPeriod = 30 | 90 | 180 | 365
+
 // ── Service ───────────────────────────────────────────────────────────────────
 
 export const reportService = {
@@ -111,6 +160,19 @@ export const reportService = {
 
   specialProducts(warehouseId?: string): Promise<SpecialProductsData> {
     return client.get('/api/reports/special-products', { params: { warehouse_id: warehouseId || undefined } }).then(r => r.data)
+  },
+
+  // RC-17 (M-2) — analyse d'inventaire.
+  abc(days: InsightsPeriod = 90): Promise<AbcData> {
+    return client.get('/api/reports/abc', { params: { days } }).then(r => r.data)
+  },
+
+  inventoryKpis(days: InsightsPeriod = 90): Promise<InventoryKpisData> {
+    return client.get('/api/reports/inventory-kpis', { params: { days } }).then(r => r.data)
+  },
+
+  reconciliation(): Promise<ReconciliationData> {
+    return client.get('/api/reports/reconciliation').then(r => r.data)
   },
 }
 

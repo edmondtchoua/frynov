@@ -103,6 +103,27 @@ Digital :
 Évite le **double-comptage** : les produits sérialisés ne sont **pas** valorisés via leur miroir agrégé
 mais par unité `in_stock`. Les services/digital sont **exclus** de la valorisation.
 
+### `abcClassification(string $tenantId, int $days = 90): array` *(RC-17 M-2)*
+
+Classification **ABC (Pareto 80/15/5)** du CA par produit sur la période : part de CA, part cumulée,
+classe `A` (≤ 80 %), `B` (≤ 95 %), `C` (reste). Retourne `period_days`, `total_revenue`,
+`summary` (par classe : nb produits, CA, part) et `items` (triés par CA décroissant).
+
+### `inventoryKpis(string $tenantId, int $days = 90): array` *(RC-17 M-2)*
+
+KPIs d'inventaire : **DSI** (jours de stock = valeur stock / COGS × jours), **taux de rotation**
+(annualisé), **fill rate** (commandes honorées / confirmées+honorées), **taux de stock mort**
+(valeur des stocks sans mouvement depuis 180 j / valeur totale).
+
+### `stockReconciliation(string $tenantId): array` *(RC-17 M-2)*
+
+Réconciliation : valorisation ERP **par catégorie** (`sku_count`, quantités, `erp_value_cents`,
+CMUP moyen) + synthèse des mouvements du dernier mois (`reason` × `type`).
+
+> Ces trois méthodes existaient (développées + testées) mais **sans route ni vue** (code mort
+> applicatif consigné en M-2, rc.147). Exposées en RC-17 : routes ci-dessous + onglet front
+> **Analyse d'inventaire** (`/reports/insights`, `InventoryInsightsView.vue`).
+
 ## Helpers privés
 
 ### `revenueByDay(string $tenantId, int $days): array`
@@ -128,9 +149,14 @@ JOIN direct `order_lines` → `orders` (pas de `whereHas`) pour éviter les sous
 GET /api/reports/dashboard        → ReportController@dashboard
 GET /api/reports/sales?period=*   → ReportController@sales
 GET /api/reports/stock            → ReportController@stock
+GET /api/reports/special-products → ReportController@specialProducts   (RC-5G)
+GET /api/reports/abc?days=30|90|180|365      → ReportController@abc            (RC-17)
+GET /api/reports/inventory-kpis?days=…       → ReportController@inventoryKpis  (RC-17)
+GET /api/reports/reconciliation              → ReportController@reconciliation (RC-17)
 ```
 
 Toutes les routes nécessitent `auth:sanctum`. Le `tenant_id` est extrait de `$request->user()->tenant_id`.
+Les périodes hors liste blanche (30/90/180/365) retombent sur 90 jours.
 
 ## Tests
 

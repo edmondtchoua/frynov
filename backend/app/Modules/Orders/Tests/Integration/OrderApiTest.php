@@ -335,6 +335,25 @@ class OrderApiTest extends TestCase
     }
 
     #[Test]
+    public function a_customer_from_another_tenant_is_rejected(): void
+    {
+        // RC-20 (P-5) — un customer_id inter-tenant (UUID deviné/fuité) était accepté tel quel.
+        $otherTenant   = Tenant::create(['name' => 'Autre', 'slug' => 'autre-cust', 'plan' => 'starter', 'status' => 'active', 'settings' => []]);
+        $otherCustomer = \App\Modules\Customers\Models\Customer::withoutTenantScope()->create([
+            'tenant_id' => $otherTenant->id, 'name' => 'Client Étranger', 'email' => 'etranger@autre.sn',
+        ]);
+
+        $this->postJson('/api/orders', [
+            'customer_id' => $otherCustomer->id,
+            'items'       => [['product_id' => $this->product->id, 'quantity' => 1]],
+        ], $this->auth())
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('customer_id');
+
+        $this->assertDatabaseMissing('orders', ['customer_id' => $otherCustomer->id]);
+    }
+
+    #[Test]
     public function it_requires_authentication(): void
     {
         $this->getJson('/api/orders')->assertStatus(401);

@@ -41,10 +41,14 @@ class StockTransferService
         }
 
         return DB::transaction(function () use ($tenantId, $sourceWarehouseId, $destWarehouseId, $lines, $requestedBy, $notes) {
-            $count    = StockTransfer::where('tenant_id', $tenantId)->withTrashed()->count();
+            // RC-20 (C-9) — séquence verrouillée (plus de course count()+1 → numéros dupliqués).
+            $number   = app(\App\Shared\Services\SequenceService::class)->next(
+                $tenantId, 'TRF', 6,
+                fn () => StockTransfer::where('tenant_id', $tenantId)->withTrashed()->count(),
+            );
             $transfer = StockTransfer::create([
                 'tenant_id'                => $tenantId,
-                'number'                   => 'TRF-' . str_pad($count + 1, 6, '0', STR_PAD_LEFT),
+                'number'                   => $number,
                 'source_warehouse_id'      => $sourceWarehouseId,
                 'destination_warehouse_id' => $destWarehouseId,
                 'status'                   => 'draft',

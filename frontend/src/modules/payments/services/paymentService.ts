@@ -18,8 +18,15 @@ export const paymentService = {
   },
 
   // ── Record a payment ───────────────────────────────────────────────────────
+  // RC-20 (C-10) — clé d'idempotence générée côté client : un retry (timeout, double clic)
+  // rejoue la MÊME clé → le back renvoie le paiement existant au lieu d'en créer un second.
   record(data: RecordPaymentPayload): Promise<{ data: Payment; balance: number; is_fully_paid: boolean }> {
-    return client.post('/api/payments', data).then(r => r.data)
+    const idempotencyKey = (() => {
+      try { return crypto.randomUUID() } catch { return `pay-${Date.now()}-${Math.floor(Math.random() * 1e9)}` }
+    })()
+    return client
+      .post('/api/payments', data, { headers: { 'X-Idempotency-Key': idempotencyKey } })
+      .then(r => r.data)
   },
 
   // ── Void (soft-delete) ─────────────────────────────────────────────────────

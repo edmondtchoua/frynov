@@ -42,18 +42,28 @@ suite backend (~1011 tests) + cet audit statique.
 
 ## Backlog — à traiter (priorisé)
 
-### Basse
-| # | Zone | Bug | Fichier |
-|---|------|-----|---------|
-| C-8 | Orders/Catalog | **Journaux d'audit jamais écrits** : signature `AuditService::log` erronée → TypeError avalé (`return.approved`, `product.created`, `product.archived`). | `OrderReturnService.php:113`, `CatalogService.php:122,161` |
-| C-9 | Orders/Inventory | Numéros `RET-`/`TRF-` via `count()+1` (course sur l'unicité). | `OrderReturnService.php:50`, `StockTransferService.php:44` |
-| P-3 | Suppliers | `SupplierService::nextCode` via `count()+1` (course). | `SupplierService.php:78` |
-| C-10 | Payments (front) | Idempotence paiement (`X-Idempotency-Key`) **jamais envoyée** par le front. | `paymentService.ts:21` |
-| N-6 | Notifications | Remboursement de crédit si l'`update` post-`deliver` échoue (message déjà envoyé) — fenêtre étroite. | `NotificationService.php:158` |
-| B-7 | Billing | `PromotionService::recordUse` sans verrou → dépassement possible de `max_uses` en concurrence. | `PromotionService.php:56` |
-| P-4 | ImportExport | Doublons de SKU **intra-fichier** marqués `VALID` à l'analyse (échouent seulement à l'exécution). | `ProductImportParser.php:139` |
-| P-5 | Orders/POS | `customer_id` **non validé au tenant** (référence inter-tenant possible). | `OrderService.php:92`, `PosController.php:89` |
-| P-6 | Marketplace | Label plateforme **WooCommerce** manquant (fallback « Woocommerce »). | `MarketplaceListingController.php:99` |
+## Corrigés dans rc.152 (RC-20 — file BASSE)
+
+| # | Zone | Bug | Correctif |
+|---|------|-----|-----------|
+| C-8 | Orders/Catalog | Journaux d'audit jamais écrits (TypeError avalé). | ✅ Appels `AuditService::log` en arguments nommés (`return.approved`, `product.created`, `product.archived`). +1 assert. |
+| C-9/P-3 | Orders/Inventory/Suppliers | Numéros `RET-`/`TRF-`/`SUP-` via `count()+1` (course). | ✅ `SequenceService` partagé (table `sku_sequences` + `FOR UPDATE`, seed de continuité) — même mécanique que `ORD-`. |
+| C-10 | Payments (front) | `X-Idempotency-Key` jamais envoyée. | ✅ Clé UUID générée par `paymentService.record` (retry/double clic → même paiement). |
+| N-6 | Notifications | Remboursement + re-livraison si l'update post-`deliver` échoue. | ✅ Flag `delivered` : message parti → ni refund, ni retour `pending` (marquage `sent` best-effort). |
+| B-7 | Billing | `recordUse` sans verrou → dépassement `max_uses`. | ✅ Promo verrouillée `FOR UPDATE` + limite re-vérifiée dans la transaction (throw si atteinte). +1 test. |
+| P-4 | ImportExport | Doublons SKU intra-fichier `VALID` à l'analyse. | ✅ Suivi des SKU du fichier : 2ᵉ occurrence → SKIP + warning (ligne d'origine indiquée). +2 tests. |
+| P-5 | Orders/POS | `customer_id` non validé au tenant. | ✅ Vérifié dans `OrderService::create` (couvre aussi le POS) → 422. +1 test. |
+| P-6 | Marketplace | Label « Woocommerce ». | ✅ « WooCommerce ». |
+
+### Environnement local (découvertes de la validation preview, rc.152)
+- **Le blocage `/api/*` en preview n'était PAS une contrainte sandbox** : un serveur d'un autre projet
+  (`C:\Users\pro\Source\PHP\ace\server.php`) squattait le port 8000 → 423 `app_locked` (son middleware)
+  et 404. Après libération du port, **toute l'API répond en preview** (login, caisse, rapports…).
+- Base MySQL locale : `default_storage_engine=MyISAM` → 78 tables **sans transactions ni verrous**.
+  Converties en InnoDB + `engine=InnoDB` forcé dans `config/database.php` (les tests SQLite ne voyaient
+  rien ; l'app dépend de `lockForUpdate`).
+- `DemoSeeder` : lookup `fiscal_periods` non idempotent sous MySQL (colonnes DATE vs `endOfMonth()`
+  23:59:59) → corrigé (`toDateString()`).
 
 ### Hypothèses (à arbitrer produit)
 | # | Zone | Constat | Fichier |

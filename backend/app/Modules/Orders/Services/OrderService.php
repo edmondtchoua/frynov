@@ -94,6 +94,20 @@ class OrderService
         $tenant   = \App\Modules\Tenants\Models\Tenant::withoutGlobalScopes()->find($tenantId);
         $currency = $tenant?->settings['currency'] ?? 'XOF';
 
+        // RC-20 (P-5) — customer_id validé au TENANT : une référence inter-tenant (UUID deviné ou
+        // fuité) était acceptée telle quelle et liait la commande au client d'un autre commerce.
+        if (! empty($data['customer_id'])) {
+            $ownedByTenant = \App\Modules\Customers\Models\Customer::withoutTenantScope()
+                ->where('tenant_id', $tenantId)
+                ->whereKey($data['customer_id'])
+                ->exists();
+            if (! $ownedByTenant) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'customer_id' => ['Client introuvable.'],
+                ]);
+            }
+        }
+
         $order = DB::transaction(function () use ($data, $tenantId, $userId, $currency) {
             $number = $this->nextOrderNumber($tenantId);
 

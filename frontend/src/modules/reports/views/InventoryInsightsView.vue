@@ -186,6 +186,46 @@ onMounted(load)
 </script>
 
 <style scoped>
+/* KPI grid — même gabarit que les autres onglets Rapports (styles scopés par vue). */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+.kpi-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.kpi-icon-wrap {
+  width: 40px; height: 40px;
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.kpi-icon--green  { background: var(--brand-primary-bg); color: var(--brand-primary-dark); }
+.kpi-icon--blue   { background: var(--brand-secondary-light); color: var(--brand-secondary-dark); }
+.kpi-icon--orange { background: #fff7ed; color: #ea580c; }
+.kpi-value { font-size: 1.5rem; font-weight: 700; color: var(--gray-900); line-height: 1; }
+.kpi-value.kpi-warn { color: #ea580c; }
+.kpi-label { font-size: var(--text-xs); color: var(--gray-500); margin-top: 0.3rem; font-weight: 500; }
+
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+@media (max-width: 1100px) { .bottom-grid { grid-template-columns: 1fr; } }
+
+.section-title { font-size: var(--text-base); font-weight: 600; color: var(--gray-900); margin: 0 0 0.75rem; }
+.sku-code { background: var(--gray-100); padding: 1px 5px; border-radius: 4px; font-size: var(--text-xs); font-family: monospace; }
+.text-muted { color: var(--gray-500); }
+
 .abc-summary { display: flex; gap: .6rem; margin-bottom: .9rem; flex-wrap: wrap; }
 .abc-chip { display: flex; align-items: center; gap: .5rem; border-radius: 10px; padding: .4rem .7rem; font-size: .8rem; }
 .abc-chip--a { background: #dcfce7; color: #166534; }

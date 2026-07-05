@@ -52,17 +52,29 @@ class PromotionService
 
     /**
      * Record usage and increment the counter (call after payment/plan activation).
+     *
+     * RC-20 (B-7) — la ligne promo est verrouillée FOR UPDATE et la limite re-vérifiée DANS la
+     * transaction : deux activations concurrentes ne peuvent plus dépasser `max_uses` (le
+     * `isUsageLimitReached()` de validate() lisait un compteur non verrouillé).
+     *
+     * @throws InvalidPromoCodeException si la limite est atteinte au moment de l'enregistrement.
      */
     public function recordUse(Promotion $promo, Tenant $tenant): PromoUse
     {
         return DB::transaction(function () use ($promo, $tenant) {
+            $locked = Promotion::whereKey($promo->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->isUsageLimitReached()) {
+                throw new InvalidPromoCodeException('La limite d\'utilisation de ce code a été atteinte.');
+            }
+
             $use = PromoUse::create([
-                'promotion_id' => $promo->id,
+                'promotion_id' => $locked->id,
                 'tenant_id'    => $tenant->id,
                 'used_at'      => now(),
             ]);
 
-            $promo->increment('current_uses');
+            $locked->increment('current_uses');
 
             return $use;
         });

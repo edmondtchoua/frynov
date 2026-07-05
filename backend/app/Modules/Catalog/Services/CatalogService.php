@@ -118,12 +118,17 @@ class CatalogService
 
         event(new ProductCreated($product));
 
+        // RC-20 (C-8) — appel positionnel dans le désordre (TypeError avalé) : `product.created`
+        // n'était jamais journalisé. Arguments nommés = signature garantie.
         try {
             app(\App\Modules\Platform\Services\AuditService::class)->log(
-                auth()->id() ?? null, "product.created", "Product", $product->id,
-                [],
-                ["sku" => $product->sku, "name" => $product->name],
-                request()?->ip(), request()?->userAgent(), "low"
+                action: 'product.created',
+                tenantId: $product->tenant_id,
+                userId: auth()->id() ?? null,
+                subject: $product,
+                newValues: ['sku' => $product->sku, 'name' => $product->name],
+                ipAddress: request()?->ip(),
+                userAgent: request()?->userAgent(),
             );
         } catch (\Throwable) {}
 
@@ -157,12 +162,17 @@ class CatalogService
         $product->update(['status' => 'archived']);
         event(new ProductArchived($product));
 
+        // RC-20 (C-8) — même correctif que product.created : signature respectée, journal réellement écrit.
         try {
             app(\App\Modules\Platform\Services\AuditService::class)->log(
-                auth()->id() ?? null, 'product.archived', 'Product', $product->id,
-                ['status' => 'active'],
-                ['status' => 'archived', 'sku' => $product->sku, 'name' => $product->name],
-                request()?->ip(), request()?->userAgent(), 'medium',
+                action: 'product.archived',
+                tenantId: $product->tenant_id,
+                userId: auth()->id() ?? null,
+                subject: $product,
+                oldValues: ['status' => 'active'],
+                newValues: ['status' => 'archived', 'sku' => $product->sku, 'name' => $product->name],
+                ipAddress: request()?->ip(),
+                userAgent: request()?->userAgent(),
             );
         } catch (\Throwable) {}
 

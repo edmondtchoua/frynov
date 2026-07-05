@@ -113,6 +113,13 @@ class OrderReturnTest extends TestCase
         $this->svc->approve($return, $this->admin->id);
         $this->assertSame(OrderReturn::STATUS_APPROVED, $return->fresh()->status);
 
+        // RC-20 (C-8) — le journal d'audit `return.approved` est réellement ÉCRIT (avant : appel
+        // positionnel dans le désordre → TypeError avalé, aucun journal).
+        $this->assertDatabaseHas('audit_logs', [
+            'tenant_id' => $this->order->tenant_id,
+            'action'    => 'return.approved',
+        ]);
+
         $this->svc->restock($return, $this->admin->id);
         $this->assertSame(OrderReturn::STATUS_RESTOCKED, $return->fresh()->status);
         $this->assertSame($before + 2, $this->stock->fresh()->quantity);

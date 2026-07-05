@@ -56,6 +56,21 @@ class CustomerServiceTest extends TestCase
     }
 
     #[Test]
+    public function it_normalizes_the_email_to_lowercase_trimmed_on_write(): void
+    {
+        // RC-8 F-12 — l'email est normalisé pour fiabiliser le rapprochement des comptes portail.
+        $created = $this->service->create([
+            'name'  => 'Jean Casse',
+            'email' => '  Jean@Example.COM ',
+        ], $this->tenant->id);
+        $this->assertSame('jean@example.com', $created->email);
+        $this->assertDatabaseHas('customers', ['email' => 'jean@example.com']);
+
+        $updated = $this->service->update($created, ['email' => 'AUTRE@Domaine.SN']);
+        $this->assertSame('autre@domaine.sn', $updated->email);
+    }
+
+    #[Test]
     public function it_creates_a_customer_without_email(): void
     {
         $customer = $this->service->create([

@@ -85,6 +85,38 @@ class PortalSecurityTest extends TestCase
     }
 
     #[Test]
+    public function a_portal_token_is_issued_with_an_expiry(): void
+    {
+        // RC-8 F-1 — plus de token portail à vie.
+        $this->verifiedAccount();
+        $this->portalToken();
+
+        $account = PortalAccount::firstOrFail();
+        $expiresAt = $account->tokens()->value('expires_at');
+        $this->assertNotNull($expiresAt, 'Le token portail doit avoir une expiration.');
+    }
+
+    #[Test]
+    public function logout_revokes_the_portal_token_server_side(): void
+    {
+        // RC-8 F-2 — le logout révoque réellement le token côté serveur.
+        $this->verifiedAccount();
+        $token = $this->portalToken();
+        $auth = ['Authorization' => "Bearer {$token}"];
+
+        $this->getJson('/api/portal/my-purchases', $auth)->assertOk();
+        $this->assertSame(1, PortalAccount::firstOrFail()->tokens()->count());
+
+        $this->postJson('/api/portal/logout', [], $auth)->assertOk();
+
+        // Token révoqué côté serveur : plus aucun token, et il n'est plus résolvable.
+        // (On vérifie le store plutôt qu'un 2ᵉ appel HTTP : le guard Sanctum met en cache l'utilisateur
+        //  résolu au sein d'un même test, alors qu'en production chaque requête est un process neuf.)
+        $this->assertSame(0, PortalAccount::firstOrFail()->tokens()->count());
+        $this->assertNull(\Laravel\Sanctum\PersonalAccessToken::findToken($token));
+    }
+
+    #[Test]
     public function verification_requires_the_password_that_was_set_blocking_pre_hijack(): void
     {
         // AR-1 : la victime s'inscrit (mdp V) ; l'attaquant re-`register` (mdp A) — mais le code va

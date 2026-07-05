@@ -3,7 +3,9 @@
 use App\Modules\ImportExport\Http\Controllers\ImportExportController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'module:import_export'])->group(function () {
+// RC-8 F-8 — `tenant` ancre le contexte d'équipe Spatie (setPermissionsTeamId) : sans lui, les gardes
+// `role_or_permission:import_export.*` pouvaient dévier faute de team_id posé sur ce groupe.
+Route::middleware(['auth:sanctum', 'tenant', 'module:import_export'])->group(function () {
 
     // ── Import ────────────────────────────────────────────────────────────────
     // Note: /history and /template/{type} must come before /{id} to avoid conflict

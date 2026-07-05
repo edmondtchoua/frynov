@@ -517,7 +517,10 @@ class DemoSeeder extends Seeder
         $customers = [];
         for ($i = 0; $i < min($customerCount, count($customerNames)); $i++) {
             [$name, $phone, $email] = $customerNames[$i];
-            $localEmail = str_replace('@example.', "@{$name}-{$tid}.", $email);
+            // Email normalisé (minuscules + sans espace) pour rester idempotent avec le mutateur
+            // Customer::setEmailAttribute (RC-8 F-12) : la clé de updateOrCreate doit matcher le stocké.
+            $slugName   = \Str::slug($name);
+            $localEmail = strtolower(str_replace('@example.', "@{$slugName}-{$tid}.", $email));
             $customers[] = Customer::updateOrCreate(
                 ['tenant_id' => $tid, 'email' => $localEmail],
                 [

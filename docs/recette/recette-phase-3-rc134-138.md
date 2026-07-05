@@ -51,6 +51,7 @@ replay webhook idempotent (verrou de ligne) ; IDOR recharges/mouvements/soldes s
 ## Points de suite (hors périmètre correctif)
 
 - Sur-retour (quantité retournée > vendue) non plafonné à `create`/`approve` — antérieur à la Phase 3.
-- Token portail sans expiration ni révocation serveur au `logout` (localStorage) — durcissement futur
-  (expiration Sanctum + `logout` révoquant `currentAccessToken`).
-- Normalisation de la casse des emails `Customer` à l'écriture (impact PostgreSQL).
+- ~~Token portail sans expiration ni révocation serveur au `logout`~~ → **traité en RC-8 (rc.140)** :
+  expiration explicite 30 j + `config/sanctum.php` (plafond global) + `POST /api/portal/logout`.
+- ~~Normalisation de la casse des emails `Customer`~~ → **traité en RC-8 (rc.140)** : mutateur + backfill.
+- *(RC-8 a aussi traité F-8 : middleware `tenant` sur ImportExport pour le contexte d'équipe Spatie.)*

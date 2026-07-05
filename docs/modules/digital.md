@@ -142,6 +142,10 @@ Créer un compte*, étape de saisie du code, liste des achats. Session persisté
 `portal_token`), via une **instance axios dédiée** (le client partagé redirige vers le login opérateur
 sur 401). i18n **FR+EN** (`portal.account.*`).
 
+**Cycle de vie du token (RC-8)** — le token portail est émis avec l'ability `portal` **et une
+expiration de 30 j** (plafond global de secours dans `config/sanctum.php`) ; **`POST /api/portal/logout`**
+le révoque côté serveur (le `logout()` du front l'appelle avant de purger le `localStorage`).
+
 ## Pool de clés éditeur (RC-6E)
 
 - `license_pool_keys` : clés importées (`POST /products/{id}/license-keys`, doublons ignorés, limite

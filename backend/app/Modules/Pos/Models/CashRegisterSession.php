@@ -65,10 +65,25 @@ class CashRegisterSession extends Model
         return $this->status === self::STATUS_OPEN;
     }
 
-    /** Expected cash in the drawer right now = opening float + cash sales. */
+    /**
+     * Net of the drawer's non-sale cash movements: pay-ins (+) minus pay-outs (−).
+     * A cash refund is stored as a pay-out, so it is subtracted here. RC-16.
+     */
+    public function netCashMovementsCents(): int
+    {
+        $in  = (int) $this->cashMovements()->where('direction', CashMovement::DIRECTION_IN)->sum('amount_cents');
+        $out = (int) $this->cashMovements()->where('direction', CashMovement::DIRECTION_OUT)->sum('amount_cents');
+
+        return $in - $out;
+    }
+
+    /**
+     * Expected cash in the drawer right now =
+     *   opening float + cash sales + pay-ins − pay-outs (refunds, withdrawals, expenses).
+     */
     public function expectedCashNow(): int
     {
-        return $this->opening_float_cents + $this->cash_sales_cents;
+        return $this->opening_float_cents + $this->cash_sales_cents + $this->netCashMovementsCents();
     }
 
     // ── Relations ────────────────────────────────────────────────────────────
@@ -76,6 +91,11 @@ class CashRegisterSession extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(\App\Modules\Orders\Models\Order::class);
+    }
+
+    public function cashMovements(): HasMany
+    {
+        return $this->hasMany(CashMovement::class, 'session_id');
     }
 
     public function opener(): BelongsTo

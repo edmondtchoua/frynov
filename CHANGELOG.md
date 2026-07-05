@@ -3,6 +3,23 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔒 RC-22 : idempotence checkout POS (P0 audit intégration) + plans compta (2026-07-05)
+
+Branche `feature/rc22-pos-idempotency` (release `v1.0.0` → `rc.154`). Suite de l'audit
+d'intégration POS/compta (2 revues parallèles + preuves E2E) :
+
+- **Idempotence du checkout POS** (trou CRITIQUE A-1) : le POS génère un id client **avant** la
+  tentative (`X-Idempotency-Key`), réutilisé tel quel par la file offline à chaque retry. Serveur :
+  `orders.pos_reference` (unique par tenant) → une clé déjà vue renvoie la vente existante (même
+  après clôture de session — resync du lendemain) ; course concurrente tranchée par la contrainte
+  unique. Sans clé : comportement historique. **Fin du risque de double vente offline.** +3 tests.
+- **Rapports d'audit** : `docs/architecture/audit-integration-pos-compta.md` (verdict : POS
+  réellement branché, 8 trous hiérarchisés A-1..A-8) et **plan complet du module comptable
+  SYSCOHADA** `docs/architecture/comptabilite-syscohada.md` (architecture, 24 tables, moteur
+  d'imputation, facturation, livres, clôtures, sécurité, UX, roadmap P0→P5).
+- Doc POS : section « Idempotence & synchronisation offline » (mapping des statuts
+  pending_sync/synced/failed_sync ↔ états serveur, lien future écriture comptable).
+
 ## [Non publié] — ↩️ RC-21 : revue Retours (RMA) — front + backend (2026-07-05)
 
 Branche `feature/rc21-returns-review` (release `v1.0.0` → `rc.153`). Inspection complète du module

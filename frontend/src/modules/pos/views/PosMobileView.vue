@@ -219,8 +219,11 @@ async function doPay() {
     method: pay.method,
     reference: pay.method === 'mobile_money' ? (pay.reference || undefined) : undefined,
   }
+  // RC-22 — id client généré AVANT la tentative : si la requête atteint le serveur mais que la
+  // réponse se perd (timeout), le rejeu offline réutilise la MÊME clé → pas de double vente.
+  const clientId = cryptoId()
   try {
-    const res = await s.checkout(pay.method, pay.reference || undefined)
+    const res = await s.checkout(pay.method, pay.reference || undefined, undefined, clientId)
     if (res) {
       pay.open = false
       pay.reference = ''
@@ -230,7 +233,7 @@ async function doPay() {
   } catch (e: any) {
     // No server response → offline / network error → queue the sale locally.
     if (!e?.response) {
-      enqueue({ session_id: s.session.value.id, payload, total_cents: total }, cryptoId(), nowIso())
+      enqueue({ session_id: s.session.value.id, payload, total_cents: total }, clientId, nowIso())
       s.clearCart()
       pay.open = false
       pay.reference = ''
@@ -253,7 +256,9 @@ async function syncQueue() {
   syncing.value = true
   try {
     const sent = await flush(async (sale: QueuedSale) => {
-      const res = await posService.checkout(sale.session_id, sale.payload)
+      // RC-22 — l'id de la vente en file sert de clé d'idempotence : chaque retry rejoue la même
+      // clé, le serveur renvoie la vente déjà créée au lieu d'en produire une seconde.
+      const res = await posService.checkout(sale.session_id, sale.payload, sale.id)
       // Keep the header figures fresh from the last flushed sale of the current session.
       if (s.session.value && res.session?.id === s.session.value.id) s.session.value = res.session
     })

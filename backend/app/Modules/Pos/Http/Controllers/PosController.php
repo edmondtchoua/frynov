@@ -100,8 +100,15 @@ class PosController extends Controller
             'note'                    => ['nullable', 'string'],
         ]);
 
+        // RC-22 — idempotence : la même clé rejouée (retry réseau, resync offline) renvoie la
+        // vente déjà créée. Clé bornée à 64 caractères (colonne) — au-delà, ignorée proprement.
+        $idempotencyKey = $request->header('X-Idempotency-Key');
+        if ($idempotencyKey !== null && strlen($idempotencyKey) > 64) {
+            $idempotencyKey = null;
+        }
+
         try {
-            $result = $this->service->checkout($session, $data, $request->user()->tenant_id, $request->user()->id);
+            $result = $this->service->checkout($session, $data, $request->user()->tenant_id, $request->user()->id, $idempotencyKey);
         } catch (InsufficientStockException $e) {
             return response()->json(['message' => 'Stock insuffisant pour finaliser la vente.'], 422);
         }

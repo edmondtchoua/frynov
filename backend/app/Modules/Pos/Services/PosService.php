@@ -92,14 +92,23 @@ class PosService
      *         ['method' => 'mobile_money', 'amount_cents' => 20000, 'reference'? => ...],
      *     ]] → the amounts must sum EXACTLY to the order total.
      *
+     * RC-22 — `$idempotencyKey` (en-tête X-Idempotency-Key) : la MÊME clé rejouée renvoie la vente
+     * déjà enregistrée (retry réseau / resynchronisation offline) au lieu d'en créer une seconde.
+     * Le rejeu est vérifié AVANT toute validation d'état : une vente déjà actée reste renvoyée
+     * même si la session a été fermée entre-temps.
+     *
      * @param  array  $data  ['items' => [...], 'customer_id'?, 'note'?, and one of method|payments]
      * @return array{order: Order, payments: Payment[], payment: ?Payment}
      *
      * @throws ValidationException                                       session not open / bad method / bad split
      * @throws \App\Modules\Inventory\Exceptions\InsufficientStockException out of stock
      */
-    public function checkout(CashRegisterSession $session, array $data, string $tenantId, string $userId): array
+    public function checkout(CashRegisterSession $session, array $data, string $tenantId, string $userId, ?string $idempotencyKey = null): array
     {
+        if ($idempotencyKey !== null && ($replay = $this->findCheckoutByReference($tenantId, $idempotencyKey))) {
+            return $replay;
+        }
+
         if (! $session->isOpen()) {
             throw ValidationException::withMessages([
                 'session' => ['La session de caisse est fermée.'],
@@ -125,7 +134,22 @@ class PosService
             }
         }
 
-        return DB::transaction(function () use ($session, $data, $tenantId, $userId, $legs, $split) {
+        try {
+            return $this->performCheckout($session, $data, $tenantId, $userId, $legs, $split, $idempotencyKey);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+            // RC-22 — course entre deux rejeux de la même clé : le premier a gagné, on renvoie
+            // sa vente (la nôtre vient d'être annulée par le rollback de la transaction).
+            if ($idempotencyKey !== null && ($replay = $this->findCheckoutByReference($tenantId, $idempotencyKey))) {
+                return $replay;
+            }
+            throw $e;
+        }
+    }
+
+    /** @return array{order: Order, payments: Payment[], payment: ?Payment} */
+    private function performCheckout(CashRegisterSession $session, array $data, string $tenantId, string $userId, array $legs, bool $split, ?string $idempotencyKey): array
+    {
+        return DB::transaction(function () use ($session, $data, $tenantId, $userId, $legs, $split, $idempotencyKey) {
             // 1. Create the order (prices resolved server-side from the catalog).
             $order = $this->orders->create([
                 'items'       => $data['items'],
@@ -136,6 +160,9 @@ class PosService
             // 2. Tie it to this session BEFORE state changes so a rollback is clean.
             $order->cash_register_session_id = $session->id;
             $order->warehouse_id = $order->warehouse_id ?? $session->warehouse_id;
+            // RC-22 — la clé d'idempotence est posée AVANT confirm/fulfill : l'unicité
+            // (tenant, pos_reference) neutralise tout doublon concurrent au commit.
+            $order->pos_reference = $idempotencyKey;
             $order->save();
 
             // 3. Confirm (reserves stock — throws if insufficient) then fulfill
@@ -198,6 +225,32 @@ class PosService
                 'payment'  => $payments[0] ?? null,             // BC: first leg exposed as `payment`
             ];
         });
+    }
+
+    /**
+     * RC-22 — vente déjà enregistrée pour cette clé d'idempotence (rejeu offline/retry) :
+     * reconstitue la réponse checkout d'origine (commande + paiements + premier leg).
+     *
+     * @return array{order: Order, payments: Payment[], payment: ?Payment}|null
+     */
+    private function findCheckoutByReference(string $tenantId, string $idempotencyKey): ?array
+    {
+        $order = Order::withoutTenantScope()
+            ->where('tenant_id', $tenantId)
+            ->where('pos_reference', $idempotencyKey)
+            ->first();
+
+        if (! $order) {
+            return null;
+        }
+
+        $payments = Payment::where('order_id', $order->id)->orderBy('paid_at')->get()->all();
+
+        return [
+            'order'    => $order->load('lines'),
+            'payments' => $payments,
+            'payment'  => $payments[0] ?? null,
+        ];
     }
 
     /**

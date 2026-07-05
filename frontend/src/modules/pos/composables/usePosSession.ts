@@ -102,11 +102,22 @@ export function usePosSession() {
   /**
    * Ring up the current cart. Pass a single method for a one-tender sale, or a
    * list of legs for a split payment (their amounts must sum to the total).
+   *
+   * RC-22 — `idempotencyKey` (défaut : UUID par appel) protège du double clic ET du retry
+   * réseau : la même clé rejouée renvoie la vente déjà enregistrée.
    */
-  async function checkout(payment: PosPaymentMethod | PosPaymentLeg[], reference?: string, customerId?: string | null) {
+  async function checkout(
+    payment: PosPaymentMethod | PosPaymentLeg[],
+    reference?: string,
+    customerId?: string | null,
+    idempotencyKey?: string,
+  ) {
     if (!session.value || cart.value.length === 0) return null
     error.value = ''
     busy.value = true
+    const key = idempotencyKey ?? (() => {
+      try { return crypto.randomUUID() } catch { return `pos-${Date.now()}-${Math.floor(Math.random() * 1e9)}` }
+    })()
     const items = cart.value.map(l => ({
       product_id: l.product_id,
       variant_id: l.variant_id ?? undefined,
@@ -118,6 +129,7 @@ export function usePosSession() {
         Array.isArray(payment)
           ? { items, payments: payment, customer_id: customerId ?? undefined }
           : { items, method: payment, reference, customer_id: customerId ?? undefined },
+        key,
       )
       session.value = res.session
       cart.value = []

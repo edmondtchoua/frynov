@@ -36,9 +36,19 @@ export const posService = {
     return client.post('/api/pos/sessions', payload).then(r => r.data.data)
   },
 
-  /** Ring up a sale against an open session (single or split payment). */
-  checkout(sessionId: string, payload: PosCheckoutPayload): Promise<CheckoutResult> {
-    return client.post(`/api/pos/sessions/${sessionId}/checkout`, payload).then(r => r.data.data)
+  /**
+   * Ring up a sale against an open session (single or split payment).
+   *
+   * RC-22 (P0 compta/offline) — `idempotencyKey` : la MÊME clé rejouée (retry réseau, resync
+   * offline) renvoie la vente déjà créée au lieu d'en créer une seconde. La file offline réutilise
+   * l'id client de la vente en attente comme clé stable entre tentatives.
+   */
+  checkout(sessionId: string, payload: PosCheckoutPayload, idempotencyKey?: string): Promise<CheckoutResult> {
+    return client
+      .post(`/api/pos/sessions/${sessionId}/checkout`, payload, {
+        headers: idempotencyKey ? { 'X-Idempotency-Key': idempotencyKey } : undefined,
+      })
+      .then(r => r.data.data)
   },
 
   /** Close a session, optionally with the counted cash for reconciliation. */

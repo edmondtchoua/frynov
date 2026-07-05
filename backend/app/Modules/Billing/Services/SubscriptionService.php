@@ -16,6 +16,7 @@ class SubscriptionService
     public function __construct(
         private readonly ModuleRegistryService $moduleRegistry,
         private readonly ProrationCalculator $proration,
+        private readonly TenantCreditService $credits,
     ) {}
 
     /**
@@ -47,9 +48,16 @@ class SubscriptionService
 
         $metadata = $current?->metadata ?? [];
 
+        // RC-17 (M-1) — mode LEDGER : le trop-perçu vit dans tenant_credits (metadata jamais écrite).
+        // Sans cette lecture, l'assiette incluait le trop-perçu (amount_paid_minor = cash intégral)
+        // → crédit de temps calculé sur une base gonflée, en DOUBLE de l'avoir du ledger.
+        $overpaidMinor = config('billing.rules.tenant_credits_table')
+            ? $this->credits->balance($tenant->id, $currentCur)
+            : (int) ($metadata['overpaid_minor'] ?? 0);
+
         return $this->proration->compute(
             (int) ($current?->amount_paid_minor ?? 0),
-            (int) ($metadata['overpaid_minor'] ?? 0),
+            $overpaidMinor,
             $current?->current_period_start,
             $current?->current_period_end,
             $current?->status ?? '',

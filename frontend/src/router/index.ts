@@ -357,6 +357,12 @@ const router = createRouter({
           name: 'reports.stock',
           component: () => import('@/modules/reports/views/StockReportView.vue'),
         },
+        {
+          // RC-17 (M-2) — analyse d'inventaire : ABC, KPIs (DSI/rotation/fill rate), réconciliation.
+          path: 'insights',
+          name: 'reports.insights',
+          component: () => import('@/modules/reports/views/InventoryInsightsView.vue'),
+        },
       ],
     },
 

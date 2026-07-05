@@ -63,4 +63,45 @@ class ReportController extends Controller
             $this->service->specialProducts($request->user()->tenant_id, WarehouseScope::resolve($request->user(), $request->query('warehouse_id')))
         );
     }
+
+    // ── RC-17 (M-2) — rapports développés+testés mais jamais exposés (code mort applicatif) ──
+
+    /**
+     * GET /api/reports/abc?days=30|90|180|365
+     * Classification ABC (Pareto 80/15/5) du chiffre d'affaires par produit.
+     */
+    public function abc(Request $request): JsonResponse
+    {
+        $days = (int) $request->query('days', 90);
+        $days = in_array($days, [30, 90, 180, 365], true) ? $days : 90;
+
+        return response()->json(
+            $this->service->abcClassification($request->user()->tenant_id, $days)
+        );
+    }
+
+    /**
+     * GET /api/reports/inventory-kpis?days=30|90|180|365
+     * KPIs d'inventaire : DSI, taux de rotation, fill rate, stock mort.
+     */
+    public function inventoryKpis(Request $request): JsonResponse
+    {
+        $days = (int) $request->query('days', 90);
+        $days = in_array($days, [30, 90, 180, 365], true) ? $days : 90;
+
+        return response()->json(
+            $this->service->inventoryKpis($request->user()->tenant_id, $days)
+        );
+    }
+
+    /**
+     * GET /api/reports/reconciliation
+     * Réconciliation de stock : valorisation ERP par catégorie + mouvements du dernier mois.
+     */
+    public function reconciliation(Request $request): JsonResponse
+    {
+        return response()->json(
+            $this->service->stockReconciliation($request->user()->tenant_id)
+        );
+    }
 }

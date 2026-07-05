@@ -275,6 +275,20 @@ const router = createRouter({
       component: () => import('@/modules/pos/views/PosView.vue'),
       meta: { layout: 'app' },
     },
+    {
+      // Caisse Desktop — pavé de paiement mixte, mouvements, remboursement, raccourcis (RC-16).
+      path: '/pos/desktop',
+      name: 'pos.desktop',
+      component: () => import('@/modules/pos/views/PosDesktopView.vue'),
+      meta: { layout: 'app' },
+    },
+    {
+      // POS mobile — tactile, Mobile Money, file hors-ligne (RC-16).
+      path: '/pos/mobile',
+      name: 'pos.mobile',
+      component: () => import('@/modules/pos/views/PosMobileView.vue'),
+      meta: { layout: 'app' },
+    },
 
     // ── Deliveries ────────────────────────────────────────────────────────
     {

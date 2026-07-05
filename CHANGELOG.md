@@ -3,6 +3,28 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧾 RC-16 : caisse approfondie — fondation backend (split · mouvements · remboursement) (2026-07-05)
+
+Branche `feature/rc16-pos` (release `v1.0.0` → `rc.148`). Première tranche du chantier **« caisse
+approfondie »** : la base commune backend des futures caisses **Desktop** et **POS mobile**. Tout est
+**rétrocompatible** — les 10 tests `PosSessionTest` restent verts sans modification.
+
+- **Paiement mixte (split)** : `checkout` accepte désormais `payments: [{method, amount_cents, reference?}]`
+  en plus du `method` unique historique. La somme des legs doit égaler exactement le total (sinon 422 +
+  rollback intégral). Seule la part **espèces** alimente le fond de caisse attendu.
+- **Mouvements de caisse** (nouvelle table `cash_movements` + modèle `CashMovement`) : entrées (pay-in) et
+  sorties (pay-out) d'espèces hors vente — appoint, retrait, dépense. `expectedCashNow()` intègre le net
+  des mouvements ; un pay-out ne peut excéder les espèces disponibles. Endpoints `GET …/movements` et
+  `POST …/cash-movement`.
+- **Remboursement au comptoir** : `POST …/refund` délègue au `OrderReturnService` (create → approve →
+  restock : réintègre le stock revendable et **défait** sérialisés / garanties / accès digitaux) ; le leg
+  **espèces** d'un remboursement est enregistré comme sortie de caisse (l'attendu baisse).
+- **+7 tests** `PosAdvancedTest` (split + non-somme, pay-in/pay-out, plafond retrait, remboursement espèces
+  & non-espèces, session close). Service front `posService.ts` + types étendus. Docs tech + utilisateur MAJ.
+
+> **Suite du chantier** : `PosDesktopView.vue` (grille + panier + pavé de paiement + raccourcis clavier),
+> `PosMobileView.vue` (tactile, Mobile Money, file offline), composable `usePosSession()` partagé — increments RC-17/RC-18.
+
 ## [Non publié] — 🐛 RC-15 : audit fonctionnel — bugs consignés + correctifs prioritaires (2026-07-05)
 
 Branche `feature/rc15-qa-pos` (release `v1.0.0` → `rc.147`). Audit fonctionnel par 4 revues parallèles

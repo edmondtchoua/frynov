@@ -13,6 +13,13 @@ const EMPTY = '—'
 
 function toDate(iso: string | null | undefined): Date | null {
   if (!iso) return null
+  // RC-23 — une date PURE ('2026-01-01', ou '2026-01-01T00:00:00.000000Z' issue d'un cast date
+  // Laravel) est un jour CALENDAIRE, pas un instant : la parser en UTC la décale d'un jour dans
+  // les fuseaux à l'ouest d'UTC. On la construit en heure LOCALE (composantes explicites).
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.0+)?Z?)?$/.exec(iso)
+  if (dateOnly) {
+    return new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+  }
   const d = new Date(iso)
   return Number.isNaN(d.getTime()) ? null : d
 }

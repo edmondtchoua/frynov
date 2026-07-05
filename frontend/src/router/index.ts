@@ -366,6 +366,40 @@ const router = createRouter({
       ],
     },
 
+    // ── Comptabilité (RC-23 — référentiel SYSCOHADA) ──────────────────────
+    {
+      path: '/accounting',
+      meta: { layout: 'app' },
+      children: [
+        { path: '', redirect: { name: 'accounting.entries' } },
+        {
+          path: 'entries',
+          name: 'accounting.entries',
+          component: () => import('@/modules/accounting/views/EntriesView.vue'),
+        },
+        {
+          path: 'chart',
+          name: 'accounting.chart',
+          component: () => import('@/modules/accounting/views/ChartOfAccountsView.vue'),
+        },
+        {
+          path: 'taxes',
+          name: 'accounting.taxes',
+          component: () => import('@/modules/accounting/views/TaxesView.vue'),
+        },
+        {
+          path: 'periods',
+          name: 'accounting.periods',
+          component: () => import('@/modules/accounting/views/PeriodsView.vue'),
+        },
+        {
+          path: 'settings',
+          name: 'accounting.settings',
+          component: () => import('@/modules/accounting/views/AccountingSettingsView.vue'),
+        },
+      ],
+    },
+
     // ── Settings ──────────────────────────────────────────────────────────
     {
       path: '/settings',

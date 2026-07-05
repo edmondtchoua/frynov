@@ -13,9 +13,10 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class, // rôles Spatie + permissions (admin/manager/member/viewer/agent/cashier/commercial/delivery)
             PlansSeeder::class,               // starter / pro / enterprise (avec quotas terrain: agents, branches, warehouses)
             MarketPaymentMethodsSeeder::class, // P6-1: moyens de paiement par marché (manual/quote, zéro PSP)
-            ErpModulesSeeder::class,          // 10 modules ERP
+            ErpModulesSeeder::class,          // 11 modules ERP (incl. accounting RC-23)
             PlanModulesSeeder::class,         // associations plan ↔ modules
             CountryRulesSeeder::class,        // règles inscription par pays (30+ marchés africains + globaux)
+            AccountingClassesSeeder::class,   // RC-23 : classes SYSCOHADA 1–9 (référentiel global)
 
             // ── 2. Super admin ─────────────────────────────────────────────────
             // superadmin@frynov.com / Secret123!

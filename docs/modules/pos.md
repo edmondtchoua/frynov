@@ -129,6 +129,7 @@ Préfixe : `/api/pos` · Middleware : `auth:sanctum` + `EnsureUserBelongsToTenan
 | GET     | `/api/pos/sessions/{id}/movements`      | `movements`    | Mouvements de caisse de la session (RC-16)   |
 | POST    | `/api/pos/sessions/{id}/cash-movement`  | `cashMovement` | Pay-in / pay-out du tiroir (RC-16)           |
 | POST    | `/api/pos/sessions/{id}/refund`         | `refund`       | Remboursement au comptoir (RMA + leg caisse) (RC-16) |
+| GET     | `/api/pos/orders/{orderId}/receipt`     | `receipt`      | Ticket de caisse structuré (RC-19)           |
 
 ### Exemple — checkout (paiement mixte)
 
@@ -166,6 +167,19 @@ POST /api/pos/sessions/{id}/refund
 ```
 
 ---
+
+### Ticket de caisse (RC-19)
+
+`ReceiptService::forOrder(Order $order): array` construit le **payload structuré** du ticket :
+en-tête boutique (`tenant->name` + `settings.address`/`phone`/`currency`), lignes (nom, SKU, qté,
+PU, total), **tous les paiements** (y compris les legs d'un paiement mixte RC-16, avec référence
+Mobile Money), totaux, caissier, libellé de session. Le **rendu et l'impression sont côté client** :
+
+- `PosReceipt.vue` — rendu ticket **80 mm** (monospace, préviewé en modal). Le style vit dans
+  `receiptPrint.ts` (`RECEIPT_CSS`, source unique aperçu + impression).
+- `printHtml()` — impression via **iframe cachée** (`window.print()` sans popup, retirée après).
+- Desktop : bouton **Imprimer le ticket** (+ raccourci **F7**, réimpression de la dernière vente).
+- Mobile : bouton **Ticket** dans l'en-tête après une vente (réinitialisé à la clôture).
 
 ## Sécurité & permissions
 

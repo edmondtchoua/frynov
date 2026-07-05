@@ -17,5 +17,8 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
         Route::get('sessions/{id}/movements',        [PosController::class, 'movements']);
         Route::post('sessions/{id}/cash-movement',   [PosController::class, 'cashMovement']);
         Route::post('sessions/{id}/refund',          [PosController::class, 'refund']);
+
+        // RC-19 — ticket de caisse (impression / réimpression)
+        Route::get('orders/{orderId}/receipt',       [PosController::class, 'receipt']);
     });
 });

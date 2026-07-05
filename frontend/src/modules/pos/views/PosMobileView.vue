@@ -27,6 +27,7 @@
           <button v-if="pending.length" class="posm-sync" :disabled="!online || syncing" data-test="sync" @click="syncQueue">
             {{ syncing ? $t('posMobile.syncing') : $t('posMobile.sync', { count: pending.length }) }}
           </button>
+          <button v-if="lastOrderId" class="posm-icon-btn" data-test="open-receipt" @click="openReceipt">{{ $t('posReceipt.short') }}</button>
           <button class="posm-icon-btn" data-test="open-close" @click="openClose">{{ $t('pos.closeRegister') }}</button>
         </div>
       </header>
@@ -88,6 +89,19 @@
       </template>
     </BaseModal>
 
+    <!-- Receipt (RC-19) -->
+    <BaseModal v-model="receiptModal.open" :title="$t('posReceipt.title')">
+      <div v-if="receiptModal.loading" class="posm-hint">{{ $t('common.loading') }}</div>
+      <p v-else-if="receiptModal.error" class="posm-error" data-test="receipt-error">{{ $t('posReceipt.loadError') }}</p>
+      <PosReceipt v-else-if="receiptModal.data" ref="receiptComp" :receipt="receiptModal.data" />
+      <template #footer>
+        <button class="posm-btn posm-btn--ghost" @click="receiptModal.open = false">{{ $t('common.cancel') }}</button>
+        <button class="posm-btn posm-btn--primary" :disabled="!receiptModal.data" data-test="print-receipt" @click="receiptComp?.print()">
+          {{ $t('posReceipt.print') }}
+        </button>
+      </template>
+    </BaseModal>
+
     <!-- Close -->
     <BaseModal v-model="closeModal.open" :title="$t('pos.closeTitle')">
       <div class="posm-recon">
@@ -120,7 +134,8 @@ import { t } from '@/i18n'
 import { usePosSession } from '../composables/usePosSession'
 import { usePosOfflineQueue, type QueuedSale } from '../composables/posOfflineQueue'
 import { posService } from '../services/posService'
-import type { PosPaymentMethod } from '../types'
+import PosReceipt from '../components/PosReceipt.vue'
+import type { PosPaymentMethod, PosReceipt as PosReceiptData } from '../types'
 
 const auth = useAuthStore()
 const currency = computed(() => (auth.user as any)?.tenant?.settings?.currency ?? 'XOF')
@@ -206,7 +221,12 @@ async function doPay() {
   }
   try {
     const res = await s.checkout(pay.method, pay.reference || undefined)
-    if (res) { pay.open = false; pay.reference = ''; flash(t('pos.saleRecorded', { amount: fmt(total) })) }
+    if (res) {
+      pay.open = false
+      pay.reference = ''
+      lastOrderId.value = res.order?.id ?? null // RC-19 — réimpression du ticket
+      flash(t('pos.saleRecorded', { amount: fmt(total) }))
+    }
   } catch (e: any) {
     // No server response → offline / network error → queue the sale locally.
     if (!e?.response) {
@@ -243,6 +263,28 @@ async function syncQueue() {
   }
 }
 
+// ── Receipt (RC-19) ──────────────────────────────────────────────────────────
+const lastOrderId = ref<string | null>(null)
+const receiptModal = reactive<{ open: boolean; loading: boolean; error: boolean; data: PosReceiptData | null }>({
+  open: false, loading: false, error: false, data: null,
+})
+const receiptComp = ref<InstanceType<typeof PosReceipt> | null>(null)
+
+async function openReceipt() {
+  if (!lastOrderId.value) return
+  receiptModal.open = true
+  receiptModal.loading = true
+  receiptModal.error = false
+  receiptModal.data = null
+  try {
+    receiptModal.data = await posService.receipt(lastOrderId.value)
+  } catch {
+    receiptModal.error = true
+  } finally {
+    receiptModal.loading = false
+  }
+}
+
 // ── Close ────────────────────────────────────────────────────────────────────
 const closeModal = reactive<{ open: boolean; counted: number }>({ open: false, counted: 0 })
 function openClose() {
@@ -253,6 +295,7 @@ async function doClose() {
   const closed = await s.close(closeModal.counted)
   closeModal.open = false
   openingFloat.value = 0
+  lastOrderId.value = null
   if (closed) flash(t('pos.registerClosed', { diff: formatMoney(closed.difference_cents ?? 0, currency.value) }))
 }
 

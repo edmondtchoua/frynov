@@ -245,6 +245,28 @@ class PosController extends Controller
         return response()->json(['data' => new CashRegisterSessionResource($session)]);
     }
 
+    // ── GET /api/pos/orders/{orderId}/receipt ─────────────────────────────────
+
+    /**
+     * RC-19 — ticket de caisse structuré d'une vente POS (impression / réimpression côté client).
+     * Le TenantScope global cache les commandes des autres tenants → 404 (pas de fuite d'existence).
+     */
+    public function receipt(Request $request, string $orderId): JsonResponse
+    {
+        if ($denied = $this->guard($request)) {
+            return $denied;
+        }
+
+        $order = Order::find($orderId);
+        if (! $order) {
+            return response()->json(['message' => 'Commande introuvable.'], 404);
+        }
+
+        return response()->json([
+            'data' => app(\App\Modules\Pos\Services\ReceiptService::class)->forOrder($order),
+        ]);
+    }
+
     // ── Authorization ─────────────────────────────────────────────────────────
 
     /** Returns a 403 response when the user may not operate the till, else null. */

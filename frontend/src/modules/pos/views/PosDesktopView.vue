@@ -30,6 +30,7 @@
         </div>
         <div class="posd-head-r">
           <span class="posd-expected" data-test="expected-cash">{{ $t('pos.expectedCash') }} : <strong>{{ fmt(s.session.value.expected_cash_cents) }}</strong></span>
+          <button class="posd-btn posd-btn--ghost" :disabled="!lastSale" data-test="open-receipt" @click="openReceipt()">{{ $t('posReceipt.print') }}</button>
           <button class="posd-btn posd-btn--ghost" data-test="open-movement" @click="movement.open = true">{{ $t('posDesktop.cashMovement') }}</button>
           <button class="posd-btn posd-btn--ghost" :disabled="!lastSale" data-test="open-refund" @click="refund.open = true">{{ $t('posDesktop.refund') }}</button>
           <button class="posd-btn posd-btn--ghost" data-test="open-close" @click="openClose">{{ $t('pos.closeRegister') }}</button>
@@ -189,6 +190,19 @@
       </template>
     </BaseModal>
 
+    <!-- Receipt modal (RC-19) -->
+    <BaseModal v-model="receiptModal.open" :title="$t('posReceipt.title')">
+      <div v-if="receiptModal.loading" class="posd-hint">{{ $t('common.loading') }}</div>
+      <p v-else-if="receiptModal.error" class="posd-error" data-test="receipt-error">{{ $t('posReceipt.loadError') }}</p>
+      <PosReceipt v-else-if="receiptModal.data" ref="receiptComp" :receipt="receiptModal.data" />
+      <template #footer>
+        <button class="posd-btn posd-btn--ghost" @click="receiptModal.open = false">{{ $t('common.cancel') }}</button>
+        <button class="posd-btn posd-btn--primary" :disabled="!receiptModal.data" data-test="print-receipt" @click="receiptComp?.print()">
+          {{ $t('posReceipt.print') }}
+        </button>
+      </template>
+    </BaseModal>
+
     <!-- Close modal -->
     <BaseModal v-model="closeModal.open" :title="$t('pos.closeTitle')">
       <div class="posd-recon">
@@ -225,7 +239,9 @@ import { productService } from '@/modules/catalog/services/productService'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import { t } from '@/i18n'
 import { usePosSession } from '../composables/usePosSession'
-import type { PosPaymentLeg, PosPaymentMethod } from '../types'
+import { posService } from '../services/posService'
+import PosReceipt from '../components/PosReceipt.vue'
+import type { PosPaymentLeg, PosPaymentMethod, PosReceipt as PosReceiptData } from '../types'
 
 const auth = useAuthStore()
 const currency = computed(() => (auth.user as any)?.tenant?.settings?.currency ?? 'XOF')
@@ -348,6 +364,28 @@ function onSold(res: any) {
   flash(t('pos.saleRecorded', { amount: fmt(res.order?.total_amount) }))
 }
 
+// ── Receipt (RC-19) ──────────────────────────────────────────────────────────
+const receiptModal = reactive<{ open: boolean; loading: boolean; error: boolean; data: PosReceiptData | null }>({
+  open: false, loading: false, error: false, data: null,
+})
+const receiptComp = ref<InstanceType<typeof PosReceipt> | null>(null)
+
+async function openReceipt(orderId?: string) {
+  const id = orderId ?? lastSale.value?.id
+  if (!id) return
+  receiptModal.open = true
+  receiptModal.loading = true
+  receiptModal.error = false
+  receiptModal.data = null
+  try {
+    receiptModal.data = await posService.receipt(id)
+  } catch {
+    receiptModal.error = true
+  } finally {
+    receiptModal.loading = false
+  }
+}
+
 // ── Cash movement ────────────────────────────────────────────────────────────
 const movement = reactive<{ open: boolean; direction: 'in' | 'out'; amount: number | null; reason: string; error: string }>({
   open: false, direction: 'in', amount: null, reason: 'float_add', error: '',
@@ -418,6 +456,7 @@ function onKey(e: KeyboardEvent) {
   if (e.key === 'F2') { e.preventDefault(); searchInput.value?.focus() }
   else if (e.key === 'F9') { e.preventDefault(); movement.open = true }
   else if (e.key === 'F8' && lastSale.value) { e.preventDefault(); refund.open = true }
+  else if (e.key === 'F7' && lastSale.value) { e.preventDefault(); openReceipt() }
 }
 
 // Seed the refund editor whenever the refund modal opens.

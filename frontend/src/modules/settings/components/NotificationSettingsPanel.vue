@@ -439,7 +439,10 @@ async function submitRecharge() {
 }
 
 async function cancelOrder(o: RechargeOrder) {
-  try { await client.post(`/api/notifications/credits/orders/${o.id}/cancel`); loadCredits() } catch { /* surfaced au reload */ }
+  // Recharge la liste dans tous les cas : un échec signifie souvent que la commande vient d'être
+  // payée par le webhook (course), et l'affichage doit refléter le nouvel état.
+  try { await client.post(`/api/notifications/credits/orders/${o.id}/cancel`) } catch { /* état rafraîchi ci-dessous */ }
+  loadCredits()
 }
 
 // ── Channel form ─────────────────────────────────────────────────────────

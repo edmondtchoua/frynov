@@ -173,6 +173,36 @@ class CommunicationCreditTest extends TestCase
         $this->assertSame(1, CommunicationCreditMovement::withoutTenantScope()->where('reason', 'refund')->count());
     }
 
+    #[Test]
+    public function a_recharge_requeues_messages_that_were_blocked_for_no_credit(): void
+    {
+        // Recette QA — un envoi bloqué faute de crédit (no_credit) repart après recharge.
+        Http::fake(['sms.example.test/*' => Http::response(['ok' => true], 200)]);
+        $this->smsHttpChannel();
+        $this->smsTemplate();
+
+        $out = $this->svc->notify($this->tenant->id, 'test.sms', '+221770000003', ['name' => 'Later'], 'sms');
+        $this->svc->flush();
+        $this->assertSame(NotificationOutbox::STATUS_NO_CREDIT, $out->fresh()->status);
+
+        // Recharge → l'envoi bloqué est réarmé (pending) puis part au flush suivant.
+        $this->credits->recharge($this->tenant->id, 'sms_1k', 'PAY-1');
+        $this->assertSame(NotificationOutbox::STATUS_PENDING, $out->fresh()->status);
+
+        $this->svc->flush();
+        $this->assertSame(NotificationOutbox::STATUS_SENT, $out->fresh()->status);
+        $this->assertSame(999, $this->credits->balance($this->tenant->id, 'sms')); // 1000 rechargés − 1 envoyé
+    }
+
+    #[Test]
+    public function a_negative_adjustment_never_drives_the_balance_below_zero(): void
+    {
+        $this->credits->credit($this->tenant->id, 'sms', 3);
+        $this->credits->credit($this->tenant->id, 'sms', -10, CommunicationCreditMovement::REASON_ADJUSTMENT);
+
+        $this->assertSame(0, $this->credits->balance($this->tenant->id, 'sms')); // clampé à 0, jamais négatif
+    }
+
     // ── API ─────────────────────────────────────────────────────────────────
 
     #[Test]

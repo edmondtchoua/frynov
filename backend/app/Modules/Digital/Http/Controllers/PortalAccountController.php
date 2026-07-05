@@ -35,12 +35,22 @@ class PortalAccountController extends Controller
             'password' => ['required', 'string', 'min:8', 'max:100'],
         ]);
 
-        $email = strtolower(trim($data['email']));
+        $email   = strtolower(trim($data['email']));
+        $generic = ['message' => 'Si cet email est éligible, un code de vérification vient d\'être envoyé.'];
 
         // Compte déjà vérifié → réponse générique (pas de divulgation d'existence).
         $existing = PortalAccount::where('email', $email)->first();
         if ($existing && $existing->isVerified()) {
-            return response()->json(['message' => 'Si cet email est éligible, un code de vérification vient d\'être envoyé.']);
+            return response()->json($generic);
+        }
+
+        // Anti-bombardement : si un code non expiré est encore valide, on met à jour le mot de passe
+        // (dernier inscrit) mais on NE renvoie PAS un nouveau code — évite de spammer l'email de la
+        // victime et de drainer les crédits de communication du vendeur (recette QA — SEC-3).
+        if ($existing && $existing->hasPendingCode()) {
+            $existing->update(['password' => $data['password']]);
+
+            return response()->json($generic);
         }
 
         $code = (string) random_int(100000, 999999);
@@ -51,45 +61,70 @@ class PortalAccountController extends Controller
                 'password'                => $data['password'],
                 'verification_code'       => $code,
                 'verification_expires_at' => now()->addMinutes(30),
+                'verification_attempts'   => 0,
                 'verified_at'             => null,
             ],
         );
 
-        // Le code part via le canal du/des vendeur(s) connaissant cet email (comme « mes achats »).
-        Customer::withoutTenantScope()->where('email', $email)->get()
-            ->unique('tenant_id')
-            ->take(1) // un seul envoi suffit
-            ->each(fn (Customer $c) => $this->notifications->notify($c->tenant_id, 'portal.verify_code', $email, ['code' => $code]));
+        // Le code part via le canal d'un vendeur connaissant cet email (comme « mes achats »). On
+        // itère les tenants jusqu'à un envoi RÉELLEMENT déposé (notify() est best-effort et peut
+        // retourner null si le vendeur n'a pas de canal/modèle) — recette QA (AR-6).
+        $tenantIds = Customer::withoutTenantScope()->where('email', $email)
+            ->orderBy('tenant_id')->pluck('tenant_id')->unique();
+        foreach ($tenantIds as $tenantId) {
+            if ($this->notifications->notify($tenantId, 'portal.verify_code', $email, ['code' => $code]) !== null) {
+                break;
+            }
+        }
 
-        return response()->json(['message' => 'Si cet email est éligible, un code de vérification vient d\'être envoyé.']);
+        return response()->json($generic);
     }
 
-    /** POST /api/portal/verify — {email, code} → active le compte. */
+    /** POST /api/portal/verify — {email, code, password} → active le compte. */
     public function verify(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'email' => ['required', 'email', 'max:190'],
-            'code'  => ['required', 'string', 'max:10'],
+            'email'    => ['required', 'email', 'max:190'],
+            'code'     => ['required', 'string', 'max:10'],
+            // Recette QA (AR-1) : la vérification exige AUSSI le mot de passe, liant l'activation à
+            // qui l'a défini — un tiers qui aurait fait re-`register` sur l'email ne peut pas activer.
+            'password' => ['required', 'string', 'max:100'],
         ]);
 
         $account = PortalAccount::where('email', strtolower(trim($data['email'])))->first();
+        $invalid = fn () => response()->json(['message' => 'Code invalide ou expiré.'], 422);
 
         if (! $account
-            || $account->verification_code !== $data['code']
-            || ! $account->verification_expires_at?->isFuture()) {
-            return response()->json(['message' => 'Code invalide ou expiré.'], 422);
+            || $account->verification_code === null
+            || ! $account->verification_expires_at?->isFuture()
+            || $account->verification_attempts >= PortalAccount::MAX_VERIFY_ATTEMPTS) {
+            return $invalid();
+        }
+
+        $codeOk     = hash_equals((string) $account->verification_code, (string) $data['code']);
+        $passwordOk = Hash::check($data['password'], $account->password);
+
+        if (! $codeOk || ! $passwordOk) {
+            $account->increment('verification_attempts');
+            // Seuil atteint → on brûle le code (force une nouvelle inscription), anti brute-force.
+            if ($account->verification_attempts >= PortalAccount::MAX_VERIFY_ATTEMPTS) {
+                $account->update(['verification_code' => null, 'verification_expires_at' => null]);
+            }
+
+            return $invalid();
         }
 
         $account->update([
             'verified_at'             => now(),
             'verification_code'       => null,
             'verification_expires_at' => null,
+            'verification_attempts'   => 0,
         ]);
 
         return response()->json(['message' => 'Compte vérifié — vous pouvez vous connecter.']);
     }
 
-    /** POST /api/portal/login — {email, password} → token Sanctum portail. */
+    /** POST /api/portal/login — {email, password} → token Sanctum portail (ability `portal`). */
     public function login(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -106,7 +141,9 @@ class PortalAccountController extends Controller
         $account->update(['last_login_at' => now()]);
 
         return response()->json([
-            'token' => $account->createToken('portal')->plainTextToken,
+            // Ability `portal` : le token ne peut servir QUE le portail (défense complémentaire au
+            // GuardPortalPrincipal global).
+            'token' => $account->createToken('portal', ['portal'])->plainTextToken,
             'email' => $account->email,
         ]);
     }
@@ -114,8 +151,11 @@ class PortalAccountController extends Controller
     /** GET /api/portal/my-purchases — tous les achats digitaux actifs de l'email connecté. */
     public function myPurchases(Request $request): JsonResponse
     {
-        /** @var PortalAccount $account */
         $account = $request->user();
+        // Défense en profondeur : seul un principal portail liste des achats (jamais un user tenant).
+        if (! $account instanceof PortalAccount) {
+            return response()->json(['message' => 'Jeton non autorisé.'], 403);
+        }
 
         $customerIdsByTenant = Customer::withoutTenantScope()
             ->where('email', $account->email)
@@ -127,7 +167,12 @@ class PortalAccountController extends Controller
                 ->where('tenant_id', $customer->tenant_id)
                 ->where('customer_id', $customer->id)
                 ->where('status', DigitalEntitlement::STATUS_ACTIVE)
-                ->with('product:id,name')
+                // Exclut les accès expirés par date (cohérent avec isAccessible) — recette QA (AR).
+                ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                // Le principal portail n'a pas de tenant : le TenantScope (fail-closed) masquerait le
+                // produit rattaché → on charge la relation SANS le scope (l'entitlement est déjà borné
+                // par tenant_id + customer_id).
+                ->with(['product' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'name')])
                 ->get();
 
             $tenant = Tenant::withoutGlobalScopes()->find($customer->tenant_id);

@@ -4,6 +4,7 @@ namespace App\Modules\Notifications\Services;
 
 use App\Modules\Notifications\Models\CommunicationCredit;
 use App\Modules\Notifications\Models\CommunicationCreditMovement;
+use App\Modules\Notifications\Models\NotificationOutbox;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -116,10 +117,27 @@ class CommunicationCreditService
                 ]);
             }
 
-            $credit->balance += $amount;
+            // Invariant « jamais sous zéro » : un ajustement négatif ne descend pas sous 0 ; le
+            // mouvement journalise la variation RÉELLEMENT appliquée. (recette QA)
+            $before = (int) $credit->balance;
+            $credit->balance = max(0, $before + $amount);
             $credit->save();
+            $applied = $credit->balance - $before;
 
-            return $this->recordMovement($tenantId, $channel, $amount, $credit->balance, $reason, $reference, $meta, $userId);
+            $movement = $this->recordMovement($tenantId, $channel, $applied, $credit->balance, $reason, $reference, $meta, $userId);
+
+            // À la recharge, on réarme les envois bloqués faute de crédit (statut no_credit) pour ce
+            // canal : ils repartent au prochain flush (leurs `attempts` n'ont pas été consommés). Sans
+            // cela, un message bloqué resterait perdu à jamais malgré la recharge. (recette QA)
+            if ($reason === CommunicationCreditMovement::REASON_RECHARGE && $applied > 0) {
+                NotificationOutbox::withoutTenantScope()
+                    ->where('tenant_id', $tenantId)
+                    ->where('channel', $channel)
+                    ->where('status', NotificationOutbox::STATUS_NO_CREDIT)
+                    ->update(['status' => NotificationOutbox::STATUS_PENDING, 'last_error' => null]);
+            }
+
+            return $movement;
         });
     }
 

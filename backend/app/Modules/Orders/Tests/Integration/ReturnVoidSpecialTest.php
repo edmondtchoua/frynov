@@ -175,6 +175,33 @@ class ReturnVoidSpecialTest extends TestCase
     }
 
     #[Test]
+    public function an_approved_but_not_yet_restocked_return_does_not_over_revoke_digital_access(): void
+    {
+        // Recette QA (AR-2) : sur une ligne digitale qty 3, deux retours de 1 approuvés ; au restock
+        // du PREMIER, on ne doit révoquer qu'UN accès (2 restent actifs) — et non compter le retour
+        // approuvé-mais-non-restocké, qui pourrait être rejeté ensuite (perte irréversible sinon).
+        $ebook = Product::create([
+            'tenant_id' => $this->tenant->id, 'sku' => 'EBOOK3', 'name' => 'Ebook', 'price_amount' => 10000,
+            'price_currency' => 'XOF', 'status' => 'active', 'product_type' => Product::TYPE_DIGITAL,
+        ]);
+        $order = $this->sell($ebook, 3);
+        $line  = $order->fresh('lines')->lines->first();
+        $active = fn () => DigitalEntitlement::withoutTenantScope()->where('order_id', $order->id)->where('status', DigitalEntitlement::STATUS_ACTIVE)->count();
+        $this->assertSame(3, $active());
+
+        $mk = fn () => $this->returns->create($order, [['order_line_id' => $line->id, 'quantity' => 1, 'condition' => 'resalable', 'reason' => 'other']], 'other', $this->user->id);
+        $a = $mk();
+        $b = $mk();
+        $this->returns->approve($a, $this->user->id);
+        $this->returns->approve($b, $this->user->id); // B approuvé mais PAS restocké
+
+        $this->returns->restock($a, $this->user->id);
+
+        // Seul A (restocké) + rien d'autre → 1 révoqué, 2 encore actifs.
+        $this->assertSame(2, $active());
+    }
+
+    #[Test]
     public function returning_an_aggregate_product_under_warranty_voids_its_contract_by_line(): void
     {
         $policy = WarrantyPolicy::create(['tenant_id' => $this->tenant->id, 'name' => 'G24', 'duration_months' => 24, 'is_active' => true]);

@@ -149,12 +149,15 @@ class OrderReturnService
                     ->where('tenant_id', $return->tenant_id)
                     ->find($line->order_line_id);
                 if ($orderLine) {
-                    $returnedTotal = (int) OrderReturnLine::query()
+                    // Ne compter que les retours EFFECTIVEMENT restockés + celui en cours (recette QA —
+                    // AR-2). Compter les retours seulement APPROUVÉS sur-révoquerait, et un rejet
+                    // ultérieur de ce retour ne réactiverait pas l'accès (perte irréversible).
+                    $restockedElsewhere = (int) OrderReturnLine::query()
                         ->where('order_line_id', $line->order_line_id)
-                        ->whereHas('orderReturn', fn ($q) => $q->whereIn('status', [
-                            OrderReturn::STATUS_APPROVED, OrderReturn::STATUS_PROCESSING, OrderReturn::STATUS_RESTOCKED,
-                        ]))
+                        ->where('return_id', '!=', $return->id)
+                        ->whereHas('orderReturn', fn ($q) => $q->where('status', OrderReturn::STATUS_RESTOCKED))
                         ->sum('quantity_approved');
+                    $returnedTotal = $restockedElsewhere + (int) $line->quantity_approved;
                     $keepActive = max(0, (int) $orderLine->quantity - $returnedTotal);
                     $this->digital->revokeDownToActive($return->tenant_id, $line->order_line_id, $keepActive);
                 }

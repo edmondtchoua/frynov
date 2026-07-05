@@ -14,6 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->appendToGroup('api', \App\Modules\Auth\Http\Middleware\ResolveTenant::class);
+        // QA sécurité — un token de compte portail ne sert que les routes `api/portal/*`. GLOBAL
+        // (pas seulement le groupe `api`) : de nombreux modules chargent leurs routes via
+        // loadRoutesFrom, hors du groupe `api` — un guard de groupe les manquerait.
+        $middleware->append(\App\Modules\Auth\Http\Middleware\GuardPortalPrincipal::class);
 
         // Register named aliases for convenience in route definitions
         $middleware->alias([

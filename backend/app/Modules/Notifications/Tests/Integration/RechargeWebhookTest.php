@@ -175,6 +175,61 @@ class RechargeWebhookTest extends TestCase
     }
 
     #[Test]
+    public function a_missing_amount_is_not_credited_blindly_but_flagged_for_review(): void
+    {
+        // Recette QA (fail-closed) : champ montant absent (mauvais field_map) → JAMAIS de crédit aveugle.
+        $order = $this->pendingOrder();
+
+        $this->signedWebhook($this->successPayload($order, ['amount_cents' => null]))
+            ->assertOk()
+            ->assertJsonPath('result', 'mismatch');
+
+        $this->assertSame(CreditRechargeOrder::STATUS_NEEDS_REVIEW, $order->fresh()->status);
+        $this->assertSame(0, $this->credits->balance($this->tenant->id, 'sms'));
+    }
+
+    #[Test]
+    public function a_needs_review_order_is_not_auto_credited_by_a_later_webhook(): void
+    {
+        // Recette QA — évite un double crédit (webhook corrigé + recharge manuelle). Un needs_review
+        // exige une action opérateur ; un 2ᵉ webhook au bon montant ne crédite pas automatiquement.
+        $order = $this->pendingOrder();
+        $this->signedWebhook($this->successPayload($order, ['amount_cents' => 999]))->assertJsonPath('result', 'mismatch');
+
+        $this->signedWebhook($this->successPayload($order)) // montant correct cette fois
+            ->assertOk()
+            ->assertJsonPath('result', 'needs_review');
+
+        $this->assertSame(CreditRechargeOrder::STATUS_NEEDS_REVIEW, $order->fresh()->status);
+        $this->assertSame(0, $this->credits->balance($this->tenant->id, 'sms'));
+    }
+
+    #[Test]
+    public function a_needs_review_order_can_be_cancelled(): void
+    {
+        $order = $this->pendingOrder();
+        $this->signedWebhook($this->successPayload($order, ['amount_cents' => 999]))->assertJsonPath('result', 'mismatch');
+
+        $this->postJson("/api/notifications/credits/orders/{$order->id}/cancel", [], $this->auth())
+            ->assertOk()
+            ->assertJsonPath('data.status', 'cancelled');
+    }
+
+    #[Test]
+    public function a_major_unit_amount_is_matched_when_amount_scale_is_set(): void
+    {
+        // Recette QA — XOF sans sous-unité : le fournisseur envoie 15000 pour un pack à 1 500 000 « cents ».
+        config(['notifications.mobile_money.amount_scale' => 100]);
+        $order = $this->pendingOrder(); // sms_1k → price_cents 1 500 000
+
+        $this->signedWebhook($this->successPayload($order, ['amount_cents' => 15000]))
+            ->assertOk()
+            ->assertJsonPath('result', 'confirmed');
+
+        $this->assertSame(1000, $this->credits->balance($this->tenant->id, 'sms'));
+    }
+
+    #[Test]
     public function a_non_final_status_is_ignored(): void
     {
         $order = $this->pendingOrder();

@@ -108,6 +108,10 @@
               <span v-if="acct.busy" class="spinner-sm"></span>{{ $t('portal.account.verify') }}
             </button>
           </div>
+          <!-- Si le compte existait déjà (vérifié), aucun code n'est envoyé : proposer la connexion. -->
+          <button type="button" class="btn btn-ghost btn-sm" style="margin-top:8px" @click="setMode('login')">
+            {{ $t('portal.account.alreadyRegistered') }}
+          </button>
         </form>
 
         <p v-if="acct.error" class="portal-error">{{ acct.error }}</p>
@@ -214,7 +218,9 @@ async function register() {
 async function verify() {
   acct.busy = true; acct.error = ''
   try {
-    await portalApi.post('/api/portal/verify', { email: acct.email, code: acct.code })
+    // Le backend exige le mot de passe à la vérification (liaison anti-usurpation) : encore en
+    // mémoire depuis l'inscription.
+    await portalApi.post('/api/portal/verify', { email: acct.email, code: acct.code, password: acct.password })
     acct.awaitingCode = false
     acct.mode = 'login'
     acct.code = ''

@@ -3,6 +3,39 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔒 Recette QA Phase 3 (rc.134-138) — 15 correctifs, verdict GO (2026-06-30)
+
+Branche `feature/qa-recette-phase-3b` (release `v1.0.0` → `rc.139`). Deux revues indépendantes en
+lecture seule (audit sécurité + revue adverse logique) sur RC-7B→RC-7F ; chaque finding vérifié dans
+le code puis corrigé avec tests de régression. Détail : `docs/recette/recette-phase-3-rc134-138.md`.
+
+### Sécurité
+- **[CRITIQUE] Cloisonnement des tokens portail** : un `PortalAccount` partageant le guard `sanctum`
+  pouvait atteindre `PATCH /api/me/profile` (route sans `tenant`) et changer son email sans
+  re-vérification → vol des achats digitaux d'autrui. Correctif : middleware **global**
+  `GuardPortalPrincipal` (token portail ⇒ `api/portal/*` uniquement, 403 ailleurs ; résolution directe
+  du jeton pour couvrir les routes de modules hors groupe `api`) + ability `portal`.
+- **[HAUTE] `TenantScope` fail-closed** : un principal authentifié sans `tenant_id` ne désactive plus
+  le filtrage (sentinelle impossible) ; `EnsureTenantHasModule` refuse un principal sans tenant.
+- **Portail** : `verify` exige le **mot de passe** (anti pré-hijack) ; code borné en tentatives
+  (`verification_attempts`, brûlé au-delà de 5, `hash_equals`) ; pas de re-envoi tant qu'un code est
+  valide (anti-bombardement / drain de crédits).
+- **Webhook MoMo** : montant **obligatoire** (absent → `needs_review`, jamais de crédit aveugle).
+
+### Logique métier
+- **Retours digitaux** : la révocation au prorata ne compte plus que les retours **restockés** + le
+  retour en cours (un retour approuvé puis rejeté ne sur-révoque plus, irréversiblement).
+- **`no_credit` réarmé** : à la recharge, les envois bloqués faute de crédit repassent `pending`
+  (sinon perdus à jamais — critique car `email` est facturé par défaut).
+- **Recharge `needs_review`** : non auto-créditée par un webhook ultérieur (anti double crédit) et
+  désormais **annulable** ; `amount_scale` configurable (XOF en unité majeure).
+- Divers : `my-purchases` exclut les accès expirés ; révocation garde les exemplaires les plus anciens ;
+  `credit()` clampé à 0 ; robustesse UI (rechargement après annulation, lien « déjà inscrit ? »).
+
+### Tests
+- **+12 tests** de régression (`PortalSecurityTest` ×5, `CommunicationCreditTest` +2,
+  `RechargeWebhookTest` +4, `ReturnVoidSpecialTest` +1). Backend complet vert, front 276 + vue-tsc 0.
+
 ## [Non publié] — 📲 RC-7F : webhook Mobile Money — recharge automatique des crédits (2026-06-29)
 
 Branche `feature/momo-webhook` (release `v1.0.0` → `rc.138`). Automatise la recharge RC-7E : plus

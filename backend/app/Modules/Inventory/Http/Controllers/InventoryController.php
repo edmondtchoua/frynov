@@ -153,7 +153,14 @@ class InventoryController extends Controller
     {
         $data     = $request->validated();
         $tenantId = $request->user()->tenant_id;
-        $stock    = $this->stockService->findOrCreate($tenantId, $productId, $data['variant_id'] ?? null);
+
+        // RC-15 BUG-1 — respecter le warehouse_id demandé (sinon le décrément frappe l'entrepôt
+        // par défaut, pas celui visé → corruption de stock en multi-site).
+        $warehouseId = $this->resolveWritableWarehouse($request, $data['warehouse_id'] ?? null);
+        if ($warehouseId instanceof JsonResponse) {
+            return $warehouseId;
+        }
+        $stock = $this->stockService->findOrCreate($tenantId, $productId, $data['variant_id'] ?? null, $warehouseId);
 
         try {
             $movement = $this->stockService->moveOut(
@@ -178,7 +185,13 @@ class InventoryController extends Controller
     {
         $data     = $request->validated();
         $tenantId = $request->user()->tenant_id;
-        $stock    = $this->stockService->findOrCreate($tenantId, $productId, $data['variant_id'] ?? null);
+
+        // RC-15 BUG-1 — respecter le warehouse_id demandé pour l'ajustement (comptage) en multi-site.
+        $warehouseId = $this->resolveWritableWarehouse($request, $data['warehouse_id'] ?? null);
+        if ($warehouseId instanceof JsonResponse) {
+            return $warehouseId;
+        }
+        $stock = $this->stockService->findOrCreate($tenantId, $productId, $data['variant_id'] ?? null, $warehouseId);
 
         try {
             $movement = $this->stockService->adjust(

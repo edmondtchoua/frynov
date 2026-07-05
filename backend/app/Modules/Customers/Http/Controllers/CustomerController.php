@@ -60,9 +60,11 @@ class CustomerController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $tenantId = $request->user()->tenant_id;
         $data = $request->validate([
             'name'              => ['required', 'string', 'max:255'],
-            'email'             => ['nullable', 'email', 'max:255'],
+            // RC-15 — unicité applicative scopée tenant : évite un 500 (violation de contrainte) au profit d'un 422.
+            'email'             => ['nullable', 'email', 'max:255', \Illuminate\Validation\Rule::unique('customers', 'email')->where('tenant_id', $tenantId)->whereNull('deleted_at')],
             'phone'             => ['nullable', 'string', 'max:30'],
             'address'           => ['nullable', 'array'],
             'address.street'    => ['nullable', 'string', 'max:255'],
@@ -103,7 +105,7 @@ class CustomerController extends Controller
 
         $data = $request->validate([
             'name'              => ['sometimes', 'string', 'max:255'],
-            'email'             => ['nullable', 'email', 'max:255'],
+            'email'             => ['nullable', 'email', 'max:255', \Illuminate\Validation\Rule::unique('customers', 'email')->where('tenant_id', $request->user()->tenant_id)->whereNull('deleted_at')->ignore($id)],
             'phone'             => ['nullable', 'string', 'max:30'],
             'address'           => ['nullable', 'array'],
             'address.street'    => ['nullable', 'string', 'max:255'],

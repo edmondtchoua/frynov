@@ -1,0 +1,161 @@
+# Couverture i18n — tracker vivant (UX-13)
+
+> **Mise à jour : 2026-06-09 (rc.85).** 🎉 **Couverture i18n 100 % (48/48 vues).** Source de vérité, vue par vue.
+> Remplace les estimations « par zone » de l'état-des-lieux par un **décompte réel par vue**
+> (audit multi-agents du 2026-06-09). Le français reste la **source de vérité** ; l'anglais suit.
+
+## ⚖️ Definition of Done i18n (règle opposable)
+
+**Toute vue créée ou modifiée doit livrer FR + EN dans le même changement.** Concrètement :
+
+1. **Zéro chaîne utilisateur en dur** dans une vue touchée : tout passe par `$t('ns.cle')` (template)
+   ou `t('ns.cle')` (script — messages `confirm`/`alert`, libellés calculés, erreurs).
+2. **Parité des clés** : chaque clé ajoutée existe dans `messages.fr` **et** `messages.en`
+   (mêmes chemins) dans `frontend/src/i18n/index.ts`.
+3. **Mutualiser** le générique sous `common.*` (name, status, date, amount, previous/next,
+   pageOf, cancel, save, genericError…) ; le spécifique sous le namespace du module.
+4. **Mettre à jour ce tracker** (faire basculer la ligne) dans le même commit.
+
+Exceptions documentées (ne comptent pas comme reliquat) : CSS, commentaires, `console.*`,
+**notes d'audit persistées** envoyées au backend (ex. `note:` POST `/api/inventory` — restent FR
+canonique), noms propres / marques (Orange Money, Wave, MTN), codes ISO/devises, placeholders
+d'exemple (`VET-0001`, `3700123456789`), symboles/emoji.
+
+## 📊 Synthèse (48 vues de module)
+
+| État | Vues | % |
+|---|---|---|
+| ✅ **Complet** | 48 | **100 %** |
+| 🟡 **Partiel** | 0 | 0 % |
+| ⬜ **À faire** (non câblé) | 0 | 0 % |
+| **Câblées i18n (toutes complètes)** | **48** | **100 %** |
+
+> 🎉🎉 **rc.85 — COUVERTURE i18n 100 % (48/48 vues FR+EN).** Dernier module livré : **Customers**
+> (`CustomerListView`, `CustomerDetailView`) — verrou de session concurrente levé. Namespace
+> `customers.*` ; réutilise `common.*` (email/phone/notes/actions/status/amount/date/pageOf/prev/next/
+> cancel/edit/update/create/saving) et `orders.status.*`. **L'`ALLOWLIST` de la garde est désormais
+> VIDE** : la garde CI scanne **toutes** les vues de module sans exception. Toute nouvelle vue doit
+> naître bilingue (cf. Definition of Done).
+
+## ✅ Complètes (48 — 100 %)
+
+| Module | Vue | Namespace | RC |
+|---|---|---|---|
+| catalog | `ProductFormView` | `catalog.productForm.*` (+ `policy.*` RC-5K, + `catalog.wizard.*` RC-6J) | rc.69 / rc.122 / rc.131 |
+| catalog | `AttributesView` | `catalog.attributes.*` | rc.72 |
+| catalog | `VariantsView` | `catalog.variants.*` | rc.72 |
+| catalog | `ProductShowPage` | `catalog.productShow.*` (+ `digital.*` RC-5I) | rc.73 / rc.120 |
+| catalog | `LabelPrintView` | `catalog.labelPrint.*` | rc.73 |
+| catalog | `ProductListView` | `catalog.*` | rc.44 |
+| catalog | `CategoryListView` | `catalog.*` | rc.45 |
+| admin | `PlanListView` | `admin.*` | rc.68 |
+| admin | `ManualPaymentView` | `admin.*` | rc.68 |
+| admin | `AdminDashboardView` | `admin.dash.*` + `billing.subStatus` + `admin.tenantStatus` | rc.83 |
+| admin | `AuditLogView` | `admin.audit.*` + `common.pageOf/prev/next` | rc.83 |
+| admin | `ModuleListView` | `admin.modules/moduleStatus.*` | rc.83 |
+| customers | `CustomerListView` | `customers.*` + `common.*` | rc.85 |
+| customers | `CustomerDetailView` | `customers.*` + `orders.status.*` | rc.85 |
+| admin | `TenantDetailView` | `admin.*` | rc.65 |
+| auth | `LoginView` | `auth.*` | rc.61 |
+| auth | `RegisterView` | `auth.*` | rc.61 |
+| auth | `ProfileView` | `profile.*` | rc.63 |
+| dashboard | `DashboardView` | `dashboard.*` | rc.62 |
+| inventory | `WarehouseView` | `inventory.*` | rc.55 |
+| inventory | `StockAlertsView` | `inventory.*` | rc.57 |
+| inventory | `StockAdjustmentView` | `inventory.*` | rc.58 |
+| inventory | `FiscalPeriodView` | `inventory.*` | rc.60 |
+| suppliers | `SupplierDetailView` | `suppliers.*` | rc.24 |
+| suppliers | `SupplierListView` | `suppliers.*` + `common.pageOf` | rc.24 / rc.70 |
+| catalog | `ProductListView` *(pagination)* | `catalog.*` + `common.pageOf` | rc.44 / rc.70 |
+| admin | `TenantListView` | `admin.*` + `common.pageOf` | rc.64 / rc.70 |
+| admin | `PromotionListView` | `admin.*` + `common.pageOf` | rc.66 / rc.70 |
+| admin | `CountryRuleListView` | `admin.*` + `common.deleteFailed` | rc.67 / rc.70 |
+| inventory | `StockListView` | `inventory.*` + `common.pageOf/genericError` | rc.56 / rc.70 |
+| inventory | `StockTransferView` | `inventory.*` (ship confirm) | rc.59 / rc.70 |
+| inventory | `BatchDeliveryView` | `inventory.delivery.*` + `common.saving/delete` | rc.84 |
+| inventory | `MovementHistoryView` | `inventory.history.*` + `common.pageOf/prev/next` | rc.84 |
+| payments | `PaymentListView` | `payments.*` + `common.pageOf` | rc.28 / rc.70 |
+| orders | `OrderListView` | `orders.*` + `common.pageOf` | rc.34 / rc.70 |
+| orders | `OrderDetailView` | `orders.detail.*` (+ unités RC-5C, garanties RC-5D, accès digital RC-5E, SAV RC-5F) | rc.74 / rc.114 → rc.117 |
+| orders | `ReturnsView` | `orders.returns.*` | rc.74 |
+| orders | `OrderCreateView` | `orders.create.*` | rc.75 |
+| pos | `PosView` | `pos.*` | rc.76 |
+| import-export | `ImportHistoryView` | `importExport.*` | rc.77 |
+| import-export | `ImportWizardView` | `importExport.wizard.*` | rc.78 |
+| marketplace | `MarketplaceListingsView` | `marketplace.*` | rc.79 |
+| settings | `SettingsView` | `settings.*` + `geo.*` (+ `settings.notif.*` RC-6B) | rc.80 / rc.123 |
+| onboarding | `OnboardingView` | `onboarding.*` + `geo.country/timezone` + `common.currencyName` | rc.81 |
+| billing | `BillingView` | `billing.*` + `common.currencyName` | rc.82 |
+| billing | `UpgradeView` | `billing.plan.*` + `common.loading/retry` | rc.82 |
+| deliveries | `DeliveryListView` | `deliveries.*` + `common.pageOf/prev/next` | rc.26 / rc.70 |
+| reports | `SalesReportView` / `StockReportView` | `reports.*` (+ `top10`, + `reports.special.*` RC-5G) | rc.30 / rc.70 / rc.118 |
+
+*(+ `NotFoundView` pilote — chrome partagé — complet.)*
+
+## 🟡 Partielles — ✅ toutes soldées en rc.70 (0 restante)
+
+Les 11 vues câblées qui conservaient des reliquats ont été **finalisées en rc.70** :
+
+- **Pagination unifiée** → `common.pageOf` adopté dans `PromotionListView`, `TenantListView`,
+  `SupplierListView`, `PaymentListView`, `OrderListView`, `DeliveryListView`, `StockListView`,
+  `ProductListView`, `ManualPaymentView` (migrée de `admin.pageOf` → `common.pageOf`, doublon supprimé).
+- **Prev/Next** → `common.previous`/`common.next` (`DeliveryListView`).
+- **Erreurs** → `CountryRuleListView` `'Suppression impossible.'` → `common.deleteFailed` ;
+  `StockListView` `'Une erreur est survenue.'` → `common.genericError`.
+- **Confirm transfert** → `StockTransferView` (`inventory.shipTransferTitle/Confirm/ship` ;
+  paramètre local `t` renommé `tr` pour ne plus masquer la fonction i18n `t`).
+- **Rapports** → `StockReportView` « (top 10) » → `reports.top10`. (`SalesReportView` « SKU » : laissé tel
+  quel, identique FR/EN.)
+
+> 🔁 **Cross-cutting pagination — résolu.** Clé canonique `common.pageOf: 'Page {current} / {total}'`.
+> Toute nouvelle liste paginée doit l'utiliser (cf. Definition of Done) ; les vues ⬜ ci-dessous
+> l'adopteront lors de leur traduction.
+
+## ⬜ À faire — **aucune** 🎉
+
+> **0 vue restante. Couverture i18n 48/48 (100 %).** Toutes les vues de module sont internationalisées
+> FR+EN, sans reliquat, garde CI verte avec **`ALLOWLIST` vide**. Le maintien à 100 % est assuré par la
+> Definition of Done (toute vue créée/modifiée naît bilingue) + la garde.
+>
+> **Périmètre non couvert par la garde** (à surveiller manuellement, cf. limites ci-dessous) : chaînes
+> FR sans accent côté `<script>`, chrome partagé (`src/pages`, layouts). Extension future possible.
+
+## 🛣️ Ordre de bascule recommandé (prochaines RC)
+
+1. ~~**Quick win pagination** — `common.pageOf` + balayage des 11 partielles → 26/26 câblées complètes.~~ ✅ **rc.70**
+1b. ~~**Garde automatisée** (gate CI dur).~~ ✅ **rc.71** (cf. section ci-dessous)
+2. **Catalogue restant** — `ProductShowPage`, `LabelPrintView`, `AttributesView`, `VariantsView`.
+3. **Ventes** — `OrderCreateView`, `OrderDetailView`, `ReturnsView`.
+4. **POS** — `PosView` (vue dense, prévoir un namespace `pos.*`).
+5. ~~**Import/Export**, **Marketplace**, **Settings**, **Onboarding**, **Billing**~~ ✅ rc.77–82.
+6. ~~**Admin secondaire** — `AdminDashboardView`, `AuditLogView`, `ModuleListView`.~~ ✅ **rc.83**
+7. ~~**Inventaire restant** — `BatchDeliveryView`, `MovementHistoryView`.~~ ✅ **rc.84**
+8. ~~**Customers** — dès que le verrou de session concurrente est levé.~~ ✅ **rc.85 → 100 %** 🎉
+
+## 🤖 Garde automatisée — ✅ livrée (rc.71)
+
+`npm run i18n:check` (spec `src/i18n/__tests__/i18n-coverage.guard.spec.ts`) — **gate CI dur**, câblé
+dans `ci-feature.yml` (job *quality*) et `ci-develop.yml` (job *Build Frontend*), + exécuté dans la
+suite vitest (`npm run coverage`). Échoue si :
+
+- **(a) Parité** — une clé existe dans `messages.fr` mais pas `messages.en` (ou inversement). Robuste,
+  zéro faux positif.
+- **(b) Texte FR en dur** — une vue `src/modules/**/views/*.vue` **hors allowlist** contient un
+  **caractère accenté** dans un nœud texte de `<template>` (hors `{{ }}`) ou un attribut statique
+  `placeholder`/`title`/`aria-label`/`alt`/`label`. Heuristique haute confiance (accent), faux
+  positifs quasi nuls.
+- **(c) Anti-bitrot** — l'allowlist ne référence que des vues réellement présentes.
+
+**Ratchet — terminé** 🎉 : l'`ALLOWLIST` du spec est **vide** (rc.85). La garde anti-régression scanne
+désormais **toutes** les vues `src/modules/**/views/*.vue` sans aucune exception. N'ajouter une entrée
+qu'en dernier recours (vue temporairement non traduite), avec ticket de suivi — l'objectif est de la
+garder vide.
+
+**Validation à la livraison** : la garde a immédiatement débusqué un reliquat manqué par l'audit
+(`WarehouseView` — libellés de devises en dur), corrigé via le nouveau `common.currencyName.*`
+(mutualisé entre `WarehouseView` et `ProductFormView`).
+
+**Limites connues** (couvertes par la Definition of Done, pas encore par la garde) : chaînes FR
+**sans accent** (`Nom`, `Statut`…), strings **côté `<script>`**, et le **chrome partagé** /
+`src/pages`. Extensions possibles : scan des littéraux script avec liste d'exceptions
+(`note:` d'audit), élargissement de la portée.

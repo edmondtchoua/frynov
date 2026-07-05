@@ -1,0 +1,250 @@
+<template>
+  <div>
+    <SalesTabNav />
+    <div class="page-header">
+      <h2>{{ $t('orders.title') }}</h2>
+      <RouterLink to="/orders/new" class="btn btn-primary">
+        + {{ $t('orders.new') }}
+      </RouterLink>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M9 3a6 6 0 100 12A6 6 0 009 3zM1 9a8 8 0 1114.32 4.906l3.387 3.387a1 1 0 01-1.414 1.414l-3.387-3.387A8 8 0 011 9z" clip-rule="evenodd" />
+        </svg>
+        <input
+          v-model="search"
+          type="text"
+          class="form-input search-input"
+          :placeholder="$t('orders.searchPlaceholder')"
+          @input="debouncedLoad"
+        />
+      </div>
+      <input v-model="dateFrom" type="date" class="form-input date-input" @change="load" :title="$t('orders.dateFrom')" />
+      <input v-model="dateTo"   type="date" class="form-input date-input" @change="load" :title="$t('orders.dateTo')" />
+      <!-- Site / entrepôt filter (Sprint 20 multi-sites) -->
+      <select v-model="warehouseId" class="form-input date-input" :aria-label="$t('common.allWarehouses')">
+        <option value="">{{ $t('common.allWarehouses') }}</option>
+        <option v-for="w in warehouses" :key="w.id" :value="w.id">
+          {{ w.is_default ? '⭐ ' : '' }}{{ w.name }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Status tabs -->
+    <div class="status-tabs">
+      <button
+        v-for="tab in tabs"
+        :key="tab"
+        class="tab-btn"
+        :class="{ active: activeTab === tab }"
+        @click="activeTab = tab"
+      >
+        {{ $t('orders.tab.' + (tab || 'all')) }}
+      </button>
+    </div>
+
+    <div class="card table-scroll" style="margin-top: 1rem; padding: 0;">
+      <StateBlock v-if="loading" variant="loading" />
+
+      <StateBlock v-else-if="error" variant="error" :title="$t('orders.loadErrorTitle')" :message="error">
+        <template #action>
+          <button class="btn btn-secondary" @click="load">{{ $t('common.retry') }}</button>
+        </template>
+      </StateBlock>
+
+      <StateBlock
+        v-else-if="orders.length === 0"
+        variant="empty"
+        :title="$t('orders.empty')"
+        :message="$t('orders.emptyHint')"
+      />
+
+      <!-- Table (card-stacking on very small screens — UX-06) -->
+      <table v-else class="data-table data-table--cards">
+        <thead>
+          <tr>
+            <th>{{ $t('orders.colNumber') }}</th>
+            <th>{{ $t('common.status') }}</th>
+            <th>{{ $t('orders.colItems') }}</th>
+            <th>{{ $t('orders.colTotal') }}</th>
+            <th>{{ $t('common.date') }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="order in orders" :key="order.id">
+            <td class="cell-primary">
+              <RouterLink :to="`/orders/${order.id}`" style="font-weight:600; color:#059669;">
+                {{ order.number }}
+              </RouterLink>
+            </td>
+            <td :data-label="$t('common.status')">
+              <span class="badge" :class="statusBadge(order.status)">
+                {{ statusLabel(order.status) }}
+              </span>
+            </td>
+            <td :data-label="$t('orders.colItems')">{{ order.lines.length }} {{ order.lines.length > 1 ? $t('orders.articlesWord') : $t('orders.articleWord') }}</td>
+            <td :data-label="$t('orders.colTotal')">{{ formatMoney(order.total_amount) }}</td>
+            <td :data-label="$t('common.date')">{{ formatDate(order.created_at) }}</td>
+            <td class="cell-actions">
+              <RouterLink :to="`/orders/${order.id}`" class="btn btn-secondary" style="padding:0.35rem 0.75rem; font-size:0.8rem;">
+                {{ $t('common.view') }}
+              </RouterLink>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="meta && meta.last_page > 1" class="pagination">
+      <button class="btn btn-secondary" :disabled="page === 1" @click="page--">‹ {{ $t('common.previous') }}</button>
+      <span>{{ $t('common.pageOf', { current: meta.current_page, total: meta.last_page }) }}</span>
+      <button class="btn btn-secondary" :disabled="page >= meta.last_page" @click="page++">{{ $t('common.next') }} ›</button>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, watch, onMounted } from 'vue'
+import { formatDate } from '@/shared/utils/date'
+import { RouterLink } from 'vue-router'
+import { formatMoney } from '@/shared/utils/money'
+import SalesTabNav from '../components/SalesTabNav.vue'
+import { orderService } from '../services/orderService'
+import { useWarehouses } from '@/composables/useWarehouses'
+import StateBlock from '@/shared/ui/StateBlock.vue'
+import { t } from '@/i18n'
+import type { Order } from '../types'
+
+const tabs = ['', 'draft', 'confirmed', 'fulfilled', 'cancelled']
+
+const activeTab = ref('')
+const search    = ref('')
+const dateFrom  = ref('')
+const dateTo    = ref('')
+const orders    = ref<Order[]>([])
+const meta      = ref<any>(null)
+const page      = ref(1)
+const loading   = ref(false)
+const error     = ref<string | null>(null)
+const { warehouses, loadWarehouses } = useWarehouses()
+const warehouseId = ref('')
+
+async function load() {
+  loading.value = true
+  error.value   = null
+  try {
+    const res = await orderService.list({
+      status:       activeTab.value || undefined,
+      search:       search.value    || undefined,
+      from_date:    dateFrom.value  || undefined,
+      to_date:      dateTo.value    || undefined,
+      warehouse_id: warehouseId.value || undefined,
+      page:         page.value,
+      per_page:     20,
+    })
+    orders.value = res.data
+    meta.value   = res.meta
+  } catch {
+    error.value = t('orders.loadError')
+  } finally {
+    loading.value = false
+  }
+}
+
+let _searchTimer: ReturnType<typeof setTimeout> | null = null
+function debouncedLoad() {
+  if (_searchTimer) clearTimeout(_searchTimer)
+  _searchTimer = setTimeout(() => load(), 280)
+}
+
+watch([activeTab, warehouseId, page], () => load())
+onMounted(() => { loadWarehouses(); load() })
+
+function statusLabel(s: string) {
+  return t('orders.status.' + s)
+}
+
+function statusBadge(s: string) {
+  return { draft: 'badge-gray', confirmed: 'badge-blue', fulfilled: 'badge-green', cancelled: 'badge-red' }[s] ?? ''
+}
+
+
+</script>
+
+<style scoped>
+.status-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.25rem;
+  width: fit-content;
+}
+
+.tab-btn {
+  padding: 0.4rem 0.9rem;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: #6b7280;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tab-btn.active {
+  background: #059669;
+  color: white;
+  font-weight: 600;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding-left: 2rem !important;
+}
+
+.date-input {
+  width: 10rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+</style>

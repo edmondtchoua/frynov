@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo",
+    "lib":    ["esnext", "dom"],
+    "types":  ["vitest/globals"]
+  },
+  "include": ["src/**/*", "src/**/*.vue"]
+}

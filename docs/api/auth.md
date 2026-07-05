@@ -119,6 +119,28 @@ Authorization: Bearer {token}
 
 ---
 
+## POST `/api/auth/forgot-password` *(RC-10 F-3, public, throttle 3/10 min)*
+
+Demande un **code de réinitialisation** (6 chiffres) envoyé par email. Réponse **toujours générique**
+(anti-énumération) — qu'un compte existe ou non.
+
+```http
+POST /api/auth/forgot-password
+{ "email": "user@exemple.sn" }
+```
+**200** → `{ "message": "Si un compte correspond à cet email, un code … vient d'être envoyé." }`
+
+## POST `/api/auth/reset-password` *(RC-10 F-3, public, throttle 5/10 min)*
+
+Applique un nouveau mot de passe avec le code reçu. Le code expire en **30 min** et est **brûlé après
+5 tentatives**. Un reset réussi **révoque toutes les sessions** de l'utilisateur.
+
+```http
+POST /api/auth/reset-password
+{ "email": "user@exemple.sn", "code": "123456", "password": "NouveauMdp1", "password_confirmation": "NouveauMdp1" }
+```
+**200** → `{ "message": "Mot de passe réinitialisé …" }` · **422** → code invalide/expiré ou mot de passe faible.
+
 ## POST `/api/auth/logout`
 
 Révoque le token actuel.

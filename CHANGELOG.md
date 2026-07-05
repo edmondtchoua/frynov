@@ -3,6 +3,31 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔑 RC-10 : Lot C (1/2) — réinitialisation de mot de passe par email (F-3) (2026-07-02)
+
+Branche `feature/rc10-auth-reset` (release `v1.0.0` → `rc.142`). Premier volet du Lot C sécurité
+(comptes & accès), débloqué par le mailer applicatif (`config/mail.php`, `log` en dev).
+
+### Backend
+- **`password_reset_codes`** : code à 6 chiffres **haché**, expirable (30 min), borné en tentatives (5).
+- **`PasswordResetService`** + `PasswordResetController` :
+  - `POST /api/auth/forgot-password` `{email}` — envoie le code (**mailer natif**, `PasswordResetCodeMail`),
+    réponse **générique** (anti-énumération), throttle 3/10 min.
+  - `POST /api/auth/reset-password` `{email, code, password}` — vérifie code (haché, expiration,
+    tentatives), applique le mot de passe et **révoque toutes les sessions** (tokens), purge le code.
+    Throttle 5/10 min.
+- **+6 tests** `PasswordResetTest` (envoi pour un compte connu, générique+silencieux pour un inconnu,
+  reset valide → mot de passe changé + sessions révoquées + ancien token 401, code faux compté,
+  code expiré, code brûlé au seuil). `Mail::fake()`.
+
+### Frontend
+- **`ForgotPasswordView`** (`/forgot-password`) : flux en 2 étapes (email → code + nouveau mot de passe),
+  lien depuis la connexion (remplace l'ancien texte d'aide statique). i18n FR+EN (`auth.reset.*`).
+  vue-tsc 0, garde i18n ✅.
+
+> Reste du Lot C (à suivre) : re-vérification email au changement (F-6), invitations par lien email
+> (F-5), 2FA (F-4).
+
 ## [Non publié] — 🛡️ RC-9 : durcissement sécurité — Lot D (plateforme) + Lot B (uploads) (2026-07-01)
 
 Branche `feature/rc9-security-lot-db` (release `v1.0.0` → `rc.141`). Suite du backlog sécurité issu de

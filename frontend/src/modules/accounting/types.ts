@@ -132,10 +132,12 @@ export interface Invoice {
   issue_date: string | null
   due_date: string | null
   status: 'draft' | 'issued' | 'partially_paid' | 'paid' | 'cancelled'
+  credit_note_of_id?: string | null
   subtotal_minor: number
   tax_total_minor: number
   total_minor: number
   paid_minor: number
+  credited_minor?: number
   entry_id: string | null
   lines: InvoiceLine[]
 }

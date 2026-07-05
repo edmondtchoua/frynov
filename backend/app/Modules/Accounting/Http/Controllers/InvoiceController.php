@@ -23,10 +23,13 @@ class InvoiceController extends Controller
         private readonly InvoicePdfRenderer $pdf,
     ) {}
 
-    /** GET /api/accounting/invoices?status=&customer_id= */
+    /** GET /api/accounting/invoices?status=&customer_id=&kind= (défaut : factures ; kind=credit_note pour les avoirs) */
     public function index(Request $request): JsonResponse
     {
+        $kind = $request->query('kind', Invoice::KIND_INVOICE);
+
         $invoices = Invoice::query()
+            ->where('kind', $kind)
             ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
             ->when($request->query('customer_id'), fn ($q, $c) => $q->where('customer_id', $c))
             ->withCount('lines')
@@ -110,5 +113,53 @@ class InvoiceController extends Controller
     public function pdf(string $id): Response
     {
         return $this->pdf->download(Invoice::with('lines')->findOrFail($id));
+    }
+
+    // ── Avoirs (RC-33) ───────────────────────────────────────────────────────────
+
+    /** POST /api/accounting/invoices/{id}/credit-notes — crée un avoir brouillon depuis la facture. */
+    public function creditNoteFromInvoice(Request $request, string $id): JsonResponse
+    {
+        $data = $request->validate([
+            'lines'                    => ['nullable', 'array', 'min:1'],
+            'lines.*.label'            => ['required_with:lines', 'string', 'max:255'],
+            'lines.*.quantity'         => ['required_with:lines', 'integer', 'min:1'],
+            'lines.*.unit_price_minor' => ['required_with:lines', 'integer', 'min:0'],
+            'lines.*.discount_bp'      => ['nullable', 'integer', 'min:0', 'max:10000'],
+            'lines.*.tax_id'           => ['nullable', 'uuid'],
+        ]);
+
+        $invoice = Invoice::with('lines')->findOrFail($id);
+        $creditNote = $this->service->createCreditNoteFromInvoice($invoice, $data['lines'] ?? null, $request->user()->id);
+
+        return response()->json(['data' => $creditNote], 201);
+    }
+
+    /** POST /api/accounting/credit-notes/{id}/issue */
+    public function issueCreditNote(Request $request, string $id): JsonResponse
+    {
+        $creditNote = Invoice::findOrFail($id);
+        $creditNote = $this->service->issueCreditNote($creditNote, $request->user()->id);
+
+        return response()->json(['message' => 'Avoir émis.', 'data' => $creditNote->load('lines')]);
+    }
+
+    /** POST /api/accounting/credit-notes/{id}/apply — applique l'avoir à une facture. */
+    public function applyCreditNote(Request $request, string $id): JsonResponse
+    {
+        $data = $request->validate([
+            'invoice_id'   => ['required', 'uuid'],
+            'amount_minor' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $creditNote = Invoice::findOrFail($id);
+        $invoice    = Invoice::findOrFail($data['invoice_id']);
+
+        $application = $this->service->applyCreditNote($creditNote, $invoice, $data['amount_minor'], $request->user()->id);
+
+        return response()->json([
+            'message' => 'Avoir appliqué.',
+            'data'    => ['application' => $application, 'invoice' => $invoice->fresh(), 'credit_note' => $creditNote->fresh()],
+        ], 201);
     }
 }

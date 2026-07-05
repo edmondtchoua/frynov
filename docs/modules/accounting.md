@@ -126,11 +126,32 @@ Endpoints : `GET invoices[/{id}][/pdf]` (lecture) · `POST invoices`, `invoices/
 Frontend : `InvoicesView` (`/accounting/invoices`) — liste, création à totaux en direct, émission,
 encaissement, lien PDF. i18n FR/EN.
 
+## Avoirs / notes de crédit (RC-33 — P3.2)
+
+Un avoir **réutilise la table `invoices`** (`kind = credit_note`, numéro `AV-`) : mêmes lignes, même
+moteur PDF. `InvoiceService` :
+- **Création depuis une facture émise** (`createCreditNoteFromInvoice`) : reprend les lignes (ou un
+  sous-ensemble), rattache `credit_note_of_id` → facture d'origine (traçabilité).
+- **Émission** (`issueCreditNote`) : numéro `AV-` + **écriture INVERSE** (`credit_note.issued` →
+  débit **701** HT + débit **4431** TVA / crédit **411** client, journal **AV**).
+- **Application** (`applyCreditNote` → `credit_note_applications`) : impute l'avoir à une facture
+  émise pour en réduire le reste dû ; borné au reste applicable de l'avoir **et** au reste dû de la
+  facture ; une ligne par couple (avoir, facture), les applications s'**accumulent**. Aucune écriture
+  supplémentaire (les deux mouvements sur 411 sont déjà comptabilisés à l'émission) — c'est un
+  lettrage. `remainingMinor()` d'une facture = total − paiements − avoirs appliqués.
+
+Statuts partagés : sur un avoir, `paid_minor` = montant appliqué (draft → issued → partially_paid →
+paid = entièrement appliqué). Endpoints saisie (`accounting.entries.create`) :
+`POST invoices/{id}/credit-notes`, `credit-notes/{id}/issue`, `credit-notes/{id}/apply` ; lecture via
+`GET invoices?kind=credit_note`. Frontend : `CreditNotesView` (`/accounting/credit-notes`).
+
 ## Tests
 
 Backend : `AccountingReferentialTest` (8) · `AccountingEntryTest` (7 — équilibre, post/numéro,
 période verrouillée, immutabilité, extourne miroir) · `AccountingImputationTest` (6 — vente split →
 écriture équilibrée par tender, **idempotence du rejeu**, remboursement, écart de clôture, mouvement,
 tenant sans module = 0 écriture) · `AccountingInvoiceTest` (7 — TVA/remise, émission → 411/701/4431,
-allocation partielle/multiple bornée, encaissement, cycle HTTP, RBAC caissier). Front :
-`ChartOfAccountsView.spec.ts` (3) + `InvoicesView.spec.ts` (3) + garde i18n.
+allocation partielle/multiple bornée, encaissement, cycle HTTP, RBAC caissier) ·
+`AccountingCreditNoteTest` (8 — reprise de lignes, émission → écriture inverse 701/4431/411,
+application bornée cumulative, statuts, brouillon non applicable, cycle HTTP, RBAC). Front :
+`ChartOfAccountsView.spec.ts` (3) + `InvoicesView.spec.ts` (3) + `CreditNotesView.spec.ts` (3) + garde i18n.

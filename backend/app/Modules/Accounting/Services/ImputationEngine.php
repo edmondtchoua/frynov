@@ -115,9 +115,10 @@ class ImputationEngine
             'pos.session_gap'   => $this->ruleForSessionGap($tenantId, $p),
             'cash.movement'     => $this->ruleForCashMovement($tenantId, $p),
             'payment.recorded'  => $this->ruleForPayment($tenantId, $p),
-            'invoice.issued'    => $this->ruleForInvoiceIssued($tenantId, $p),
-            'payment.allocated' => $this->ruleForPaymentAllocated($tenantId, $p),
-            default             => [null, null, []],
+            'invoice.issued'     => $this->ruleForInvoiceIssued($tenantId, $p),
+            'payment.allocated'  => $this->ruleForPaymentAllocated($tenantId, $p),
+            'credit_note.issued' => $this->ruleForCreditNoteIssued($tenantId, $p),
+            default              => [null, null, []],
         };
 
         if ($journalCode === null || empty($lines)) {
@@ -254,6 +255,26 @@ class ImputationEngine
         }
 
         return ['VT', 'Facture ' . ($p['invoice_number'] ?? ''), $lines];
+    }
+
+    /** RC-33 — avoir émis : INVERSE de la facture — débit 701 (HT) + 4431 (TVA) / crédit 411 client. */
+    private function ruleForCreditNoteIssued(string $tenantId, array $p): array
+    {
+        $total    = (int) ($p['total'] ?? 0);
+        $subtotal = (int) ($p['subtotal'] ?? 0);
+        $tax      = (int) ($p['tax'] ?? 0);
+        if ($total <= 0) {
+            return [null, null, []];
+        }
+
+        $ref   = $p['credit_note_number'] ?? '';
+        $lines = [$this->debit('@sales', $tenantId, $subtotal, 'Annulation vente (HT)')];
+        if ($tax > 0) {
+            $lines[] = $this->debit('@tax_collected', $tenantId, $tax, 'TVA à régulariser');
+        }
+        $lines[] = $this->credit('@customers', $tenantId, $total, 'Avoir ' . $ref);
+
+        return ['AV', 'Avoir ' . $ref, $lines];
     }
 
     /** RC-30 — paiement alloué à une facture : débit trésorerie / crédit 411 client. */

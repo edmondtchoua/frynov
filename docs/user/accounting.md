@@ -1,8 +1,8 @@
 # Guide utilisateur — Comptabilité (référentiel SYSCOHADA)
 
 > **Dernière mise à jour :** 2026-07-05 · Périmètre actuel : plan comptable, journaux, taxes,
-> exercices & périodes, paramètres, écritures & moteur d'imputation, **facturation client**. Les
-> avoirs et les états financiers arrivent dans les prochaines versions.
+> exercices & périodes, paramètres, écritures & moteur d'imputation, **facturation client**,
+> **avoirs**. Les états financiers arrivent dans les prochaines versions.
 
 ## Accès et droits
 
@@ -65,7 +65,21 @@ Menu **Comptabilité → Factures** :
 4. **PDF** : téléchargez la facture au format PDF.
 
 > Une facture émise n'est plus modifiable (comme une écriture comptabilisée) : une correction se fait
-> par avoir (à venir) ou par extourne de son écriture.
+> par avoir (voir ci-dessous) ou par extourne de son écriture.
+
+## 7. Avoirs (notes de crédit)
+
+Menu **Comptabilité → Avoirs** — un avoir corrige ou rembourse une facture émise :
+
+1. **Nouvel avoir** : choisissez la **facture d'origine** ; l'avoir en reprend les lignes.
+2. **Émettre** : l'avoir reçoit un numéro `AV-`, et **génère l'écriture inverse** de la facture
+   (débit ventes 701 et TVA 4431, crédit client 411).
+3. **Appliquer** : imputez l'avoir à une facture émise pour en **réduire le reste dû**. Le montant est
+   plafonné au reste de l'avoir et au reste dû de la facture ; vous pouvez l'appliquer en plusieurs
+   fois. La facture passe *Partiellement payée* puis *Payée* une fois soldée.
+4. **PDF** : téléchargez l'avoir.
+
+> Le libellé du statut d'un avoir suit son application : *Émis → Partiellement appliqué → Appliqué*.
 
 ## FAQ
 

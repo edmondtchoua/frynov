@@ -384,11 +384,15 @@ class WorkspaceController extends Controller
             'settings' => $settings,
         ]);
 
-        // Create default warehouse if name provided
-        if (!empty($data['warehouse_name'])) {
+        // Entrepôt par défaut : un tenant qui gère du stock DOIT en avoir un, sinon la première
+        // opération de stock échoue (defaultWarehouseId renvoie null). On le crée dès que `needs_stock`
+        // (ou qu'un nom est fourni), idempotent. Le nom fourni prime, sinon un libellé par défaut.
+        if (!empty($data['warehouse_name']) || ($data['needs_stock'] ?? false)) {
+            $whName = !empty($data['warehouse_name']) ? $data['warehouse_name'] : 'Entrepôt principal';
+            $whCode = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $whName) ?: 'WH', 0, 6)) ?: 'WH';
             \App\Modules\Inventory\Models\Warehouse::firstOrCreate(
                 ['tenant_id' => $tenant->id, 'is_default' => true],
-                ['name' => $data['warehouse_name'], 'code' => strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $data['warehouse_name']), 0, 6))]
+                ['name' => $whName, 'code' => $whCode]
             );
         }
 

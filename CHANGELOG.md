@@ -3,6 +3,23 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧭 RC-14 : cohérence de l'onboarding initial (2026-07-05)
+
+Branche `feature/rc14-onboarding-fixes` (release `v1.0.0` → `rc.146`). Suite à l'évaluation UX/UI de
+l'onboarding : le parcours se termine sans erreur (état d'échec avec **Réessayer**), 3 incohérences
+« onboarding ↔ modules » corrigées.
+
+- **Entrepôt par défaut manquant** : `provision` créait un entrepôt uniquement si un nom était fourni,
+  mais le front ne l'envoyait jamais → un tenant « needs_stock » repartait **sans aucun entrepôt** (la
+  1ʳᵉ opération de stock échouait, `defaultWarehouseId` renvoyant null). Désormais un entrepôt par
+  défaut (« Entrepôt principal ») est créé dès que `needs_stock` (idempotent).
+- **Taille d'équipe non persistée** : l'étape 2 collectait la taille d'équipe sans jamais l'enregistrer.
+  Le front envoie maintenant `nb_users` (fourchette solo/small/medium/large → 1/5/20/50).
+- **Wizard reformulé en préférences** : les étapes 3–4 laissaient croire que la sélection *activait* des
+  modules, alors que les modules dépendent du **plan** (`activatePlanModules`). Copie clarifiée (FR+EN) :
+  « préférences pour personnaliser l'espace ; les modules disponibles dépendent de votre offre ».
+- **+3 tests** `WorkspaceApiTest` (entrepôt créé si stock, aucun sinon, `nb_users` persisté). vue-tsc 0.
+
 ## [Non publié] — 🔐 RC-13 : Lot C (4/4) — 2FA par code email (F-4) — Lot C complet (2026-07-04)
 
 Branche `feature/rc13-2fa` (release `v1.0.0` → `rc.145`). Dernier volet du Lot C : le backlog sécurité

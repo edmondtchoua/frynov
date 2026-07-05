@@ -19,6 +19,18 @@ export const authService = {
     await client.post('/api/auth/logout')
   },
 
+  /** RC-10 F-3 — POST /api/auth/forgot-password (réponse générique anti-énumération). */
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const { data } = await client.post('/api/auth/forgot-password', { email })
+    return data
+  },
+
+  /** RC-10 F-3 — POST /api/auth/reset-password (code + nouveau mot de passe). */
+  async resetPassword(payload: { email: string; code: string; password: string; password_confirmation: string }): Promise<{ message: string }> {
+    const { data } = await client.post('/api/auth/reset-password', payload)
+    return data
+  },
+
   /** GET /api/auth/me — backend wraps in { user: ... } */
   async me(): Promise<AuthUser> {
     const { data } = await client.get<{ user: AuthUser }>('/api/auth/me')

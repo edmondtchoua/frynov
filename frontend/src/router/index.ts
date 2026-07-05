@@ -41,6 +41,13 @@ const router = createRouter({
       component: () => import('@/modules/auth/views/RegisterView.vue'),
       meta: { layout: 'auth', public: true },
     },
+    {
+      // RC-10 F-3 — réinitialisation de mot de passe par code email.
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('@/modules/auth/views/ForgotPasswordView.vue'),
+      meta: { layout: 'auth', public: true },
+    },
 
     // ── Onboarding ────────────────────────────────────────────────────────
     {

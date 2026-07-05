@@ -34,9 +34,8 @@
       <div class="form-group" style="margin-bottom: 0.5rem;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <label class="form-label" for="password">{{ $t('auth.password') }}</label>
-          <a href="#" class="forgot-link" @click.prevent="showForgotMsg = !showForgotMsg">{{ $t('auth.forgotPassword') }}</a>
+          <router-link to="/forgot-password" class="forgot-link">{{ $t('auth.forgotPassword') }}</router-link>
         </div>
-        <p v-if="showForgotMsg" style="color:#64748b;font-size:0.85rem;margin-top:4px;">{{ $t('auth.forgotHelp') }}</p>
         <div class="password-wrap">
           <input
             id="password"
@@ -107,7 +106,6 @@ const errors        = reactive<Record<string, string>>({})
 const globalError   = ref('')
 const loading       = ref(false)
 const showPassword  = ref(false)
-const showForgotMsg = ref(false)
 
 // Show info banner if redirected due to session inactivity
 const inactivityMsg = computed(() =>

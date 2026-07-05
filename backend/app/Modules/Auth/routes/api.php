@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Auth\Http\Controllers\AuthController;
+use App\Modules\Auth\Http\Controllers\PasswordResetController;
 use App\Modules\Auth\Http\Controllers\TenantRoleController;
 use App\Modules\Auth\Http\Controllers\UserProfileController;
 use App\Modules\Auth\Http\Controllers\WorkspaceController;
@@ -13,6 +14,12 @@ Route::prefix('auth')->name('auth.')->group(function () {
         ->middleware('throttle:5,1');   // 5 attempts per minute per IP
     Route::post('register', [AuthController::class, 'register'])->name('register')
         ->middleware('throttle:3,1');   // 3 registrations per minute per IP
+
+    // RC-10 F-3 — réinitialisation de mot de passe par code email (public, throttlé).
+    Route::post('forgot-password', [PasswordResetController::class, 'forgot'])->name('forgot-password')
+        ->middleware('throttle:3,10'); // 3 demandes / 10 min / IP
+    Route::post('reset-password',  [PasswordResetController::class, 'reset'])->name('reset-password')
+        ->middleware('throttle:5,10'); // 5 tentatives / 10 min / IP
 
     // Protected endpoints
     Route::middleware(['auth:sanctum', EnsureUserBelongsToTenant::class])->group(function () {

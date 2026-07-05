@@ -75,3 +75,14 @@ export interface PosRefundPayload {
   reason: string
   refund_method?: PosPaymentMethod
 }
+
+/** RC-19 — ticket de caisse structuré (rendu + impression côté client). */
+export interface PosReceipt {
+  business: { name: string; address: string | null; phone: string | null; currency: string }
+  order: { id: string; number: string; date: string | null; status: string }
+  session: { id: string; label: string | null } | null
+  cashier: string | null
+  lines: { name: string; sku: string; quantity: number; unit_price_cents: number; total_cents: number }[]
+  payments: { method: string; amount_cents: number; reference: string | null }[]
+  totals: { total_cents: number; paid_cents: number }
+}

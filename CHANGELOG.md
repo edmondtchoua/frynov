@@ -3,6 +3,20 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🖨️ RC-19 : ticket de caisse — génération + impression (2026-07-05)
+
+Branche `feature/rc19-pos-receipt` (release `v1.0.0` → `rc.151`). Suite du chantier caisse :
+
+- **Backend** : `ReceiptService` + `GET /api/pos/orders/{orderId}/receipt` (rôles caisse, scope
+  tenant → 404 hors tenant) — payload structuré : en-tête boutique (nom/adresse/téléphone/devise
+  des settings), lignes, **tous les paiements** (splits RC-16 inclus, référence Mobile Money),
+  totaux, caissier, session. +3 tests (`PosReceiptTest`).
+- **Frontend** : composant `PosReceipt.vue` (rendu ticket **80 mm**, CSS unique aperçu+impression
+  dans `receiptPrint.ts`) ; impression par **iframe cachée** (pas de popup). Caisse Desktop :
+  bouton *Imprimer le ticket* + raccourci **F7** + réimpression de la dernière vente. POS mobile :
+  bouton *Ticket* après une vente (réinitialisé à la clôture). i18n FR/EN (`posReceipt`). +2 specs.
+- Docs tech + guide utilisateur mis à jour.
+
 ## [Non publié] — 🧰 RC-18 : file MOYENNE du backlog — 8 correctifs (2026-07-05)
 
 Branche `feature/rc18-moyenne-fixes` (release `v1.0.0` → `rc.150`). Toute la file **MOYENNE** du backlog

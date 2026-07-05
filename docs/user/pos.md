@@ -103,7 +103,23 @@ Le système, de façon atomique :
 
 ---
 
-## 5. Clôturer la caisse (rapprochement)
+## 5. Imprimer le ticket de caisse
+
+Après chaque vente, vous pouvez **imprimer le ticket** (format ticket 80 mm, compatible
+imprimantes thermiques et imprimantes classiques) :
+
+- **Caisse Desktop** : bouton **Imprimer le ticket** (ou touche **F7**) — un aperçu s'affiche,
+  cliquez **Imprimer**. Tant qu'une nouvelle vente n'est pas passée, vous pouvez **réimprimer**
+  le ticket de la dernière vente.
+- **POS mobile** : bouton **Ticket** dans la barre du haut après une vente.
+
+Le ticket comporte : le nom, l'adresse et le téléphone de votre boutique (Paramètres → Entreprise),
+le numéro de vente, la date, le caissier, la caisse, le détail des articles, **tous les moyens de
+paiement utilisés** (y compris un paiement mixte, avec la référence Mobile Money) et le total.
+
+---
+
+## 6. Clôturer la caisse (rapprochement)
 
 En fin de service :
 
@@ -146,5 +162,6 @@ peut ensuite ouvrir une nouvelle session.
 | `GET`  | `/api/pos/sessions/{id}/movements` | mouvements de caisse |
 | `POST` | `/api/pos/sessions/{id}/cash-movement` | entrée / sortie d'espèces |
 | `POST` | `/api/pos/sessions/{id}/refund` | rembourser une vente |
+| `GET`  | `/api/pos/orders/{orderId}/receipt` | ticket de caisse (impression / réimpression) |
 | `POST` | `/api/pos/sessions/{id}/close` | clôturer (rapprochement) |
 | `GET`  | `/api/pos/sessions` | historique des sessions |

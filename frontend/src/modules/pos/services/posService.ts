@@ -3,6 +3,7 @@ import type {
   CashMovement,
   CashRegisterSession,
   PosCheckoutPayload,
+  PosReceipt,
   PosRefundPayload,
 } from '../types'
 
@@ -68,5 +69,10 @@ export const posService = {
   /** Refund a sale at the till (restocks resalable items, cash leg pays out of the drawer). */
   refund(sessionId: string, payload: PosRefundPayload): Promise<RefundResult> {
     return client.post(`/api/pos/sessions/${sessionId}/refund`, payload).then(r => r.data.data)
+  },
+
+  /** RC-19 — structured receipt of a POS sale (print / reprint). */
+  receipt(orderId: string): Promise<PosReceipt> {
+    return client.get(`/api/pos/orders/${orderId}/receipt`).then(r => r.data.data)
   },
 }

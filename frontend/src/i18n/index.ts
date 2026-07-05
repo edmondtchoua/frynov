@@ -917,6 +917,11 @@ export const messages: Record<Locale, Dict> = {
       confirmPay: 'Valider le paiement', queued: 'Vente enregistrée hors-ligne', synced: '{count} vente(s) synchronisée(s)',
       closeWarn: '{count} vente(s) hors-ligne non synchronisée(s). Synchronisez avant de clôturer.',
     },
+    posReceipt: {
+      title: 'Ticket de caisse', print: 'Imprimer le ticket', short: 'Ticket',
+      number: 'Ticket', date: 'Date', cashier: 'Caissier', register: 'Caisse',
+      thanks: 'Merci de votre visite !', loadError: 'Impossible de charger le ticket.',
+    },
     onboarding: {
       alreadyRegistered: 'Déjà inscrit ? Connexion',
       leaveConfirm: 'Votre configuration en cours sera perdue. Quitter l’assistant ?',
@@ -1969,6 +1974,11 @@ export const messages: Record<Locale, Dict> = {
       reference: 'Reference (Mobile Money)', referenceHint: 'e.g. OM-12345',
       confirmPay: 'Confirm payment', queued: 'Sale saved offline', synced: '{count} sale(s) synced',
       closeWarn: '{count} offline sale(s) not synced. Sync before closing.',
+    },
+    posReceipt: {
+      title: 'Sales receipt', print: 'Print receipt', short: 'Receipt',
+      number: 'Receipt', date: 'Date', cashier: 'Cashier', register: 'Register',
+      thanks: 'Thank you for your visit!', loadError: 'Could not load the receipt.',
     },
     onboarding: {
       alreadyRegistered: 'Already registered? Sign in',

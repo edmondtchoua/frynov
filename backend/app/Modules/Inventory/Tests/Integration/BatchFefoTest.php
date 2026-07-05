@@ -146,6 +146,31 @@ class BatchFefoTest extends TestCase
     }
 
     #[Test]
+    public function a_sale_exceeding_the_valid_batches_is_rejected_even_if_the_aggregate_covers_it(): void
+    {
+        // RC-18 (C-6) — l'agrégat compte 10 (5 périmés + 5 valides) mais seuls 5 sont vendables.
+        // Avant correctif : la vente de 8 passait le contrôle agrégé puis partait « à découvert »
+        // sur les lots périmés (dérive agrégat/lots + vente contre stock périmé).
+        $this->receiveBatch('LOT-PERIME', 5, now()->subDay()->toDateString())->assertCreated();
+        $this->receiveBatch('LOT-VALIDE', 5, now()->addDays(30)->toDateString())->assertCreated();
+
+        $order = $this->orders->create(['items' => [['product_id' => $this->milk->id, 'quantity' => 8]]], $this->tenant->id, $this->user->id);
+
+        try {
+            $this->orders->confirm($order, $this->user->id);
+            $this->fail('Expected InsufficientStockException');
+        } catch (\App\Modules\Inventory\Exceptions\InsufficientStockException $e) {
+            $this->assertSame(5, $e->available);   // le vendable exclut les 5 périmés
+            $this->assertSame(8, $e->requested);
+        }
+
+        // Une vente couverte par les lots VALIDES passe toujours.
+        $this->sell(5);
+        $this->assertSame(0, ProductBatch::withoutTenantScope()->where('batch_number', 'LOT-VALIDE')->first()->quantity);
+        $this->assertSame(5, ProductBatch::withoutTenantScope()->where('batch_number', 'LOT-PERIME')->first()->quantity);
+    }
+
+    #[Test]
     public function the_expire_command_marks_overdue_batches_and_alerts_the_tenant(): void
     {
         // RC-7A — démarque automatique + alerte (canal log configuré pour capter l'outbox).

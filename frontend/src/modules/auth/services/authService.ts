@@ -78,7 +78,7 @@ export const authService = {
     }
   },
 
-  /** POST /api/me/promo/apply — record promo code usage */
+  /** POST /api/me/promo/apply — valide le code et renvoie la remise (l'usage n'est consommé qu'à l'activation du paiement). */
   async applyPromo(code: string, planCode?: string): Promise<{ message: string; discount_type?: string; discount_value?: number }> {
     const { data } = await client.post('/api/me/promo/apply', { code, plan_code: planCode })
     return data

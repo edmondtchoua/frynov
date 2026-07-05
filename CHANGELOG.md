@@ -3,6 +3,31 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧰 RC-18 : file MOYENNE du backlog — 8 correctifs (2026-07-05)
+
+Branche `feature/rc18-moyenne-fixes` (release `v1.0.0` → `rc.150`). Toute la file **MOYENNE** du backlog
+rc.147 :
+
+- **[D-3] Pool de licences** : les clés sont **libérées** à la révocation/retour (RMA) — elles redeviennent
+  `available` et réassignables FIFO (fin de la fuite du pool et des fausses alertes `pool_exhausted`).
+- **[M-4] Renouvellement** : `isFreePlan` lit le **prix localisé** (`PlanPrice` du marché de l'abonnement)
+  avant les colonnes legacy — un plan gratuit en legacy mais payant sur sa grille passe bien `past_due`.
+- **[M-5] Promo** : `POST /api/me/promo/apply` ne **consomme plus l'usage** (validation seule) ; l'usage est
+  enregistré à l'activation du paiement — le paiement légitime n'est plus routé `needs_review`.
+- **[C-3] Commandes (front)** : pagination réparée (normalisation du paginator plat en `{data, meta}`),
+  reset page 1 à chaque changement de filtre.
+- **[C-4] Commandes (API)** : filtres `search` (n° commande / nom client) et `from_date`/`to_date`
+  désormais appliqués côté serveur.
+- **[C-5] Retours (front)** : les actions approve/restock/reject affichent les erreurs (bandeau + message
+  serveur) au lieu d'échouer en silence. i18n FR/EN.
+- **[C-6] Lots/péremption** : à la confirmation d'une commande d'un produit suivi par lot, le **vendable
+  exclut les lots périmés** encore comptés dans l'agrégat → plus de vente « à découvert » contre du stock
+  périmé (422 explicite avec le disponible réel).
+- **[C-7] Import groupé** : `quantity_after` de l'historique des mouvements n'ajoute plus la quantité
+  **deux fois**.
+
++6 tests backend, i18n FR/EN, front vert (43 specs orders+i18n).
+
 ## [Non publié] — 🩹 RC-17 : correctifs HAUTE — avoirs réappliqués + rapports d'inventaire exposés (2026-07-05)
 
 Branche `feature/rc17-billing-reports-fixes` (release `v1.0.0` → `rc.149`). Les deux bugs **HAUTE** du

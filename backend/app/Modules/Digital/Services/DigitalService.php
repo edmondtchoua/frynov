@@ -116,6 +116,8 @@ class DigitalService
             'revoked_at' => now(),
         ]);
 
+        $this->releasePoolKeys([$entitlement->id]); // RC-18 (D-3)
+
         return $entitlement;
     }
 
@@ -126,13 +128,47 @@ class DigitalService
      */
     public function revokeForOrderLine(string $tenantId, string $orderLineId): int
     {
-        return DigitalEntitlement::withoutTenantScope()
+        $ids = DigitalEntitlement::withoutTenantScope()
             ->where('tenant_id', $tenantId)
             ->where('order_line_id', $orderLineId)
             ->where('status', DigitalEntitlement::STATUS_ACTIVE)
+            ->pluck('id')->all();
+
+        if (empty($ids)) {
+            return 0;
+        }
+
+        DigitalEntitlement::withoutTenantScope()
+            ->whereIn('id', $ids)
             ->update([
                 'status'     => DigitalEntitlement::STATUS_REVOKED,
                 'revoked_at' => now(),
+            ]);
+
+        $this->releasePoolKeys($ids); // RC-18 (D-3)
+
+        return count($ids);
+    }
+
+    /**
+     * RC-18 (D-3) — libère les clés de pool des accès révoqués : elles redeviennent `available`
+     * (FIFO de réassignation). Sans cela le pool fuyait à chaque retour/révocation → épuisement
+     * prématuré et fausses alertes `pool_exhausted`. NB : une clé re-poolée provient d'un retour ;
+     * si l'éditeur invalide les clés exposées, purger via l'écran du pool.
+     */
+    private function releasePoolKeys(array $entitlementIds): void
+    {
+        if (empty($entitlementIds)) {
+            return;
+        }
+
+        LicensePoolKey::withoutTenantScope()
+            ->whereIn('entitlement_id', $entitlementIds)
+            ->where('status', LicensePoolKey::STATUS_ASSIGNED)
+            ->update([
+                'status'         => LicensePoolKey::STATUS_AVAILABLE,
+                'entitlement_id' => null,
+                'assigned_at'    => null,
             ]);
     }
 
@@ -165,6 +201,8 @@ class DigitalService
                 'status'     => DigitalEntitlement::STATUS_REVOKED,
                 'revoked_at' => now(),
             ]);
+
+        $this->releasePoolKeys($ids); // RC-18 (D-3)
 
         return count($ids);
     }

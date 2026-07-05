@@ -80,7 +80,11 @@ class BillingController extends Controller
 
     /**
      * POST /api/me/promo/apply
-     * Apply a validated promo code (records usage).
+     * Confirme un code promo pour l'UI (validation + rappel de la remise).
+     *
+     * RC-18 (M-5) — NE consomme PLUS l'usage : `recordUse` ici créait un `PromoUse` immédiat que
+     * `ManualPaymentService::approve` voyait ensuite comme « déjà utilisé » → le paiement légitime
+     * du même tenant partait en `needs_review`. L'usage n'est enregistré qu'à l'ACTIVATION (approve).
      */
     public function applyPromo(Request $request): JsonResponse
     {
@@ -101,8 +105,6 @@ class BillingController extends Controller
                 $tenant,
                 $request->input('plan_code'),
             );
-
-            $this->promotions->recordUse($promo, $tenant);
 
             return response()->json([
                 'message'        => 'Code promotionnel appliqué avec succès.',

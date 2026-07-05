@@ -27,19 +27,20 @@ suite backend (~1011 tests) + cet audit statique.
 | M-1 | **HAUTE** | Billing | Ledger `tenant_credits` en écriture seule : trop-perçus jamais réappliqués → argent client perdu. | ✅ `approve()` applique le solde du ledger comme acompte virtuel s'il **solde** la cible (même règle que la proration), puis le **consomme** (ligne négative, référence = paiement, trace metadata). `previewProration` déduit le ledger de l'assiette (fin du double comptage). +4 tests. |
 | M-2 | **HAUTE** | Reports | Code mort : `abcClassification`, `inventoryKpis`, `stockReconciliation` sans route ni front. | ✅ Routes `GET /api/reports/abc|inventory-kpis|reconciliation` + onglet **Analyse d'inventaire** (`/reports/insights`, vue + service + i18n FR/EN). +3 tests API, +3 specs front. |
 
-## Backlog — à traiter (priorisé)
+## Corrigés dans rc.150 (RC-18 — file MOYENNE)
 
-### Moyenne
-| # | Zone | Bug | Fichier |
-|---|------|-----|---------|
-| D-3 | Digital | Clés de **pool de licence jamais libérées** à la révocation/retour (RMA) → fuite, épuisement prématuré, fausse alerte `pool_exhausted`. | `DigitalService.php:112,127,147` |
-| M-4 | Billing | `RenewalService::isFreePlan` lit les **colonnes legacy**, ignore les prix localisés `PlanPrice` → mauvais classement à l'échéance (facturé à tort / jamais facturé). | `RenewalService.php:185` |
-| M-5 | Billing | Conflit **promo apply ↔ approve** : `applyPromo` crée un `PromoUse` immédiat que `validate` voit « déjà utilisé » → paiement légitime routé en `needs_review`. | `BillingController.php:105` ↔ `ManualPaymentService.php:124` |
-| C-3 | Orders (front) | **Pagination cassée** : le back renvoie un paginator à plat (`data`, pas `meta`), le front lit `res.meta` → pages 2+ inaccessibles. | `OrderListView.vue:150`, `OrderController.php:36` |
-| C-4 | Orders | **Filtres recherche/dates ignorés** côté serveur (le contrôleur ne lit que `status`/`warehouse_id`). | `OrderController.php:27` |
-| C-5 | Orders (front) | Actions retour (approve/restock/reject) **sans try/catch** → échecs muets (unhandled rejection). | `ReturnsView.vue:130` |
-| C-6 | Orders/Inventory | Ligne suivie par **lot** : dispo contrôlée sur l'agrégat (inclut les lots périmés) mais FEFO exclut les périmés → **vente possible contre stock périmé** + dérive agrégat/lots. | `OrderService.php:252`, `BatchService.php:80` |
-| C-7 | Inventory | `quantity_after` **faux (+quantité)** dans l'historique des mouvements en import groupé (double addition). | `StockService.php:196` |
+| # | Zone | Bug | Correctif |
+|---|------|-----|-----------|
+| D-3 | Digital | Clés de pool jamais libérées à la révocation/retour → fuite, épuisement prématuré. | ✅ `releasePoolKeys()` appelé par les 3 chemins de révocation : la clé redevient `available` (réassignable FIFO). +1 test. |
+| M-4 | Billing | `isFreePlan` lisait les colonnes legacy, ignorait `PlanPrice` → jamais facturé / facturé à tort. | ✅ Prix **localisé** du marché de l'abonnement d'abord (repli legacy). +1 test. |
+| M-5 | Billing | `applyPromo` consommait l'usage → `approve` voyait « déjà utilisé » → needs_review à tort. | ✅ `applyPromo` = validation seule ; l'usage n'est consommé qu'à l'**activation**. +1 test. |
+| C-3 | Orders (front) | Paginator à plat ↔ front lit `res.meta` → pages 2+ inaccessibles. | ✅ Normalisation `{data, meta}` dans `orderService.list` + reset page 1 au changement de filtre. |
+| C-4 | Orders | Filtres `search`/`from_date`/`to_date` ignorés serveur-side. | ✅ `paginate()` filtre numéro/nom client (LIKE échappé) + bornes de dates. +1 test API. |
+| C-5 | Orders (front) | Actions retours sans try/catch → échecs muets. | ✅ try/catch + bandeau d'erreur (message serveur si présent), i18n FR/EN. |
+| C-6 | Orders/Inventory | Vente possible contre stock **périmé** (dispo agrégée vs FEFO). | ✅ Au confirm d'une ligne lot : vendable = agrégat − lots périmés actifs → 422 clair. Drift historique sans lot toujours toléré. +1 test. |
+| C-7 | Inventory | `quantity_after` faux (+qté) en import groupé. | ✅ « Après » figé avant l'update (plus de double addition). +1 test. |
+
+## Backlog — à traiter (priorisé)
 
 ### Basse
 | # | Zone | Bug | Fichier |

@@ -31,6 +31,12 @@ class OrderController extends Controller
             (int) $request->query('per_page', 20),
             $request->query('status'),
             WarehouseScope::resolve($request->user(), $request->query('warehouse_id')),
+            [
+                // RC-18 (C-4) — recherche (n° commande / nom client) + bornes de dates.
+                'search'    => $request->query('search'),
+                'from_date' => $request->query('from_date'),
+                'to_date'   => $request->query('to_date'),
+            ],
         );
 
         return response()->json($paginator);

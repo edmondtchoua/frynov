@@ -32,6 +32,7 @@ Route::prefix('auth')->name('auth.')->group(function () {
 // ── User profile (works for ALL authenticated users, incl. super-admin) ─────────
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::patch('me/profile',             [UserProfileController::class, 'update']);
+    Route::post('me/email/verify',         [UserProfileController::class, 'verifyEmail']); // RC-11 F-6
     Route::post('me/password',             [UserProfileController::class, 'changePassword']);
     Route::get('me/sessions',              [UserProfileController::class, 'sessions']);
     Route::delete('me/sessions/{tokenId}', [UserProfileController::class, 'revokeSession']);

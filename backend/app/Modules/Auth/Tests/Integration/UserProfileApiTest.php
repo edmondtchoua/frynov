@@ -76,27 +76,54 @@ class UserProfileApiTest extends TestCase
     }
 
     #[Test]
-    public function user_can_update_their_email(): void
+    public function changing_email_requires_verification_and_only_applies_after_the_code(): void
     {
+        // RC-11 F-6 — le changement d'email n'est PAS appliqué directement : un code part à la nouvelle
+        // adresse et l'email n'est modifié qu'après confirmation.
+        \Illuminate\Support\Facades\Mail::fake();
+
         $response = $this->withToken($this->token)->patchJson('/api/me/profile', [
             'email' => 'fatou.new@boutique-test.sn',
         ]);
-
         $response->assertOk()
-            ->assertJsonPath('data.email', 'fatou.new@boutique-test.sn');
+            ->assertJsonPath('data.email', 'fatou@boutique-test.sn')            // inchangé
+            ->assertJsonPath('email_verification_required', true)
+            ->assertJsonPath('pending_email', 'fatou.new@boutique-test.sn');
+        $this->assertDatabaseHas('users', ['id' => $this->user->id, 'email' => 'fatou@boutique-test.sn']);
 
+        // Récupère le code via l'email envoyé à la NOUVELLE adresse.
+        $code = null;
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Modules\Auth\Mail\EmailChangeCodeMail::class, function ($m) use (&$code) {
+            $code = $m->code;
+
+            return $m->hasTo('fatou.new@boutique-test.sn');
+        });
+
+        // Mauvais code → refusé, email toujours inchangé.
+        $this->withToken($this->token)->postJson('/api/me/email/verify', ['code' => '000000'])->assertStatus(422);
+        $this->assertDatabaseHas('users', ['id' => $this->user->id, 'email' => 'fatou@boutique-test.sn']);
+
+        // Bon code → appliqué.
+        $this->withToken($this->token)->postJson('/api/me/email/verify', ['code' => $code])
+            ->assertOk()->assertJsonPath('data.email', 'fatou.new@boutique-test.sn');
         $this->assertDatabaseHas('users', ['id' => $this->user->id, 'email' => 'fatou.new@boutique-test.sn']);
     }
 
     #[Test]
-    public function user_can_update_both_name_and_email(): void
+    public function updating_name_and_email_applies_the_name_immediately_and_queues_the_email(): void
     {
+        \Illuminate\Support\Facades\Mail::fake();
+
         $this->withToken($this->token)->patchJson('/api/me/profile', [
             'name'  => 'Fatou Updated',
             'email' => 'updated@test.sn',
         ])->assertOk()
           ->assertJsonPath('data.name', 'Fatou Updated')
-          ->assertJsonPath('data.email', 'updated@test.sn');
+          ->assertJsonPath('data.email', 'fatou@boutique-test.sn') // email en attente
+          ->assertJsonPath('email_verification_required', true);
+
+        // Le nom est bien persisté ; l'email non (tant que non confirmé).
+        $this->assertDatabaseHas('users', ['id' => $this->user->id, 'name' => 'Fatou Updated', 'email' => 'fatou@boutique-test.sn']);
     }
 
     #[Test]

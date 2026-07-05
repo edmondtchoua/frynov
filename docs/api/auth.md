@@ -141,6 +141,22 @@ POST /api/auth/reset-password
 ```
 **200** → `{ "message": "Mot de passe réinitialisé …" }` · **422** → code invalide/expiré ou mot de passe faible.
 
+## POST `/api/me/email/verify` *(RC-11 F-6, auth)*
+
+Confirme un **changement d'email** demandé via `PATCH /api/me/profile`. Le nouvel email n'est appliqué
+qu'après ce code (envoyé à la nouvelle adresse ; 30 min ; brûlé après 5 tentatives).
+
+```http
+POST /api/me/email/verify
+Authorization: Bearer {token}
+{ "code": "123456" }
+```
+**200** → `{ "data": { "email": "nouveau@exemple.sn" }, "message": "Adresse email mise à jour." }` ·
+**422** → code invalide/expiré, ou adresse déjà prise entre-temps.
+
+> `PATCH /api/me/profile` applique le **nom** immédiatement ; un **email** différent renvoie
+> `email_verification_required: true` + `pending_email` sans changer l'email courant.
+
 ## POST `/api/auth/logout`
 
 Révoque le token actuel.

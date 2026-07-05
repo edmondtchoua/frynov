@@ -72,6 +72,23 @@
               </button>
             </div>
           </form>
+
+          <!-- RC-11 F-6 — confirmation du nouvel email par code -->
+          <form v-if="emailPending" class="profile-form" style="margin-top:12px" @submit.prevent="verifyEmailChange">
+            <p class="form-label">{{ $t('profile.emailVerify.sent', { email: emailPending }) }}</p>
+            <div class="form-row-2">
+              <div class="form-group">
+                <input v-model.trim="emailCode" class="form-input" inputmode="numeric"
+                       :placeholder="$t('profile.emailVerify.codePlaceholder')" />
+              </div>
+              <div class="form-actions" style="align-items:center">
+                <button type="submit" class="btn btn-primary" :disabled="emailVerifying || !emailCode">
+                  <span v-if="emailVerifying" class="spinner-sm spinner-white"></span>{{ $t('profile.emailVerify.confirm') }}
+                </button>
+              </div>
+            </div>
+            <p v-if="emailVerifyMsg" class="form-feedback" :class="emailVerifyErr ? 'form-feedback--err' : 'form-feedback--ok'">{{ emailVerifyMsg }}</p>
+          </form>
         </div>
 
         <!-- Change password -->
@@ -249,6 +266,13 @@ const profileSaving = ref(false)
 const profileMsg   = ref('')
 const profileError = ref(false)
 
+// RC-11 F-6 — confirmation du nouvel email par code.
+const emailPending  = ref('')
+const emailCode     = ref('')
+const emailVerifying = ref(false)
+const emailVerifyMsg = ref('')
+const emailVerifyErr = ref(false)
+
 async function saveProfile() {
   profileMsg.value = ''
   profileSaving.value = true
@@ -259,10 +283,14 @@ async function saveProfile() {
     })
     profileError.value = false
     profileMsg.value   = data.message ?? t('profile.profileUpdated')
-    // Update store
-    if (auth.user) {
-      auth.user.name  = profileForm.name
-      auth.user.email = profileForm.email
+    // Le nom s'applique tout de suite ; l'email seulement après confirmation (F-6).
+    if (auth.user) auth.user.name = profileForm.name
+    if (data.email_verification_required) {
+      emailPending.value = data.pending_email ?? profileForm.email
+      emailCode.value = ''
+      emailVerifyMsg.value = ''
+    } else if (auth.user) {
+      auth.user.email = data.data?.email ?? profileForm.email
     }
   } catch (err: any) {
     profileError.value = true
@@ -271,6 +299,24 @@ async function saveProfile() {
   } finally {
     profileSaving.value = false
     setTimeout(() => { profileMsg.value = '' }, 4000)
+  }
+}
+
+async function verifyEmailChange() {
+  emailVerifying.value = true
+  emailVerifyMsg.value = ''
+  try {
+    const { data } = await client.post('/api/me/email/verify', { code: emailCode.value })
+    emailVerifyErr.value = false
+    emailVerifyMsg.value = data.message ?? t('profile.emailVerify.done')
+    if (auth.user && data.data?.email) auth.user.email = data.data.email
+    profileForm.email = data.data?.email ?? profileForm.email
+    emailPending.value = ''
+  } catch (err: any) {
+    emailVerifyErr.value = true
+    emailVerifyMsg.value = err?.response?.data?.message ?? t('profile.emailVerify.badCode')
+  } finally {
+    emailVerifying.value = false
   }
 }
 

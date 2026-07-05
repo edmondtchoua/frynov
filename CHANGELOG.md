@@ -3,6 +3,27 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — ✉️ RC-11 : Lot C (2/4) — re-vérification de l'email au changement (F-6) (2026-07-02)
+
+Branche `feature/rc11-email-verify` (release `v1.0.0` → `rc.143`). Deuxième volet du Lot C.
+
+### Backend
+- **`email_change_requests`** : demande de changement d'email par utilisateur, code 6 chiffres **haché**,
+  expirable (30 min), borné à 5 tentatives.
+- **`PATCH /api/me/profile`** : le **nom** s'applique immédiatement, mais un **changement d'email** ne
+  l'est plus directement — un code part à la **nouvelle** adresse (`EmailChangeCodeMail`) et la réponse
+  renvoie `email_verification_required` + `pending_email`.
+- **`POST /api/me/email/verify`** `{code}` : applique le nouvel email après vérification (re-contrôle
+  d'unicité au moment de l'application). Empêche l'usurpation d'email / la faute de frappe (F-6).
+- **+tests** : `UserProfileApiTest` mis à jour (changement d'email → vérification requise, appliqué
+  seulement après le bon code ; nom immédiat + email en attente). `Mail::fake()`.
+
+### Frontend
+- **ProfileView** : après un changement d'email, un bloc de **saisie de code** apparaît pour confirmer
+  la nouvelle adresse ; le nom est appliqué immédiatement. i18n FR+EN (`profile.emailVerify.*`). vue-tsc 0.
+
+> Reste du Lot C : invitations par lien email (F-5), 2FA par code email (F-4).
+
 ## [Non publié] — 🔑 RC-10 : Lot C (1/2) — réinitialisation de mot de passe par email (F-3) (2026-07-02)
 
 Branche `feature/rc10-auth-reset` (release `v1.0.0` → `rc.142`). Premier volet du Lot C sécurité

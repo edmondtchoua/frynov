@@ -555,6 +555,11 @@ export const messages: Record<Locale, Dict> = {
       revoke: 'Révoquer', revokeTitle: 'Révoquer la session', revokeConfirm: 'Révoquer cette session ?',
       profileUpdated: 'Profil mis à jour.', passwordMismatch: 'Les mots de passe ne correspondent pas.',
       passwordChanged: 'Mot de passe modifié.', error: 'Erreur.',
+      emailVerify: {
+        sent: 'Un code de confirmation a été envoyé à {email}. Saisissez-le pour valider votre nouvelle adresse.',
+        codePlaceholder: 'Code à 6 chiffres', confirm: 'Confirmer l\'email',
+        done: 'Adresse email mise à jour.', badCode: 'Code invalide ou expiré.',
+      },
     },
     admin: {
       searchTenant: 'Rechercher un tenant…', allPlans: 'Tous les plans',
@@ -1548,6 +1553,11 @@ export const messages: Record<Locale, Dict> = {
       revoke: 'Revoke', revokeTitle: 'Revoke session', revokeConfirm: 'Revoke this session?',
       profileUpdated: 'Profile updated.', passwordMismatch: 'Passwords do not match.',
       passwordChanged: 'Password changed.', error: 'Error.',
+      emailVerify: {
+        sent: 'A confirmation code was sent to {email}. Enter it to validate your new address.',
+        codePlaceholder: '6-digit code', confirm: 'Confirm email',
+        done: 'Email address updated.', badCode: 'Invalid or expired code.',
+      },
     },
     admin: {
       searchTenant: 'Search a tenant…', allPlans: 'All plans',

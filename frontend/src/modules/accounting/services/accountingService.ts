@@ -97,7 +97,7 @@ export const accountingService = {
   },
 
   // ── Factures (RC-30) ─────────────────────────────────────────────────────
-  invoices(params?: { status?: string; customer_id?: string; page?: number; per_page?: number }) {
+  invoices(params?: { status?: string; customer_id?: string; kind?: string; page?: number; per_page?: number }) {
     return client.get('/api/accounting/invoices', { params }).then(r => normalizePage<Invoice>(r.data))
   },
 
@@ -120,5 +120,22 @@ export const accountingService = {
   /** URL du PDF (téléchargement direct — le navigateur porte le token via l'app). */
   invoicePdfUrl(id: string): string {
     return `/api/accounting/invoices/${id}/pdf`
+  },
+
+  // ── Avoirs / notes de crédit (RC-33) ──────────────────────────────────────
+  creditNotes(params?: { status?: string; customer_id?: string; page?: number; per_page?: number }) {
+    return client.get('/api/accounting/invoices', { params: { ...params, kind: 'credit_note' } }).then(r => normalizePage<Invoice>(r.data))
+  },
+
+  createCreditNote(invoiceId: string, lines?: InvoiceDraftLine[]): Promise<Invoice> {
+    return client.post(`/api/accounting/invoices/${invoiceId}/credit-notes`, lines ? { lines } : {}).then(r => r.data.data)
+  },
+
+  issueCreditNote(id: string): Promise<Invoice> {
+    return client.post(`/api/accounting/credit-notes/${id}/issue`).then(r => r.data.data)
+  },
+
+  applyCreditNote(id: string, payload: { invoice_id: string; amount_minor: number }) {
+    return client.post(`/api/accounting/credit-notes/${id}/apply`, payload).then(r => r.data.data)
   },
 }

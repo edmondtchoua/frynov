@@ -2,6 +2,7 @@
 
 namespace App\Modules\Accounting\Services;
 
+use App\Modules\Accounting\Models\CreditNoteApplication;
 use App\Modules\Accounting\Models\Invoice;
 use App\Modules\Accounting\Models\PaymentAllocation;
 use App\Modules\Accounting\Models\Tax;
@@ -43,16 +44,18 @@ class InvoiceService
 
         return DB::transaction(function () use ($data, $lines, $tenantId, $userId) {
             $invoice = Invoice::create([
-                'tenant_id'     => $tenantId,
-                'kind'          => $data['kind'] ?? 'invoice',
-                'customer_id'   => $data['customer_id'] ?? null,
-                'customer_name' => $data['customer_name'] ?? null,
-                'order_id'      => $data['order_id'] ?? null,
-                'currency'      => $data['currency'] ?? 'XOF',
-                'due_date'      => $data['due_date'] ?? null,
-                'status'        => Invoice::STATUS_DRAFT,
-                'notes'         => $data['notes'] ?? null,
-                'created_by'    => $userId,
+                'tenant_id'         => $tenantId,
+                'kind'              => $data['kind'] ?? Invoice::KIND_INVOICE,
+                'customer_id'       => $data['customer_id'] ?? null,
+                'customer_name'     => $data['customer_name'] ?? null,
+                'order_id'          => $data['order_id'] ?? null,
+                'proforma_id'       => $data['proforma_id'] ?? null,
+                'credit_note_of_id' => $data['credit_note_of_id'] ?? null,
+                'currency'          => $data['currency'] ?? 'XOF',
+                'due_date'          => $data['due_date'] ?? null,
+                'status'            => Invoice::STATUS_DRAFT,
+                'notes'             => $data['notes'] ?? null,
+                'created_by'        => $userId,
             ]);
 
             $this->syncLines($invoice, $lines, $tenantId);
@@ -177,11 +180,9 @@ class InvoiceService
                 'created_by'   => $userId,
             ]);
 
-            $paid = (int) $invoice->paid_minor + $amountMinor;
-            $invoice->update([
-                'paid_minor' => $paid,
-                'status'     => $paid >= $invoice->total_minor ? Invoice::STATUS_PAID : Invoice::STATUS_PARTIALLY_PAID,
-            ]);
+            $invoice->paid_minor = (int) $invoice->paid_minor + $amountMinor;
+            $invoice->status     = $this->settlementStatus($invoice);
+            $invoice->save();
 
             return $alloc;
         });
@@ -201,7 +202,168 @@ class InvoiceService
         return $allocation;
     }
 
+    // ── Avoirs (notes de crédit) — RC-33 ────────────────────────────────────────
+
+    /**
+     * Crée un avoir brouillon rattaché à une facture émise (reprend ses lignes par défaut, ou un
+     * sous-ensemble fourni pour un avoir partiel).
+     */
+    public function createCreditNoteFromInvoice(Invoice $invoice, ?array $lines = null, ?string $userId = null): Invoice
+    {
+        if ($invoice->isCreditNote()) {
+            throw ValidationException::withMessages(['invoice' => ['Un avoir ne peut pas porter sur un autre avoir.']]);
+        }
+        if (in_array($invoice->status, [Invoice::STATUS_DRAFT, Invoice::STATUS_CANCELLED], true)) {
+            throw ValidationException::withMessages(['invoice' => ['La facture doit être émise pour recevoir un avoir.']]);
+        }
+
+        $invoice->loadMissing('lines');
+        $lines ??= $invoice->lines->map(fn ($l) => [
+            'product_id'       => $l->product_id,
+            'label'            => $l->label,
+            'quantity'         => (int) $l->quantity,
+            'unit_price_minor' => (int) $l->unit_price_minor,
+            'discount_bp'      => (int) $l->discount_bp,
+            'tax_id'           => $l->tax_id,
+        ])->all();
+
+        return $this->createDraft([
+            'kind'              => Invoice::KIND_CREDIT_NOTE,
+            'credit_note_of_id' => $invoice->id,
+            'customer_id'       => $invoice->customer_id,
+            'customer_name'     => $invoice->customer_name,
+            'currency'          => $invoice->currency,
+            'lines'             => $lines,
+        ], $invoice->tenant_id, $userId);
+    }
+
+    /** Émet un avoir : numéro AV- + écriture INVERSE (701/4431 débit, 411 crédit, journal AV). */
+    public function issueCreditNote(Invoice $creditNote, ?string $userId = null): Invoice
+    {
+        if (! $creditNote->isCreditNote()) {
+            throw ValidationException::withMessages(['credit_note' => ['Ce document n\'est pas un avoir.']]);
+        }
+        if (! $creditNote->isDraft()) {
+            throw ValidationException::withMessages(['credit_note' => ['Cet avoir est déjà émis.']]);
+        }
+        if ($creditNote->total_minor <= 0) {
+            throw ValidationException::withMessages(['credit_note' => ['Le total de l\'avoir doit être positif.']]);
+        }
+
+        $creditNote = DB::transaction(function () use ($creditNote, $userId) {
+            $number = $this->sequences->next($creditNote->tenant_id, 'AV', 6);
+            $creditNote->update([
+                'number'     => $number,
+                'status'     => Invoice::STATUS_ISSUED,
+                'issue_date' => now()->toDateString(),
+                'issued_by'  => $userId,
+            ]);
+
+            $this->audit->log(
+                action: 'accounting.credit_note.issued',
+                tenantId: $creditNote->tenant_id,
+                userId: $userId,
+                subject: $creditNote,
+                newValues: ['number' => $number, 'total' => $creditNote->total_minor, 'invoice_id' => $creditNote->credit_note_of_id],
+            );
+
+            return $creditNote;
+        });
+
+        $entry = $this->engine->record($creditNote->tenant_id, 'credit_note.issued', 'Invoice', $creditNote->id, [
+            'credit_note_id'     => $creditNote->id,
+            'credit_note_number' => $creditNote->number,
+            'total'              => $creditNote->total_minor,
+            'subtotal'           => $creditNote->subtotal_minor,
+            'tax'                => $creditNote->tax_total_minor,
+            'currency'           => $creditNote->currency,
+            'date'               => $creditNote->issue_date->toDateString(),
+        ]);
+        if ($entry?->entry_id) {
+            $creditNote->update(['entry_id' => $entry->entry_id]);
+        }
+
+        return $creditNote->fresh('lines');
+    }
+
+    /**
+     * Applique un avoir émis à une facture émise : réduit le reste dû de la facture. Borné au reste
+     * applicable de l'avoir ET au reste dû de la facture. Aucune écriture supplémentaire (les deux
+     * mouvements sur 411 sont déjà comptabilisés à l'émission) : c'est un lettrage/rapprochement.
+     */
+    public function applyCreditNote(Invoice $creditNote, Invoice $invoice, int $amountMinor, ?string $userId = null): CreditNoteApplication
+    {
+        if (! $creditNote->isCreditNote() || $invoice->isCreditNote()) {
+            throw ValidationException::withMessages(['credit_note' => ['Application invalide : avoir → facture attendue.']]);
+        }
+        if ($creditNote->status === Invoice::STATUS_DRAFT || $invoice->status === Invoice::STATUS_DRAFT) {
+            throw ValidationException::withMessages(['credit_note' => ['L\'avoir et la facture doivent être émis.']]);
+        }
+        if ($creditNote->customer_id && $invoice->customer_id && $creditNote->customer_id !== $invoice->customer_id) {
+            throw ValidationException::withMessages(['invoice' => ['L\'avoir et la facture doivent concerner le même client.']]);
+        }
+        if ($amountMinor <= 0) {
+            throw ValidationException::withMessages(['amount_minor' => ['Le montant doit être strictement positif.']]);
+        }
+
+        $max = min($creditNote->remainingMinor(), $invoice->remainingMinor());
+        if ($amountMinor > $max) {
+            throw ValidationException::withMessages([
+                'amount_minor' => ["Application ({$amountMinor}) supérieure au disponible ({$max})."],
+            ]);
+        }
+
+        return DB::transaction(function () use ($creditNote, $invoice, $amountMinor, $userId) {
+            // Une seule ligne par (avoir, facture) : les applications successives s'accumulent.
+            $application = CreditNoteApplication::withoutTenantScope()
+                ->where('credit_note_id', $creditNote->id)
+                ->where('invoice_id', $invoice->id)
+                ->first();
+
+            if ($application) {
+                $application->amount_minor = (int) $application->amount_minor + $amountMinor;
+                $application->created_by   = $userId;
+                $application->save();
+            } else {
+                $application = CreditNoteApplication::create([
+                    'tenant_id'      => $invoice->tenant_id,
+                    'credit_note_id' => $creditNote->id,
+                    'invoice_id'     => $invoice->id,
+                    'amount_minor'   => $amountMinor,
+                    'created_by'     => $userId,
+                ]);
+            }
+
+            // L'avoir suit son "appliqué" via paid_minor ; la facture via credited_minor.
+            $creditNote->paid_minor = (int) $creditNote->paid_minor + $amountMinor;
+            $creditNote->status     = $this->settlementStatus($creditNote);
+            $creditNote->save();
+
+            $invoice->credited_minor = (int) $invoice->credited_minor + $amountMinor;
+            $invoice->status         = $this->settlementStatus($invoice);
+            $invoice->save();
+
+            $this->audit->log(
+                action: 'accounting.credit_note.applied',
+                tenantId: $invoice->tenant_id,
+                userId: $userId,
+                subject: $application,
+                newValues: ['credit_note' => $creditNote->number, 'invoice' => $invoice->number, 'amount' => $amountMinor],
+            );
+
+            return $application;
+        });
+    }
+
     // ── Interne ────────────────────────────────────────────────────────────────
+
+    /** Statut de règlement d'après le total réglé (paiements + avoirs) vs le total du document. */
+    private function settlementStatus(Invoice $doc): string
+    {
+        $settled = (int) $doc->paid_minor + (int) $doc->credited_minor;
+
+        return $settled >= (int) $doc->total_minor ? Invoice::STATUS_PAID : Invoice::STATUS_PARTIALLY_PAID;
+    }
 
     private function syncLines(Invoice $invoice, array $lines, string $tenantId): void
     {

@@ -52,6 +52,10 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
             Route::post('invoices/from-order/{orderId}', [InvoiceController::class, 'fromOrder']);
             Route::post('invoices/{id}/issue',         [InvoiceController::class, 'issue']);
             Route::post('invoices/{id}/payments',      [InvoiceController::class, 'allocate']);
+            // Avoirs — création depuis facture, émission, application (RC-33).
+            Route::post('invoices/{id}/credit-notes',  [InvoiceController::class, 'creditNoteFromInvoice']);
+            Route::post('credit-notes/{id}/issue',     [InvoiceController::class, 'issueCreditNote']);
+            Route::post('credit-notes/{id}/apply',     [InvoiceController::class, 'applyCreditNote']);
         });
         // Comptabilisation / extourne : chef comptable / admin (permissions dédiées).
         Route::middleware('role_or_permission:chief-accountant|admin|accounting.entries.post')->group(function () {

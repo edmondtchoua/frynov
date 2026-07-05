@@ -35,6 +35,12 @@ class InvoicePdfRenderer
                 . '</tr>';
         }
 
+        $isCreditNote = $invoice->isCreditNote();
+        $docTitle     = $isCreditNote ? 'AVOIR' : 'FACTURE';
+        $settledLabel = $isCreditNote ? 'Appliqué' : 'Réglé';
+        $remainLabel  = $isCreditNote ? 'Reste à appliquer' : 'Reste dû';
+        $settledMinor = (int) $invoice->paid_minor + (int) $invoice->credited_minor;
+
         $businessName = e($tenant?->name ?? '');
         $address      = e($settings['address'] ?? '');
         $phone        = e($settings['phone'] ?? '');
@@ -66,9 +72,9 @@ class InvoicePdfRenderer
               <div class="muted">{$phone}</div>
             </div>
             <div style="text-align:right">
-              <h1>FACTURE</h1>
+              <h1>{$docTitle}</h1>
               <div><strong>{$number}</strong></div>
-              <div class="muted">Émise le {$issue}</div>
+              <div class="muted">Émis le {$issue}</div>
               <div class="muted">Échéance {$due}</div>
             </div>
           </div>
@@ -84,15 +90,17 @@ class InvoicePdfRenderer
             <tr><td>Total HT</td><td class="num">{$fmt($invoice->subtotal_minor)}</td></tr>
             <tr><td>TVA</td><td class="num">{$fmt($invoice->tax_total_minor)}</td></tr>
             <tr class="grand"><td>Total TTC</td><td class="num">{$fmt($invoice->total_minor)}</td></tr>
-            <tr><td>Réglé</td><td class="num">{$fmt($invoice->paid_minor)}</td></tr>
-            <tr><td>Reste dû</td><td class="num">{$fmt($invoice->remainingMinor())}</td></tr>
+            <tr><td>{$settledLabel}</td><td class="num">{$fmt($settledMinor)}</td></tr>
+            <tr><td>{$remainLabel}</td><td class="num">{$fmt($invoice->remainingMinor())}</td></tr>
           </table>
-          <div class="foot">Facture générée par Frynov ERP</div>
+          <div class="foot">Document généré par Frynov ERP</div>
         </body></html>
         HTML;
 
+        $filePrefix = $isCreditNote ? 'avoir_' : 'facture_';
+
         return Pdf::loadHTML($html)->setPaper('a4', 'portrait')
-            ->download('facture_' . ($invoice->number ?? $invoice->id) . '.pdf');
+            ->download($filePrefix . ($invoice->number ?? $invoice->id) . '.pdf');
     }
 
     private function money(int $minor, string $currency): string

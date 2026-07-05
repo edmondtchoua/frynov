@@ -3,6 +3,24 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧾 RC-33 : Comptabilité — avoirs (notes de crédit) & application aux factures (P3.2) (2026-07-05)
+
+Extension de la facturation (RC-30) : les **avoirs** réutilisent la table `invoices`
+(`kind = credit_note`, numéro `AV-`).
+
+- **Création depuis une facture émise** : l'avoir reprend les lignes de la facture et pointe vers elle
+  (`credit_note_of_id`, traçabilité).
+- **Émission** : numéro `AV-` + **écriture INVERSE** via le moteur d'imputation (`credit_note.issued`
+  → débit **701** HT + débit **4431** TVA / crédit **411** client, journal **AV**).
+- **Application aux factures** (`credit_note_applications`) : impute l'avoir à une facture émise pour en
+  réduire le reste dû ; borné au reste applicable de l'avoir **et** au reste dû de la facture ;
+  applications cumulables (une ligne par couple avoir↔facture). `remainingMinor()` d'une facture tient
+  compte des paiements **et** des avoirs appliqués.
+- **PDF** avoir (titre AVOIR, libellés adaptés). **Front** : `CreditNotesView`
+  (`/accounting/credit-notes`) — liste, création depuis facture, émission, application, PDF. i18n FR/EN.
+- **Migration** : `invoices.credit_note_of_id` + `invoices.credited_minor` + table
+  `credit_note_applications`. **Tests** : `AccountingCreditNoteTest` (8) + `CreditNotesView.spec.ts` (3).
+
 ## [Non publié] — 🧾 RC-30 : Comptabilité — facturation client & allocations de paiement (P3) (2026-07-05)
 
 Suite du module Comptabilité SYSCOHADA (après le référentiel P1 et les écritures/moteur P2) :

@@ -40,6 +40,17 @@ suite backend (~1011 tests) + cet audit statique.
 | C-6 | Orders/Inventory | Vente possible contre stock **périmé** (dispo agrégée vs FEFO). | ✅ Au confirm d'une ligne lot : vendable = agrégat − lots périmés actifs → 422 clair. Drift historique sans lot toujours toléré. +1 test. |
 | C-7 | Inventory | `quantity_after` faux (+qté) en import groupé. | ✅ « Après » figé avant l'update (plus de double addition). +1 test. |
 
+## Corrigés dans rc.153 (RC-21 — revue Retours/RMA)
+
+| # | Sévérité | Zone | Bug | Correctif |
+|---|----------|------|-----|-----------|
+| R-0 | **CRITIQUE** | Retours (front) | `ReturnsView` appelait l'API **sans le préfixe `/api`** (4 appels → 404) : **l'écran Retours n'a jamais fonctionné** (liste vide, actions mortes). | ✅ Préfixe rétabli — validé E2E (liste, approve, restock sur base réelle). |
+| R-1 | **HAUTE** | Retours | **Sur-retour non borné** (qté > achetée, cumuls multi-retours) → stock fantôme + remboursement > payé. | ✅ Borne par ligne : achetée − déjà demandée/retournée (retours non refusés) → 422 explicite. +2 tests. Validé E2E. |
+| R-2 | **HAUTE** | Retours | Retour possible sur commande **non honorée** (draft/confirmed) → restock fantôme. | ✅ Seules les commandes `fulfilled` sont retournables (DomainException). +1 test. |
+| R-3 | MOYENNE | Retours | `POST {orderId}/returns` **hors RBAC** : un viewer pouvait créer des retours. | ✅ Route déplacée sous `role_or_permission:manager|admin|orders.manage` (la caisse a son guard). +1 test. |
+| R-4 | BASSE | Retours/POS | Listes `condition` incohérentes (orders: `destroyed`, POS: `defective`). | ✅ Union harmonisée des deux côtés. |
+| R-5 | MOYENNE | Retours (front) | **Aucune création de retour hors caisse** + liste sans pagination + résolution `null` affichée en clé i18n brute. | ✅ Bouton « Retourner des articles » (commandes livrées) + modal lignes/état/motif/résolution, pagination, garde d'affichage. i18n FR/EN. |
+
 ## Backlog — à traiter (priorisé)
 
 ## Corrigés dans rc.152 (RC-20 — file BASSE)

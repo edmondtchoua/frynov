@@ -236,6 +236,19 @@ garantie **annulés** (`void`), accès digitaux **révoqués**. Le réabondement
 réservé aux lignes **resalable** et **stockables** (un produit `stock_tracking=none` n'a pas de stock).
 Dépendances injectées : `SerializedAllocationService`, `WarrantyService`, `DigitalService`.
 
+**Garde-fous de création (RC-21)** — `OrderReturnService::create()` :
+- **Commande honorée uniquement** : un retour sur un brouillon/confirmé (stock jamais décrémenté)
+  est refusé (`DomainException`) — un restock créerait du stock fantôme.
+- **Borne de sur-retour par ligne** : quantité retournable = achetée − Σ des retours non refusés de
+  la même ligne (`COALESCE(quantity_approved, quantity_requested)` : un retour tranché compte
+  l'approuvé, un retour en attente réserve sa demande). Dépassement → 422 avec le restant.
+- **Numérotation** : `RET-` via `SequenceService` (séquence verrouillée, RC-20).
+- **RBAC** : la création (`POST /api/orders/{id}/returns`) exige `manager|admin|orders.manage` ;
+  le remboursement au comptoir passe par le POS (rôles caisse, RC-16).
+
+**Frontend** : création depuis `OrderDetailView` (bouton « Retourner des articles », commandes
+livrées) ; liste/actions dans `ReturnsView` (pagination, erreurs affichées).
+
 ---
 
 ## Tests

@@ -65,4 +65,14 @@ export const orderService = {
   cancel(id: string) {
     return client.post<Order>(`/api/orders/${id}/cancel`).then(r => r.data)
   },
+
+  // RC-21 — création d'un retour (RMA) depuis le détail de commande.
+  createReturn(orderId: string, payload: {
+    reason: string
+    resolution: string
+    customer_note?: string
+    lines: { order_line_id: string; quantity: number; condition?: string }[]
+  }) {
+    return client.post<{ data: unknown }>(`/api/orders/${orderId}/returns`, payload).then(r => r.data)
+  },
 }

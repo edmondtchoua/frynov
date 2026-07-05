@@ -184,7 +184,7 @@ class PosController extends Controller
             'lines'                 => ['required', 'array', 'min:1'],
             'lines.*.order_line_id' => ['required', 'uuid'],
             'lines.*.quantity'      => ['required', 'integer', 'min:1'],
-            'lines.*.condition'     => ['nullable', 'in:resalable,damaged,defective'],
+            'lines.*.condition'     => ['nullable', 'in:resalable,damaged,defective,destroyed'], // RC-21 (R-4) — harmonisé avec Orders
             'reason'                => ['required', 'string', 'max:255'],
             'refund_method'         => ['nullable', 'in:cash,mobile_money,card,transfer,cheque'],
         ]);

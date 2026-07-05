@@ -35,7 +35,8 @@ class OrderReturnController extends Controller
             'lines'                   => 'required|array|min:1',
             'lines.*.order_line_id'   => 'required|uuid',
             'lines.*.quantity'        => 'required|integer|min:1',
-            'lines.*.condition'       => 'nullable|in:resalable,damaged,destroyed',
+            // RC-21 (R-4) — liste harmonisée avec le POS (defective y était accepté, destroyed ici).
+            'lines.*.condition'       => 'nullable|in:resalable,damaged,defective,destroyed',
             'lines.*.reason'          => 'nullable|string|max:200',
         ]);
 

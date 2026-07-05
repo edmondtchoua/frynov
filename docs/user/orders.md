@@ -78,10 +78,32 @@ Ce numéro est unique par boutique et peut servir de référence lors des échan
 
 ---
 
+## Retours (RMA)
+
+Pour reprendre des articles d'une commande **livrée** :
+
+1. Ouvrez la commande → bouton **Retourner des articles** (visible uniquement sur les commandes livrées, rôle manager/admin requis).
+2. Indiquez la **quantité à rendre** par article (bornée à ce qui reste retournable : acheté − déjà retourné), son **état** (revendable / endommagé / défectueux) et le **motif**.
+3. Choisissez la **résolution** (remboursement, échange, avoir) puis **Créer le retour**.
+
+Le retour apparaît dans **Ventes → Retours & SAV** :
+- **Approuver** : valide les quantités et calcule le montant à rembourser.
+- **Remettre en stock** : réintègre les articles **revendables** (les unités sérialisées, garanties et accès numériques liés sont automatiquement défaits) — les articles endommagés/défectueux ne retournent pas en stock.
+- **Refuser** : clôt la demande avec un motif.
+
+> ℹ️ Pour un remboursement immédiat au comptoir (client présent), utilisez plutôt le bouton
+> **Rembourser** de la **Caisse** : il enchaîne retour + sortie d'espèces du tiroir (voir le
+> [guide Caisse](pos.md)).
+
+---
+
 ## FAQ
 
 **Q : Je veux modifier une commande déjà confirmée, c'est possible ?**  
 R : Non, une fois confirmée, la commande est verrouillée pour garantir la cohérence du stock. Annulez-la et recréez une nouvelle commande.
+
+**Q : Pourquoi je ne peux pas retourner plus d'articles qu'achetés ?**  
+R : C'est voulu : la quantité retournable est bornée à « acheté − déjà retourné » par article, pour empêcher le stock fantôme et les remboursements supérieurs au montant payé.
 
 **Q : Le stock n'a pas été déduit après livraison ?**  
 R : Assurez-vous d'avoir cliqué sur **Marquer livrée**. La confirmation seule réserve le stock sans le déduire.

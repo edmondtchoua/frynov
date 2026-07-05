@@ -3,6 +3,29 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — ↩️ RC-21 : revue Retours (RMA) — front + backend (2026-07-05)
+
+Branche `feature/rc21-returns-review` (release `v1.0.0` → `rc.153`). Inspection complète du module
+Retours, validée E2E en preview sur la base locale (cycle créer → approuver → restocker réel).
+
+- **[R-0 CRITIQUE]** `ReturnsView` appelait l'API **sans le préfixe `/api`** (baseURL vide) : l'écran
+  Retours n'a **jamais fonctionné** (liste toujours vide, actions en 404). Réparé et validé en réel.
+- **[R-1 HAUTE]** **Sur-retour borné** : quantité retournable = achetée − déjà demandée/retournée
+  (retours non refusés de la même ligne). Avant : retour de 50 sur une ligne de 2 accepté → stock
+  fantôme au restock + remboursement supérieur au payé. 422 explicite (« N restant(s) sur M »),
+  message affiché dans le modal. +2 tests.
+- **[R-2 HAUTE]** Retour possible uniquement sur commande **honorée** — un brouillon/confirmé n'a
+  jamais décrémenté le stock (restock = stock fantôme). +1 test.
+- **[R-3]** Création de retour placée sous **RBAC** `manager|admin|orders.manage` (un viewer pouvait
+  en créer) ; la caisse garde son propre guard. +1 test.
+- **[R-4]** Listes `condition` **harmonisées** entre Orders et POS (`resalable,damaged,defective,destroyed`).
+- **[R-5]** Le front ne permettait **aucune création de retour hors caisse** : bouton « Retourner des
+  articles » sur les commandes livrées (modal lignes/quantités/état/motif/résolution, erreurs serveur
+  affichées), **pagination** de la liste des retours, résolution absente affichée « — ». i18n FR/EN.
+
+Backend 43 tests retours/POS verts, front 43 specs vertes, typecheck OK. E2E : RET-000002
+créé → approuvé (journal d'audit écrit) → restocké (stock 198→199) ; sur-retour refusé avec message.
+
 ## [Non publié] — 🧹 RC-20 : file BASSE (8 correctifs) + validation E2E sur base locale (2026-07-05)
 
 Branche `feature/rc20-basse-fixes` (release `v1.0.0` → `rc.152`). Solde du backlog rc.147 (hors 2

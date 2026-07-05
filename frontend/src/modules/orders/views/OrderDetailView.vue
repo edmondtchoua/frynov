@@ -262,6 +262,16 @@
                 {{ $t('common.cancel') }}
               </button>
 
+              <!-- RC-21 — création d'un retour (RMA) : uniquement une commande HONORÉE. -->
+              <button
+                v-if="order.status === 'fulfilled'"
+                class="btn btn-secondary"
+                data-test="open-return"
+                @click="openReturnModal"
+              >
+                {{ $t('orders.returns.create.button') }}
+              </button>
+
               <RouterLink :to="`/inventory/movements/${order.lines[0]?.product_id}`" class="btn btn-ghost btn-sm" v-if="order.lines.length > 0">
                 {{ $t('orders.detail.viewStock') }} →
               </RouterLink>
@@ -333,6 +343,63 @@
       </template>
     </BaseModal>
 
+    <!-- ── Create return modal (RC-21) ───────────────────────────────────────── -->
+    <BaseModal v-model="returnModal.open" :title="$t('orders.returns.create.title')" :subtitle="order?.number ?? ''">
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div v-for="rl in returnLines" :key="rl.order_line_id" class="return-line" data-test="return-line">
+          <div class="return-line-info">
+            <span class="return-line-name">{{ rl.name }}</span>
+            <span class="return-line-max">{{ $t('orders.returns.create.purchased', { qty: rl.max }) }}</span>
+          </div>
+          <div class="return-line-controls">
+            <input
+              v-model.number="rl.quantity" type="number" min="0" :max="rl.max"
+              class="form-input return-qty" :data-test="`return-qty-${rl.order_line_id}`"
+            />
+            <select v-model="rl.condition" class="form-input return-cond">
+              <option value="resalable">{{ $t('orders.returns.create.cond.resalable') }}</option>
+              <option value="damaged">{{ $t('orders.returns.create.cond.damaged') }}</option>
+              <option value="defective">{{ $t('orders.returns.create.cond.defective') }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">{{ $t('orders.returns.colReason') }} <span style="color:#dc2626;">*</span></label>
+          <select v-model="returnForm.reason" class="form-input" data-test="return-reason">
+            <option value="defective">{{ $t('orders.returns.reason.defective') }}</option>
+            <option value="wrong_item">{{ $t('orders.returns.reason.wrong_item') }}</option>
+            <option value="changed_mind">{{ $t('orders.returns.reason.changed_mind') }}</option>
+            <option value="damaged">{{ $t('orders.returns.reason.damaged') }}</option>
+            <option value="other">{{ $t('orders.returns.reason.other') }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">{{ $t('orders.returns.colResolution') }} <span style="color:#dc2626;">*</span></label>
+          <select v-model="returnForm.resolution" class="form-input" data-test="return-resolution">
+            <option value="refund">{{ $t('orders.returns.resolution.refund') }}</option>
+            <option value="exchange">{{ $t('orders.returns.resolution.exchange') }}</option>
+            <option value="store_credit">{{ $t('orders.returns.resolution.store_credit') }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">{{ $t('common.note') }}</label>
+          <textarea v-model="returnForm.note" class="form-input" rows="2" :placeholder="$t('orders.returns.create.notePlaceholder')"></textarea>
+        </div>
+
+        <p v-if="returnModal.error" style="color:#dc2626; font-size:0.875rem;" data-test="return-error">{{ returnModal.error }}</p>
+      </div>
+      <template #footer>
+        <button class="btn btn-ghost" @click="returnModal.open = false">{{ $t('common.cancel') }}</button>
+        <button class="btn btn-primary" :disabled="returnModal.saving || !returnHasQty" data-test="return-submit" @click="submitReturn">
+          <span v-if="returnModal.saving" class="spinner-sm"></span>
+          {{ $t('orders.returns.create.submit') }}
+        </button>
+      </template>
+    </BaseModal>
+
     <!-- ── Open after-sales claim modal (RC-5F) ──────────────────────────────── -->
     <BaseModal v-model="claimModal.open" :title="$t('orders.detail.savTitle')">
       <div style="display: flex; flex-direction: column; gap: 14px;">
@@ -388,6 +455,49 @@ const loading       = ref(false)
 const error         = ref<string | null>(null)
 const actionLoading = ref<string | false>(false)
 const actionError   = ref<string | null>(null)
+
+// ── Return creation (RC-21) ────────────────────────────────────────────────────
+const returnModal = reactive({ open: false, saving: false, error: '' })
+const returnForm  = reactive({ reason: 'defective', resolution: 'refund', note: '' })
+const returnLines = ref<{ order_line_id: string; name: string; max: number; quantity: number; condition: string }[]>([])
+
+const returnHasQty = computed(() => returnLines.value.some(l => l.quantity > 0))
+
+function openReturnModal() {
+  if (!order.value) return
+  returnModal.error = ''
+  returnForm.reason = 'defective'
+  returnForm.resolution = 'refund'
+  returnForm.note = ''
+  returnLines.value = order.value.lines.map(l => ({
+    order_line_id: l.id, name: l.name, max: l.quantity, quantity: 0, condition: 'resalable',
+  }))
+  returnModal.open = true
+}
+
+async function submitReturn() {
+  if (!order.value || !returnHasQty.value) return
+  returnModal.saving = true
+  returnModal.error = ''
+  try {
+    await orderService.createReturn(order.value.id, {
+      reason: returnForm.reason,
+      resolution: returnForm.resolution,
+      customer_note: returnForm.note || undefined,
+      lines: returnLines.value
+        .filter(l => l.quantity > 0)
+        .map(l => ({ order_line_id: l.order_line_id, quantity: Math.min(l.quantity, l.max), condition: l.condition })),
+    })
+    returnModal.open = false
+  } catch (e: any) {
+    // 422 métier (sur-retour, état invalide…) : message serveur prioritaire.
+    returnModal.error = e?.response?.data?.message
+      ?? Object.values(e?.response?.data?.errors ?? {}).flat()[0] as string
+      ?? t('orders.returns.create.error')
+  } finally {
+    returnModal.saving = false
+  }
+}
 
 // ── Payments ───────────────────────────────────────────────────────────────────
 const payments     = ref<Payment[]>([])
@@ -769,4 +879,13 @@ onMounted(() => { load(); loadPayments(); loadDeliveries(); loadUnits(); loadWar
   padding: 0 8px 2px;
   min-height: 22px;
 }
+
+/* RC-21 — modal de retour */
+.return-line { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--gray-100); }
+.return-line-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.return-line-name { font-size: 0.875rem; font-weight: 600; }
+.return-line-max { font-size: 0.75rem; color: var(--gray-500); }
+.return-line-controls { display: flex; gap: 8px; }
+.return-qty { width: 72px; text-align: right; }
+.return-cond { width: 130px; }
 </style>

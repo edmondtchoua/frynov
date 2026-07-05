@@ -1,0 +1,379 @@
+<template>
+  <div class="import-history-view">
+
+    <!-- ── Header ────────────────────────────────────────────────────────── -->
+    <div class="page-header">
+      <div class="page-title">
+        <h1>{{ $t('importExport.history.title') }}</h1>
+        <span class="count-badge">{{ $t('importExport.history.sessionsCount', { count: meta.total }) }}</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-primary" @click="$router.push('/import/new')">
+          ⬆️ {{ $t('importExport.history.newImport') }}
+        </button>
+        <div class="export-menu">
+          <span class="export-label">{{ $t('importExport.history.templates') }}</span>
+          <button class="btn btn-outline btn-sm" :title="$t('importExport.history.templateTooltip')" @click="doTemplate('products')">📊 {{ $t('importExport.entity.products') }}</button>
+          <button class="btn btn-outline btn-sm" :title="$t('importExport.history.templateTooltip')" @click="doTemplate('customers')">👥 {{ $t('importExport.entity.customers') }}</button>
+          <button class="btn btn-outline btn-sm" :title="$t('importExport.history.templateTooltip')" @click="doTemplate('suppliers')">🏭 {{ $t('importExport.entity.suppliers') }}</button>
+        </div>
+        <div class="export-menu">
+          <span class="export-label">{{ $t('importExport.history.exportLabel') }}</span>
+          <button class="btn btn-outline btn-sm" @click="doExport('products')">📊 {{ $t('importExport.entity.products') }}</button>
+          <button class="btn btn-outline btn-sm" @click="doExport('customers')">👥 {{ $t('importExport.entity.customers') }}</button>
+          <button class="btn btn-outline btn-sm" @click="doExport('suppliers')">🏭 {{ $t('importExport.entity.suppliers') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <p v-if="downloadError" class="download-error">⚠️ {{ downloadError }}</p>
+
+    <!-- ── Filters ────────────────────────────────────────────────────────── -->
+    <div class="filters-bar">
+      <select v-model="typeFilter" class="filter-select" @change="load(1)">
+        <option value="">{{ $t('importExport.history.allTypes') }}</option>
+        <option value="products">{{ $t('importExport.entity.products') }}</option>
+        <option value="customers">{{ $t('importExport.entity.customers') }}</option>
+        <option value="suppliers">{{ $t('importExport.entity.suppliers') }}</option>
+      </select>
+      <select v-model="statusFilter" class="filter-select" @change="load(1)">
+        <option value="">{{ $t('common.allStatuses') }}</option>
+        <option value="completed">{{ $t('importExport.status.completed') }}</option>
+        <option value="partial">{{ $t('importExport.status.partial') }}</option>
+        <option value="awaiting_approval">{{ $t('importExport.status.awaiting_approval') }}</option>
+        <option value="analyzed">{{ $t('importExport.status.analyzed') }}</option>
+        <option value="failed">{{ $t('importExport.status.failed') }}</option>
+        <option value="cancelled">{{ $t('importExport.status.cancelled') }}</option>
+      </select>
+    </div>
+
+    <!-- ── Table ─────────────────────────────────────────────────────────── -->
+    <div class="table-card table-scroll">
+      <StateBlock v-if="loading" variant="loading" />
+
+      <StateBlock
+        v-else-if="sessions.length === 0"
+        variant="empty"
+        :title="$t('importExport.history.empty')"
+      >
+        <template #action>
+          <button class="btn btn-primary btn-sm" @click="$router.push('/import/new')">{{ $t('importExport.history.firstImport') }}</button>
+        </template>
+      </StateBlock>
+
+      <table v-else class="data-table">
+        <thead>
+          <tr>
+            <th>{{ $t('importExport.history.colType') }}</th>
+            <th>{{ $t('importExport.history.colFile') }}</th>
+            <th>{{ $t('importExport.history.colMode') }}</th>
+            <th>{{ $t('common.status') }}</th>
+            <th class="text-right">{{ $t('common.total') }}</th>
+            <th class="text-right">{{ $t('importExport.history.colImported') }}</th>
+            <th class="text-right">{{ $t('importExport.history.colErrors') }}</th>
+            <th>{{ $t('common.date') }}</th>
+            <th>{{ $t('common.actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="s in sessions" :key="s.id" class="table-row" @click="openDetail(s)" style="cursor:pointer">
+            <td>
+              <span :class="['type-badge', `type-${s.type}`]">
+                {{ TYPE_ICONS[s.type] }} {{ entityLabel(s.type) }}
+              </span>
+            </td>
+            <td class="col-filename">
+              <span class="filename">{{ s.original_filename }}</span>
+            </td>
+            <td>
+              <span class="mode-text">{{ modeShort(s.mode) }}</span>
+            </td>
+            <td>
+              <span :class="['status-badge', `status-${s.status}`]">{{ statusLabel(s.status) }}</span>
+            </td>
+            <td class="text-right text-muted">{{ s.total_rows }}</td>
+            <td class="text-right">
+              <span v-if="s.imported_rows > 0" class="text-success">{{ s.imported_rows }}</span>
+              <span v-else class="text-muted">—</span>
+            </td>
+            <td class="text-right">
+              <span v-if="s.error_rows > 0" class="text-error">{{ s.error_rows }}</span>
+              <span v-else class="text-muted">—</span>
+            </td>
+            <td class="text-muted date-col">{{ fmtDate(s.created_at) }}</td>
+            <td @click.stop>
+              <div class="action-group">
+                <button v-if="s.status === 'awaiting_approval'" class="btn-action btn-approve" :title="$t('importExport.history.continue')" @click="continueSession(s)">▶</button>
+                <button v-if="['completed','partial'].includes(s.status)" class="btn-action btn-report" :title="$t('importExport.history.reportPdf')" @click="doReport(s.id)">📄</button>
+                <button v-if="canCancel(s)" class="btn-action btn-delete" :title="$t('common.cancel')" @click.stop="cancelSession(s)">✕</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div v-if="meta.last_page > 1" class="pagination">
+        <button class="page-btn" :disabled="meta.current_page === 1" @click="load(meta.current_page - 1)">←</button>
+        <span class="page-info">{{ $t('common.pageOf', { current: meta.current_page, total: meta.last_page }) }}</span>
+        <button class="page-btn" :disabled="meta.current_page === meta.last_page" @click="load(meta.current_page + 1)">→</button>
+      </div>
+    </div>
+
+    <!-- ── Session Detail Modal (shared BaseModal — UX-03) ────────────────── -->
+    <BaseModal
+      :model-value="!!detailSession"
+      size="lg"
+      :title="$t('importExport.history.detailTitle')"
+      @update:model-value="(v: boolean) => { if (!v) detailSession = null }"
+    >
+      <div v-if="detailSession" class="import-detail-body">
+            <p class="modal-sub">{{ detailSession.original_filename }}</p>
+            <!-- Summary stats -->
+            <div class="detail-stats">
+              <div class="detail-stat"><span class="ds-value">{{ detailSession.total_rows }}</span><span class="ds-label">{{ $t('common.total') }}</span></div>
+              <div class="detail-stat valid"><span class="ds-value">{{ detailSession.valid_rows }}</span><span class="ds-label">{{ $t('importExport.history.valid') }}</span></div>
+              <div class="detail-stat warning"><span class="ds-value">{{ detailSession.warning_rows }}</span><span class="ds-label">{{ $t('importExport.history.warningShort') }}</span></div>
+              <div class="detail-stat error"><span class="ds-value">{{ detailSession.error_rows }}</span><span class="ds-label">{{ $t('importExport.history.errors') }}</span></div>
+              <div class="detail-stat imported"><span class="ds-value">{{ detailSession.imported_rows }}</span><span class="ds-label">{{ $t('importExport.history.imported') }}</span></div>
+              <div class="detail-stat skipped"><span class="ds-value">{{ detailSession.skipped_rows }}</span><span class="ds-label">{{ $t('importExport.history.skipped') }}</span></div>
+            </div>
+
+            <!-- Summary breakdown -->
+            <div v-if="detailSession.summary" class="summary-box">
+              <div class="summary-row"><span>{{ $t('importExport.history.created') }}</span><strong>{{ detailSession.summary.created }}</strong></div>
+              <div class="summary-row"><span>{{ $t('importExport.history.updated') }}</span><strong>{{ detailSession.summary.updated }}</strong></div>
+              <div class="summary-row"><span>{{ $t('importExport.history.skipped') }}</span><strong>{{ detailSession.summary.skipped }}</strong></div>
+              <div class="summary-row"><span>{{ $t('importExport.history.errors') }}</span><strong class="text-error">{{ detailSession.summary.errors }}</strong></div>
+            </div>
+
+            <div v-if="detailSession.error_message" class="error-banner">
+              ⚠️ {{ detailSession.error_message }}
+            </div>
+
+            <div class="meta-grid">
+              <div class="meta-item"><span>{{ $t('importExport.history.colType') }}</span><strong>{{ entityLabel(detailSession.type) }}</strong></div>
+              <div class="meta-item"><span>{{ $t('importExport.history.colMode') }}</span><strong>{{ modeLabel(detailSession.mode) }}</strong></div>
+              <div class="meta-item"><span>{{ $t('common.status') }}</span><strong>{{ statusLabel(detailSession.status) }}</strong></div>
+              <div class="meta-item"><span>{{ $t('importExport.history.createdAt') }}</span><strong>{{ fmtDate(detailSession.created_at) }}</strong></div>
+              <div v-if="detailSession.completed_at" class="meta-item"><span>{{ $t('importExport.history.completedAt') }}</span><strong>{{ fmtDate(detailSession.completed_at) }}</strong></div>
+            </div>
+      </div>
+
+      <template #footer>
+        <template v-if="detailSession">
+          <button v-if="['completed','partial'].includes(detailSession.status)" class="btn btn-outline" @click="doReport(detailSession.id)">
+            📄 {{ $t('importExport.history.reportPdf') }}
+          </button>
+          <button v-if="detailSession.status === 'awaiting_approval'" class="btn btn-primary" @click="continueSession(detailSession)">
+            ▶ {{ $t('importExport.history.continueImport') }}
+          </button>
+          <button class="btn btn-ghost" @click="detailSession = null">{{ $t('importExport.history.close') }}</button>
+        </template>
+      </template>
+    </BaseModal>
+
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted } from 'vue'
+import { formatDateTime } from '@/shared/utils/date'
+import { useRouter } from 'vue-router'
+import { importExportService } from '../services/importExportService'
+import StateBlock from '@/shared/ui/StateBlock.vue'
+import BaseModal from '@/shared/ui/BaseModal.vue'
+import { useConfirm } from '@/composables/useConfirm'
+import { pushToast } from '@/composables/useNotifications'
+import type { ImportSession } from '../types'
+import { t } from '@/i18n'
+
+const router = useRouter()
+
+const sessions      = ref<ImportSession[]>([])
+const loading       = ref(false)
+const meta          = reactive({ current_page: 1, last_page: 1, per_page: 20, total: 0 })
+const typeFilter    = ref('')
+const statusFilter  = ref('')
+const detailSession = ref<ImportSession | null>(null)
+
+const TYPE_ICONS: Record<string, string> = { products: '📦', customers: '👥', suppliers: '🏭' }
+const entityLabel = (e: string) => t(`importExport.entity.${e}`)
+const modeLabel   = (m: string) => t(`importExport.mode.${m}`)
+const modeShort   = (m: string) => t(`importExport.modeShort.${m}`)
+const statusLabel = (s: string) => t(`importExport.status.${s}`)
+
+async function load(page = 1) {
+  loading.value = true
+  try {
+    const res = await importExportService.history({
+      type: typeFilter.value || undefined,
+      status: statusFilter.value || undefined,
+      page,
+    })
+    sessions.value = res.data
+    Object.assign(meta, res.meta)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => load())
+
+function openDetail(s: ImportSession) {
+  detailSession.value = s
+}
+
+function continueSession(s: ImportSession) {
+  detailSession.value = null
+  router.push({ path: '/import/new', query: { session: s.id } })
+}
+
+function canCancel(s: ImportSession): boolean {
+  return !['completed', 'partial', 'failed', 'cancelled'].includes(s.status)
+}
+
+const { confirm } = useConfirm()
+
+async function cancelSession(s: ImportSession) {
+  if (!(await confirm({
+    title: t('importExport.history.cancelTitle'),
+    message: t('importExport.history.cancelConfirm', { name: s.original_filename }),
+    confirmLabel: t('importExport.history.cancelTitle'),
+    danger: true,
+  }))) return
+  try {
+    await importExportService.cancel(s.id)
+    await load(meta.current_page)
+  } catch (e: any) {
+    pushToast(e?.response?.data?.message ?? t('importExport.history.cancelError'))
+  }
+}
+
+const downloadError = ref('')
+
+// Downloads use responseType:'blob', so an error response (401/403/500) arrives
+// as a Blob — read & parse it to surface the real message.
+async function runDownload(task: Promise<void>) {
+  downloadError.value = ''
+  try {
+    await task
+  } catch (e: any) {
+    let msg = t('importExport.history.downloadError')
+    const data = e?.response?.data
+    if (data instanceof Blob) {
+      try { msg = JSON.parse(await data.text())?.message ?? msg } catch { /* keep default */ }
+    } else if (data?.message) {
+      msg = data.message
+    }
+    downloadError.value = msg
+  }
+}
+
+function doExport(type: string)   { runDownload(importExportService.exportExcel(type as any)) }
+function doTemplate(type: string) { runDownload(importExportService.downloadTemplate(type as any)) }
+function doReport(id: string)     { runDownload(importExportService.downloadReport(id)) }
+
+const fmtDate = formatDateTime
+</script>
+
+<style scoped>
+.import-history-view { padding: 24px; }
+
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+.page-title  { display: flex; align-items: center; gap: 12px; }
+.page-title h1 { font-size: 24px; font-weight: 700; color: var(--gray-900); }
+.count-badge { background: var(--brand-primary-light, #e0f2f1); color: var(--brand-primary, #0d9488); padding: 2px 10px; border-radius: 12px; font-size: 13px; font-weight: 600; }
+.header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.export-menu { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.export-label { font-size: 13px; color: var(--gray-500); }
+.download-error { margin: 0 0 12px; padding: 8px 12px; border-radius: 8px; background: #fef2f2; color: #991b1b; font-size: 13px; }
+
+.filters-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-select { padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 14px; outline: none; background: white; cursor: pointer; }
+
+.table-card     { background: white; border-radius: 12px; border: 1px solid var(--gray-200); overflow-x: auto; }
+.table-loading  { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 48px; color: var(--gray-500); }
+
+.data-table     { width: 100%; border-collapse: collapse; }
+.data-table th  { padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--gray-200); background: var(--gray-50); }
+.data-table td  { padding: 12px 14px; font-size: 13px; color: var(--gray-700); border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+.table-row:hover td { background: var(--gray-50); }
+.text-right { text-align: right; }
+.text-muted { color: var(--gray-400); }
+.text-success { color: #059669; font-weight: 700; }
+.text-error   { color: #dc2626; font-weight: 700; }
+
+.empty-state  { text-align: center; padding: 64px 24px !important; }
+.empty-inner  { display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--gray-400); }
+.empty-inner p { font-size: 15px; color: var(--gray-500); }
+
+.type-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: var(--gray-100); color: var(--gray-600); }
+.col-filename .filename { font-family: monospace; font-size: 12px; color: var(--gray-700); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.mode-text { font-size: 12px; color: var(--gray-500); font-weight: 600; }
+.date-col  { white-space: nowrap; font-size: 12px; }
+
+.status-badge   { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+.status-draft             { background: #f3f4f6; color: #6b7280; }
+.status-analyzing         { background: #dbeafe; color: #1d4ed8; }
+.status-analyzed          { background: #fef3c7; color: #92400e; }
+.status-awaiting_approval { background: #ede9fe; color: #5b21b6; }
+.status-importing         { background: #dbeafe; color: #1d4ed8; }
+.status-completed         { background: #d1fae5; color: #065f46; }
+.status-partial           { background: #fef3c7; color: #92400e; }
+.status-failed            { background: #fee2e2; color: #991b1b; }
+.status-cancelled         { background: #f3f4f6; color: #6b7280; }
+
+.action-group { display: flex; gap: 4px; }
+.btn-action   { background: none; border: none; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: background 0.15s; }
+.btn-action:hover { background: var(--gray-100); }
+.btn-approve  { color: var(--brand-primary, #0d9488); }
+.btn-report   { color: #6b7280; }
+.btn-delete   { color: #dc2626; }
+
+.pagination  { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 16px; border-top: 1px solid var(--gray-100); }
+.page-btn    { padding: 6px 14px; border: 1px solid var(--gray-200); background: white; border-radius: 8px; cursor: pointer; font-size: 14px; }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.page-info   { font-size: 14px; color: var(--gray-500); }
+
+.spinner { width: 20px; height: 20px; border: 2px solid var(--gray-200); border-top-color: var(--brand-primary, #0d9488); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Modal — chrome provided by the shared <BaseModal> (UX-03); body via .import-detail-body. */
+.import-detail-body { display: flex; flex-direction: column; gap: 20px; }
+.modal-sub     { font-size: 13px; color: var(--gray-500); margin: 0; font-family: monospace; }
+
+.detail-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.detail-stat  { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 12px; text-align: center; }
+.detail-stat.valid    { background: #f0fdf4; border-color: #a7f3d0; }
+.detail-stat.warning  { background: #fffbeb; border-color: #fde68a; }
+.detail-stat.error    { background: #fef2f2; border-color: #fca5a5; }
+.detail-stat.imported { background: #f0fdfa; border-color: #5eead4; }
+.detail-stat.skipped  { background: #f9fafb; border-color: #e5e7eb; }
+.ds-value { display: block; font-size: 22px; font-weight: 800; color: var(--gray-900); }
+.ds-label { display: block; font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+
+.summary-box { background: var(--gray-50); border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.summary-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+.summary-row span { color: var(--gray-500); }
+.summary-row strong { color: var(--gray-900); }
+
+.error-banner { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 10px 14px; border-radius: 8px; font-size: 13px; }
+
+.meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.meta-item { display: flex; flex-direction: column; gap: 2px; }
+.meta-item span { font-size: 12px; color: var(--gray-400); }
+.meta-item strong { font-size: 13px; color: var(--gray-800); }
+
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--gray-100); flex-wrap: wrap; }
+
+/* Buttons */
+.btn         { padding: 9px 18px; border-radius: 9px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }
+.btn-primary { background: var(--brand-primary, #0d9488); color: white; }
+.btn-primary:hover { background: #0b8070; }
+.btn-ghost   { background: transparent; border: 1px solid var(--gray-200); color: var(--gray-700); }
+.btn-ghost:hover { background: var(--gray-50); }
+.btn-outline  { background: white; border: 1px solid var(--brand-primary, #0d9488); color: var(--brand-primary, #0d9488); }
+.btn-outline:hover { background: #f0fdfa; }
+.btn-sm      { padding: 6px 14px; font-size: 13px; }
+</style>

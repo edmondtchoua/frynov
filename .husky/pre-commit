@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+# pre-commit hook: runs when LandingView.vue is staged
+# Checks for syntax errors + runs unit tests on the landing page
+
+# Only trigger if LandingView.vue is part of the staged changes
+if git diff --cached --name-only | grep -q "LandingView.vue"; then
+  echo "LandingView.vue changed — running landing checks..."
+  cd frontend
+  npm run check:landing
+  if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌  Landing page check FAILED."
+    echo "    Fix syntax errors or test failures before committing."
+    echo "    Run: cd frontend && npm run check:landing"
+    exit 1
+  fi
+  echo "✅  Landing page checks passed."
+  cd ..
+fi

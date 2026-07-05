@@ -1,0 +1,38 @@
+<?php
+
+namespace App\Modules\Orders\Providers;
+
+use App\Modules\Digital\Services\DigitalService;
+use App\Modules\Inventory\Services\SerializedAllocationService;
+use App\Modules\Inventory\Services\StockService;
+use App\Modules\Orders\Services\OrderService;
+use App\Modules\Platform\Services\AuditService;
+use App\Modules\Warranties\Services\WarrantyService;
+use App\Shared\ModuleServiceProvider;
+
+class OrdersServiceProvider extends ModuleServiceProvider
+{
+    protected string $moduleName      = 'Orders';
+    protected string $moduleNamespace = 'App\\Modules\\Orders';
+
+    public function register(): void
+    {
+        $this->app->singleton(OrderService::class, function ($app) {
+            return new OrderService(
+                $app->make(StockService::class),
+                $app->make(AuditService::class),
+                $app->make(SerializedAllocationService::class),
+                $app->make(WarrantyService::class),
+                $app->make(DigitalService::class),
+                $app->make(\App\Modules\Inventory\Services\BatchService::class),
+                $app->make(\App\Modules\Catalog\Services\KitService::class),
+            );
+        });
+    }
+
+    public function boot(): void
+    {
+        $this->loadMigrationsFrom($this->modulePath('database/migrations'));
+        $this->loadRoutesFrom($this->modulePath('routes/api.php'));
+    }
+}

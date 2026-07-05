@@ -1,0 +1,22 @@
+<?php
+
+use App\Modules\Billing\Http\Controllers\BillingController;
+use App\Modules\Billing\Http\Controllers\PublicPricingController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('public/pricing', [PublicPricingController::class, 'index'])->name('public.pricing');
+Route::get('public/geo', [PublicPricingController::class, 'geo'])->name('public.geo');
+Route::get('public/payment-methods', [PublicPricingController::class, 'paymentMethods'])->name('public.payment-methods');
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    // Promo code
+    Route::post('me/promo/validate', [BillingController::class, 'validatePromo'])->name('me.promo.validate');
+    Route::post('me/promo/apply', [BillingController::class, 'applyPromo'])->middleware('role:admin')->name('me.promo.apply');
+
+    // Manual payment proofs
+    Route::get('me/manual-payments', [BillingController::class, 'listPayments'])->name('me.manual-payments.index');
+    Route::post('me/manual-payments', [BillingController::class, 'submitPayment'])->name('me.manual-payments.store');
+
+    // Proration preview (RC-2) — lecture seule du reliquat avant un changement de plan.
+    Route::post('me/subscription/preview-upgrade', [BillingController::class, 'previewUpgrade'])->name('me.subscription.preview-upgrade');
+});

@@ -146,6 +146,21 @@ class ErpModulesSeeder extends Seeder
                 'color'        => '#6366F1',
                 'sort_order'   => 10,
             ],
+            // ── Finance ───────────────────────────────────────────────────────
+            [
+                // RC-23 — module Comptabilité SYSCOHADA (référentiel P1 ; écritures/facturation P2-P3).
+                'code'         => 'accounting',
+                'name'         => 'Comptabilité',
+                'category'     => ErpModule::CATEGORY_FINANCE,
+                'description'  => 'Comptabilité SYSCOHADA : plan comptable, journaux, taxes, écritures, facturation, états.',
+                'icon_svg'     => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M8 4v16M4 9h16M12 13h4M12 17h4"/></svg>',
+                'status'       => ErpModule::STATUS_ACTIVE,
+                'is_core'      => false,
+                'is_visible'   => true,
+                'route_prefix' => '/accounting',
+                'color'        => '#0EA5E9',
+                'sort_order'   => 11,
+            ],
         ];
 
         foreach ($modules as $data) {

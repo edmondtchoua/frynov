@@ -135,7 +135,7 @@ class PosService
         }
 
         try {
-            return $this->performCheckout($session, $data, $tenantId, $userId, $legs, $split, $idempotencyKey);
+            $result = $this->performCheckout($session, $data, $tenantId, $userId, $legs, $split, $idempotencyKey);
         } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
             // RC-22 — course entre deux rejeux de la même clé : le premier a gagné, on renvoie
             // sa vente (la nôtre vient d'être annulée par le rollback de la transaction).
@@ -144,6 +144,16 @@ class PosService
             }
             throw $e;
         }
+
+        // RC-26 — après commit : signale la vente au moteur d'imputation comptable (idempotent).
+        // `legs` = part encaissée par moyen de paiement (source de l'écriture de trésorerie).
+        $paymentLegs = array_map(
+            fn (Payment $pmt) => ['method' => $pmt->method, 'amount' => (int) $pmt->amount_cents],
+            $result['payments'],
+        );
+        event(new \App\Modules\Pos\Events\PosSaleCompleted($result['order'], $paymentLegs));
+
+        return $result;
     }
 
     /** @return array{order: Order, payments: Payment[], payment: ?Payment} */
@@ -303,6 +313,9 @@ class PosService
             subject: $movement,
         );
 
+        // RC-26 — écriture comptable (float_add / withdrawal / expense ; refund est porté par pos.refund).
+        event(new \App\Modules\Pos\Events\PosCashMovementRecorded($movement));
+
         return $movement;
     }
 
@@ -337,7 +350,7 @@ class PosService
             ]);
         }
 
-        return DB::transaction(function () use ($session, $order, $lines, $reason, $tenantId, $userId, $refundMethod) {
+        $result = DB::transaction(function () use ($session, $order, $lines, $reason, $tenantId, $userId, $refundMethod) {
             // 1. RMA lifecycle: create → approve (full requested qty) → restock.
             $return = $this->returns->create($order, $lines, $reason, $userId, null, OrderReturn::RESOLUTION_REFUND);
             $this->returns->approve($return, $userId);
@@ -371,6 +384,12 @@ class PosService
 
             return ['return' => $return, 'movement' => $movement];
         });
+
+        // RC-26 — écriture comptable du remboursement (le leg caisse est inclus, pas de doublon
+        // via cash.movement grâce au filtre reason=refund du subscriber).
+        event(new \App\Modules\Pos\Events\PosSaleRefunded($result['return'], $refundMethod));
+
+        return $result;
     }
 
     /**
@@ -407,6 +426,11 @@ class PosService
             subject: $session,
         );
 
-        return $session->fresh();
+        $fresh = $session->fresh();
+
+        // RC-26 — un écart de caisse (manquant/surplus) génère une écriture d'ajustement (658/758).
+        event(new \App\Modules\Pos\Events\PosSessionClosed($fresh));
+
+        return $fresh;
     }
 }

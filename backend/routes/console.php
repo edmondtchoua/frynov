@@ -45,3 +45,9 @@ Schedule::command('inventory:expire-batches')
     ->dailyAt('00:45')
     ->name('inventory:expire-batches')
     ->withoutOverlapping(30);
+
+// ── RC-26 — moteur d'imputation : rejeu de l'outbox comptable (idempotent) ─
+Schedule::command('accounting:process-outbox')
+    ->everyFiveMinutes()
+    ->name('accounting:process-outbox')
+    ->withoutOverlapping();

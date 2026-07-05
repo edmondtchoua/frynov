@@ -3,6 +3,67 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔒 RC-27 : Mise à niveau de plan — montant autoritatif (P0) (2026-07-05)
+
+Refonte progressive du parcours de changement de plan (audit : `docs/audit/plan-upgrade-audit.md`).
+**P0 — le montant à payer n'est plus une saisie client** :
+
+- **Devis serveur-side** (`UpgradeQuoteService` + `UpgradeQuote`) : brut `plan_prices` du marché résolu
+  → remise d'une promo **validée** → avoir de proration → **net à payer**. Nouvel endpoint
+  `POST /api/me/subscription/calculate-upgrade` (lecture seule).
+- **Durcissement du submit** `POST /api/me/manual-payments` : `amount_cents` devient optionnel ;
+  absent → net autoritatif + devise du marché imposés. La **cible** du plan reste toujours dérivée
+  serveur (un montant client ne peut plus falsifier le plan visé — critère #22).
+- **Front (drawer d'upgrade)** : sélecteur de périodicité, encart **devis verrouillé** avec détail du
+  calcul, revalidation promo, contrôle de taille de fichier (5 Mo), i18n FR+EN.
+- **Tests** : `CalculateUpgradeTest` (7 cas) — critères #3/#4/#5/#6/#22.
+
+## [Non publié] — 📒 RC-25/26 : Comptabilité — écritures + moteur d'imputation (P2) (2026-07-05)
+
+Branche `feature/rc23-accounting-referential` (release `v1.0.0` → `rc.156`). Cœur métier du module
+comptable, branché sur le POS :
+
+- **Écritures en partie double** (`accounting_entries`/`_lines`) : brouillon → comptabilisation
+  (numéro séquentiel par journal + rattachement période) → **extourne** (contre-écriture liée).
+  Équilibre imposé, ≥ 2 lignes, un côté par ligne ; **immutabilité** d'une écriture postée ; refus
+  en période verrouillée. Écran **Écritures** avec saisie manuelle et contrôle d'équilibre en direct.
+- **Moteur d'imputation** (`ImputationEngine`) + **outbox idempotente** (`accounting_outbox`,
+  unique par source) : le module Comptabilité **écoute** les événements POS (dépendance à sens
+  unique). Règles SYSCOHADA seedées : vente POS (débit trésorerie par tender / crédit 701),
+  remboursement (701 / trésorerie), écart de clôture (658/758), mouvements de caisse, paiements.
+  Comptabilisation auto ou brouillon selon `auto_post`. Worker `accounting:process-outbox` (/5 min).
+- **Une vente POS ⇒ exactement une écriture**, même en resync offline (idempotence `pos_reference`
+  RC-22 × unicité outbox). Le POS reste inchangé pour un tenant sans module comptable (0 écriture).
+- **Validé E2E sur la base locale** : une vente mixte (4 000 espèces + 4 000 mobile money) a produit
+  l'écriture postée `VT26-000001` équilibrée (débit 571 Caisse 4 000 + 585 Mobile 4 000 = crédit 701
+  Ventes 8 000), consultable dans l'écran Écritures.
+- +13 tests backend (écritures + imputation) ; POS et suites existantes inchangées (34 verts).
+  i18n FR/EN, docs tech + module.
+
+## [Non publié] — 🧮 RC-23 : module Comptabilité — référentiel SYSCOHADA (P1) (2026-07-05)
+
+Branche `feature/rc23-accounting-referential` (release `v1.0.0` → `rc.155`). Premier incrément du
+module comptable (architecture : docs/architecture/comptabilite-syscohada.md) :
+
+- **Nouveau module `Accounting`** (backend + frontend), gated `module:accounting` (seedé dans
+  `erp_modules`, associé à tous les plans) — menu **Comptabilité** dans le SPA.
+- **Référentiel** : classes SYSCOHADA 1–9 (globales), plan de comptes par tenant (38 comptes seedés,
+  comptes *système* du moteur d'imputation indésactivables, création libre — classe dérivée du code),
+  8 journaux (VT/AC/CA/BQ/OD/ST/AV/RG), taxes en points de base (TVA locale auto selon pays :
+  UEMOA 18 %, CEMAC 19,25 %…), paramètres tenant (`default_accounts` symboliques `@cash`→571,
+  `auto_post`), exercice courant + 12 périodes mensuelles.
+- **Provisionnement idempotent** (`ChartOfAccountsProvisioner`) via `POST /api/accounting/provision`
+  — assistant intégré à l'écran Plan comptable.
+- **Périodes** : verrouillage (chef comptable) et **réouverture contrôlée** (permission dédiée
+  `accounting.periods.reopen`, motif obligatoire, audit) — pattern PeriodLockService.
+- **RBAC** : rôles `accountant` / `chief-accountant` / `accounting-viewer` / `auditor` +
+  permissions `accounting.*` (séparation des pouvoirs).
+- **Frontend** : 4 écrans (Plan comptable, Taxes, Exercices & périodes, Paramètres), i18n FR/EN.
+- **Correctif transverse** : les dates PURES (casts `date`) ne se décalent plus d'un jour à
+  l'affichage dans les fuseaux à l'ouest d'UTC (sérialisation `Y-m-d` + parsing local `toDate`).
+- +8 tests backend, +3 specs front. Validé E2E en preview : menu → provisionnement (38 comptes) →
+  verrouillage 2026-01 → réouverture refusée sans permission.
+
 ## [Non publié] — 🔒 RC-22 : idempotence checkout POS (P0 audit intégration) + plans compta (2026-07-05)
 
 Branche `feature/rc22-pos-idempotency` (release `v1.0.0` → `rc.154`). Suite de l'audit

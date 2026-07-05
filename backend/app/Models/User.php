@@ -29,6 +29,7 @@ class User extends Authenticatable
         'email',
         'password',
         'tenant_id',
+        'two_factor_enabled', // RC-13 F-4
     ];
 
     protected $hidden = [
@@ -39,9 +40,10 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
-            'is_super_admin'    => 'boolean',
+            'email_verified_at'  => 'datetime',
+            'password'           => 'hashed',
+            'is_super_admin'     => 'boolean',
+            'two_factor_enabled' => 'boolean',
         ];
     }
 

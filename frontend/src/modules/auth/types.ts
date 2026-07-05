@@ -31,6 +31,7 @@ export interface AuthUser {
   name: string
   email: string
   is_super_admin: boolean
+  two_factor_enabled?: boolean
   tenant_id: string | null
   tenant?: Tenant
   subscription?: Subscription | null

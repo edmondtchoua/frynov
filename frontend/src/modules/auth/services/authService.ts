@@ -5,8 +5,20 @@ import type {
 } from '../types'
 
 export const authService = {
-  async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const { data } = await client.post<AuthResponse>('/api/auth/login', credentials)
+  async login(credentials: LoginCredentials): Promise<AuthResponse & { two_factor_required?: boolean; email?: string }> {
+    const { data } = await client.post('/api/auth/login', credentials)
+    return data
+  },
+
+  /** RC-13 F-4 — POST /api/auth/2fa/verify (public) : délivre le token après le second facteur. */
+  async verifyTwoFactor(payload: { email: string; code: string }): Promise<AuthResponse> {
+    const { data } = await client.post<AuthResponse>('/api/auth/2fa/verify', payload)
+    return data
+  },
+
+  /** RC-13 F-4 — POST /api/me/2fa : active/désactive la double authentification. */
+  async setTwoFactor(enabled: boolean): Promise<{ data: { two_factor_enabled: boolean }; message: string }> {
+    const { data } = await client.post('/api/me/2fa', { enabled })
     return data
   },
 

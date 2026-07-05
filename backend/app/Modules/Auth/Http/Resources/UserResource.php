@@ -10,11 +10,12 @@ class UserResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'             => $this->id,
-            'name'           => $this->name,
-            'email'          => $this->email,
-            'is_super_admin' => $this->is_super_admin,
-            'tenant_id'      => $this->tenant_id,
+            'id'                 => $this->id,
+            'name'               => $this->name,
+            'email'              => $this->email,
+            'is_super_admin'     => $this->is_super_admin,
+            'two_factor_enabled' => (bool) $this->two_factor_enabled, // RC-13 F-4
+            'tenant_id'          => $this->tenant_id,
             'tenant'         => $this->whenLoaded('tenant', fn () => [
                 'id'                  => $this->tenant->id,
                 'name'                => $this->tenant->name,

@@ -169,6 +169,14 @@ Authorization: Bearer {token}
 > `PATCH /api/me/profile` applique le **nom** immédiatement ; un **email** différent renvoie
 > `email_verification_required: true` + `pending_email` sans changer l'email courant.
 
+## 2FA par code email *(RC-13 F-4)*
+
+Opt-in par utilisateur (`POST /api/me/2fa {enabled}`). Quand elle est active :
+
+- **`POST /api/auth/login`** ne renvoie **pas** de token : `{ "two_factor_required": true, "email": … }`
+  et un code (6 chiffres, 10 min) part à l'email du compte.
+- **`POST /api/auth/2fa/verify`** `{email, code}` (public, throttle 10/10 min) → `{ "token", "user" }`.
+
 ## POST `/api/auth/logout`
 
 Révoque le token actuel.

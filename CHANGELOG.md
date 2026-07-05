@@ -3,6 +3,31 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔐 RC-13 : Lot C (4/4) — 2FA par code email (F-4) — Lot C complet (2026-07-04)
+
+Branche `feature/rc13-2fa` (release `v1.0.0` → `rc.145`). Dernier volet du Lot C : le backlog sécurité
+comptes & accès (F-3/F-6/F-5/F-4) est **complet**.
+
+### Backend
+- **`users.two_factor_enabled`** + **`two_factor_codes`** : 2FA **opt-in par utilisateur**, code de
+  connexion à 6 chiffres **haché**, court (10 min), borné à 5 tentatives.
+- **`AuthService`** : `authenticate()` (vérifie les identifiants **sans** émettre de token) +
+  `issueTokenFor()`. **`AuthController::login`** refactoré : si 2FA activée → **pas de token**, un code
+  est envoyé (`TwoFactorCodeMail`) et la réponse porte `two_factor_required: true`.
+- **`POST /api/auth/2fa/verify`** `{email, code}` (public, throttle 10/10 min) → délivre le token après
+  le second facteur (avec audit `via: 2fa`). **`POST /api/me/2fa`** `{enabled}` : active/désactive.
+  `UserResource` expose `two_factor_enabled`.
+- **+6 tests** `TwoFactorTest` (login direct sans 2FA, activation, challenge email sans token, code
+  valide → token, code faux, désactivation). `Mail::fake()`. Auth complet vert.
+
+### Frontend
+- **Login** : étape de **second facteur** (code email) quand `two_factor_required` — le store gère
+  `login()` (renvoie `twoFactorRequired`) et `completeTwoFactor()`. **Profil** : interrupteur d'activation
+  de la 2FA. i18n FR+EN (`auth.twoFactor.*`). vue-tsc 0.
+
+> 🎉 **Lot C complet** : reset mot de passe (F-3), re-vérification email (F-6), invitations email (F-5),
+> 2FA email (F-4). Reste du backlog sécurité issu de l'audit : néant (Lots A/B/D/E/C tous livrés).
+
 ## [Non publié] — 👥 RC-12 : Lot C (3/4) — invitations d'équipe par email (F-5) (2026-07-03)
 
 Branche `feature/rc12-invitations` (release `v1.0.0` → `rc.144`). Troisième volet du Lot C.

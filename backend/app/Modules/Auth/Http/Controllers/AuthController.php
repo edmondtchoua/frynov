@@ -32,12 +32,28 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): JsonResponse
     {
+        $tenantId = $request->input('tenant_id') ?? $request->attributes->get('tenant')?->id;
+
         try {
-            ['user' => $user, 'token' => $token] = $this->authService->login(
+            // RC-13 F-4 — on vérifie d'abord les identifiants SANS émettre de token.
+            $user = $this->authService->authenticate(
                 $request->input('email'),
                 $request->input('password'),
-                $request->input('tenant_id') ?? $request->attributes->get('tenant')?->id,
+                $tenantId,
             );
+
+            // 2FA activée → on n'émet pas le token : on envoie un code et on demande le second facteur.
+            if ($user->two_factor_enabled) {
+                app(\App\Modules\Auth\Services\TwoFactorService::class)->challenge($user);
+
+                return response()->json([
+                    'two_factor_required' => true,
+                    'email'               => $user->email,
+                    'message'             => 'Un code de connexion a été envoyé à votre email.',
+                ]);
+            }
+
+            $token = $this->authService->issueTokenFor($user);
         } catch (InvalidCredentialsException) {
             $this->audit->log(
                 'auth.login_failed',

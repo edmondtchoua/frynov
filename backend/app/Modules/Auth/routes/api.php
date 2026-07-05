@@ -25,6 +25,10 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('accept-invitation', [\App\Modules\Auth\Http\Controllers\InvitationController::class, 'accept'])
         ->name('accept-invitation')->middleware('throttle:5,10');
 
+    // RC-13 F-4 — vérification du second facteur (public, throttlé) → délivre le token.
+    Route::post('2fa/verify', [\App\Modules\Auth\Http\Controllers\TwoFactorController::class, 'verify'])
+        ->name('2fa.verify')->middleware('throttle:10,10');
+
     // Protected endpoints
     Route::middleware(['auth:sanctum', EnsureUserBelongsToTenant::class])->group(function () {
         Route::get('me', [AuthController::class, 'me'])->name('me');
@@ -38,6 +42,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::patch('me/profile',             [UserProfileController::class, 'update']);
     Route::post('me/email/verify',         [UserProfileController::class, 'verifyEmail']); // RC-11 F-6
     Route::post('me/password',             [UserProfileController::class, 'changePassword']);
+    Route::post('me/2fa',                  [\App\Modules\Auth\Http\Controllers\TwoFactorController::class, 'toggle']); // RC-13 F-4
     Route::get('me/sessions',              [UserProfileController::class, 'sessions']);
     Route::delete('me/sessions/{tokenId}', [UserProfileController::class, 'revokeSession']);
 });

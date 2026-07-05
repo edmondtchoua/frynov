@@ -180,6 +180,24 @@
           </form>
         </div>
 
+        <!-- RC-13 F-4 — Double authentification (2FA) -->
+        <div class="profile-section">
+          <div class="section-header">
+            <h3>{{ $t('auth.twoFactor.toggleTitle') }}</h3>
+            <p>{{ $t('auth.twoFactor.toggleDesc') }}</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <span class="badge" :class="twoFactorEnabled ? 'badge-success' : 'badge-gray'">
+              {{ twoFactorEnabled ? $t('auth.twoFactor.enabled') : $t('auth.twoFactor.disabled') }}
+            </span>
+            <button class="btn" :class="twoFactorEnabled ? 'btn-ghost' : 'btn-primary'" :disabled="tfaSaving" @click="toggleTwoFactor">
+              <span v-if="tfaSaving" class="spinner-sm"></span>
+              {{ twoFactorEnabled ? $t('auth.twoFactor.disable') : $t('auth.twoFactor.enable') }}
+            </button>
+            <span v-if="tfaMsg" class="form-feedback form-feedback--ok" style="margin:0">{{ tfaMsg }}</span>
+          </div>
+        </div>
+
         <!-- Active sessions -->
         <div class="profile-section">
           <div class="section-header">
@@ -231,6 +249,7 @@ import { useConfirm } from '@/composables/useConfirm'
 import { t } from '@/i18n'
 import { formatDateTime } from '@/shared/utils/date'
 import { useAuthStore } from '@/stores/auth'
+import { authService } from '@/modules/auth/services/authService'
 import client from '@/api/client'
 
 const auth = useAuthStore()
@@ -265,6 +284,27 @@ const profileForm  = reactive({ name: auth.user?.name ?? '', email: auth.user?.e
 const profileSaving = ref(false)
 const profileMsg   = ref('')
 const profileError = ref(false)
+
+// RC-13 F-4 — double authentification (2FA).
+const twoFactorEnabled = ref<boolean>(auth.user?.two_factor_enabled ?? false)
+const tfaSaving = ref(false)
+const tfaMsg = ref('')
+
+async function toggleTwoFactor() {
+  tfaSaving.value = true; tfaMsg.value = ''
+  try {
+    const next = !twoFactorEnabled.value
+    const res = await authService.setTwoFactor(next)
+    twoFactorEnabled.value = res.data.two_factor_enabled
+    if (auth.user) auth.user.two_factor_enabled = twoFactorEnabled.value
+    tfaMsg.value = res.message
+    setTimeout(() => { tfaMsg.value = '' }, 4000)
+  } catch {
+    tfaMsg.value = t('profile.error')
+  } finally {
+    tfaSaving.value = false
+  }
+}
 
 // RC-11 F-6 — confirmation du nouvel email par code.
 const emailPending  = ref('')

@@ -36,6 +36,32 @@ class AuthService
         return ['user' => $user, 'token' => $token];
     }
 
+    /**
+     * RC-13 F-4 — vérifie les identifiants et l'accès au tenant SANS émettre de token (utilisé quand
+     * un second facteur est requis avant de délivrer le token).
+     *
+     * @throws InvalidCredentialsException|TenantInactiveException
+     */
+    public function authenticate(string $email, string $password, ?string $tenantId = null): User
+    {
+        $user = $this->users->findByEmail($email, $tenantId);
+
+        if (! $user || ! $this->validateCredentials($user, $password)) {
+            throw new InvalidCredentialsException();
+        }
+        if (! $this->canAccessTenant($user)) {
+            throw new TenantInactiveException();
+        }
+
+        return $user;
+    }
+
+    /** Émet un token pour un utilisateur déjà authentifié (session unique). */
+    public function issueTokenFor(User $user): string
+    {
+        return $this->issueToken($user);
+    }
+
     public function logout(User $user): void
     {
         $user->currentAccessToken()->delete();

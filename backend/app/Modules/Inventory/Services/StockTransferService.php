@@ -198,31 +198,11 @@ class StockTransferService
                             $transfer->number, 'Litige transfert — retour source', $resolvedBy);
                     }
                 } elseif ($resolution === 'write_off' && $missing > 0) {
-                    // Write-off: the goods were lost in transit.
-                    // Use adjust() to properly record the loss via StockService.
-                    // Look up source stock first; fall back to destination stock.
-                    $writeOffStock = Stock::where('tenant_id', $transfer->tenant_id)
-                        ->where('warehouse_id', $transfer->source_warehouse_id)
-                        ->where('product_id', $line->product_id)
-                        ->when($line->variant_id, fn ($q) => $q->where('variant_id', $line->variant_id), fn ($q) => $q->whereNull('variant_id'))
-                        ->first()
-                        ?? Stock::where('tenant_id', $transfer->tenant_id)
-                            ->where('warehouse_id', $transfer->destination_warehouse_id)
-                            ->where('product_id', $line->product_id)
-                            ->when($line->variant_id, fn ($q) => $q->where('variant_id', $line->variant_id), fn ($q) => $q->whereNull('variant_id'))
-                            ->first();
-
-                    if ($writeOffStock) {
-                        $currentQty = $writeOffStock->fresh()->quantity;
-                        $this->stock->adjust(
-                            $writeOffStock,
-                            max(0, $currentQty - $missing),
-                            'write_off',
-                            'Litige TRF perte',
-                            $resolvedBy,
-                            $transfer->number
-                        );
-                    }
+                    // RC-15 BUG-2 — les unités manquantes ont DÉJÀ quitté le stock source à l'expédition
+                    // (moveOut au ship) et ne sont jamais entrées en destination : le stock physique
+                    // reflète donc déjà la perte. Re-décrémenter ici comptait la perte DEUX fois.
+                    // Le write-off est une résolution DOCUMENTAIRE — la perte est actée par
+                    // `line_status=resolved` + `discrepancy_reason` (aucun ajustement de quantité).
                 }
                 $line->update(['line_status' => 'resolved', 'discrepancy_reason' => $reason]);
             }

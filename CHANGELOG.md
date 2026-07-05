@@ -3,6 +3,28 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🐛 RC-15 : audit fonctionnel — bugs consignés + correctifs prioritaires (2026-07-05)
+
+Branche `feature/rc15-qa-pos` (release `v1.0.0` → `rc.147`). Audit fonctionnel par 4 revues parallèles
+(commerce, monétisation, plateforme, couverture de tests) → **~24 bugs consignés** dans
+`docs/recette/rc15-bugs-backlog.md`. Les correctifs **HAUTE/MAJEUR** clairs sont traités ici ; le reste
+est priorisé pour les incréments suivants.
+
+- **[MAJEUR] Doublon email/code → 500** (Customers & Suppliers) : ajout d'une règle `unique` applicative
+  scopée tenant → **422** propre au lieu d'une `QueryException`.
+- **[MAJEUR] Marketplace : réouverture auto morte** : le listener excluait les listings `closed` et ne
+  dispatchait jamais `reopen` → `is_auto_reopen_enabled` était inerte. Corrigé (inclut `closed`, branche
+  reopen quand le stock repasse au-dessus du seuil).
+- **[HAUTE] Inventory : `warehouse_id` ignoré au move-out/adjust** → décrément du **mauvais entrepôt** en
+  multi-site. Résolution de l'entrepôt (comme au move-in) + `warehouse_id` ajouté à `AdjustStockRequest`.
+- **[HAUTE] Transfert : write-off = double décrément** du stock source (les unités ont déjà quitté au
+  ship). Le write-off devient **documentaire** (aucun ajustement de quantité).
+- **+2 tests** (Customers doublon → 422 ; `StockTransferTest` réécrit : source reste 90, pas 88). Backend vert.
+
+> **Backlog restant** (consigné, priorisé) : ledger `tenant_credits` en écriture seule, code mort Reports
+> (ABC/KPI/réconciliation), clés de pool non libérées, pagination/ filtres commandes, ventes contre lots
+> périmés, etc. + **chantier « caisse approfondie »** (POS split/remise/remboursement, Desktop + mobile).
+
 ## [Non publié] — 🧭 RC-14 : cohérence de l'onboarding initial (2026-07-05)
 
 Branche `feature/rc14-onboarding-fixes` (release `v1.0.0` → `rc.146`). Suite à l'évaluation UX/UI de

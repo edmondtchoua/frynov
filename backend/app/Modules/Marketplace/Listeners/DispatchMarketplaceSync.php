@@ -25,29 +25,49 @@ class DispatchMarketplaceSync implements ShouldQueue
             $stock->variant_id,
         );
 
+        // RC-15 — inclure aussi les listings 'closed' : sans cela, la réouverture automatique
+        // (is_auto_reopen_enabled) n'était JAMAIS déclenchée (fonctionnalité morte).
         $listings = MarketplaceListing::where('tenant_id', $stock->tenant_id)
             ->where('product_id', $stock->product_id)
             ->where('variant_id', $stock->variant_id)
-            ->whereIn('sync_status', ['active', 'error'])
+            ->whereIn('sync_status', ['active', 'error', 'closed'])
             ->whereNull('deleted_at')
             ->get();
 
         foreach ($listings as $listing) {
             $shouldClose = $totalAvailable <= $listing->close_threshold;
 
-            if ($shouldClose && $listing->is_auto_close_enabled) {
-                SyncMarketplaceListingJob::dispatch($listing->id, 'close', $totalAvailable)
-                    ->onQueue('marketplace-sync')
-                    ->delay(now()->addSeconds(3));
+            if ($shouldClose) {
+                // Stock épuisé : fermer (ou alerter) — rien à faire si déjà fermé.
+                if ($listing->isClosed()) {
+                    continue;
+                }
+                if ($listing->is_auto_close_enabled) {
+                    SyncMarketplaceListingJob::dispatch($listing->id, 'close', $totalAvailable)
+                        ->onQueue('marketplace-sync')
+                        ->delay(now()->addSeconds(3));
+                } else {
+                    NotifyManualCloseJob::dispatch($listing->id, $totalAvailable)
+                        ->onQueue('notifications');
+                }
 
-            } elseif ($shouldClose && ! $listing->is_auto_close_enabled) {
-                NotifyManualCloseJob::dispatch($listing->id, $totalAvailable)
-                    ->onQueue('notifications');
-
-            } else {
-                SyncMarketplaceListingJob::dispatch($listing->id, 'update_stock', $totalAvailable)
-                    ->onQueue('marketplace-sync');
+                continue;
             }
+
+            // Stock suffisant.
+            if ($listing->isClosed()) {
+                // RC-15 — réouverture automatique si activée ; sinon on laisse fermé (choix vendeur).
+                if ($listing->is_auto_reopen_enabled) {
+                    SyncMarketplaceListingJob::dispatch($listing->id, 'reopen', $totalAvailable)
+                        ->onQueue('marketplace-sync');
+                }
+
+                continue;
+            }
+
+            // Listing ouvert : simple mise à jour du stock affiché.
+            SyncMarketplaceListingJob::dispatch($listing->id, 'update_stock', $totalAvailable)
+                ->onQueue('marketplace-sync');
         }
     }
 }

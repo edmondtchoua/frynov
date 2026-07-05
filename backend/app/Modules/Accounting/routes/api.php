@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Accounting\Http\Controllers\EntryController;
+use App\Modules\Accounting\Http\Controllers\InvoiceController;
 use App\Modules\Accounting\Http\Controllers\PeriodController;
 use App\Modules\Accounting\Http\Controllers\ReferentialController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,10 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
             // Écritures — lecture (RC-25)
             Route::get('entries',       [EntryController::class, 'index']);
             Route::get('entries/{id}',  [EntryController::class, 'show']);
+            // Factures — lecture (RC-30)
+            Route::get('invoices',          [InvoiceController::class, 'index']);
+            Route::get('invoices/{id}',     [InvoiceController::class, 'show']);
+            Route::get('invoices/{id}/pdf', [InvoiceController::class, 'pdf']);
         });
 
         Route::middleware('role_or_permission:chief-accountant|admin|accounting.manage')->group(function () {
@@ -42,6 +47,11 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
         // Écritures — saisie (RC-25 ; la création exige accounting.entries.create).
         Route::middleware('role_or_permission:accountant|chief-accountant|admin|accounting.entries.create')->group(function () {
             Route::post('entries', [EntryController::class, 'store']);
+            // Factures — saisie/émission/allocation (RC-30).
+            Route::post('invoices',                    [InvoiceController::class, 'store']);
+            Route::post('invoices/from-order/{orderId}', [InvoiceController::class, 'fromOrder']);
+            Route::post('invoices/{id}/issue',         [InvoiceController::class, 'issue']);
+            Route::post('invoices/{id}/payments',      [InvoiceController::class, 'allocate']);
         });
         // Comptabilisation / extourne : chef comptable / admin (permissions dédiées).
         Route::middleware('role_or_permission:chief-accountant|admin|accounting.entries.post')->group(function () {

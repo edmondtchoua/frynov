@@ -107,3 +107,43 @@ export interface EntryLineInput {
   debit_minor: number
   credit_minor: number
 }
+
+/** RC-30 — factures. */
+export interface InvoiceLine {
+  id: string
+  label: string
+  quantity: number
+  unit_price_minor: number
+  discount_bp: number
+  tax_id: string | null
+  subtotal_minor: number
+  tax_minor: number
+  total_minor: number
+}
+
+export interface Invoice {
+  id: string
+  number: string | null
+  kind: string
+  customer_id: string | null
+  customer_name: string | null
+  order_id: string | null
+  currency: string
+  issue_date: string | null
+  due_date: string | null
+  status: 'draft' | 'issued' | 'partially_paid' | 'paid' | 'cancelled'
+  subtotal_minor: number
+  tax_total_minor: number
+  total_minor: number
+  paid_minor: number
+  entry_id: string | null
+  lines: InvoiceLine[]
+}
+
+export interface InvoiceDraftLine {
+  label: string
+  quantity: number
+  unit_price_minor: number
+  discount_bp?: number
+  tax_id?: string | null
+}

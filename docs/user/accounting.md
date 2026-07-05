@@ -1,8 +1,8 @@
 # Guide utilisateur — Comptabilité (référentiel SYSCOHADA)
 
 > **Dernière mise à jour :** 2026-07-05 · Périmètre actuel : plan comptable, journaux, taxes,
-> exercices & périodes, paramètres. Les écritures, la facturation et les états financiers arrivent
-> dans les prochaines versions.
+> exercices & périodes, paramètres, écritures & moteur d'imputation, **facturation client**. Les
+> avoirs et les états financiers arrivent dans les prochaines versions.
 
 ## Accès et droits
 
@@ -51,6 +51,21 @@ est extraite du TTC.
 - **Comptes par défaut** : correspondance entre les opérations de l'ERP et vos comptes
   (Caisse → 571, Ventes → 701, TVA collectée → 4431…). C'est la base des écritures automatiques
   à venir (ventes caisse, paiements, retours…).
+
+## 6. Factures
+
+Menu **Comptabilité → Factures** :
+
+1. **Nouvelle facture** : renseignez le client, les lignes (désignation, quantité, prix HT, remise %,
+   taxe). Les totaux **HT / TVA / TTC se calculent en direct**. Enregistrez le brouillon.
+2. **Émettre** : la facture reçoit un numéro `FA-…`, devient définitive et **génère automatiquement
+   son écriture comptable** (débit client 411, crédit ventes 701 et TVA collectée 4431).
+3. **Encaisser** : associez un paiement enregistré à la facture (montant partiel ou total). Le statut
+   passe *Partiellement payée* puis *Payée*, et une **écriture d'encaissement** est produite.
+4. **PDF** : téléchargez la facture au format PDF.
+
+> Une facture émise n'est plus modifiable (comme une écriture comptabilisée) : une correction se fait
+> par avoir (à venir) ou par extourne de son écriture.
 
 ## FAQ
 

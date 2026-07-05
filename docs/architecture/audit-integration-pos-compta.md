@@ -72,7 +72,7 @@ facturation/proformas/avoirs/allocations et TVA.
   tenant, rôles compta, gating) + refresh token (A-3) + sélecteurs client/entrepôt au POS (A-4/A-6).
 - **P2 — RC-25/26** : écritures manuelles + moteur d'imputation + outbox (ventes POS, paiements,
   retours, écarts de clôture) ; permissions granulaires POS (A-8) ; moyens de paiement par tenant (A-5).
-- **P3 — RC-27/28** : facturation/proforma/avoirs/allocations + PDF + écritures auto + remises (A-7).
+- **P3 — RC-30/31** : facturation/proforma/avoirs/allocations + PDF + écritures auto + remises (A-7).
 - **P4 — RC-29/30** : livres, balances, lettrage, rapprochement, clôtures/RAN.
 - **P5 — RC-31+** : états SYSCOHADA, comparatifs, consolidation, analytics.
 

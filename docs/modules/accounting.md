@@ -1,8 +1,8 @@
 # Module Comptabilité (SYSCOHADA) — Documentation technique
 
-> **RC-23 (P1)** — cette page couvre le **référentiel** (plan comptable, journaux, taxes, exercices,
-> paramètres). Les écritures/moteur d'imputation (P2), la facturation (P3) et les livres/états (P4-P5)
-> arrivent dans les incréments suivants — architecture complète :
+> **RC-23 → RC-30** — cette page couvre le **référentiel** (P1), les **écritures & moteur
+> d'imputation** (P2) et la **facturation client** (P3). Les livres/états (P4-P5) arrivent dans les
+> incréments suivants — architecture complète :
 > [docs/architecture/comptabilite-syscohada.md](../architecture/comptabilite-syscohada.md).
 
 ## Vue d'ensemble
@@ -106,9 +106,31 @@ Résolution des comptes : références symboliques `@cash`→571… via `setting
 = règle auto ou « Manuelle », statut), création manuelle (pavé de lignes avec **contrôle d'équilibre
 en direct**), comptabilisation, extourne. i18n FR/EN.
 
+## Facturation client (RC-30 — P3)
+
+Tables `invoices` / `invoice_lines` / `payment_allocations`. `InvoiceService` :
+- **Brouillon** : lignes avec **TVA calculée serveur-side** (HT après remise en points de base →
+  `Tax::amountFor`), totaux HT/TVA/TTC recomposés. Modifiable librement ; création possible **depuis
+  une commande** (`fromOrder`).
+- **Émission** : numéro `FA-` séquentiel + **écriture d'émission** via le moteur d'imputation
+  (`invoice.issued` → débit **411** client TTC / crédit **701** HT + **4431** TVA). La facture devient
+  immuable.
+- **Allocation de paiement** (N↔N) : un paiement alloué à une (ou plusieurs) facture(s), borné au
+  reste dû ET au disponible du paiement ; met à jour `paid_minor` + statut
+  (issued → partially_paid → paid) ; **écriture d'encaissement** (`payment.allocated` → débit
+  trésorerie / crédit 411).
+- **PDF** : `InvoicePdfRenderer` (DomPDF, réutilise le pattern ImportExport) — `GET …/invoices/{id}/pdf`.
+
+Endpoints : `GET invoices[/{id}][/pdf]` (lecture) · `POST invoices`, `invoices/from-order/{orderId}`,
+`invoices/{id}/issue`, `invoices/{id}/payments` (saisie, `accounting.entries.create`).
+Frontend : `InvoicesView` (`/accounting/invoices`) — liste, création à totaux en direct, émission,
+encaissement, lien PDF. i18n FR/EN.
+
 ## Tests
 
 Backend : `AccountingReferentialTest` (8) · `AccountingEntryTest` (7 — équilibre, post/numéro,
 période verrouillée, immutabilité, extourne miroir) · `AccountingImputationTest` (6 — vente split →
 écriture équilibrée par tender, **idempotence du rejeu**, remboursement, écart de clôture, mouvement,
-tenant sans module = 0 écriture). Front : `ChartOfAccountsView.spec.ts` (3) + garde i18n.
+tenant sans module = 0 écriture) · `AccountingInvoiceTest` (7 — TVA/remise, émission → 411/701/4431,
+allocation partielle/multiple bornée, encaissement, cycle HTTP, RBAC caissier). Front :
+`ChartOfAccountsView.spec.ts` (3) + `InvoicesView.spec.ts` (3) + garde i18n.

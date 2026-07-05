@@ -3,6 +3,27 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧾 RC-30 : Comptabilité — facturation client & allocations de paiement (P3) (2026-07-05)
+
+Suite du module Comptabilité SYSCOHADA (après le référentiel P1 et les écritures/moteur P2) :
+
+- **Factures client** (`invoices`/`invoice_lines`) : brouillon librement modifiable → **émission**
+  (numéro `FA-` séquentiel, immuable). **TVA calculée côté serveur** par ligne (HT après remise en
+  points de base → `Tax::amountFor`), totaux HT/TVA/TTC recomposés. Création possible **depuis une
+  commande** (`fromOrder`).
+- **Écritures automatiques** via le moteur d'imputation (outbox idempotent) : `invoice.issued` →
+  débit **411** client (TTC) / crédit **701** (HT) + **4431** (TVA collectée) ; `payment.allocated` →
+  débit trésorerie (caisse/banque/mobile) / crédit **411**.
+- **Allocations de paiement N↔N** (`payment_allocations`) : un règlement imputé à une ou plusieurs
+  factures, borné au reste dû **et** au disponible du paiement ; statut facture
+  issued → partially_paid → paid.
+- **PDF** de facture (DomPDF) : `GET /api/accounting/invoices/{id}/pdf`.
+- **Front** : `InvoicesView` (`/accounting/invoices`, onglet par défaut) — liste, création à totaux en
+  direct, émission, encaissement, lien PDF. i18n FR/EN.
+- **Sécurité/traçabilité** : saisie sous `accounting.entries.create` (caissier 403) ; toute écriture
+  garde le lien vers sa facture source (rejouable). **Migration** `invoices`/`invoice_lines`/
+  `payment_allocations`. **Tests** : `AccountingInvoiceTest` (7) + `InvoicesView.spec.ts` (3).
+
 ## [Non publié] — 🔒 RC-27 : Mise à niveau de plan — montant autoritatif (P0) (2026-07-05)
 
 Refonte progressive du parcours de changement de plan (audit : `docs/audit/plan-upgrade-audit.md`).

@@ -117,12 +117,19 @@ Body `{ "email", "code" }`. Valide le code. **200** si correct et non expiré ; 
 ### POST /api/portal/login  *(throttle 10/min)*
 
 Body `{ "email", "password" }`. **403** si le compte n'est pas vérifié. **200** →
-`{ "token": "<sanctum-plain-text>" }`. **401** si identifiants invalides.
+`{ "token": "<sanctum-plain-text>" }`. **401** si identifiants invalides. *(RC-8)* Le token porte
+l'ability `portal` et **expire au bout de 30 j** (plus de token à vie ; plafond global de secours dans
+`config/sanctum.php`).
 
 ### GET /api/portal/my-purchases  *(auth:sanctum — token portail)*
 
 Liste les achats digitaux **actifs** du client, **tous vendeurs confondus** :
 `{ "data": [ { "product_name", "seller_name", "granted_at", "portal_link" } ] }`.
+
+### POST /api/portal/logout  *(auth:sanctum — token portail, RC-8)*
+
+Révoque le **token courant côté serveur** (`currentAccessToken()->delete()`). **200** →
+`{ "message": "Déconnecté." }`. La déconnexion n'est donc plus purement cliente.
 
 ---
 

@@ -254,7 +254,15 @@ async function loadMyPurchases() {
   }
 }
 
-function logout() {
+async function logout() {
+  // RC-8 F-2 — révocation serveur du token (best-effort : si le token est déjà expiré/invalide,
+  // l'appel échoue silencieusement) AVANT de purger l'état local.
+  const token = acct.token
+  if (token) {
+    try {
+      await portalApi.post('/api/portal/logout', {}, { headers: { Authorization: `Bearer ${token}` } })
+    } catch { /* token déjà invalide : rien à révoquer */ }
+  }
   acct.token = ''
   purchases.value = []
   localStorage.removeItem(PORTAL_TOKEN_KEY)

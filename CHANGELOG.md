@@ -3,6 +3,32 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🛡️ RC-8 : durcissement sécurité — Lot A (tokens portail) + Lot E (cohérence tenant) (2026-07-01)
+
+Branche `feature/rc8-security-lot-ae` (release `v1.0.0` → `rc.140`). Premiers lots du backlog sécurité
+issu de l'audit Phase 3 (quick wins sans dépendance).
+
+### Lot A — cycle de vie des tokens portail
+- **F-1** — `config/sanctum.php` publié : plafond global d'expiration (défaut **1 an**, `SANCTUM_TOKEN_
+  EXPIRATION_MINUTES`) rattrapant tout token émis sans échéance ; le token portail est désormais émis
+  avec une **expiration explicite de 30 j** (`createToken('portal', ['portal'], now()->addDays(30))`).
+  Fin des tokens portail « à vie ».
+- **F-2** — nouveau **`POST /api/portal/logout`** : révoque le token courant côté serveur
+  (`currentAccessToken()->delete()`). Le `logout()` du front l'appelle (best-effort) avant de purger le
+  `localStorage` — la déconnexion n'est plus purement cliente.
+
+### Lot E — cohérence tenant / permissions
+- **F-8** — le groupe de routes **ImportExport** reçoit le middleware `tenant`
+  (`EnsureUserBelongsToTenant`), qui **pose le contexte d'équipe Spatie** (`setPermissionsTeamId`) :
+  les gardes `role_or_permission:import_export.*` s'évaluent désormais dans le bon tenant.
+- **F-12** — **normalisation de l'email `Customer`** (minuscules + trim) via mutateur, + migration de
+  **backfill** des lignes existantes (`LOWER(TRIM(email))`). Fiabilise le rapprochement « mes achats »
+  du portail (bug de casse, impact PostgreSQL).
+
+### Tests
+- **+4 tests** (`PortalSecurityTest` : expiration du token, révocation au logout ; `CustomerServiceTest` :
+  normalisation email). Digital+Customers+ImportExport **verts**, front vue-tsc 0.
+
 ## [Non publié] — 🔒 Recette QA Phase 3 (rc.134-138) — 15 correctifs, verdict GO (2026-06-30)
 
 Branche `feature/qa-recette-phase-3b` (release `v1.0.0` → `rc.139`). Deux revues indépendantes en

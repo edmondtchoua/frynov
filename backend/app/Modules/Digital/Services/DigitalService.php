@@ -137,9 +137,10 @@ class DigitalService
     }
 
     /**
-     * RC-7D — révocation AU PRORATA : ne conserve que `keepActive` exemplaires actifs pour la ligne
-     * (les plus anciens d'abord), révoque le surplus. Idempotent : rejoué, ne révoque plus rien.
-     * Un produit non digital (0 entitlement) est un no-op sûr.
+     * RC-7D — révocation AU PRORATA : ne conserve que `keepActive` exemplaires actifs pour la ligne,
+     * en révoquant les plus RÉCENTS d'abord (rangs les plus élevés) — on garde ainsi les premiers
+     * exemplaires, les plus susceptibles d'avoir déjà été activés/téléchargés par le client.
+     * Idempotent : rejoué, ne révoque plus rien. Un produit non digital (0 entitlement) est un no-op.
      *
      * @return int nombre d'accès révoqués lors de cet appel
      */
@@ -149,8 +150,7 @@ class DigitalService
             ->where('tenant_id', $tenantId)
             ->where('order_line_id', $orderLineId)
             ->where('status', DigitalEntitlement::STATUS_ACTIVE)
-            ->orderBy('unit_index')
-            ->orderBy('granted_at')
+            ->orderByDesc('unit_index') // révoque les exemplaires les plus récents d'abord
             ->get();
 
         $toRevoke = $active->count() - max(0, $keepActive);

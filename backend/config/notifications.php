@@ -40,6 +40,13 @@ return [
         'webhook_secret'   => env('MOMO_WEBHOOK_SECRET', ''),
         'signature_header' => env('MOMO_SIGNATURE_HEADER', 'X-Webhook-Signature'),
         'success_values'   => ['success', 'successful', 'paid', 'completed'],
+
+        // Facteur pour convertir le montant reçu du fournisseur vers l'unité mineure interne
+        // (`price_cents`). Les prix des packs sont stockés en centièmes ; or le XOF n'a pas de
+        // sous-unité : un fournisseur Mobile Money envoie 15000 (et non 1500000) pour un pack à
+        // 15 000 XOF. Régler `amount_scale=100` dans ce cas ; défaut 1 (le fournisseur envoie déjà
+        // en unité mineure). Un mauvais réglage → montant divergent → `needs_review` (jamais de crédit).
+        'amount_scale'     => (int) env('MOMO_AMOUNT_SCALE', 1),
         'field_map'        => [
             'reference'    => 'reference',       // référence de la commande (RCH-…)
             'status'       => 'status',

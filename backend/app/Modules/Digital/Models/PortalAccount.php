@@ -16,8 +16,12 @@ class PortalAccount extends Authenticatable
 
     protected $table = 'portal_accounts';
 
+    /** Au-delà, le code de vérification est invalidé (anti brute-force). */
+    public const MAX_VERIFY_ATTEMPTS = 5;
+
     protected $fillable = [
-        'email', 'password', 'verification_code', 'verification_expires_at', 'verified_at', 'last_login_at',
+        'email', 'password', 'verification_code', 'verification_expires_at', 'verification_attempts',
+        'verified_at', 'last_login_at',
     ];
 
     protected $hidden = ['password', 'verification_code'];
@@ -27,9 +31,18 @@ class PortalAccount extends Authenticatable
         return [
             'password'                => 'hashed',
             'verification_expires_at' => 'datetime',
+            'verification_attempts'   => 'integer',
             'verified_at'             => 'datetime',
             'last_login_at'           => 'datetime',
         ];
+    }
+
+    /** Un code non expiré est-il encore en attente de vérification (pour ne pas re-spammer un envoi) ? */
+    public function hasPendingCode(): bool
+    {
+        return $this->verification_code !== null
+            && $this->verification_expires_at?->isFuture()
+            && $this->verification_attempts < self::MAX_VERIFY_ATTEMPTS;
     }
 
     public function isVerified(): bool

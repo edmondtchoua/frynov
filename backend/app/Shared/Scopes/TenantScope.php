@@ -22,28 +22,31 @@ use Illuminate\Database\Eloquent\Scope;
  */
 class TenantScope implements Scope
 {
+    // Tenant impossible : utilisé pour FERMER le scope quand un principal authentifié n'a pas de
+    // tenant résoluble (aucune ligne HasTenant n'a jamais ce tenant_id → zéro résultat).
+    private const NO_TENANT_SENTINEL = '00000000-0000-0000-0000-000000000000';
+
     public function apply(Builder $builder, Model $model): void
     {
-        $tenantId = $this->resolveTenantId();
-
-        if ($tenantId !== null) {
-            $builder->where($model->getTable() . '.tenant_id', $tenantId);
-        }
-    }
-
-    private function resolveTenantId(): ?string
-    {
-        // Priority 1: bound in the IoC container by EnsureUserBelongsToTenant middleware
+        // Priorité 1 : tenant lié par EnsureUserBelongsToTenant.
         if (app()->has('current.tenant.id')) {
-            return app('current.tenant.id');
+            $builder->where($model->getTable() . '.tenant_id', app('current.tenant.id'));
+
+            return;
         }
 
-        // Priority 2: authenticated user's own tenant
-        if (auth()->check() && ! auth()->user()->isSuperAdmin()) {
-            return auth()->user()->tenant_id;
+        // Super-admin ou contexte non authentifié (routes publiques, seeding, jobs) : global assumé.
+        // Ces chemins se désengagent explicitement via withoutTenantScope() quand ils veulent un tenant.
+        if (! auth()->check() || auth()->user()->isSuperAdmin()) {
+            return;
         }
 
-        // Super admin or unauthenticated context → no automatic scoping
-        return null;
+        // Principal authentifié non super-admin → TOUJOURS scoper. Si son tenant_id est absent
+        // (ex. un token de compte portail atteignant une route sans middleware `tenant`), on FERME
+        // le scope (sentinelle impossible) au lieu de fuiter en cross-tenant. (Recette QA — SEC-2)
+        $builder->where(
+            $model->getTable() . '.tenant_id',
+            auth()->user()->tenant_id ?? self::NO_TENANT_SENTINEL,
+        );
     }
 }

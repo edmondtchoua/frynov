@@ -40,11 +40,14 @@ class RechargeOrderService
         ]);
     }
 
-    /** Annulation d'une commande en attente (une commande payée ne s'annule pas). */
+    /**
+     * Annulation d'une commande NON payée : en attente OU à vérifier (`needs_review`, sinon elle
+     * resterait un cul-de-sac). Une commande payée ne s'annule pas. (recette QA)
+     */
     public function cancel(CreditRechargeOrder $order): CreditRechargeOrder
     {
-        if ($order->status !== CreditRechargeOrder::STATUS_PENDING) {
-            throw new \DomainException('Seule une commande en attente peut être annulée.');
+        if (! in_array($order->status, [CreditRechargeOrder::STATUS_PENDING, CreditRechargeOrder::STATUS_NEEDS_REVIEW], true)) {
+            throw new \DomainException('Seule une commande non payée peut être annulée.');
         }
         $order->update(['status' => CreditRechargeOrder::STATUS_CANCELLED]);
 
@@ -78,15 +81,23 @@ class RechargeOrderService
             if (! $order) {
                 return ['result' => 'unknown_reference', 'order' => null];
             }
-            if ($order->status === CreditRechargeOrder::STATUS_PAID) {
-                return ['result' => 'already_processed', 'order' => $order];
-            }
-            if ($order->status === CreditRechargeOrder::STATUS_CANCELLED) {
-                return ['result' => 'not_payable', 'order' => $order];
+            // Seule une commande EN ATTENTE est créditable automatiquement. Un `needs_review` exige une
+            // action opérateur explicite (annuler puis recréer, ou recharge manuelle) — jamais de
+            // crédit auto, pour ne pas doubler avec un traitement manuel. (recette QA)
+            if ($order->status !== CreditRechargeOrder::STATUS_PENDING) {
+                $map = [
+                    CreditRechargeOrder::STATUS_PAID         => 'already_processed',
+                    CreditRechargeOrder::STATUS_CANCELLED    => 'not_payable',
+                    CreditRechargeOrder::STATUS_NEEDS_REVIEW => 'needs_review',
+                ];
+
+                return ['result' => $map[$order->status] ?? 'not_payable', 'order' => $order];
             }
 
-            // Vérification stricte du montant/devise : un paiement divergent ne crédite jamais.
-            $amountOk   = $amountCents === null || $amountCents === (int) $order->price_cents;
+            // Vérification stricte : le montant est OBLIGATOIRE et doit correspondre ; un montant absent
+            // (champ non mappé) ne crédite JAMAIS en aveugle → needs_review. La devise, si fournie, doit
+            // correspondre. (recette QA — fail-closed)
+            $amountOk   = $amountCents !== null && $amountCents === (int) $order->price_cents;
             $currencyOk = $currency === null || strtoupper($currency) === strtoupper($order->currency);
             if (! $amountOk || ! $currencyOk) {
                 $order->update([

@@ -632,6 +632,7 @@ export const messages: Record<Locale, Dict> = {
         signedInAs: 'Connecté : {email}', logout: 'Se déconnecter', open: 'Ouvrir',
         empty: 'Aucun achat digital actif sur ce compte.',
         badCode: 'Code invalide ou expiré.', badCredentials: 'Identifiants invalides.', genericError: 'Une erreur est survenue.',
+        alreadyRegistered: 'Déjà inscrit ? Se connecter',
       },
     },
     settings: {
@@ -1614,6 +1615,7 @@ export const messages: Record<Locale, Dict> = {
         signedInAs: 'Signed in: {email}', logout: 'Sign out', open: 'Open',
         empty: 'No active digital purchase on this account.',
         badCode: 'Invalid or expired code.', badCredentials: 'Invalid credentials.', genericError: 'Something went wrong.',
+        alreadyRegistered: 'Already registered? Sign in',
       },
     },
     settings: {

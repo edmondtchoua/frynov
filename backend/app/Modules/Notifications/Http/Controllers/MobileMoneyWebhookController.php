@@ -58,9 +58,12 @@ class MobileMoneyWebhookController extends Controller
             return response()->json(['result' => 'ignored'], 200);
         }
 
+        // Mise à l'échelle vers l'unité mineure interne (ex. XOF envoyé en unité majeure → ×100).
+        $scale = (int) config('notifications.mobile_money.amount_scale', 1);
+
         $outcome = $this->orders->confirmByReference(
             $ref,
-            $amount === null ? null : (int) $amount,
+            $amount === null ? null : (int) round(((float) $amount) * $scale),
             $currency === null ? null : (string) $currency,
             $provider,
             $txId === null ? null : (string) $txId,

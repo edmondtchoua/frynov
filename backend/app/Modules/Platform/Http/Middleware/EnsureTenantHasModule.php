@@ -35,9 +35,11 @@ class EnsureTenantHasModule
             return $next($request);
         }
 
+        // FAIL-CLOSED : un principal authentifié non super-admin SANS tenant (ex. compte portail
+        // atteignant une route gated) est refusé — jamais laissé passer. (Recette QA — SEC-2)
         $tenant = $user->tenant;
         if (! $tenant) {
-            return $next($request);
+            return response()->json(['message' => 'Espace de travail non identifié.'], 403);
         }
 
         if (! $this->registry->tenantHasModule($tenant, $moduleCode)) {

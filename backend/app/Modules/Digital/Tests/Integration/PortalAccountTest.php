@@ -61,7 +61,7 @@ class PortalAccountTest extends TestCase
     {
         $this->postJson('/api/portal/register', ['email' => $email, 'password' => $password])->assertOk();
         $code = PortalAccount::where('email', $email)->firstOrFail()->verification_code;
-        $this->postJson('/api/portal/verify', ['email' => $email, 'code' => $code])->assertOk();
+        $this->postJson('/api/portal/verify', ['email' => $email, 'code' => $code, 'password' => $password])->assertOk();
     }
 
     #[Test]
@@ -85,12 +85,12 @@ class PortalAccountTest extends TestCase
     {
         $this->postJson('/api/portal/register', ['email' => 'awa@client.sn', 'password' => 'Secret123!'])->assertOk();
 
-        $this->postJson('/api/portal/verify', ['email' => 'awa@client.sn', 'code' => '000000'])
+        $this->postJson('/api/portal/verify', ['email' => 'awa@client.sn', 'code' => '000000', 'password' => 'Secret123!'])
             ->assertStatus(422);
 
         PortalAccount::where('email', 'awa@client.sn')->update(['verification_expires_at' => now()->subMinute()]);
         $code = PortalAccount::where('email', 'awa@client.sn')->firstOrFail()->verification_code;
-        $this->postJson('/api/portal/verify', ['email' => 'awa@client.sn', 'code' => $code])
+        $this->postJson('/api/portal/verify', ['email' => 'awa@client.sn', 'code' => $code, 'password' => 'Secret123!'])
             ->assertStatus(422);
     }
 

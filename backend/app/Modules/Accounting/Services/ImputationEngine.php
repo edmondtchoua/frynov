@@ -110,12 +110,14 @@ class ImputationEngine
         $date     = $p['date'] ?? now()->toDateString();
 
         [$journalCode, $label, $lines] = match ($event->event_type) {
-            'pos.sale'         => $this->ruleForPosSale($tenantId, $p),
-            'pos.refund'       => $this->ruleForPosRefund($tenantId, $p),
-            'pos.session_gap'  => $this->ruleForSessionGap($tenantId, $p),
-            'cash.movement'    => $this->ruleForCashMovement($tenantId, $p),
-            'payment.recorded' => $this->ruleForPayment($tenantId, $p),
-            default            => [null, null, []],
+            'pos.sale'          => $this->ruleForPosSale($tenantId, $p),
+            'pos.refund'        => $this->ruleForPosRefund($tenantId, $p),
+            'pos.session_gap'   => $this->ruleForSessionGap($tenantId, $p),
+            'cash.movement'     => $this->ruleForCashMovement($tenantId, $p),
+            'payment.recorded'  => $this->ruleForPayment($tenantId, $p),
+            'invoice.issued'    => $this->ruleForInvoiceIssued($tenantId, $p),
+            'payment.allocated' => $this->ruleForPaymentAllocated($tenantId, $p),
+            default             => [null, null, []],
         };
 
         if ($journalCode === null || empty($lines)) {
@@ -229,6 +231,44 @@ class ImputationEngine
 
         return [$journal, 'Encaissement client ' . ($p['order_number'] ?? ''), [
             $this->debit($this->treasuryRef($method), $tenantId, $amount, 'Paiement reçu'),
+            $this->credit('@customers', $tenantId, $amount, 'Règlement client'),
+        ]];
+    }
+
+    /** RC-30 — facture émise : débit 411 client (TTC) / crédit 701 (HT) + 4431 (TVA). */
+    private function ruleForInvoiceIssued(string $tenantId, array $p): array
+    {
+        $total    = (int) ($p['total'] ?? 0);
+        $subtotal = (int) ($p['subtotal'] ?? 0);
+        $tax      = (int) ($p['tax'] ?? 0);
+        if ($total <= 0) {
+            return [null, null, []];
+        }
+
+        $lines = [
+            $this->debit('@customers', $tenantId, $total, 'Facture ' . ($p['invoice_number'] ?? '')),
+            $this->credit('@sales', $tenantId, $subtotal, 'Vente (HT)'),
+        ];
+        if ($tax > 0) {
+            $lines[] = $this->credit('@tax_collected', $tenantId, $tax, 'TVA collectée');
+        }
+
+        return ['VT', 'Facture ' . ($p['invoice_number'] ?? ''), $lines];
+    }
+
+    /** RC-30 — paiement alloué à une facture : débit trésorerie / crédit 411 client. */
+    private function ruleForPaymentAllocated(string $tenantId, array $p): array
+    {
+        $amount = (int) ($p['amount'] ?? 0);
+        if ($amount <= 0) {
+            return [null, null, []];
+        }
+
+        $method  = $p['method'] ?? 'cash';
+        $journal = $method === 'cash' ? 'CA' : 'BQ';
+
+        return [$journal, 'Règlement facture ' . ($p['invoice_number'] ?? ''), [
+            $this->debit($this->treasuryRef($method), $tenantId, $amount, 'Encaissement'),
             $this->credit('@customers', $tenantId, $amount, 'Règlement client'),
         ]];
     }

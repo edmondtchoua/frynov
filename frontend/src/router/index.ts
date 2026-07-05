@@ -371,7 +371,12 @@ const router = createRouter({
       path: '/accounting',
       meta: { layout: 'app' },
       children: [
-        { path: '', redirect: { name: 'accounting.entries' } },
+        { path: '', redirect: { name: 'accounting.invoices' } },
+        {
+          path: 'invoices',
+          name: 'accounting.invoices',
+          component: () => import('@/modules/accounting/views/InvoicesView.vue'),
+        },
         {
           path: 'entries',
           name: 'accounting.entries',

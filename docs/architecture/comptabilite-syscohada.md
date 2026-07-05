@@ -220,7 +220,7 @@ période sur le point de fermer, factures échues).
 | **P0 (fait / en cours)** | POS branché E2E (validé rc.148–153) + idempotence checkout offline + statuts de sync + lien vente→compta (`source_*` prêts) | RC-22 |
 | **P1** | Référentiel : migrations + seed SYSCOHADA (classes, plan par défaut, journaux, taxes), paramètres tenant, écrans Plan comptable/Taxes/Paramètres, rôles & permissions, module gating | RC-23/24 |
 | **P2** | Écritures manuelles (saisie équilibrée, brouillon/post/extourne) + moteur d'imputation + outbox + règles ventes POS/paiements/retours/écarts de caisse | RC-25/26 |
-| **P3** | Facturation : factures + proformas + avoirs + allocations de paiement + PDF + conversion + génération auto d'écritures | RC-27/28 |
+| **P3** | Facturation : factures + proformas + avoirs + allocations de paiement + PDF + conversion + génération auto d'écritures | RC-30/31 |
 | **P4** | Grand livre, balances, livres caisse/banque, lettrage, rapprochement bancaire, snapshots, périodes/clôture/RAN | RC-29/30 |
 | **P5** | États financiers SYSCOHADA (bilan, résultat, TAFIRE), comparatifs N/N-1, reporting, consolidation multi-sites, analytics | RC-31+ |
 

@@ -311,7 +311,7 @@ const _allNavItems: Array<{ name: string; to: string; label: string; managerOnly
   {
     // RC-23 — module Comptabilité SYSCOHADA (gated par tenant_modules + rôles côté API).
     name: 'accounting',
-    to: '/accounting/entries',
+    to: '/accounting/invoices',
     label: 'Comptabilité',
     managerOnly: true,
     module: 'accounting',

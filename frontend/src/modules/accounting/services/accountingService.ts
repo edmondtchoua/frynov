@@ -1,7 +1,7 @@
 import client from '@/api/client'
 import type {
   Account, AccountingOverview, AccountingPeriod, AccountingSettings,
-  Entry, EntryLineInput, FiscalYear, Journal, Tax,
+  Entry, EntryLineInput, FiscalYear, Invoice, InvoiceDraftLine, Journal, Tax,
 } from '../types'
 
 function normalizePage<T>(d: any): { data: T[]; meta: { current_page: number; last_page: number; total: number } } {
@@ -94,5 +94,31 @@ export const accountingService = {
 
   reverseEntry(id: string, reason?: string): Promise<Entry> {
     return client.post(`/api/accounting/entries/${id}/reverse`, { reason }).then(r => r.data.data)
+  },
+
+  // ── Factures (RC-30) ─────────────────────────────────────────────────────
+  invoices(params?: { status?: string; customer_id?: string; page?: number; per_page?: number }) {
+    return client.get('/api/accounting/invoices', { params }).then(r => normalizePage<Invoice>(r.data))
+  },
+
+  invoice(id: string): Promise<Invoice> {
+    return client.get(`/api/accounting/invoices/${id}`).then(r => r.data.data)
+  },
+
+  createInvoice(payload: { customer_name?: string; currency?: string; due_date?: string; notes?: string; lines: InvoiceDraftLine[] }): Promise<Invoice> {
+    return client.post('/api/accounting/invoices', payload).then(r => r.data.data)
+  },
+
+  issueInvoice(id: string): Promise<Invoice> {
+    return client.post(`/api/accounting/invoices/${id}/issue`).then(r => r.data.data)
+  },
+
+  allocatePayment(id: string, payload: { payment_id: string; amount_minor: number }) {
+    return client.post(`/api/accounting/invoices/${id}/payments`, payload).then(r => r.data.data)
+  },
+
+  /** URL du PDF (téléchargement direct — le navigateur porte le token via l'app). */
+  invoicePdfUrl(id: string): string {
+    return `/api/accounting/invoices/${id}/pdf`
   },
 }

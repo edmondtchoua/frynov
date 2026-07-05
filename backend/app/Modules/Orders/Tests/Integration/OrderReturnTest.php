@@ -207,4 +207,82 @@ class OrderReturnTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'approved');
     }
+
+    // ── RC-21 — revue Retours : bornes de sur-retour, état de commande, RBAC ────────────────
+
+    #[Test]
+    public function a_return_exceeding_the_purchased_quantity_is_rejected(): void
+    {
+        // Ligne de 2 : en demander 3 était accepté (stock fantôme au restock + remboursement > payé).
+        try {
+            $this->svc->create(
+                $this->order,
+                [['order_line_id' => $this->line->id, 'quantity' => 3, 'condition' => 'resalable']],
+                'other', $this->admin->id,
+            );
+            $this->fail('Expected ValidationException');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertStringContainsString('2 restant(s)', $e->errors()['lines'][0]);
+        }
+
+        $this->assertDatabaseCount('order_returns', 0);
+    }
+
+    #[Test]
+    public function cumulative_returns_on_the_same_line_cannot_exceed_the_purchase(): void
+    {
+        // 1er retour : 1 sur 2 (restocké) → il ne reste qu'1 retournable.
+        $first = $this->svc->create($this->order, [['order_line_id' => $this->line->id, 'quantity' => 1, 'condition' => 'resalable']], 'other', $this->admin->id);
+        $this->svc->approve($first, $this->admin->id);
+        $this->svc->restock($first->fresh('lines'), $this->admin->id);
+
+        // 2 de plus → refusé (1 restant)…
+        try {
+            $this->svc->create($this->order, [['order_line_id' => $this->line->id, 'quantity' => 2]], 'other', $this->admin->id);
+            $this->fail('Expected ValidationException');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertStringContainsString('1 restant(s)', $e->errors()['lines'][0]);
+        }
+
+        // …mais 1 passe encore.
+        $second = $this->svc->create($this->order, [['order_line_id' => $this->line->id, 'quantity' => 1]], 'other', $this->admin->id);
+        $this->assertSame(OrderReturn::STATUS_PENDING, $second->status);
+    }
+
+    #[Test]
+    public function a_return_on_a_non_fulfilled_order_is_rejected(): void
+    {
+        // Un brouillon n'a jamais décrémenté le stock : un restock créerait du stock fantôme.
+        $draft = Order::withoutTenantScope()->create([
+            'tenant_id' => $this->tenant->id, 'number' => 'ORD-DRAFT',
+            'status' => 'draft', 'currency' => 'XOF',
+            'subtotal_cents' => 0, 'tax_cents' => 0, 'total_cents' => 0, 'discount_cents' => 0,
+        ]);
+        $line = $draft->lines()->create([
+            'tenant_id' => $this->tenant->id, 'product_id' => $this->line->product_id,
+            'variant_id' => null, 'sku' => 'RET-001', 'name' => 'Produit Test',
+            'quantity' => 1, 'unit_price_cents' => 10000,
+        ]);
+
+        $this->expectException(\DomainException::class);
+        $this->svc->create($draft, [['order_line_id' => $line->id, 'quantity' => 1]], 'other', $this->admin->id);
+    }
+
+    #[Test]
+    public function a_member_cannot_create_a_return_via_the_api(): void
+    {
+        // RC-21 (R-3) — la création était HORS du groupe RBAC : tout rôle authentifié passait.
+        $member = User::create(['name' => 'M', 'email' => 'm@ret.sn', 'password' => bcrypt('x'), 'tenant_id' => $this->tenant->id]);
+        $member->assignTenantRole('member');
+
+        $this->withToken($member->createToken('api')->plainTextToken)
+            ->postJson("/api/orders/{$this->order->id}/returns", [
+                'reason'     => 'defective',
+                'resolution' => 'refund',
+                'lines'      => [['order_line_id' => $this->line->id, 'quantity' => 1]],
+            ])
+            ->assertStatus(403);
+
+        $this->assertDatabaseCount('order_returns', 0);
+    }
 }

@@ -42,8 +42,37 @@ class OrderReturnService
         ?string $customerNote = null,
         string  $resolution  = OrderReturn::RESOLUTION_REFUND,
     ): OrderReturn {
-        if ($order->status === 'cancelled') {
-            throw new \DomainException('Impossible de créer un retour sur une commande annulée.');
+        // RC-21 (R-2) — seule une commande HONORÉE est retournable : sur un brouillon/confirmé le
+        // stock n'a jamais été décrémenté → un restock créerait du stock fantôme (et un
+        // remboursement sans vente réelle).
+        if ($order->status !== Order::STATUS_FULFILLED) {
+            throw new \DomainException('Seule une commande honorée (livrée) peut faire l\'objet d\'un retour.');
+        }
+
+        // RC-21 (R-1) — borne de sur-retour PAR LIGNE : quantité achetée − déjà demandée/retournée
+        // sur les retours non refusés de la même ligne. Sans cette borne : retour de 50 sur une
+        // ligne de 2 → stock fantôme au restock + remboursement supérieur au payé.
+        foreach ($lines as $l) {
+            $orderLine = $order->lines()->findOrFail($l['order_line_id']);
+
+            $alreadyClaimed = (int) OrderReturnLine::query()
+                ->where('order_line_id', $orderLine->id)
+                ->whereHas('orderReturn', fn ($q) => $q->whereIn('status', [
+                    OrderReturn::STATUS_PENDING,
+                    OrderReturn::STATUS_APPROVED,
+                    OrderReturn::STATUS_PROCESSING,
+                    OrderReturn::STATUS_RESTOCKED,
+                ]))
+                // Retour tranché (approved/restocked) → quantité approuvée fait foi ; en attente →
+                // la demande réserve la quantité (évite deux demandes concurrentes sur le même solde).
+                ->sum(DB::raw('COALESCE(quantity_approved, quantity_requested)'));
+
+            $returnable = max(0, (int) $orderLine->quantity - $alreadyClaimed);
+            if ((int) $l['quantity'] > $returnable) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'lines' => ["Quantité retournable dépassée pour « {$orderLine->name} » : {$returnable} restant(s) sur {$orderLine->quantity} acheté(s)."],
+                ]);
+            }
         }
 
         return DB::transaction(function () use ($order, $lines, $reason, $requestedBy, $customerNote, $resolution) {

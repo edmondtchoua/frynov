@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Auth\Http\Controllers\AuthController;
+use App\Modules\Auth\Http\Controllers\PasswordResetController;
 use App\Modules\Auth\Http\Controllers\TenantRoleController;
 use App\Modules\Auth\Http\Controllers\UserProfileController;
 use App\Modules\Auth\Http\Controllers\WorkspaceController;
@@ -14,6 +15,20 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('register', [AuthController::class, 'register'])->name('register')
         ->middleware('throttle:3,1');   // 3 registrations per minute per IP
 
+    // RC-10 F-3 — réinitialisation de mot de passe par code email (public, throttlé).
+    Route::post('forgot-password', [PasswordResetController::class, 'forgot'])->name('forgot-password')
+        ->middleware('throttle:3,10'); // 3 demandes / 10 min / IP
+    Route::post('reset-password',  [PasswordResetController::class, 'reset'])->name('reset-password')
+        ->middleware('throttle:5,10'); // 5 tentatives / 10 min / IP
+
+    // RC-12 F-5 — acceptation d'une invitation d'équipe (public, throttlé).
+    Route::post('accept-invitation', [\App\Modules\Auth\Http\Controllers\InvitationController::class, 'accept'])
+        ->name('accept-invitation')->middleware('throttle:5,10');
+
+    // RC-13 F-4 — vérification du second facteur (public, throttlé) → délivre le token.
+    Route::post('2fa/verify', [\App\Modules\Auth\Http\Controllers\TwoFactorController::class, 'verify'])
+        ->name('2fa.verify')->middleware('throttle:10,10');
+
     // Protected endpoints
     Route::middleware(['auth:sanctum', EnsureUserBelongsToTenant::class])->group(function () {
         Route::get('me', [AuthController::class, 'me'])->name('me');
@@ -25,7 +40,9 @@ Route::prefix('auth')->name('auth.')->group(function () {
 // ── User profile (works for ALL authenticated users, incl. super-admin) ─────────
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::patch('me/profile',             [UserProfileController::class, 'update']);
+    Route::post('me/email/verify',         [UserProfileController::class, 'verifyEmail']); // RC-11 F-6
     Route::post('me/password',             [UserProfileController::class, 'changePassword']);
+    Route::post('me/2fa',                  [\App\Modules\Auth\Http\Controllers\TwoFactorController::class, 'toggle']); // RC-13 F-4
     Route::get('me/sessions',              [UserProfileController::class, 'sessions']);
     Route::delete('me/sessions/{tokenId}', [UserProfileController::class, 'revokeSession']);
 });

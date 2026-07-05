@@ -5,8 +5,20 @@ import type {
 } from '../types'
 
 export const authService = {
-  async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    const { data } = await client.post<AuthResponse>('/api/auth/login', credentials)
+  async login(credentials: LoginCredentials): Promise<AuthResponse & { two_factor_required?: boolean; email?: string }> {
+    const { data } = await client.post('/api/auth/login', credentials)
+    return data
+  },
+
+  /** RC-13 F-4 — POST /api/auth/2fa/verify (public) : délivre le token après le second facteur. */
+  async verifyTwoFactor(payload: { email: string; code: string }): Promise<AuthResponse> {
+    const { data } = await client.post<AuthResponse>('/api/auth/2fa/verify', payload)
+    return data
+  },
+
+  /** RC-13 F-4 — POST /api/me/2fa : active/désactive la double authentification. */
+  async setTwoFactor(enabled: boolean): Promise<{ data: { two_factor_enabled: boolean }; message: string }> {
+    const { data } = await client.post('/api/me/2fa', { enabled })
     return data
   },
 
@@ -17,6 +29,18 @@ export const authService = {
 
   async logout(): Promise<void> {
     await client.post('/api/auth/logout')
+  },
+
+  /** RC-10 F-3 — POST /api/auth/forgot-password (réponse générique anti-énumération). */
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const { data } = await client.post('/api/auth/forgot-password', { email })
+    return data
+  },
+
+  /** RC-10 F-3 — POST /api/auth/reset-password (code + nouveau mot de passe). */
+  async resetPassword(payload: { email: string; code: string; password: string; password_confirmation: string }): Promise<{ message: string }> {
+    const { data } = await client.post('/api/auth/reset-password', payload)
+    return data
   },
 
   /** GET /api/auth/me — backend wraps in { user: ... } */
@@ -68,13 +92,19 @@ export const authService = {
     return data.data
   },
 
-  /** POST /api/workspace/users */
+  /** POST /api/workspace/users — RC-12 F-5 : envoie une invitation par email (plus de mot de passe temporaire). */
   async inviteUser(payload: { name: string; email: string; role: string }): Promise<{
     data: WorkspaceUser
-    temp_password: string
+    invitation_sent: boolean
     message: string
   }> {
     const { data } = await client.post('/api/workspace/users', payload)
+    return data
+  },
+
+  /** RC-12 F-5 — POST /api/auth/accept-invitation (public). */
+  async acceptInvitation(payload: { email: string; code: string; password: string; password_confirmation: string }): Promise<{ message: string }> {
+    const { data } = await client.post('/api/auth/accept-invitation', payload)
     return data
   },
 

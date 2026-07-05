@@ -3,6 +3,7 @@
 namespace App\Modules\Auth\Http\Controllers;
 
 use App\Models\User;
+use App\Modules\Auth\Services\EmailChangeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -38,18 +39,57 @@ class UserProfileController extends Controller
             ],
         ]);
 
-        if ($request->has('name'))  $user->name  = $request->input('name');
-        if ($request->has('email')) $user->email = $request->input('email');
-
+        // Le nom s'applique immédiatement.
+        if ($request->has('name')) {
+            $user->name = $request->input('name');
+        }
         $user->save();
+
+        // RC-11 F-6 — un changement d'email n'est PAS appliqué directement : il exige une confirmation
+        // par code envoyé à la NOUVELLE adresse (anti-usurpation / faute de frappe). Le nom reste appliqué.
+        $emailVerificationRequired = false;
+        $pendingEmail = null;
+        if ($request->filled('email')) {
+            $newEmail = strtolower(trim((string) $request->input('email')));
+            if ($newEmail !== strtolower((string) $user->email)) {
+                app(EmailChangeService::class)->request($user, $newEmail);
+                $emailVerificationRequired = true;
+                $pendingEmail = $newEmail;
+            }
+        }
 
         return response()->json([
             'data' => [
                 'id'    => $user->id,
                 'name'  => $user->name,
-                'email' => $user->email,
+                'email' => $user->email, // inchangé tant que non confirmé
             ],
-            'message' => 'Profil mis à jour.',
+            'email_verification_required' => $emailVerificationRequired,
+            'pending_email'               => $pendingEmail,
+            'message' => $emailVerificationRequired
+                ? 'Profil mis à jour. Un code de confirmation a été envoyé à votre nouvelle adresse.'
+                : 'Profil mis à jour.',
+        ]);
+    }
+
+    /** POST /api/me/email/verify — {code} → applique le nouvel email après vérification (RC-11 F-6). */
+    public function verifyEmail(Request $request): JsonResponse
+    {
+        $data = $request->validate(['code' => ['required', 'string', 'max:10']]);
+
+        $result = app(EmailChangeService::class)->confirm($request->user(), $data['code']);
+
+        if (! $result['ok']) {
+            $msg = ($result['reason'] ?? '') === 'taken'
+                ? 'Cette adresse email est déjà utilisée.'
+                : 'Code invalide ou expiré.';
+
+            return response()->json(['message' => $msg], 422);
+        }
+
+        return response()->json([
+            'data'    => ['email' => $result['email']],
+            'message' => 'Adresse email mise à jour.',
         ]);
     }
 

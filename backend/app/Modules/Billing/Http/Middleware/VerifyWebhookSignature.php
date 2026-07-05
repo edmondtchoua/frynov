@@ -68,11 +68,11 @@ class VerifyWebhookSignature
 
         // hash_equals prevents timing attacks
         if (! hash_equals($expected, $signature)) {
+            // RC-9 F-11 — ne JAMAIS journaliser le préfixe de la signature attendue : cela aiderait un
+            // attaquant à distinguer « secret faux » de « payload faux ». On loggue seulement le contexte.
             \Log::critical('WEBHOOK_INVALID_SIGNATURE', [
-                'provider'        => $provider,
-                'ip'              => $request->ip(),
-                'expected_prefix' => substr($expected, 0, 16) . '...',
-                'received_prefix' => substr($signature, 0, 16) . '...',
+                'provider' => $provider,
+                'ip'       => $request->ip(),
             ]);
             return response()->json(['message' => 'Signature invalide.'], 401);
         }

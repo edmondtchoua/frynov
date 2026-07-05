@@ -35,8 +35,18 @@ class DigitalAssetController extends Controller
             return response()->json(['message' => 'Ce produit n\'est pas digital.'], 422);
         }
 
+        // RC-9 F-7 — liste blanche d'extensions + taille max (config). Les types dangereux en rendu
+        // inline (html/svg/js…) sont exclus par absence de la liste ; l'extension client est vérifiée
+        // ici, le MIME réel (basé contenu) est figé au stockage.
+        $allowed = (array) config('digital.upload.allowed_extensions', []);
+        $maxKb   = (int) config('digital.upload.max_size_kb', 51200);
         $request->validate([
-            'file' => ['required', 'file', 'max:51200'], // 50 Mo
+            'file' => ['required', 'file', "max:{$maxKb}", function ($attr, $value, $fail) use ($allowed) {
+                $ext = strtolower($value->getClientOriginalExtension());
+                if ($ext === '' || ! in_array($ext, $allowed, true)) {
+                    $fail("Type de fichier non autorisé" . ($ext ? " (.{$ext})." : "."));
+                }
+            }],
         ]);
 
         $asset = $this->assets->attach($tenantId, $product, $request->file('file'), $request->user()->id);

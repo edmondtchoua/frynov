@@ -72,6 +72,23 @@
               </button>
             </div>
           </form>
+
+          <!-- RC-11 F-6 — confirmation du nouvel email par code -->
+          <form v-if="emailPending" class="profile-form" style="margin-top:12px" @submit.prevent="verifyEmailChange">
+            <p class="form-label">{{ $t('profile.emailVerify.sent', { email: emailPending }) }}</p>
+            <div class="form-row-2">
+              <div class="form-group">
+                <input v-model.trim="emailCode" class="form-input" inputmode="numeric"
+                       :placeholder="$t('profile.emailVerify.codePlaceholder')" />
+              </div>
+              <div class="form-actions" style="align-items:center">
+                <button type="submit" class="btn btn-primary" :disabled="emailVerifying || !emailCode">
+                  <span v-if="emailVerifying" class="spinner-sm spinner-white"></span>{{ $t('profile.emailVerify.confirm') }}
+                </button>
+              </div>
+            </div>
+            <p v-if="emailVerifyMsg" class="form-feedback" :class="emailVerifyErr ? 'form-feedback--err' : 'form-feedback--ok'">{{ emailVerifyMsg }}</p>
+          </form>
         </div>
 
         <!-- Change password -->
@@ -163,6 +180,24 @@
           </form>
         </div>
 
+        <!-- RC-13 F-4 — Double authentification (2FA) -->
+        <div class="profile-section">
+          <div class="section-header">
+            <h3>{{ $t('auth.twoFactor.toggleTitle') }}</h3>
+            <p>{{ $t('auth.twoFactor.toggleDesc') }}</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <span class="badge" :class="twoFactorEnabled ? 'badge-success' : 'badge-gray'">
+              {{ twoFactorEnabled ? $t('auth.twoFactor.enabled') : $t('auth.twoFactor.disabled') }}
+            </span>
+            <button class="btn" :class="twoFactorEnabled ? 'btn-ghost' : 'btn-primary'" :disabled="tfaSaving" @click="toggleTwoFactor">
+              <span v-if="tfaSaving" class="spinner-sm"></span>
+              {{ twoFactorEnabled ? $t('auth.twoFactor.disable') : $t('auth.twoFactor.enable') }}
+            </button>
+            <span v-if="tfaMsg" class="form-feedback form-feedback--ok" style="margin:0">{{ tfaMsg }}</span>
+          </div>
+        </div>
+
         <!-- Active sessions -->
         <div class="profile-section">
           <div class="section-header">
@@ -214,6 +249,7 @@ import { useConfirm } from '@/composables/useConfirm'
 import { t } from '@/i18n'
 import { formatDateTime } from '@/shared/utils/date'
 import { useAuthStore } from '@/stores/auth'
+import { authService } from '@/modules/auth/services/authService'
 import client from '@/api/client'
 
 const auth = useAuthStore()
@@ -249,6 +285,34 @@ const profileSaving = ref(false)
 const profileMsg   = ref('')
 const profileError = ref(false)
 
+// RC-13 F-4 — double authentification (2FA).
+const twoFactorEnabled = ref<boolean>(auth.user?.two_factor_enabled ?? false)
+const tfaSaving = ref(false)
+const tfaMsg = ref('')
+
+async function toggleTwoFactor() {
+  tfaSaving.value = true; tfaMsg.value = ''
+  try {
+    const next = !twoFactorEnabled.value
+    const res = await authService.setTwoFactor(next)
+    twoFactorEnabled.value = res.data.two_factor_enabled
+    if (auth.user) auth.user.two_factor_enabled = twoFactorEnabled.value
+    tfaMsg.value = res.message
+    setTimeout(() => { tfaMsg.value = '' }, 4000)
+  } catch {
+    tfaMsg.value = t('profile.error')
+  } finally {
+    tfaSaving.value = false
+  }
+}
+
+// RC-11 F-6 — confirmation du nouvel email par code.
+const emailPending  = ref('')
+const emailCode     = ref('')
+const emailVerifying = ref(false)
+const emailVerifyMsg = ref('')
+const emailVerifyErr = ref(false)
+
 async function saveProfile() {
   profileMsg.value = ''
   profileSaving.value = true
@@ -259,10 +323,14 @@ async function saveProfile() {
     })
     profileError.value = false
     profileMsg.value   = data.message ?? t('profile.profileUpdated')
-    // Update store
-    if (auth.user) {
-      auth.user.name  = profileForm.name
-      auth.user.email = profileForm.email
+    // Le nom s'applique tout de suite ; l'email seulement après confirmation (F-6).
+    if (auth.user) auth.user.name = profileForm.name
+    if (data.email_verification_required) {
+      emailPending.value = data.pending_email ?? profileForm.email
+      emailCode.value = ''
+      emailVerifyMsg.value = ''
+    } else if (auth.user) {
+      auth.user.email = data.data?.email ?? profileForm.email
     }
   } catch (err: any) {
     profileError.value = true
@@ -271,6 +339,24 @@ async function saveProfile() {
   } finally {
     profileSaving.value = false
     setTimeout(() => { profileMsg.value = '' }, 4000)
+  }
+}
+
+async function verifyEmailChange() {
+  emailVerifying.value = true
+  emailVerifyMsg.value = ''
+  try {
+    const { data } = await client.post('/api/me/email/verify', { code: emailCode.value })
+    emailVerifyErr.value = false
+    emailVerifyMsg.value = data.message ?? t('profile.emailVerify.done')
+    if (auth.user && data.data?.email) auth.user.email = data.data.email
+    profileForm.email = data.data?.email ?? profileForm.email
+    emailPending.value = ''
+  } catch (err: any) {
+    emailVerifyErr.value = true
+    emailVerifyMsg.value = err?.response?.data?.message ?? t('profile.emailVerify.badCode')
+  } finally {
+    emailVerifying.value = false
   }
 }
 

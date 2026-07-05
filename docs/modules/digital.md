@@ -86,6 +86,9 @@ transaction, `fulfilled_at` posé). Dépendance injectée via `OrdersServiceProv
 - **`DigitalAssetService`** : `attach()` (upload), `forProduct()`, `signedLinksFor(entitlement)` (liens
   `URL::temporarySignedRoute('digital.download', +15 min)` pour les assets actifs d'un entitlement
   accessible), `findActiveAsset()`.
+- **Sécurité upload (RC-9 F-7)** : liste blanche d'extensions (`config/digital.php → upload.
+  allowed_extensions` — html/svg/js exclus), taille max configurable, nom de fichier **assaini**, MIME
+  dérivé du **contenu** (jamais la valeur client). Le téléchargement force une pièce jointe.
 - **`GET /access/{token}`** renvoie `download_urls` (liens signés) ; **`GET /download/{token}/{asset}`**
   (middleware `signed`, hors auth) revérifie l'accessibilité de l'entitlement avant de streamer le fichier
   → la **révocation prime** sur un lien déjà émis.
@@ -141,6 +144,10 @@ Troisième mode d'accès, **au choix** du client, en plus du jeton et du lien ma
 Créer un compte*, étape de saisie du code, liste des achats. Session persistée (`localStorage`
 `portal_token`), via une **instance axios dédiée** (le client partagé redirige vers le login opérateur
 sur 401). i18n **FR+EN** (`portal.account.*`).
+
+**Cycle de vie du token (RC-8)** — le token portail est émis avec l'ability `portal` **et une
+expiration de 30 j** (plafond global de secours dans `config/sanctum.php`) ; **`POST /api/portal/logout`**
+le révoque côté serveur (le `logout()` du front l'appelle avant de purger le `localStorage`).
 
 ## Pool de clés éditeur (RC-6E)
 

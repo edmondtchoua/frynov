@@ -29,6 +29,16 @@ class Customer extends Model
         ];
     }
 
+    /**
+     * RC-8 F-12 — normalise l'email (minuscules + trim) à l'écriture. Le rapprochement des comptes
+     * portail se fait sur l'email lowercasé ; sans cette normalisation, un client saisi « Jean@X.com »
+     * ne retrouvait pas ses achats digitaux (impact PostgreSQL, comparaison sensible à la casse).
+     */
+    protected function setEmailAttribute(?string $value): void
+    {
+        $this->attributes['email'] = $value === null ? null : strtolower(trim($value));
+    }
+
     // â”€â”€ Relations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     public function orders(): HasMany

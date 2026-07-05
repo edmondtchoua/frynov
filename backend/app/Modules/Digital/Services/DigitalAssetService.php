@@ -29,16 +29,29 @@ class DigitalAssetService
         return DigitalAsset::create([
             'tenant_id'  => $tenantId,
             'product_id' => $product->id,
-            'name'       => $file->getClientOriginalName() ?: 'asset',
+            // RC-9 F-7 — nom assaini (jamais réutiliser brut le nom client au download).
+            'name'       => $this->sanitizeFilename($file->getClientOriginalName() ?: 'asset'),
             'disk'       => self::DISK,
             'path'       => $path,
             'size_bytes' => (int) ($file->getSize() ?: 0),
-            'mime'       => $file->getClientMimeType(),
+            // MIME dérivé du CONTENU (getMimeType), pas de la valeur client (getClientMimeType) spoofable.
+            'mime'       => $file->getMimeType() ?: $file->getClientMimeType(),
             'checksum'   => @hash_file('sha256', $file->getRealPath()) ?: null,
             'version'    => 1,
             'is_active'  => true,
             'created_by' => $userId,
         ]);
+    }
+
+    /** Assainit un nom de fichier client (retire chemin et caractères douteux, borne la longueur). */
+    private function sanitizeFilename(string $name): string
+    {
+        $name = basename(str_replace('\\', '/', $name));            // retire tout composant de chemin
+        $name = preg_replace('/[^A-Za-z0-9._\- ]+/', '_', $name);   // caractères sûrs seulement
+        $name = preg_replace('/\.{2,}/', '.', (string) $name);      // pas de séquences « .. »
+        $name = trim((string) $name, " ._");
+
+        return $name === '' ? 'asset' : mb_substr($name, 0, 200);
     }
 
     /** Assets d'un produit (actifs par défaut). */

@@ -95,6 +95,37 @@ class DigitalAssetTest extends TestCase
     }
 
     #[Test]
+    public function it_rejects_a_non_whitelisted_extension(): void
+    {
+        // RC-9 F-7 — un type dangereux en rendu inline (html/svg/js…) est refusé.
+        $ebook = $this->digitalProduct();
+        foreach (['evil.html', 'x.svg', 'a.js'] as $bad) {
+            $file = UploadedFile::fake()->createWithContent($bad, '<script>alert(1)</script>');
+            $this->postJson("/api/digital/products/{$ebook->id}/assets", ['file' => $file], $this->auth())
+                ->assertStatus(422);
+        }
+        $this->assertSame(0, DigitalAsset::withoutTenantScope()->count());
+    }
+
+    #[Test]
+    public function it_sanitizes_the_stored_filename(): void
+    {
+        // RC-9 F-7 — le nom client (chemin + caractères douteux) est assaini avant stockage.
+        $ebook = $this->digitalProduct();
+        $file  = UploadedFile::fake()->createWithContent('manuel.pdf', 'PDF');
+        // Force un nom d'origine hostile en conservant l'extension autorisée.
+        $hostile = UploadedFile::fake()->createWithContent('../../etc/pa ss<x>.pdf', 'PDF');
+
+        $id = $this->postJson("/api/digital/products/{$ebook->id}/assets", ['file' => $hostile], $this->auth())
+            ->assertCreated()->json('data.id');
+
+        $name = DigitalAsset::withoutTenantScope()->find($id)->name;
+        $this->assertStringNotContainsString('/', $name);
+        $this->assertStringNotContainsString('<', $name);
+        $this->assertStringEndsWith('.pdf', $name);
+    }
+
+    #[Test]
     public function a_non_digital_product_rejects_an_asset(): void
     {
         $physical = Product::create(['tenant_id' => $this->tenant->id, 'sku' => 'MUG', 'name' => 'Mug', 'price_amount' => 3000, 'price_currency' => 'XOF', 'status' => 'active', 'product_type' => Product::TYPE_SIMPLE]);

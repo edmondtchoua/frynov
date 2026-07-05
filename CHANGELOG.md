@@ -3,6 +3,170 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧭 RC-14 : cohérence de l'onboarding initial (2026-07-05)
+
+Branche `feature/rc14-onboarding-fixes` (release `v1.0.0` → `rc.146`). Suite à l'évaluation UX/UI de
+l'onboarding : le parcours se termine sans erreur (état d'échec avec **Réessayer**), 3 incohérences
+« onboarding ↔ modules » corrigées.
+
+- **Entrepôt par défaut manquant** : `provision` créait un entrepôt uniquement si un nom était fourni,
+  mais le front ne l'envoyait jamais → un tenant « needs_stock » repartait **sans aucun entrepôt** (la
+  1ʳᵉ opération de stock échouait, `defaultWarehouseId` renvoyant null). Désormais un entrepôt par
+  défaut (« Entrepôt principal ») est créé dès que `needs_stock` (idempotent).
+- **Taille d'équipe non persistée** : l'étape 2 collectait la taille d'équipe sans jamais l'enregistrer.
+  Le front envoie maintenant `nb_users` (fourchette solo/small/medium/large → 1/5/20/50).
+- **Wizard reformulé en préférences** : les étapes 3–4 laissaient croire que la sélection *activait* des
+  modules, alors que les modules dépendent du **plan** (`activatePlanModules`). Copie clarifiée (FR+EN) :
+  « préférences pour personnaliser l'espace ; les modules disponibles dépendent de votre offre ».
+- **+3 tests** `WorkspaceApiTest` (entrepôt créé si stock, aucun sinon, `nb_users` persisté). vue-tsc 0.
+
+## [Non publié] — 🔐 RC-13 : Lot C (4/4) — 2FA par code email (F-4) — Lot C complet (2026-07-04)
+
+Branche `feature/rc13-2fa` (release `v1.0.0` → `rc.145`). Dernier volet du Lot C : le backlog sécurité
+comptes & accès (F-3/F-6/F-5/F-4) est **complet**.
+
+### Backend
+- **`users.two_factor_enabled`** + **`two_factor_codes`** : 2FA **opt-in par utilisateur**, code de
+  connexion à 6 chiffres **haché**, court (10 min), borné à 5 tentatives.
+- **`AuthService`** : `authenticate()` (vérifie les identifiants **sans** émettre de token) +
+  `issueTokenFor()`. **`AuthController::login`** refactoré : si 2FA activée → **pas de token**, un code
+  est envoyé (`TwoFactorCodeMail`) et la réponse porte `two_factor_required: true`.
+- **`POST /api/auth/2fa/verify`** `{email, code}` (public, throttle 10/10 min) → délivre le token après
+  le second facteur (avec audit `via: 2fa`). **`POST /api/me/2fa`** `{enabled}` : active/désactive.
+  `UserResource` expose `two_factor_enabled`.
+- **+6 tests** `TwoFactorTest` (login direct sans 2FA, activation, challenge email sans token, code
+  valide → token, code faux, désactivation). `Mail::fake()`. Auth complet vert.
+
+### Frontend
+- **Login** : étape de **second facteur** (code email) quand `two_factor_required` — le store gère
+  `login()` (renvoie `twoFactorRequired`) et `completeTwoFactor()`. **Profil** : interrupteur d'activation
+  de la 2FA. i18n FR+EN (`auth.twoFactor.*`). vue-tsc 0.
+
+> 🎉 **Lot C complet** : reset mot de passe (F-3), re-vérification email (F-6), invitations email (F-5),
+> 2FA email (F-4). Reste du backlog sécurité issu de l'audit : néant (Lots A/B/D/E/C tous livrés).
+
+## [Non publié] — 👥 RC-12 : Lot C (3/4) — invitations d'équipe par email (F-5) (2026-07-03)
+
+Branche `feature/rc12-invitations` (release `v1.0.0` → `rc.144`). Troisième volet du Lot C.
+
+### Backend
+- **`user_invitations`** : code d'activation à 6 chiffres **haché**, expirable (7 jours), borné à 5
+  tentatives, une invitation par utilisateur.
+- **`POST /api/workspace/users`** (inviter) : ne renvoie **plus de mot de passe temporaire** dans la
+  réponse API. Le membre est créé avec un mot de passe aléatoire inutilisable et reçoit un
+  **email d'invitation** (`UserInvitationMail`, code + lien `/accept-invitation`) ; réponse
+  `invitation_sent: true`.
+- **`POST /api/auth/accept-invitation`** `{email, code, password}` (public, throttle 5/10 min) : le
+  membre **choisit son mot de passe** avec le code reçu ; invitation non ré-acceptable.
+- **+tests** : `WorkspaceApiTest` mis à jour (email au lieu de temp password) + `InvitationAcceptTest`
+  (acceptation valide → login OK, code faux, non ré-acceptable). `Mail::fake()`.
+
+### Frontend
+- **Paramètres → Équipe** : la modale d'invitation confirme « email envoyé » (fini le mot de passe à
+  recopier). Nouvelle page publique **`/accept-invitation`** (email pré-rempli depuis le lien, code +
+  mot de passe). i18n FR+EN (`auth.invitation.*`, `settings.invite.emailSentHint`). vue-tsc 0.
+
+> Reste du Lot C : 2FA par code email (F-4).
+
+## [Non publié] — ✉️ RC-11 : Lot C (2/4) — re-vérification de l'email au changement (F-6) (2026-07-02)
+
+Branche `feature/rc11-email-verify` (release `v1.0.0` → `rc.143`). Deuxième volet du Lot C.
+
+### Backend
+- **`email_change_requests`** : demande de changement d'email par utilisateur, code 6 chiffres **haché**,
+  expirable (30 min), borné à 5 tentatives.
+- **`PATCH /api/me/profile`** : le **nom** s'applique immédiatement, mais un **changement d'email** ne
+  l'est plus directement — un code part à la **nouvelle** adresse (`EmailChangeCodeMail`) et la réponse
+  renvoie `email_verification_required` + `pending_email`.
+- **`POST /api/me/email/verify`** `{code}` : applique le nouvel email après vérification (re-contrôle
+  d'unicité au moment de l'application). Empêche l'usurpation d'email / la faute de frappe (F-6).
+- **+tests** : `UserProfileApiTest` mis à jour (changement d'email → vérification requise, appliqué
+  seulement après le bon code ; nom immédiat + email en attente). `Mail::fake()`.
+
+### Frontend
+- **ProfileView** : après un changement d'email, un bloc de **saisie de code** apparaît pour confirmer
+  la nouvelle adresse ; le nom est appliqué immédiatement. i18n FR+EN (`profile.emailVerify.*`). vue-tsc 0.
+
+> Reste du Lot C : invitations par lien email (F-5), 2FA par code email (F-4).
+
+## [Non publié] — 🔑 RC-10 : Lot C (1/2) — réinitialisation de mot de passe par email (F-3) (2026-07-02)
+
+Branche `feature/rc10-auth-reset` (release `v1.0.0` → `rc.142`). Premier volet du Lot C sécurité
+(comptes & accès), débloqué par le mailer applicatif (`config/mail.php`, `log` en dev).
+
+### Backend
+- **`password_reset_codes`** : code à 6 chiffres **haché**, expirable (30 min), borné en tentatives (5).
+- **`PasswordResetService`** + `PasswordResetController` :
+  - `POST /api/auth/forgot-password` `{email}` — envoie le code (**mailer natif**, `PasswordResetCodeMail`),
+    réponse **générique** (anti-énumération), throttle 3/10 min.
+  - `POST /api/auth/reset-password` `{email, code, password}` — vérifie code (haché, expiration,
+    tentatives), applique le mot de passe et **révoque toutes les sessions** (tokens), purge le code.
+    Throttle 5/10 min.
+- **+6 tests** `PasswordResetTest` (envoi pour un compte connu, générique+silencieux pour un inconnu,
+  reset valide → mot de passe changé + sessions révoquées + ancien token 401, code faux compté,
+  code expiré, code brûlé au seuil). `Mail::fake()`.
+
+### Frontend
+- **`ForgotPasswordView`** (`/forgot-password`) : flux en 2 étapes (email → code + nouveau mot de passe),
+  lien depuis la connexion (remplace l'ancien texte d'aide statique). i18n FR+EN (`auth.reset.*`).
+  vue-tsc 0, garde i18n ✅.
+
+> Reste du Lot C (à suivre) : re-vérification email au changement (F-6), invitations par lien email
+> (F-5), 2FA (F-4).
+
+## [Non publié] — 🛡️ RC-9 : durcissement sécurité — Lot D (plateforme) + Lot B (uploads) (2026-07-01)
+
+Branche `feature/rc9-security-lot-db` (release `v1.0.0` → `rc.141`). Suite du backlog sécurité issu de
+l'audit Phase 3.
+
+### Lot D — durcissement plateforme
+- **F-9** — plafond de débit **global** sur `api/*` : middleware `ApiRateLimit` (clé = utilisateur
+  authentifié sinon IP, défaut **600/min**, `config/security.php` → `API_RATE_LIMIT`, en-têtes
+  `X-RateLimit-*` / `Retry-After`). Global (pas seulement le groupe `api`) pour couvrir les routes de
+  modules chargées via `loadRoutesFrom`. Désactivé en test (`phpunit.xml`).
+- **F-10** — **en-têtes de sécurité** (`SecurityHeaders`) sur toutes les réponses : `X-Content-Type-
+  Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `X-Permitted-Cross-Domain-Policies`,
+  HSTS derrière HTTPS. **CORS restreint** : `config/cors.php` publié (origines via `CORS_ALLOWED_
+  ORIGINS`, défaut origines de dev ; plus de `*`), API par jeton Bearer donc `supports_credentials=false`.
+- **F-11** — le log d'une **signature de webhook invalide** ne divulgue plus le préfixe de la signature
+  attendue (aidait à distinguer « secret faux » de « payload faux »).
+
+### Lot B — sécurité des uploads digitaux
+- **F-7** — upload d'asset digital : **liste blanche d'extensions** (`config/digital.php → upload.
+  allowed_extensions` ; html/svg/js… exclus) + taille max configurable ; **nom de fichier assaini**
+  (retrait de chemin et caractères douteux) ; **MIME dérivé du contenu** (`getMimeType`) et non de la
+  valeur client spoofable.
+
+### Tests
+- **+4 tests** (`SecurityHardeningTest` : en-têtes + 429 global ; `DigitalAssetTest` : rejet d'extension
+  non autorisée, assainissement du nom). Backend vert.
+
+## [Non publié] — 🛡️ RC-8 : durcissement sécurité — Lot A (tokens portail) + Lot E (cohérence tenant) (2026-07-01)
+
+Branche `feature/rc8-security-lot-ae` (release `v1.0.0` → `rc.140`). Premiers lots du backlog sécurité
+issu de l'audit Phase 3 (quick wins sans dépendance).
+
+### Lot A — cycle de vie des tokens portail
+- **F-1** — `config/sanctum.php` publié : plafond global d'expiration (défaut **1 an**, `SANCTUM_TOKEN_
+  EXPIRATION_MINUTES`) rattrapant tout token émis sans échéance ; le token portail est désormais émis
+  avec une **expiration explicite de 30 j** (`createToken('portal', ['portal'], now()->addDays(30))`).
+  Fin des tokens portail « à vie ».
+- **F-2** — nouveau **`POST /api/portal/logout`** : révoque le token courant côté serveur
+  (`currentAccessToken()->delete()`). Le `logout()` du front l'appelle (best-effort) avant de purger le
+  `localStorage` — la déconnexion n'est plus purement cliente.
+
+### Lot E — cohérence tenant / permissions
+- **F-8** — le groupe de routes **ImportExport** reçoit le middleware `tenant`
+  (`EnsureUserBelongsToTenant`), qui **pose le contexte d'équipe Spatie** (`setPermissionsTeamId`) :
+  les gardes `role_or_permission:import_export.*` s'évaluent désormais dans le bon tenant.
+- **F-12** — **normalisation de l'email `Customer`** (minuscules + trim) via mutateur, + migration de
+  **backfill** des lignes existantes (`LOWER(TRIM(email))`). Fiabilise le rapprochement « mes achats »
+  du portail (bug de casse, impact PostgreSQL).
+
+### Tests
+- **+4 tests** (`PortalSecurityTest` : expiration du token, révocation au logout ; `CustomerServiceTest` :
+  normalisation email). Digital+Customers+ImportExport **verts**, front vue-tsc 0.
+
 ## [Non publié] — 🔒 Recette QA Phase 3 (rc.134-138) — 15 correctifs, verdict GO (2026-06-30)
 
 Branche `feature/qa-recette-phase-3b` (release `v1.0.0` → `rc.139`). Deux revues indépendantes en

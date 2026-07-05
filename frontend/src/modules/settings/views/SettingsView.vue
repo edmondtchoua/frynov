@@ -408,15 +408,9 @@
               </svg>
               {{ inviteModal.success }}
             </div>
-            <div class="temp-password-box">
-              <div class="temp-password-label">{{ $t('settings.invite.successPwdLabel') }}</div>
-              <div class="temp-password-row">
-                <code class="temp-password-value">{{ inviteModal.tempPassword }}</code>
-                <button class="btn-copy" @click="copyPassword">{{ copiedPwd ? $t('settings.invite.copied') : $t('settings.invite.copy') }}</button>
-              </div>
-            </div>
+            <!-- RC-12 F-5 — invitation par email : plus de mot de passe temporaire à recopier. -->
             <p class="invite-hint">
-              {{ $t('settings.invite.hint') }}
+              {{ $t('settings.invite.emailSentHint', { email: inviteModal.sentTo }) }}
             </p>
           </div>
           <!-- Invite form -->
@@ -696,11 +690,10 @@ const inviteModal = reactive({
   saving:      false,
   error:       '',
   success:     '',
-  tempPassword: '',
+  sentTo:      '',
 })
 
 const inviteForm = reactive({ name: '', email: '', role: '' })
-const copiedPwd  = ref(false)
 
 // ── Member warehouse access (multi-sites) ─────────────────────────────────────
 const { warehouses, loadWarehouses } = useWarehouses()
@@ -787,7 +780,7 @@ async function loadTeamUsers() {
 
 function openInvite() {
   Object.assign(inviteForm, { name: '', email: '', role: '' })
-  Object.assign(inviteModal, { open: true, saving: false, error: '', success: '', tempPassword: '' })
+  Object.assign(inviteModal, { open: true, saving: false, error: '', success: '', sentTo: '' })
 }
 
 function closeInvite() {
@@ -804,8 +797,8 @@ async function submitInvite() {
       email: inviteForm.email,
       role: inviteForm.role,
     })
-    inviteModal.success      = result.message
-    inviteModal.tempPassword = result.temp_password
+    inviteModal.success = result.message
+    inviteModal.sentTo  = inviteForm.email
     await loadTeamUsers()
   } catch (err: any) {
     inviteModal.error = err?.response?.data?.message ?? t('settings.invite.error')
@@ -843,12 +836,6 @@ async function toggleUser(user: WorkspaceUser) {
   } catch (err: any) {
     pushToast(err?.response?.data?.message ?? t('common.genericError'))
   }
-}
-
-function copyPassword() {
-  navigator.clipboard.writeText(inviteModal.tempPassword)
-  copiedPwd.value = true
-  setTimeout(() => { copiedPwd.value = false }, 2000)
 }
 
 function initials(name: string): string {

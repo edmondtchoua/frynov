@@ -14,7 +14,7 @@
       {{ inactivityMsg }}
     </div>
 
-    <form @submit.prevent="handleSubmit" novalidate>
+    <form v-if="!twoFactor.required" @submit.prevent="handleSubmit" novalidate>
 
       <div class="form-group">
         <label class="form-label" for="email">{{ $t('auth.emailLabel') }}</label>
@@ -34,9 +34,8 @@
       <div class="form-group" style="margin-bottom: 0.5rem;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <label class="form-label" for="password">{{ $t('auth.password') }}</label>
-          <a href="#" class="forgot-link" @click.prevent="showForgotMsg = !showForgotMsg">{{ $t('auth.forgotPassword') }}</a>
+          <router-link to="/forgot-password" class="forgot-link">{{ $t('auth.forgotPassword') }}</router-link>
         </div>
-        <p v-if="showForgotMsg" style="color:#64748b;font-size:0.85rem;margin-top:4px;">{{ $t('auth.forgotHelp') }}</p>
         <div class="password-wrap">
           <input
             id="password"
@@ -81,9 +80,26 @@
 
     </form>
 
-    <div class="divider-text" style="margin: 1.5rem 0;">{{ $t('auth.or') }}</div>
+    <!-- RC-13 F-4 — second facteur (code envoyé par email) -->
+    <form v-else @submit.prevent="verifyTwoFactor" novalidate>
+      <p style="color:#64748b;font-size:0.9rem;margin-bottom:1rem;">{{ $t('auth.twoFactor.sent', { email: twoFactor.email }) }}</p>
+      <div class="form-group">
+        <label class="form-label" for="tf-code">{{ $t('auth.twoFactor.code') }}</label>
+        <input id="tf-code" v-model.trim="twoFactor.code" class="form-input" inputmode="numeric"
+               autocomplete="one-time-code" :placeholder="$t('auth.twoFactor.codePlaceholder')" />
+      </div>
+      <div v-if="globalError" class="alert alert-error" role="alert" style="margin: 1rem 0;">{{ globalError }}</div>
+      <button type="submit" class="btn btn-primary btn-xl" :disabled="loading || !twoFactor.code" style="width:100%;margin-top:0.5rem;justify-content:center;">
+        <span v-if="loading" class="spinner-sm spinner-white"></span>{{ $t('auth.twoFactor.verify') }}
+      </button>
+      <p style="margin-top:0.75rem;text-align:center;font-size:0.85rem;">
+        <a href="#" class="forgot-link" @click.prevent="cancelTwoFactor">{{ $t('auth.twoFactor.cancel') }}</a>
+      </p>
+    </form>
 
-    <p class="signup-cta">
+    <div v-if="!twoFactor.required" class="divider-text" style="margin: 1.5rem 0;">{{ $t('auth.or') }}</div>
+
+    <p v-if="!twoFactor.required" class="signup-cta">
       {{ $t('auth.noAccount') }}
       <RouterLink to="/register" class="signup-link">{{ $t('auth.createWorkspace') }}</RouterLink>
     </p>
@@ -107,7 +123,35 @@ const errors        = reactive<Record<string, string>>({})
 const globalError   = ref('')
 const loading       = ref(false)
 const showPassword  = ref(false)
-const showForgotMsg = ref(false)
+// RC-13 F-4 — étape de second facteur (code email).
+const twoFactor     = reactive({ required: false, email: '', code: '' })
+
+function redirectAfterLogin() {
+  const redirect = route.query.redirect as string
+  if (auth.user?.is_super_admin) {
+    router.push(redirect?.startsWith('/admin') ? redirect : '/admin')
+  } else {
+    router.push(redirect || '/dashboard')
+  }
+}
+
+async function verifyTwoFactor() {
+  loading.value = true; globalError.value = ''
+  try {
+    await auth.completeTwoFactor({ email: twoFactor.email, code: twoFactor.code })
+    redirectAfterLogin()
+  } catch {
+    globalError.value = t('auth.twoFactor.badCode')
+  } finally {
+    loading.value = false
+  }
+}
+
+function cancelTwoFactor() {
+  twoFactor.required = false
+  twoFactor.code = ''
+  globalError.value = ''
+}
 
 // Show info banner if redirected due to session inactivity
 const inactivityMsg = computed(() =>
@@ -129,14 +173,15 @@ async function handleSubmit() {
   globalError.value = ''
 
   try {
-    await auth.login({ email: form.email, password: form.password })
-    const redirect = route.query.redirect as string
-    // Super admin goes directly to the back-office, never the tenant app
-    if (auth.user?.is_super_admin) {
-      router.push(redirect?.startsWith('/admin') ? redirect : '/admin')
-    } else {
-      router.push(redirect || '/dashboard')
+    const result = await auth.login({ email: form.email, password: form.password })
+    // RC-13 F-4 — un second facteur est requis : on bascule sur l'étape code.
+    if (result.twoFactorRequired) {
+      twoFactor.required = true
+      twoFactor.email = result.email ?? form.email
+      twoFactor.code = ''
+      return
     }
+    redirectAfterLogin()
   } catch (err) {
     const axiosErr = err as AxiosError<ApiError>
     const status   = axiosErr.response?.status

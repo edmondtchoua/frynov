@@ -38,6 +38,8 @@ Route::prefix('api/portal')->group(function () {
         ->middleware('throttle:10,1');
     Route::get('my-purchases', [\App\Modules\Digital\Http\Controllers\PortalAccountController::class, 'myPurchases'])
         ->middleware('auth:sanctum');
+    Route::post('logout', [\App\Modules\Digital\Http\Controllers\PortalAccountController::class, 'logout'])
+        ->middleware('auth:sanctum'); // RC-8 F-2 — révocation serveur du token portail
 });
 
 // RC-6C — portail client (public, throttlé) : accès par jeton / lien magique, « mes achats » par email.

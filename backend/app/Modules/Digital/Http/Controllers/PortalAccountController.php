@@ -142,10 +142,22 @@ class PortalAccountController extends Controller
 
         return response()->json([
             // Ability `portal` : le token ne peut servir QUE le portail (défense complémentaire au
-            // GuardPortalPrincipal global).
-            'token' => $account->createToken('portal', ['portal'])->plainTextToken,
+            // GuardPortalPrincipal global). Expiration explicite 30 j (recette QA F-1) — plus de token
+            // portail à vie ; révocable côté serveur via /logout (F-2).
+            'token' => $account->createToken('portal', ['portal'], now()->addDays(30))->plainTextToken,
             'email' => $account->email,
         ]);
+    }
+
+    /** POST /api/portal/logout — révoque le token courant côté serveur (F-2). */
+    public function logout(Request $request): JsonResponse
+    {
+        $account = $request->user();
+        if ($account instanceof PortalAccount) {
+            $account->currentAccessToken()?->delete();
+        }
+
+        return response()->json(['message' => 'Déconnecté.']);
     }
 
     /** GET /api/portal/my-purchases — tous les achats digitaux actifs de l'email connecté. */

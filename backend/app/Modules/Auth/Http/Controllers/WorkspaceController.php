@@ -65,23 +65,26 @@ class WorkspaceController extends Controller
             return response()->json(['message' => 'Vous ne pouvez pas attribuer ce rôle.'], 403);
         }
 
-        $tenant      = $request->user()->tenant;
-        $rawPassword = Str::random(10);
+        $tenant = $request->user()->tenant;
 
+        // RC-12 F-5 — mot de passe aléatoire NON communiqué : le membre le définira via l'invitation
+        // (code envoyé par email), au lieu d'un mot de passe temporaire transitant par l'API.
         $user = User::create([
             'name'      => $request->input('name'),
-            'email'     => $request->input('email'),
-            'password'  => Hash::make($rawPassword),
+            'email'     => strtolower(trim((string) $request->input('email'))),
+            'password'  => Str::random(40),
             'tenant_id' => $tenant->id,
         ]);
         // Scope role assignment to the tenant (Spatie teams)
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
         $user->assignRole($request->input('role'));
 
+        app(\App\Modules\Auth\Services\InvitationService::class)->invite($user, $request->user());
+
         return response()->json([
-            'data'          => $this->userToArray($user),
-            'temp_password' => $rawPassword,
-            'message'       => 'Utilisateur ajouté avec succès.',
+            'data'             => $this->userToArray($user),
+            'invitation_sent'  => true,
+            'message'          => 'Invitation envoyée par email.',
         ], 201);
     }
 

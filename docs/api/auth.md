@@ -141,6 +141,18 @@ POST /api/auth/reset-password
 ```
 **200** → `{ "message": "Mot de passe réinitialisé …" }` · **422** → code invalide/expiré ou mot de passe faible.
 
+## POST `/api/auth/accept-invitation` *(RC-12 F-5, public, throttle 5/10 min)*
+
+Active un compte **invité** : le membre pose son mot de passe avec le **code** reçu par email (valable
+7 jours, brûlé après 5 tentatives). `POST /api/workspace/users` ne renvoie plus de mot de passe
+temporaire — il envoie ce code par email (`invitation_sent: true`).
+
+```http
+POST /api/auth/accept-invitation
+{ "email": "membre@exemple.sn", "code": "123456", "password": "MonMdp1", "password_confirmation": "MonMdp1" }
+```
+**200** → `{ "message": "Compte activé …" }` · **422** → invitation invalide/expirée ou déjà acceptée.
+
 ## POST `/api/me/email/verify` *(RC-11 F-6, auth)*
 
 Confirme un **changement d'email** demandé via `PATCH /api/me/profile`. Le nouvel email n'est appliqué

@@ -3,6 +3,29 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 👥 RC-12 : Lot C (3/4) — invitations d'équipe par email (F-5) (2026-07-03)
+
+Branche `feature/rc12-invitations` (release `v1.0.0` → `rc.144`). Troisième volet du Lot C.
+
+### Backend
+- **`user_invitations`** : code d'activation à 6 chiffres **haché**, expirable (7 jours), borné à 5
+  tentatives, une invitation par utilisateur.
+- **`POST /api/workspace/users`** (inviter) : ne renvoie **plus de mot de passe temporaire** dans la
+  réponse API. Le membre est créé avec un mot de passe aléatoire inutilisable et reçoit un
+  **email d'invitation** (`UserInvitationMail`, code + lien `/accept-invitation`) ; réponse
+  `invitation_sent: true`.
+- **`POST /api/auth/accept-invitation`** `{email, code, password}` (public, throttle 5/10 min) : le
+  membre **choisit son mot de passe** avec le code reçu ; invitation non ré-acceptable.
+- **+tests** : `WorkspaceApiTest` mis à jour (email au lieu de temp password) + `InvitationAcceptTest`
+  (acceptation valide → login OK, code faux, non ré-acceptable). `Mail::fake()`.
+
+### Frontend
+- **Paramètres → Équipe** : la modale d'invitation confirme « email envoyé » (fini le mot de passe à
+  recopier). Nouvelle page publique **`/accept-invitation`** (email pré-rempli depuis le lien, code +
+  mot de passe). i18n FR+EN (`auth.invitation.*`, `settings.invite.emailSentHint`). vue-tsc 0.
+
+> Reste du Lot C : 2FA par code email (F-4).
+
 ## [Non publié] — ✉️ RC-11 : Lot C (2/4) — re-vérification de l'email au changement (F-6) (2026-07-02)
 
 Branche `feature/rc11-email-verify` (release `v1.0.0` → `rc.143`). Deuxième volet du Lot C.

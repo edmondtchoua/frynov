@@ -80,13 +80,19 @@ export const authService = {
     return data.data
   },
 
-  /** POST /api/workspace/users */
+  /** POST /api/workspace/users — RC-12 F-5 : envoie une invitation par email (plus de mot de passe temporaire). */
   async inviteUser(payload: { name: string; email: string; role: string }): Promise<{
     data: WorkspaceUser
-    temp_password: string
+    invitation_sent: boolean
     message: string
   }> {
     const { data } = await client.post('/api/workspace/users', payload)
+    return data
+  },
+
+  /** RC-12 F-5 — POST /api/auth/accept-invitation (public). */
+  async acceptInvitation(payload: { email: string; code: string; password: string; password_confirmation: string }): Promise<{ message: string }> {
+    const { data } = await client.post('/api/auth/accept-invitation', payload)
     return data
   },
 

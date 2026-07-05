@@ -140,7 +140,8 @@ class WorkspaceApiTest extends TestCase
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonStructure(['data' => ['id', 'name', 'email', 'roles', 'is_active'], 'temp_password', 'message'])
+            ->assertJsonStructure(['data' => ['id', 'name', 'email', 'roles', 'is_active'], 'invitation_sent', 'message'])
+            ->assertJsonPath('invitation_sent', true)
             ->assertJsonPath('data.email', 'aissatou@test.sn')
             ->assertJsonPath('data.is_active', true);
 
@@ -151,17 +152,21 @@ class WorkspaceApiTest extends TestCase
     }
 
     #[Test]
-    public function invite_returns_a_non_empty_temp_password(): void
+    public function invite_sends_an_email_invitation_instead_of_a_temp_password(): void
     {
+        // RC-12 F-5 — plus de mot de passe temporaire en réponse ; un code d'activation part par email.
+        \Illuminate\Support\Facades\Mail::fake();
+
         $response = $this->withToken($this->token)->postJson('/api/workspace/users', [
             'name'  => 'Temp Pass User',
             'email' => 'tmp@test.sn',
             'role'  => 'viewer',
         ]);
 
-        $response->assertStatus(201);
-        $this->assertNotEmpty($response->json('temp_password'));
-        $this->assertGreaterThanOrEqual(10, strlen($response->json('temp_password')));
+        $response->assertStatus(201)->assertJsonPath('invitation_sent', true);
+        $this->assertNull($response->json('temp_password'));                         // ne fuite plus
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Modules\Auth\Mail\UserInvitationMail::class, fn ($m) => $m->hasTo('tmp@test.sn'));
+        $this->assertDatabaseHas('user_invitations', ['tenant_id' => $this->tenant->id]);
     }
 
     #[Test]

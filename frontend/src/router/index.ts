@@ -48,6 +48,13 @@ const router = createRouter({
       component: () => import('@/modules/auth/views/ForgotPasswordView.vue'),
       meta: { layout: 'auth', public: true },
     },
+    {
+      // RC-12 F-5 — acceptation d'invitation (activation de compte par code email).
+      path: '/accept-invitation',
+      name: 'accept-invitation',
+      component: () => import('@/modules/auth/views/AcceptInvitationView.vue'),
+      meta: { layout: 'auth', public: true },
+    },
 
     // ── Onboarding ────────────────────────────────────────────────────────
     {

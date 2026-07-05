@@ -21,6 +21,10 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('reset-password',  [PasswordResetController::class, 'reset'])->name('reset-password')
         ->middleware('throttle:5,10'); // 5 tentatives / 10 min / IP
 
+    // RC-12 F-5 — acceptation d'une invitation d'équipe (public, throttlé).
+    Route::post('accept-invitation', [\App\Modules\Auth\Http\Controllers\InvitationController::class, 'accept'])
+        ->name('accept-invitation')->middleware('throttle:5,10');
+
     // Protected endpoints
     Route::middleware(['auth:sanctum', EnsureUserBelongsToTenant::class])->group(function () {
         Route::get('me', [AuthController::class, 'me'])->name('me');

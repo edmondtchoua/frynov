@@ -3,6 +3,37 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧹 RC-20 : file BASSE (8 correctifs) + validation E2E sur base locale (2026-07-05)
+
+Branche `feature/rc20-basse-fixes` (release `v1.0.0` → `rc.152`). Solde du backlog rc.147 (hors 2
+hypothèses produit) + **première validation preview de bout en bout sur la base MySQL locale**.
+
+**Correctifs**
+- **[C-8]** Journaux d'audit réellement écrits (`return.approved`, `product.created`, `product.archived`) —
+  les appels positionnels en désordre levaient un TypeError avalé.
+- **[C-9/P-3]** Numéros `RET-`/`TRF-`/`SUP-` via un **`SequenceService` partagé** (séquence verrouillée
+  `FOR UPDATE`, seed de continuité pour l'historique) — fin des courses `count()+1`.
+- **[C-10]** `paymentService.record` envoie une **clé d'idempotence** (`X-Idempotency-Key`, UUID client).
+- **[N-6]** Notifications : un message **déjà parti** n'est plus remboursé ni remis en `pending` si le
+  marquage `sent` échoue (fin du double envoi potentiel).
+- **[B-7]** `PromotionService::recordUse` verrouille la promo et re-vérifie `max_uses` en transaction.
+- **[P-4]** Import produits : les doublons de SKU **intra-fichier** sont ignorés dès l'analyse.
+- **[P-5]** `customer_id` validé au tenant dans `OrderService::create` (couvre commandes ET caisse) → 422.
+- **[P-6]** Label « WooCommerce ».
+
+**Environnement local / validation E2E (preview)**
+- **Résolution du faux « blocage sandbox »** : un serveur d'un autre projet squattait le port 8000
+  (423 `app_locked`/404). Port libéré → **API 100 % fonctionnelle en preview**.
+- Base locale : `default_storage_engine=MyISAM` → 78 tables converties **InnoDB** + `engine=InnoDB`
+  forcé dans `config/database.php` (l'app dépend des transactions/`lockForUpdate`). Migrations en
+  retard appliquées, `DemoSeeder` rendu idempotent sous MySQL (`fiscal_periods` DATE).
+- **Parcours validés en conditions réelles** : login → caisse Desktop (vente **paiement mixte**
+  10 000 esp. + 6 000 MM, attendu 50 000→60 000), **ticket de caisse** complet (2 legs affichés),
+  **mouvement de caisse** (sortie 5 000 → 55 000), POS mobile (session partagée), **Analyse
+  d'inventaire** (ABC réel : A=7 produits 77,8 % du CA), commandes (recherche serveur → 1 résultat,
+  **pagination 6 pages** naviguable). +1 correctif de style (cartes KPI insights, styles scopés).
+- `launch.json` : configuration `backend` (php artisan serve :8000) ajoutée.
+
 ## [Non publié] — 🖨️ RC-19 : ticket de caisse — génération + impression (2026-07-05)
 
 Branche `feature/rc19-pos-receipt` (release `v1.0.0` → `rc.151`). Suite du chantier caisse :

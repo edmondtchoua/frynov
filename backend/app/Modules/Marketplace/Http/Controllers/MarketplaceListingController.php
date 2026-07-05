@@ -101,6 +101,7 @@ class MarketplaceListingController extends Controller
                     'whatsapp_catalog' => 'WhatsApp Business Catalog',
                     'shopify'          => 'Shopify',
                     'jumia'            => 'Jumia',
+                    'woocommerce'      => 'WooCommerce', // RC-20 (P-6) — le fallback ucfirst donnait « Woocommerce »
                     default            => ucfirst($p),
                 },
             ], MarketplaceAdapterFactory::supportedPlatforms()),

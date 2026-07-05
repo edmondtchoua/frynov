@@ -62,4 +62,21 @@ abstract class TestCase extends BaseTestCase
             );
         }
     }
+
+    /**
+     * RC-20 (P-5) — crée un VRAI client pour le tenant, avec un id imposé.
+     *
+     * `OrderService::create` valide désormais que `customer_id` appartient au tenant : les tests
+     * qui passaient un UUID fictif (référence orpheline, tolérée avant) créent le client ici.
+     */
+    protected function seedCustomer(string $id, string $tenantId, string $name = 'Client Test'): void
+    {
+        $customer = new \App\Modules\Customers\Models\Customer([
+            'tenant_id' => $tenantId,
+            'name'      => $name,
+            'email'     => substr($id, 0, 8) . '@client-test.sn',
+        ]);
+        $customer->id = $id;
+        $customer->save();
+    }
 }

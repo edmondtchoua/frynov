@@ -87,6 +87,27 @@ class PromotionServiceTest extends TestCase
     }
 
     #[Test]
+    public function record_use_is_refused_once_the_limit_is_reached(): void
+    {
+        // RC-20 (B-7) — recordUse verrouille la promo et RE-VÉRIFIE la limite dans la transaction :
+        // deux activations concurrentes ne peuvent plus dépasser max_uses.
+        $p = $this->promo(['max_uses' => 1]);
+        $this->svc->recordUse($p, $this->tenant);                        // 1/1 — OK
+
+        $other = Tenant::create(['name' => 'T2', 'slug' => 'tp-promo-2', 'plan' => 'starter', 'status' => 'active', 'settings' => []]);
+
+        try {
+            $this->svc->recordUse($p->fresh(), $other);
+            $this->fail('Expected InvalidPromoCodeException');
+        } catch (InvalidPromoCodeException) {
+            // attendu : limite atteinte au moment de l'enregistrement
+        }
+
+        $this->assertSame(1, (int) $p->fresh()->current_uses);           // pas de dépassement
+        $this->assertDatabaseCount('promo_uses', 1);
+    }
+
+    #[Test]
     public function wrong_plan_throws(): void
     {
         $this->promo(['applicable_plans' => ['enterprise']]);

@@ -765,10 +765,14 @@ class DemoSeeder extends Seeder
         }
 
         // 1. Période fiscale ouverte (mois courant)
+        // RC-20 — le lookup doit sérialiser EXACTEMENT comme le cast `date` stocke (minuit pile) :
+        // `endOfMonth()` (…23:59:59) ne matchait jamais sous MySQL (colonne DATE) ni SQLite
+        // (chaîne '…00:00:00') → updateOrCreate re-créait la ligne (violation d'unicité au re-seed).
         FiscalPeriod::updateOrCreate(
             [
                 'tenant_id' => $tid, 'type' => 'monthly',
-                'starts_at' => now()->startOfMonth(), 'ends_at' => now()->endOfMonth(),
+                'starts_at' => now()->startOfMonth(),
+                'ends_at'   => now()->endOfMonth()->startOfDay(),
             ],
             ['name' => 'Période ' . now()->format('Y-m'), 'status' => 'open']
         );

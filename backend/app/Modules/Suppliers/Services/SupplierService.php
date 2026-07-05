@@ -44,13 +44,17 @@ class SupplierService
 
     public function create(array $data, string $tenantId): Supplier
     {
-        if (empty($data['code'])) {
-            $data['code'] = $this->nextCode($tenantId);
-        }
+        // RC-20 (P-3) — génération du code dans une transaction : la séquence est verrouillée le
+        // temps de l'insert (plus de course count()+1 → codes dupliqués en concurrence).
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($data, $tenantId) {
+            if (empty($data['code'])) {
+                $data['code'] = $this->nextCode($tenantId);
+            }
 
-        $data['status'] ??= 'active';
+            $data['status'] ??= 'active';
 
-        return Supplier::create([...$data, 'tenant_id' => $tenantId]);
+            return Supplier::create([...$data, 'tenant_id' => $tenantId]);
+        });
     }
 
     public function update(Supplier $supplier, array $data): Supplier
@@ -77,8 +81,9 @@ class SupplierService
 
     private function nextCode(string $tenantId): string
     {
-        $count = Supplier::forTenant($tenantId)->withTrashed()->count();
-
-        return 'SUP-' . str_pad((string) ($count + 1), 4, '0', STR_PAD_LEFT);
+        return app(\App\Shared\Services\SequenceService::class)->next(
+            $tenantId, 'SUP', 4,
+            fn () => Supplier::forTenant($tenantId)->withTrashed()->count(),
+        );
     }
 }

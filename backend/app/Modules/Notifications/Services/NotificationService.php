@@ -120,8 +120,9 @@ class NotificationService
             // crédit avant l'envoi (débit atomique) et on le REMBOURSE si l'envoi échoue : jamais de
             // crédit perdu sur un échec, jamais de double décompte. Solde à zéro → envoi bloqué
             // (statut terminal `no_credit`, sans nouvelle tentative ni interruption du flux métier).
-            $metered = $channel && $this->credits->isMetered($item->channel);
-            $debited = false;
+            $metered   = $channel && $this->credits->isMetered($item->channel);
+            $debited   = false;
+            $delivered = false;
 
             try {
                 if (! $channel || ! $channel->is_active) {
@@ -147,6 +148,7 @@ class NotificationService
                 }
 
                 $this->deliver($channel, $item);
+                $delivered = true; // RC-20 (N-6) — le message est PARTI : plus de remboursement possible.
                 $item->update([
                     'status'   => NotificationOutbox::STATUS_SENT,
                     'attempts' => $item->attempts + 1,
@@ -154,6 +156,22 @@ class NotificationService
                 ]);
                 $sent++;
             } catch (\Throwable $e) {
+                // RC-20 (N-6) — si l'échec survient APRÈS la livraison (ex. update() en erreur), le
+                // message a réellement été envoyé : ni remboursement (le crédit est consommé), ni
+                // retour en `pending` (ce serait un DOUBLE ENVOI au prochain flush). On re-tente le
+                // marquage `sent` en best-effort et on passe au suivant.
+                if ($delivered) {
+                    try {
+                        $item->update([
+                            'status'   => NotificationOutbox::STATUS_SENT,
+                            'attempts' => $item->attempts + 1,
+                            'sent_at'  => now(),
+                        ]);
+                    } catch (\Throwable) {}
+                    $sent++;
+                    continue;
+                }
+
                 // Remboursement du crédit réservé si l'envoi a échoué après le débit.
                 if ($debited) {
                     $this->credits->credit(

@@ -23,6 +23,11 @@ class ProductImportParser
     private array $supplierCache = [];  // lowercase name => supplier_id
     private bool  $indexed       = false;
 
+    // RC-20 (P-4) — SKU déjà rencontrés DANS CE FICHIER (lowercase sku => n° de ligne).
+    // Sans ce suivi, deux lignes portant le même SKU nouveau étaient toutes deux « VALID » à
+    // l'analyse et n'échouaient qu'à l'exécution.
+    private array $seenInFile = [];
+
     public function __construct(string $tenantId, string $mode)
     {
         $this->tenantId = $tenantId;
@@ -156,6 +161,20 @@ class ProductImportParser
             if ($this->mode === 'update_only') {
                 $action = ImportRow::ACTION_SKIP;
                 $warnings[] = ['field' => 'sku', 'message' => "Produit avec SKU «{$sku}» introuvable (mode update_only → ignoré)."];
+            }
+        }
+
+        // ── RC-20 (P-4) — doublon INTRA-FICHIER : la première occurrence gagne, les suivantes
+        //    sont ignorées dès l'ANALYSE (avant : marquées VALID, échec seulement à l'exécution).
+        //    Seules les lignes qui vont réellement écrire (sans erreur, non déjà ignorées)
+        //    réservent le SKU.
+        if ($sku !== '' && empty($errors) && $action !== ImportRow::ACTION_SKIP) {
+            $skuKey = strtolower($sku);
+            if (isset($this->seenInFile[$skuKey])) {
+                $action = ImportRow::ACTION_SKIP;
+                $warnings[] = ['field' => 'sku', 'message' => "SKU «{$sku}» déjà présent dans ce fichier (ligne {$this->seenInFile[$skuKey]}) — ligne ignorée."];
+            } else {
+                $this->seenInFile[$skuKey] = $rowNum;
             }
         }
 

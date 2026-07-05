@@ -223,6 +223,78 @@ class PosAdvancedTest extends TestCase
         $this->assertSame(100, $this->stockQty()); // still restocked
     }
 
+    // ── RC-22 — idempotence du checkout (rejeu offline / retry réseau) ────────
+
+    #[Test]
+    public function replaying_a_checkout_with_the_same_idempotency_key_returns_the_same_sale(): void
+    {
+        $session = $this->openSession();
+        $key     = 'offline-sale-0001';
+        $payload = [
+            'items'  => [['product_id' => $this->product->id, 'quantity' => 2]],
+            'method' => 'cash',
+        ];
+
+        $first = $this->withHeaders($this->auth() + ['X-Idempotency-Key' => $key])
+            ->postJson("/api/pos/sessions/{$session['id']}/checkout", $payload)
+            ->assertStatus(201)->json('data');
+
+        // Rejeu (la réponse du 1er appel s'est « perdue ») : MÊME commande, rien de recréé.
+        $second = $this->withHeaders($this->auth() + ['X-Idempotency-Key' => $key])
+            ->postJson("/api/pos/sessions/{$session['id']}/checkout", $payload)
+            ->assertStatus(201)->json('data');
+
+        $this->assertSame($first['order']['id'], $second['order']['id']);
+        $this->assertSame(98, $this->stockQty());                        // décrémenté UNE fois
+        $this->assertDatabaseCount('orders', 1);
+        $this->assertDatabaseCount('payments', 1);
+        $this->assertDatabaseHas('cash_register_sessions', [
+            'id' => $session['id'], 'sales_count' => 1, 'cash_sales_cents' => 50000,
+        ]);
+    }
+
+    #[Test]
+    public function the_replay_still_returns_the_sale_after_the_session_was_closed(): void
+    {
+        // Scénario offline réel : vente encaissée, réponse perdue, caisse clôturée le soir,
+        // resynchronisation le lendemain → le rejeu doit renvoyer la vente actée, pas un 422.
+        $session = $this->openSession();
+        $key     = 'offline-sale-0002';
+        $payload = ['items' => [['product_id' => $this->product->id, 'quantity' => 1]], 'method' => 'cash'];
+
+        $first = $this->withHeaders($this->auth() + ['X-Idempotency-Key' => $key])
+            ->postJson("/api/pos/sessions/{$session['id']}/checkout", $payload)
+            ->assertStatus(201)->json('data');
+
+        $this->withHeaders($this->auth())
+            ->postJson("/api/pos/sessions/{$session['id']}/close", ['counted_cash_cents' => 25000])->assertOk();
+
+        $replay = $this->withHeaders($this->auth() + ['X-Idempotency-Key' => $key])
+            ->postJson("/api/pos/sessions/{$session['id']}/checkout", $payload)
+            ->assertStatus(201)->json('data');
+
+        $this->assertSame($first['order']['id'], $replay['order']['id']);
+        $this->assertDatabaseCount('orders', 1);
+    }
+
+    #[Test]
+    public function different_keys_create_distinct_sales_and_no_key_keeps_the_legacy_behaviour(): void
+    {
+        $session = $this->openSession();
+        $payload = ['items' => [['product_id' => $this->product->id, 'quantity' => 1]], 'method' => 'cash'];
+
+        $this->withHeaders($this->auth() + ['X-Idempotency-Key' => 'k-1'])
+            ->postJson("/api/pos/sessions/{$session['id']}/checkout", $payload)->assertStatus(201);
+        $this->flushHeaders()->withHeaders($this->auth() + ['X-Idempotency-Key' => 'k-2'])
+            ->postJson("/api/pos/sessions/{$session['id']}/checkout", $payload)->assertStatus(201);
+        // withHeaders PERSISTE entre appels du même test → purge avant l'appel « sans clé ».
+        $this->flushHeaders()->withHeaders($this->auth())
+            ->postJson("/api/pos/sessions/{$session['id']}/checkout", $payload)->assertStatus(201);
+
+        $this->assertDatabaseCount('orders', 3);
+        $this->assertSame(97, $this->stockQty());
+    }
+
     // ── Backward compatibility ───────────────────────────────────────────────
 
     #[Test]

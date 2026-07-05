@@ -168,6 +168,28 @@ POST /api/pos/sessions/{id}/refund
 
 ---
 
+### Idempotence du checkout & synchronisation offline (RC-22)
+
+Le POS génère un **id client AVANT la tentative** d'encaissement (`crypto.randomUUID()`), envoyé
+en `X-Idempotency-Key`. La file offline (mobile) réutilise ce même id à CHAQUE retry :
+
+- serveur : la clé est stockée sur la commande (`orders.pos_reference`, **unique par tenant**) ;
+  une clé déjà vue → la vente existante est renvoyée telle quelle (commande + paiements),
+  **même si la session a été clôturée entre-temps** (resync du lendemain) ;
+- course entre deux rejeux : la contrainte unique tranche, le perdant renvoie la vente du gagnant ;
+- sans clé : comportement historique inchangé (client tiers/API).
+
+**Statuts de synchronisation** (mapping) : côté client la file offline porte l'état
+`pending_sync` (vente en file, PAS encore d'effet serveur : stock/caisse intacts) →
+`synced` = la commande existe côté serveur (`pos_reference` posé), retirée de la file ;
+`failed_sync` = erreur métier au rejeu (ex. 422), la vente reste en file pour arbitrage.
+Côté serveur, les états métier restent ceux des commandes (`draft/confirmed/fulfilled/cancelled`),
+des retours (`pending/approved/restocked/rejected` ≙ refunded) et des sessions (`open/closed`).
+
+> Lien comptabilité (P2) : chaque vente POS émettra un événement `PosSaleCompleted` consommé par
+> l'outbox comptable ; `source_type=Order`, `source_id`, et `pos_reference` garantissent une
+> écriture unique par vente. Voir docs/architecture/comptabilite-syscohada.md.
+
 ### Ticket de caisse (RC-19)
 
 `ReceiptService::forOrder(Order $order): array` construit le **payload structuré** du ticket :

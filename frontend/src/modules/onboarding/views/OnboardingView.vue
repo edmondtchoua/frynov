@@ -563,6 +563,8 @@ async function submitOnboarding() {
       currency:        answers.currency,
       timezone:        answers.timezone,
       sector:          answers.type,
+      // Persiste la taille d'équipe choisie à l'étape 2 (fourchette indicative).
+      nb_users:        ({ solo: 1, small: 5, medium: 20, large: 50 } as Record<string, number>)[answers.teamSize] ?? null,
       nb_branches:     needs.nb_branches,
       needs_stock:     needs.needs_stock,
       needs_pos:       needs.needs_pos,

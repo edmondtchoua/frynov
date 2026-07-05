@@ -81,6 +81,45 @@ class WorkspaceApiTest extends TestCase
         $this->assertTrue((bool) $this->tenant->onboarded);
     }
 
+    #[Test]
+    public function onboarding_with_stock_creates_a_default_warehouse(): void
+    {
+        // RC-14 #2 — un tenant qui gère du stock doit repartir avec un entrepôt par défaut.
+        $this->withToken($this->token)->postJson('/api/workspace/provision', [
+            'company_name' => 'Ma Boutique', 'country' => 'SN', 'currency' => 'XOF',
+            'needs_stock' => true, 'needs_pos' => false, 'needs_delivery' => false,
+            'needs_ecommerce' => false, 'needs_offline' => false,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('warehouses', ['tenant_id' => $this->tenant->id, 'is_default' => true]);
+    }
+
+    #[Test]
+    public function onboarding_without_stock_creates_no_warehouse(): void
+    {
+        $this->withToken($this->token)->postJson('/api/workspace/provision', [
+            'company_name' => 'Cabinet Conseil', 'country' => 'SN', 'currency' => 'XOF',
+            'needs_stock' => false, 'needs_pos' => false, 'needs_delivery' => false,
+            'needs_ecommerce' => false, 'needs_offline' => false,
+        ])->assertOk();
+
+        $this->assertDatabaseMissing('warehouses', ['tenant_id' => $this->tenant->id]);
+    }
+
+    #[Test]
+    public function onboarding_persists_the_team_size_as_nb_users(): void
+    {
+        // RC-14 #3 — la taille d'équipe choisie n'était pas persistée.
+        $this->withToken($this->token)->postJson('/api/workspace/provision', [
+            'company_name' => 'Equipe', 'country' => 'SN', 'currency' => 'XOF', 'nb_users' => 20,
+            'needs_stock' => false, 'needs_pos' => false, 'needs_delivery' => false,
+            'needs_ecommerce' => false, 'needs_offline' => false,
+        ])->assertOk();
+
+        $this->tenant->refresh();
+        $this->assertSame(20, $this->tenant->settings['nb_users']);
+    }
+
     // ── GET /api/workspace/users ──────────────────────────────────────────────
 
     #[Test]

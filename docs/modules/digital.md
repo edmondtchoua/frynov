@@ -86,6 +86,9 @@ transaction, `fulfilled_at` posé). Dépendance injectée via `OrdersServiceProv
 - **`DigitalAssetService`** : `attach()` (upload), `forProduct()`, `signedLinksFor(entitlement)` (liens
   `URL::temporarySignedRoute('digital.download', +15 min)` pour les assets actifs d'un entitlement
   accessible), `findActiveAsset()`.
+- **Sécurité upload (RC-9 F-7)** : liste blanche d'extensions (`config/digital.php → upload.
+  allowed_extensions` — html/svg/js exclus), taille max configurable, nom de fichier **assaini**, MIME
+  dérivé du **contenu** (jamais la valeur client). Le téléchargement force une pièce jointe.
 - **`GET /access/{token}`** renvoie `download_urls` (liens signés) ; **`GET /download/{token}/{asset}`**
   (middleware `signed`, hors auth) revérifie l'accessibilité de l'entitlement avant de streamer le fichier
   → la **révocation prime** sur un lien déjà émis.

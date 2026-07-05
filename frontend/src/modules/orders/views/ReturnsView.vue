@@ -19,6 +19,12 @@
       </select>
     </div>
 
+    <!-- RC-18 (C-5) — les échecs d'action ne sont plus muets. -->
+    <div v-if="actionError" class="action-error" data-test="action-error" role="alert">
+      {{ actionError }}
+      <button class="action-error-close" :aria-label="$t('common.cancel')" @click="actionError = ''">×</button>
+    </div>
+
     <div class="card table-scroll">
       <StateBlock v-if="loading" variant="loading" />
       <StateBlock v-else-if="returns.length === 0" variant="empty" :title="$t('orders.returns.empty')" />
@@ -127,14 +133,28 @@ async function load() {
 
 const { confirm } = useConfirm()
 
+// RC-18 (C-5) — approve/restock/reject étaient sans try/catch : un 422 (état invalide, stock
+// verrouillé…) partait en « unhandled rejection », l'utilisateur ne voyait RIEN. Toute erreur
+// est désormais affichée (message serveur si présent, sinon libellé générique).
+const actionError = ref('')
+
+function showActionError(e: any, fallbackKey: string) {
+  actionError.value = e?.response?.data?.message ?? t(fallbackKey)
+}
+
 async function approve(r: OrderReturn) {
   if (!(await confirm({
     title: t('orders.returns.approveTitle'),
     message: t('orders.returns.approveConfirm', { number: r.number }),
     confirmLabel: t('orders.returns.approve'),
   }))) return
-  await api.post(`/orders/returns/${r.id}/approve`, {})
-  await load()
+  actionError.value = ''
+  try {
+    await api.post(`/orders/returns/${r.id}/approve`, {})
+    await load()
+  } catch (e: any) {
+    showActionError(e, 'orders.returns.approveError')
+  }
 }
 
 async function restock(r: OrderReturn) {
@@ -143,8 +163,13 @@ async function restock(r: OrderReturn) {
     message: t('orders.returns.restockConfirm', { number: r.number }),
     confirmLabel: t('orders.returns.restock'),
   }))) return
-  await api.post(`/orders/returns/${r.id}/restock`, {})
-  await load()
+  actionError.value = ''
+  try {
+    await api.post(`/orders/returns/${r.id}/restock`, {})
+    await load()
+  } catch (e: any) {
+    showActionError(e, 'orders.returns.restockError')
+  }
 }
 
 function openReject(r: OrderReturn) {
@@ -155,12 +180,15 @@ function openReject(r: OrderReturn) {
 async function confirmReject() {
   if (!rejectTarget.value || !rejectReason.value) return
   rejecting.value = true
+  actionError.value = ''
   try {
     await api.post(`/orders/returns/${rejectTarget.value.id}/reject`, {
       reason: rejectReason.value,
     })
     rejectTarget.value = null
     await load()
+  } catch (e: any) {
+    showActionError(e, 'orders.returns.rejectError')
   } finally { rejecting.value = false }
 }
 
@@ -192,6 +220,8 @@ onMounted(load)
 .page-subtitle  { color: #64748b; margin: 4px 0 0; font-size: 0.875rem; }
 .filter-bar     { margin-bottom: 16px; }
 .filter-select  { max-width: 220px; }
+.action-error   { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: #fee2e2; color: #991b1b; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.875rem; }
+.action-error-close { border: none; background: transparent; color: inherit; font-size: 1.1rem; cursor: pointer; line-height: 1; }
 .actions-cell   { display: flex; gap: 4px; flex-wrap: wrap; }
 /* Modal chrome now provided by the shared <BaseModal> (UX-03). */
 </style>

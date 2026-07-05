@@ -223,4 +223,21 @@ class InventoryServiceTest extends TestCase
         $this->assertEquals($this->product->id, $stock->product_id);
         $this->assertNull($stock->variant_id);
     }
+
+    #[Test]
+    public function bulk_import_records_the_correct_quantity_after_in_the_movement_history(): void
+    {
+        // RC-18 (C-7) — quantity_after était `avant + 2×qté` (relecture du modèle déjà mis à jour
+        // par update()) : l'historique des mouvements mentait après chaque import groupé.
+        $stock = $this->service->findOrCreate($this->tenant->id, $this->product->id);
+        $this->service->moveIn($stock, 10);                       // stock initial 10
+
+        $movements = $this->service->moveInBulk([
+            ['stock' => $stock->fresh(), 'quantity' => 5, 'reference' => 'IMP-1'],
+        ], 'user-1');
+
+        $this->assertEquals(15, $stock->fresh()->quantity);
+        $this->assertEquals(10, $movements[0]->quantity_before);
+        $this->assertEquals(15, $movements[0]->quantity_after);   // avant correctif : 20
+    }
 }

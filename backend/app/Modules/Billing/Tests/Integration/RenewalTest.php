@@ -65,6 +65,31 @@ class RenewalTest extends TestCase
     }
 
     #[Test]
+    public function a_plan_free_in_legacy_columns_but_priced_in_plan_prices_is_billed(): void
+    {
+        // RC-18 (M-4) — plan à colonnes legacy à 0 mais grille PlanPrice payante : isFreePlan lisait
+        // les colonnes legacy → la période ROULAIT gratuitement (jamais facturé). Le prix LOCALISÉ
+        // du marché de l'abonnement fait désormais foi.
+        $sneaky = Plan::firstOrCreate(['code' => 'sneaky'], ['name' => 'Sneaky', 'price_monthly_cents' => 0, 'price_yearly_cents' => 0, 'currency' => 'XOF', 'trial_days' => 0, 'is_active' => true, 'is_public' => true, 'sort_order' => 9]);
+        $sneaky->prices()->create([
+            'market_code' => 'waemu', 'currency' => 'XOF', 'interval' => 'monthly',
+            'base_amount_minor' => 990000, 'included_users' => 3, 'is_public' => true, 'sort_order' => 1,
+        ]);
+
+        $t   = $this->tenant('exp-sneaky');
+        $sub = $this->sub($t, $sneaky, Subscription::STATUS_ACTIVE, now()->subDay(), [
+            'market_code' => 'waemu', 'currency' => 'XOF',
+        ]);
+
+        $summary = $this->process();
+
+        // Payant sur sa grille → past_due (avant correctif : rolled + active).
+        $this->assertSame(Subscription::STATUS_PAST_DUE, $sub->fresh()->status);
+        $this->assertSame(1, $summary['past_due']);
+        $this->assertSame(0, $summary['rolled']);
+    }
+
+    #[Test]
     public function an_expired_free_subscription_rolls_its_period_and_stays_active(): void
     {
         $t   = $this->tenant('exp-free');

@@ -58,12 +58,22 @@ class OrderService
 
     /**
      * @param  array<int,string>|null  $warehouseIds  null = all warehouses; array = restrict to these ([] = none).
+     * @param  array{search?:string|null, from_date?:string|null, to_date?:string|null}  $filters
+     *         RC-18 (C-4) — filtres envoyés par la liste des commandes, auparavant ignorés serveur-side.
      */
-    public function paginate(string $tenantId, int $perPage = 20, ?string $status = null, ?array $warehouseIds = null): LengthAwarePaginator
+    public function paginate(string $tenantId, int $perPage = 20, ?string $status = null, ?array $warehouseIds = null, array $filters = []): LengthAwarePaginator
     {
         return Order::where('tenant_id', $tenantId)
             ->when($status, fn($q) => $q->where('status', $status))
             ->when($warehouseIds !== null, fn($q) => $q->whereIn('warehouse_id', $warehouseIds))
+            ->when(! empty($filters['search']), function ($q) use ($filters) {
+                $term = '%' . str_replace(['%', '_'], ['\\%', '\\_'], trim((string) $filters['search'])) . '%';
+                $q->where(fn ($qq) => $qq
+                    ->where('number', 'like', $term)
+                    ->orWhereHas('customer', fn ($c) => $c->where('name', 'like', $term)));
+            })
+            ->when(! empty($filters['from_date']), fn($q) => $q->whereDate('created_at', '>=', $filters['from_date']))
+            ->when(! empty($filters['to_date']), fn($q) => $q->whereDate('created_at', '<=', $filters['to_date']))
             ->with('lines')
             ->latest()
             ->paginate($perPage);
@@ -186,6 +196,20 @@ class OrderService
                         $line->product_id,
                         $line->variant_id,
                     );
+
+                    // RC-18 (C-6) — ligne suivie PAR LOT : le vendable exclut les lots PÉRIMÉS encore
+                    // comptés dans l'agrégat (le FEFO ne les allouera jamais). Sans ce garde, la vente
+                    // passait le contrôle agrégé puis partait « à découvert » sur des lots périmés
+                    // (dérive agrégat/lots + risque sanitaire). Le drift historique sans lot reste
+                    // toléré (comportement documenté du FEFO best-effort).
+                    if ($this->isBatchLine($line, $order->tenant_id)) {
+                        $expired  = $this->batches->expiredActiveQuantity($order->tenant_id, $line->product_id, $line->variant_id);
+                        $sellable = max(0, $stock->available() - $expired);
+                        if ($sellable < $line->quantity) {
+                            throw new InsufficientStockException($line->sku ?? 'unknown', $sellable, $line->quantity);
+                        }
+                    }
+
                     // Miroir agrégé : garde les vues de stock cohérentes (throws InsufficientStockException / StockLockException).
                     $this->stockService->reserve($stock, $line->quantity);
                 }

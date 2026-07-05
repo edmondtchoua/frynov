@@ -189,7 +189,21 @@ class RenewalService
             return false;
         }
 
-        $price = $sub->interval === Subscription::INTERVAL_YEARLY
+        $interval = $sub->interval === Subscription::INTERVAL_YEARLY ? 'yearly' : 'monthly';
+
+        // RC-18 (M-4) — prix LOCALISÉ d'abord : le marché de l'abonnement (sinon le marché canonique
+        // de sa devise, sinon 'global') fait foi. Les colonnes legacy ne servent que de repli — les
+        // lire en premier classait mal les plans à grille PlanPrice (facturé à tort / jamais facturé).
+        $market = $sub->market_code
+            ?: ($sub->currency ? \App\Modules\Billing\Support\Markets::canonicalForCurrency($sub->currency) : null)
+            ?: 'global';
+
+        $localized = $plan->priceForMarket($market, $interval);
+        if ($localized !== null) {
+            return (int) $localized->base_amount_minor === 0;
+        }
+
+        $price = $interval === 'yearly'
             ? (int) $plan->price_yearly_cents
             : (int) $plan->price_monthly_cents;
 

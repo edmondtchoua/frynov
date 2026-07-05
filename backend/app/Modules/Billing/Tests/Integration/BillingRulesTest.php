@@ -245,6 +245,37 @@ class BillingRulesTest extends TestCase
     }
 
     #[Test]
+    public function applying_a_promo_in_the_ui_does_not_burn_its_usage_before_activation(): void
+    {
+        // RC-18 (M-5) — `POST /api/me/promo/apply` consommait l'usage immédiatement : à l'approbation,
+        // validate() voyait « déjà utilisé » → paiement légitime routé needs_review. L'usage n'est
+        // désormais enregistré qu'à l'ACTIVATION.
+        Promotion::create([
+            'code' => 'DEMI', 'discount_type' => 'percent', 'discount_value' => 50,
+            'valid_from' => now()->subDay(), 'valid_until' => now()->addMonth(), 'is_active' => true,
+        ]);
+        $this->admin->assignTenantRole('admin');
+        $token = $this->admin->createToken('api')->plainTextToken;
+
+        // L'utilisateur « applique » le code dans l'UI (validation + rappel de remise)…
+        // NB : le SPA envoie X-Tenant-Slug sur chaque requête — c'est lui qui scope le rôle admin.
+        $this->withHeaders(['Authorization' => "Bearer {$token}", 'X-Tenant-Slug' => $this->tenant->slug])
+            ->postJson('/api/me/promo/apply', ['code' => 'DEMI', 'plan_code' => Plan::CODE_ESSENTIAL])
+            ->assertOk();
+
+        // …aucun usage n'est consommé à ce stade.
+        $this->assertDatabaseCount('promo_uses', 0);
+
+        // Le paiement net de promo est ensuite approuvé : matched + usage consommé UNE fois.
+        $mp = $this->submit(495000, 'monthly', 'DEMI');
+        $this->svc->approve($mp, $this->admin);
+
+        $this->assertSame('matched', $mp->fresh()->resolution_status);
+        $this->assertSame('active', $this->sub()->status);
+        $this->assertDatabaseCount('promo_uses', 1);
+    }
+
+    #[Test]
     public function an_overpayment_credits_the_ledger_then_settles_the_next_cycle(): void
     {
         // Cycle 1 : sur-paiement AU-DELÀ de la plus grande cible (annuel 9 900 000) — c'est le seul

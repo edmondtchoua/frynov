@@ -54,6 +54,28 @@ class BatchService
     }
 
     /**
+     * RC-18 (C-6) — quantité encore comptée dans l'agrégat mais PÉRIMÉE (lots `active`,
+     * `expiry_date` passée, non encore démarqués par `inventory:expire-batches`). À soustraire du
+     * vendable : l'agrégat inclut ces unités alors que le FEFO ne les allouera jamais.
+     */
+    public function expiredActiveQuantity(string $tenantId, string $productId, ?string $variantId): int
+    {
+        return (int) ProductBatch::withoutTenantScope()
+            ->where('tenant_id', $tenantId)
+            ->where('product_id', $productId)
+            ->when(
+                $variantId !== null,
+                fn ($q) => $q->where('variant_id', $variantId),
+                fn ($q) => $q->whereNull('variant_id'),
+            )
+            ->where('status', ProductBatch::STATUS_ACTIVE)
+            ->where('quantity', '>', 0)
+            ->whereNotNull('expiry_date')
+            ->where('expiry_date', '<', now()->toDateString())
+            ->sum('quantity');
+    }
+
+    /**
      * Consomme `quantity` unités en FEFO (péremption la plus proche d'abord, lots sans date en
      * dernier). Best-effort de traçabilité : si les lots ne couvrent pas tout (drift historique),
      * on consomme ce qui existe sans bloquer la vente (le stock agrégé a déjà validé la quantité).

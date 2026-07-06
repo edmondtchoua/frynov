@@ -93,6 +93,32 @@ class DemoProvisioningTest extends TestCase
     }
 
     #[Test]
+    public function provisioning_twice_for_the_same_company_does_not_collide_on_slug(): void
+    {
+        Mail::fake();
+        $access = app(DemoAccessService::class);
+
+        $r1 = $this->newRequest();          // company = Boutique Awa
+        $access->grant($r1);
+        $t1 = $r1->refresh()->demo_tenant_id;
+
+        // Révoque le 1er (tenant soft-supprimé, slug conservé par la contrainte UNIQUE)
+        app(DemoProvisioningService::class)->revoke($r1);
+
+        // Un 2e prospect de la MÊME entreprise ne doit pas provoquer de collision de slug
+        $r2 = DemoRequest::create([
+            'email' => 'awa2@example.com', 'company' => 'Boutique Awa',
+            'consent_contact' => true, 'locale' => 'fr', 'status' => DemoRequest::STATUS_PENDING_REVIEW,
+        ]);
+        $access->grant($r2);
+        $t2 = $r2->refresh()->demo_tenant_id;
+
+        $this->assertNotNull($t2);
+        $this->assertNotSame($t1, $t2);
+        $this->assertSame(DemoRequest::STATUS_ACCESS_SENT, $r2->status);
+    }
+
+    #[Test]
     public function auto_mode_provisions_immediately_on_form_submit(): void
     {
         Mail::fake();

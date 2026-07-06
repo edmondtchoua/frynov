@@ -233,7 +233,8 @@ Les seeders existants sont **déjà idempotents** (`updateOrCreate`, slugs stabl
   `DELETE /import/{id}` (`import_export.update`).
 - **Reporting usage vs quota** : `GET /api/me/subscription/usage` (`QuotaService::usageReport`) →
   usage/limite/reste/% par ressource (users/products/customers/warehouses/orders/imports). Test
-  `UsageReportTest`.
+  `UsageReportTest`. **Jauge d'usage** affichée dans l'onglet Abonnement (barres vert / orange ≥80 % /
+  rouge ≥100 %) — vérifiée en navigateur (Découverte : « Utilisateurs 4/1 » en rouge, « Commandes 40/50 »).
 
 **⏳ Reste (optionnel)** : extension des Policies aux autres modules (products/orders…) — le garde-fou CI
-couvre déjà le risque de régression ; affichage front de la jauge d'usage (l'endpoint est prêt).
+couvre déjà le risque de régression.

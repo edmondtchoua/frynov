@@ -93,3 +93,23 @@ export async function fetchDowngradeImpact(planCode: string): Promise<DowngradeI
   const { data } = await client.post<DowngradeImpact>('/api/me/subscription/downgrade-impact', { plan_code: planCode })
   return data
 }
+
+export interface UsageRow {
+  resource: 'users' | 'products' | 'customers' | 'warehouses' | 'orders' | 'imports' | string
+  usage: number
+  /** null = illimité sur le plan. */
+  limit: number | null
+  remaining: number | null
+  percent: number | null
+}
+
+export interface UsageReport {
+  plan: string
+  data: UsageRow[]
+}
+
+/** Consommation vs quota du plan par ressource (P5 outillage). */
+export async function fetchUsage(): Promise<UsageReport> {
+  const { data } = await client.get<UsageReport>('/api/me/subscription/usage')
+  return data
+}

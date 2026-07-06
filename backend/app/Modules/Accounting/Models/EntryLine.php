@@ -19,11 +19,18 @@ class EntryLine extends Model
         'debit_minor', 'credit_minor', 'tax_id',
         'third_party_type', 'third_party_id',
         'lettrage_code', 'lettered_at',
+        'pointed', 'pointed_at',
     ];
 
     protected function casts(): array
     {
-        return ['debit_minor' => 'integer', 'credit_minor' => 'integer', 'lettered_at' => 'datetime'];
+        return [
+            'debit_minor'  => 'integer',
+            'credit_minor' => 'integer',
+            'lettered_at'  => 'datetime',
+            'pointed'      => 'boolean',
+            'pointed_at'   => 'datetime',
+        ];
     }
 
     public function account(): BelongsTo

@@ -1,6 +1,6 @@
 import client from '@/api/client'
 import type {
-  Account, AccountingOverview, AccountingPeriod, AccountingSettings, BalanceSheet,
+  Account, AccountingOverview, AccountingPeriod, AccountingSettings, BalanceSheet, BankReconciliation,
   Entry, EntryLineInput, FiscalYear, GeneralLedger, IncomeStatement, Invoice, InvoiceDraftLine, Journal, LettrageData, Tax, TrialBalance,
 } from '../types'
 
@@ -173,5 +173,16 @@ export const accountingService = {
 
   unletterCode(accountId: string, code: string): Promise<{ account: LettrageData }> {
     return client.post('/api/accounting/reports/lettrage/unletter', { account_id: accountId, code }).then(r => r.data.data)
+  },
+
+  // ── Rapprochement bancaire (RC-43) ────────────────────────────────────────
+  bankReconciliation(accountId: string, statementBalance?: number): Promise<BankReconciliation> {
+    return client.get('/api/accounting/reports/bank-reconciliation', {
+      params: { account_id: accountId, statement_balance: statementBalance ?? undefined },
+    }).then(r => r.data.data)
+  },
+
+  pointBankLines(accountId: string, lineIds: string[], pointed: boolean): Promise<BankReconciliation> {
+    return client.post('/api/accounting/reports/bank-reconciliation/point', { account_id: accountId, line_ids: lineIds, pointed }).then(r => r.data.data)
   },
 }

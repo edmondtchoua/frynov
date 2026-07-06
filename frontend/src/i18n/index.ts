@@ -965,7 +965,10 @@ export const messages: Record<Locale, Dict> = {
     },
     accounting: {
       navLabel: 'Sections de la comptabilité',
-      tabInvoices: 'Factures', tabCreditNotes: 'Avoirs', tabEntries: 'Écritures', tabBalance: 'Balance', tabLettrage: 'Lettrage', tabStatements: 'États financiers', tabChart: 'Plan comptable', tabTaxes: 'Taxes', tabPeriods: 'Exercices & périodes', tabSettings: 'Paramètres',
+      tabInvoices: 'Factures', tabCreditNotes: 'Avoirs', tabEntries: 'Écritures', tabBalance: 'Balance', tabLettrage: 'Lettrage', tabBankRec: 'Rapprochement', tabStatements: 'États financiers', tabChart: 'Plan comptable', tabTaxes: 'Taxes', tabPeriods: 'Exercices & périodes', tabSettings: 'Paramètres',
+      bankRecTitle: 'Rapprochement bancaire', bankRecSubtitle: 'Pointez les écritures d\'un compte de banque figurant sur le relevé ; les non pointées sont les en-cours',
+      statementBalance: 'Solde du relevé', bookBalance: 'Solde comptable', depositsInTransit: 'Dépôts en transit', outstandingChecks: 'Chèques en circulation',
+      difference: 'Écart', pointed: 'Pointé', pointFailed: 'Pointage impossible.',
       statementsTitle: 'États financiers', statementsSubtitle: 'Bilan et compte de résultat SYSCOHADA, calculés sur les écritures comptabilisées',
       balanceSheet: 'Bilan', incomeStatement: 'Compte de résultat', actif: 'Actif', passif: 'Passif',
       totalActif: 'Total actif', totalPassif: 'Total passif', charges: 'Charges', produits: 'Produits',
@@ -2144,7 +2147,10 @@ export const messages: Record<Locale, Dict> = {
     },
     accounting: {
       navLabel: 'Accounting sections',
-      tabInvoices: 'Invoices', tabCreditNotes: 'Credit notes', tabEntries: 'Entries', tabBalance: 'Trial balance', tabLettrage: 'Reconciliation', tabStatements: 'Financial statements', tabChart: 'Chart of accounts', tabTaxes: 'Taxes', tabPeriods: 'Fiscal years & periods', tabSettings: 'Settings',
+      tabInvoices: 'Invoices', tabCreditNotes: 'Credit notes', tabEntries: 'Entries', tabBalance: 'Trial balance', tabLettrage: 'Reconciliation', tabBankRec: 'Bank rec.', tabStatements: 'Financial statements', tabChart: 'Chart of accounts', tabTaxes: 'Taxes', tabPeriods: 'Fiscal years & periods', tabSettings: 'Settings',
+      bankRecTitle: 'Bank reconciliation', bankRecSubtitle: 'Tick the bank-account entries shown on the statement; unticked ones are outstanding items',
+      statementBalance: 'Statement balance', bookBalance: 'Book balance', depositsInTransit: 'Deposits in transit', outstandingChecks: 'Outstanding checks',
+      difference: 'Difference', pointed: 'Ticked', pointFailed: 'Ticking failed.',
       statementsTitle: 'Financial statements', statementsSubtitle: 'SYSCOHADA balance sheet and income statement, computed from posted entries',
       balanceSheet: 'Balance sheet', incomeStatement: 'Income statement', actif: 'Assets', passif: 'Liabilities',
       totalActif: 'Total assets', totalPassif: 'Total liabilities', charges: 'Expenses', produits: 'Income',

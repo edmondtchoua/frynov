@@ -3,6 +3,24 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🏦 RC-43 : Comptabilité — rapprochement bancaire (P4.3) (2026-07-06)
+
+Pointage d'un compte de banque contre le relevé (`BankReconciliationService`).
+
+- **Pointage** : chaque écriture d'un compte de banque (521…) est cochée quand elle figure sur le
+  relevé (`accounting_entry_lines.pointed`). Les non pointées sont les **en-cours** : dépôts en transit
+  (débits) et chèques en circulation (crédits).
+- **État de rapprochement** : avec le solde du relevé, vérifie l'identité **solde comptable = relevé +
+  dépôts en transit − chèques en circulation** → écart et drapeau `reconciled`.
+- **Front** : `BankReconciliationView` (`/accounting/bank-reconciliation`) — choix d'un compte de
+  trésorerie, saisie du solde relevé, cases de pointage, synthèse d'écart en direct. i18n FR/EN.
+- **Migration** `accounting_entry_lines.pointed` + `pointed_at`. Endpoints `GET reports/bank-reconciliation`
+  (lecture), `POST reports/bank-reconciliation/point` (`accounting.entries.create`).
+- **Correctif transverse** : la migration `add_order_fk_to_deliveries` interrogeait
+  `information_schema` (MySQL-only) et **cassait toute la suite de tests sous SQLite** — désormais
+  gardée `mysql` uniquement.
+- **Tests** : `AccountingBankRecTest` (5) + `BankReconciliationView.spec.ts` (2).
+
 ## [Non publié] — 📊 RC-42 : Comptabilité — états financiers SYSCOHADA (bilan & compte de résultat) (P5) (2026-07-06)
 
 Les deux états de synthèse, en lecture, bâtis sur la balance générale (`FinancialStatementsService`).

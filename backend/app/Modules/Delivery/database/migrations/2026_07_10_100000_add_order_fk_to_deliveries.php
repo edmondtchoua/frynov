@@ -19,6 +19,11 @@ return new class extends Migration
 
     public function up(): void
     {
+        // FK ajoutée uniquement sous MySQL : SQLite (suite de tests) ne sait pas ALTER TABLE ADD
+        // CONSTRAINT et n'a pas d'information_schema — la contrainte y serait de toute façon inutile.
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
         if (! Schema::hasTable('deliveries') || ! Schema::hasTable('orders')) {
             return;
         }
@@ -34,6 +39,9 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
         if (Schema::hasTable('deliveries') && $this->foreignKeyExists()) {
             Schema::table('deliveries', function (Blueprint $table) {
                 $table->dropForeign(self::FK_NAME);

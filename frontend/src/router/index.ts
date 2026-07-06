@@ -393,6 +393,11 @@ const router = createRouter({
           component: () => import('@/modules/accounting/views/StatementsView.vue'),
         },
         {
+          path: 'bank-reconciliation',
+          name: 'accounting.bankReconciliation',
+          component: () => import('@/modules/accounting/views/BankReconciliationView.vue'),
+        },
+        {
           path: 'lettrage',
           name: 'accounting.lettrage',
           component: () => import('@/modules/accounting/views/LettrageView.vue'),

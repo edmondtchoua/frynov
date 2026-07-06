@@ -38,6 +38,9 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
             Route::get('reports/general-ledger', [ReportController::class, 'generalLedger']);
             // Lettrage — consultation des lignes d'un compte (RC-39)
             Route::get('reports/lettrage',       [LettrageController::class, 'index']);
+            // États financiers SYSCOHADA — bilan & compte de résultat (RC-42)
+            Route::get('reports/income-statement', [ReportController::class, 'incomeStatement']);
+            Route::get('reports/balance-sheet',    [ReportController::class, 'balanceSheet']);
         });
 
         Route::middleware('role_or_permission:chief-accountant|admin|accounting.manage')->group(function () {

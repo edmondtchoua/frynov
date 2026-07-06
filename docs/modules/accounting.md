@@ -191,6 +191,20 @@ Endpoint : `POST fiscal-years/{id}/close` (`chief-accountant|admin|accounting.ma
 `PeriodsView` — bouton **Clôturer l'exercice** avec confirmation + bandeau de résultat (bénéfice/perte,
 n° du RAN, exercice suivant). i18n FR/EN.
 
+## États financiers SYSCOHADA (RC-42 — P5)
+
+`FinancialStatementsService` — lecture bâtie sur la balance générale.
+- **Compte de résultat** (`incomeStatement`) : charges (classe 6) vs produits (classe 7), classe 8
+  (HAO) ventilée par sens ; **résultat = produits − charges**.
+- **Bilan** (`balanceSheet`) : **actif** = comptes permanents (classes 1-5) débiteurs ; **passif** =
+  comptes permanents créditeurs + **résultat de l'exercice**. **Équilibré par construction** : la
+  balance étant équilibrée, Σ soldes permanents = −Σ soldes de gestion = résultat, donc
+  **Actif = Passif + Résultat** (drapeau `balanced`).
+
+Endpoints lecture (`accounting.view`) : `GET reports/income-statement?from=&to=`,
+`GET reports/balance-sheet?from=&to=`. Front : `StatementsView` (`/accounting/statements`) — bascule
+Bilan / Compte de résultat, filtre par dates, contrôle d'équilibre + bandeau bénéfice/perte. i18n FR/EN.
+
 ## Tests
 
 Backend : `AccountingReferentialTest` (8) · `AccountingEntryTest` (7 — équilibre, post/numéro,
@@ -204,7 +218,9 @@ application bornée cumulative, statuts, brouillon non applicable, cycle HTTP, R
 exclus, grand livre à solde progressif, RBAC lecture viewer/caissier) · `AccountingLettrageTest`
 (6 — groupe équilibré → code, refus déséquilibré, délettrage, codes A/B par compte, re-lettrage
 interdit, HTTP `only_open` + RBAC) · `AccountingClosingTest` (5 — résultat bénéfice/perte → 13, RAN
-équilibré, exercice+périodes fermés & N+1 ouvert, ré-clôture refusée, RBAC HTTP). Front :
+équilibré, exercice+périodes fermés & N+1 ouvert, ré-clôture refusée, RBAC HTTP) ·
+`AccountingStatementsTest` (3 — compte de résultat charges/produits, **bilan équilibré** actif=passif
++ résultat au passif, RBAC lecture). Front :
 `ChartOfAccountsView.spec.ts` (3) +
 `InvoicesView.spec.ts` (3) + `CreditNotesView.spec.ts` (3) + `BalanceView.spec.ts` (2) +
-`LettrageView.spec.ts` (2) + `PeriodsView.spec.ts` (2) + garde i18n.
+`LettrageView.spec.ts` (2) + `PeriodsView.spec.ts` (2) + `StatementsView.spec.ts` (2) + garde i18n.

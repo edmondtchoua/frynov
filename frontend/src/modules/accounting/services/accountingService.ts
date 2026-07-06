@@ -1,7 +1,7 @@
 import client from '@/api/client'
 import type {
-  Account, AccountingOverview, AccountingPeriod, AccountingSettings,
-  Entry, EntryLineInput, FiscalYear, GeneralLedger, Invoice, InvoiceDraftLine, Journal, LettrageData, Tax, TrialBalance,
+  Account, AccountingOverview, AccountingPeriod, AccountingSettings, BalanceSheet,
+  Entry, EntryLineInput, FiscalYear, GeneralLedger, IncomeStatement, Invoice, InvoiceDraftLine, Journal, LettrageData, Tax, TrialBalance,
 } from '../types'
 
 function normalizePage<T>(d: any): { data: T[]; meta: { current_page: number; last_page: number; total: number } } {
@@ -151,6 +151,15 @@ export const accountingService = {
 
   generalLedger(accountId: string, params?: { from?: string; to?: string }): Promise<GeneralLedger> {
     return client.get('/api/accounting/reports/general-ledger', { params: { ...params, account_id: accountId } }).then(r => r.data.data)
+  },
+
+  // ── États financiers SYSCOHADA (RC-42) ────────────────────────────────────
+  incomeStatement(params?: { from?: string; to?: string }): Promise<IncomeStatement> {
+    return client.get('/api/accounting/reports/income-statement', { params }).then(r => r.data.data)
+  },
+
+  balanceSheet(params?: { from?: string; to?: string }): Promise<BalanceSheet> {
+    return client.get('/api/accounting/reports/balance-sheet', { params }).then(r => r.data.data)
   },
 
   // ── Lettrage (RC-39) ──────────────────────────────────────────────────────

@@ -212,3 +212,32 @@ export interface LettrageData {
     open_balance_minor: number
   }
 }
+
+/** RC-42 — états financiers SYSCOHADA. */
+export interface StatementLine {
+  code: string
+  name: string
+  class: number
+  amount_minor: number
+}
+
+export interface IncomeStatement {
+  charges: StatementLine[]
+  produits: StatementLine[]
+  total_charges_minor: number
+  total_produits_minor: number
+  result_minor: number
+  from: string | null
+  to: string
+}
+
+export interface BalanceSheet {
+  actif: StatementLine[]
+  passif: StatementLine[]
+  total_actif_minor: number
+  total_passif_minor: number
+  result_minor: number
+  balanced: boolean
+  from: string | null
+  to: string
+}

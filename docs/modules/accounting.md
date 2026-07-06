@@ -160,6 +160,21 @@ Endpoints lecture (`accounting.view`) : `GET reports/trial-balance?from=&to=`,
 `GET reports/general-ledger?account_id=&from=&to=`. Front : `BalanceView`
 (`/accounting/balance`) — balance filtrable par dates, **drill-down** vers le grand livre d'un compte.
 
+## Lettrage des comptes de tiers (RC-39 — P4.2)
+
+`LettrageService` rapproche des lignes d'un **même compte** formant un groupe **équilibré**
+(Σ débits = Σ crédits) sous un `lettrage_code` (A, B… par compte, bijectif base 26). Le non-lettré =
+le **solde réellement ouvert** (factures non réglées, règlements non affectés).
+- `letter(tenant, account, lineIds)` : refuse un groupe déséquilibré ou < 2 lignes ; n'accepte que des
+  lignes `posted`/`reversed` non déjà lettrées ; assigne le prochain code du compte. Réversible.
+- `unletter(tenant, account, code)` : rouvre les lignes du groupe.
+- `accountLines(tenant, account, ?onlyOpen)` : lignes + synthèse (lettré / ouvert / solde ouvert signé).
+
+Colonnes `accounting_entry_lines.lettrage_code` + `lettered_at`. Endpoints : `GET reports/lettrage`
+(lecture), `POST reports/lettrage`, `POST reports/lettrage/unletter` (`accounting.entries.create`).
+Front : `LettrageView` (`/accounting/lettrage`) — sélection multi-lignes avec contrôle d'équilibre en
+direct, badge de code cliquable pour délettrer. i18n FR/EN.
+
 ## Tests
 
 Backend : `AccountingReferentialTest` (8) · `AccountingEntryTest` (7 — équilibre, post/numéro,
@@ -170,6 +185,8 @@ allocation partielle/multiple bornée, encaissement, cycle HTTP, RBAC caissier) 
 `AccountingCreditNoteTest` (8 — reprise de lignes, émission → écriture inverse 701/4431/411,
 application bornée cumulative, statuts, brouillon non applicable, cycle HTTP, RBAC) ·
 `AccountingLedgerTest` (6 — balance équilibrée, à-nouveau, écritures extournées incluses, brouillons
-exclus, grand livre à solde progressif, RBAC lecture viewer/caissier). Front :
-`ChartOfAccountsView.spec.ts` (3) + `InvoicesView.spec.ts` (3) + `CreditNotesView.spec.ts` (3) +
-`BalanceView.spec.ts` (2) + garde i18n.
+exclus, grand livre à solde progressif, RBAC lecture viewer/caissier) · `AccountingLettrageTest`
+(6 — groupe équilibré → code, refus déséquilibré, délettrage, codes A/B par compte, re-lettrage
+interdit, HTTP `only_open` + RBAC). Front : `ChartOfAccountsView.spec.ts` (3) +
+`InvoicesView.spec.ts` (3) + `CreditNotesView.spec.ts` (3) + `BalanceView.spec.ts` (2) +
+`LettrageView.spec.ts` (2) + garde i18n.

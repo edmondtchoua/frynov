@@ -388,6 +388,11 @@ const router = createRouter({
           component: () => import('@/modules/accounting/views/BalanceView.vue'),
         },
         {
+          path: 'lettrage',
+          name: 'accounting.lettrage',
+          component: () => import('@/modules/accounting/views/LettrageView.vue'),
+        },
+        {
           path: 'entries',
           name: 'accounting.entries',
           component: () => import('@/modules/accounting/views/EntriesView.vue'),

@@ -18,11 +18,12 @@ class EntryLine extends Model
         'tenant_id', 'entry_id', 'account_id', 'label',
         'debit_minor', 'credit_minor', 'tax_id',
         'third_party_type', 'third_party_id',
+        'lettrage_code', 'lettered_at',
     ];
 
     protected function casts(): array
     {
-        return ['debit_minor' => 'integer', 'credit_minor' => 'integer'];
+        return ['debit_minor' => 'integer', 'credit_minor' => 'integer', 'lettered_at' => 'datetime'];
     }
 
     public function account(): BelongsTo

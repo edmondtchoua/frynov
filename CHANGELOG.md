@@ -3,6 +3,20 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔐 RC-41 : Audit RBAC/plans — durcissement accès & quotas (2026-07-06)
+
+Audit complet RBAC/ACL + plans (`docs/audit/rbac-plans-audit.md`) — architecture jugée saine (isolation
+fail-closed, Spatie teams, self-service RBAC borné, anti-escalade). Correctifs P0/P1/P3/P4 appliqués :
+
+- **P0 sécurité** : gardes de permission ajoutées sur 4 écritures non protégées (un rôle `viewer`
+  pouvait écrire) — `PUT /customers/{id}`, `POST` + `PUT /suppliers`, `POST /deliveries`.
+- **P1 quota** : `max_customers` désormais **appliqué** (`QuotaService::assertCanAddCustomer` +
+  `quota:customers`), plus seulement affiché.
+- **P3 traçabilité** : invitation utilisateur auditée (`workspace.user_created`) + transaction atomique.
+- **P4 cohérence offre** : `features` reformulés (fin du tiering trompeur — tous modules inclus, volumes
+  selon plan) ; plan `enterprise` renommé **« Enterprise »** (seeder + i18n). Re-seed requis.
+- **Tests** : `WriteEndpointGuardsTest`, `CustomerQuotaTest`. Suite feature **45/45**.
+
 ## [Non publié] — 🧩 RC-40 : Mise à niveau — taxes/frais, PSP auto, correction admin, analytics (2026-07-05)
 
 - **Taxes & frais d'installation** : `plans.tax_rate_bps` + `setup_fee_minor` ; devis + net + demande
@@ -17,6 +31,24 @@ versionnage [SemVer](https://semver.org/).
 - **Analytics (graphes)** : panneau « Statistiques » (barres CSS) sur l'écran admin des plans
   (revenu/adoption par plan + demandes par statut) via `GET admin/plans/analytics`.
 - **Tests** : suite feature **42/42**. Taxes + analytics vérifiés en navigateur.
+
+## [Non publié] — 🔗 RC-39 : Comptabilité — lettrage des comptes de tiers (P4.2) (2026-07-05)
+
+Rapprochement des lignes d'un compte de tiers (411 clients, 401 fournisseurs) en groupes équilibrés.
+
+- **Lettrage** (`LettrageService.letter`) : rapproche des lignes d'un **même compte** formant un groupe
+  **soldé** (Σ débits = Σ crédits) sous un `lettrage_code` (A, B… par compte). Refuse un groupe
+  déséquilibré ou < 2 lignes ; n'accepte que des lignes d'écritures comptabilisées/extournées non déjà
+  lettrées. Le **non-lettré = le solde réellement ouvert** (factures non réglées, règlements non affectés).
+- **Délettrage** (`unletter`) : rouvre les lignes d'un code. **Synthèse** par compte : lettré / ouvert
+  / solde ouvert signé.
+- **Front** : `LettrageView` (`/accounting/lettrage`) — sélection multi-lignes avec **contrôle
+  d'équilibre en direct**, badge de code cliquable pour délettrer, filtre « non lettrées seulement ».
+  i18n FR/EN.
+- **Migration** : `accounting_entry_lines.lettrage_code` + `lettered_at`. Endpoints
+  `GET reports/lettrage` (lecture), `POST reports/lettrage[/unletter]` (`accounting.entries.create`).
+- **Tests** : `AccountingLettrageTest` (6) + `LettrageView.spec.ts` (2). Bug `only_open` (chaîne
+  "false" rejetée par la règle `boolean`) **détecté en preview** et corrigé + couvert.
 
 ## [Non publié] — 📒 RC-38 : Comptabilité — balance générale & grand livre (P4.1) (2026-07-05)
 

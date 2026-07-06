@@ -2,8 +2,8 @@
 
 > **Dernière mise à jour :** 2026-07-05 · Périmètre actuel : plan comptable, journaux, taxes,
 > exercices & périodes, paramètres, écritures & moteur d'imputation, **facturation client**,
-> **avoirs**, **balance générale & grand livre**. Les états financiers (bilan, résultat) et le
-> lettrage/rapprochement arrivent dans les prochaines versions.
+> **avoirs**, **balance générale & grand livre**, **lettrage**. Les états financiers (bilan, résultat)
+> et le rapprochement bancaire arrivent dans les prochaines versions.
 
 ## Accès et droits
 
@@ -95,6 +95,20 @@ Menu **Comptabilité → Balance** — vos états de lecture, calculés sur les 
 > Un solde négatif est **créditeur** (affiché avec un signe −), un solde positif est **débiteur**.
 > Les brouillons non comptabilisés n'apparaissent pas ; une écriture extournée et son extourne
 > figurent toutes deux (elles s'annulent).
+
+## 9. Lettrage
+
+Menu **Comptabilité → Lettrage** — pour un **compte de tiers** (client 411, fournisseur 401),
+rapprochez ce qui se solde de ce qui reste dû :
+
+1. **Choisissez le compte** (ex. `411 Clients`). Ses lignes s'affichent avec le **solde ouvert**.
+2. **Cochez** les lignes qui se compensent (par ex. une facture au débit et son règlement au crédit).
+   Quand la sélection est **équilibrée** (total débit = total crédit), le bouton **Lettrer** s'active.
+3. **Lettrez** : les lignes reçoivent un même **code** (A, B, C…) et sortent du solde ouvert.
+4. **Délettrer** : cliquez le badge de code (`A ×`) pour rouvrir le groupe.
+
+> Le **solde ouvert** est ce qui n'est pas encore lettré : les factures non réglées et les règlements
+> non affectés. Filtrez sur *Non lettrées seulement* pour ne voir que l'ouvert.
 
 ## FAQ
 

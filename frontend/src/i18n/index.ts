@@ -1175,7 +1175,7 @@ export const messages: Record<Locale, Dict> = {
         starter: { name: 'Découverte', desc: 'Pour tester Frynov sans engagement.', f2: '100 produits', f3: '50 commandes/mois', f4: '1 boutique / entrepôt', f5: 'Support communauté' },
         essential: { name: 'Essentiel', desc: 'Pour une boutique active qui veut tout gérer au quotidien.', f2: '500 produits', f3: '300 commandes/mois', f4: 'Paiements & livraisons', f5: 'Support email' },
         pro: { name: 'Croissance', desc: 'Pour les PME en croissance avec automatisation et rapports avancés.', f2: '5 000 produits · 2 000 commandes/mois', f3: 'Rapports avancés', f4: 'Marketplace', f5: 'Support prioritaire' },
-        enterprise: { name: 'Business / Enterprise', desc: 'Pour les groupes, grossistes et opérations multi-sites.', f2: 'Volumes élevés ou sur devis', f3: 'Multi-sites', f4: 'API & intégrations', f5: 'SLA et onboarding dédié' },
+        enterprise: { name: 'Enterprise', desc: 'Pour les groupes, grossistes et opérations multi-sites.', f2: 'Volumes illimités', f3: 'Multi-sites illimité', f4: 'SLA & support dédié', f5: 'Formation et onboarding' },
       },
     },
     customers: {
@@ -2345,7 +2345,7 @@ export const messages: Record<Locale, Dict> = {
         starter: { name: 'Discovery', desc: 'To try Frynov with no commitment.', f2: '100 products', f3: '50 orders/month', f4: '1 store / warehouse', f5: 'Community support' },
         essential: { name: 'Essential', desc: 'For an active store that wants to manage everything day to day.', f2: '500 products', f3: '300 orders/month', f4: 'Payments & deliveries', f5: 'Email support' },
         pro: { name: 'Growth', desc: 'For growing SMEs needing automation and advanced reports.', f2: '5,000 products · 2,000 orders/month', f3: 'Advanced reports', f4: 'Marketplace', f5: 'Priority support' },
-        enterprise: { name: 'Business / Enterprise', desc: 'For groups, wholesalers and multi-site operations.', f2: 'High volumes or on quote', f3: 'Multi-site', f4: 'API & integrations', f5: 'SLA & dedicated onboarding' },
+        enterprise: { name: 'Enterprise', desc: 'For groups, wholesalers and multi-site operations.', f2: 'Unlimited volumes', f3: 'Unlimited multi-site', f4: 'SLA & dedicated support', f5: 'Training & onboarding' },
       },
     },
     customers: {

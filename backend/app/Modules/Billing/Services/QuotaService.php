@@ -97,6 +97,28 @@ class QuotaService
         }
     }
 
+    /** Check: customer count quota. */
+    public function assertCanAddCustomer(Tenant $tenant): void
+    {
+        $plan  = $this->plan($tenant);
+        $limit = $this->limit($plan, 'max_customers');
+        if (empty($limit)) {
+            return;
+        }  // null/0 = unlimited
+
+        $current = DB::table('customers')
+            ->where('tenant_id', $tenant->id)
+            ->whereNull('deleted_at')
+            ->count();
+
+        if ($current >= $limit) {
+            throw new \DomainException(
+                "Limite atteinte : votre plan {$plan->name} autorise au maximum {$limit} clients. "
+                .'Mettez à niveau votre abonnement pour en enregistrer davantage.',
+            );
+        }
+    }
+
     /** Check: product count quota. */
     public function assertCanAddProduct(Tenant $tenant): void
     {
@@ -131,6 +153,7 @@ class QuotaService
             'orders' => $this->assertCanCreateOrder($tenant),
             'warehouses' => $this->assertCanAddWarehouse($tenant),
             'agents' => $this->assertCanAddAgent($tenant),
+            'customers' => $this->assertCanAddCustomer($tenant),
             default => null, // unknown resource — no-op
         };
     }

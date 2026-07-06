@@ -7,7 +7,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'module:delivery'])->group(function
 
     Route::prefix('api/deliveries')->group(function () {
         Route::get('/',               [DeliveryController::class, 'index']);
-        Route::post('/',              [DeliveryController::class, 'store']);
+        Route::post('/',              [DeliveryController::class, 'store'])->middleware('role_or_permission:manager|admin|delivery.create');
         Route::get('/{id}',           [DeliveryController::class, 'show']);
 
         Route::middleware(['role_or_permission:manager|admin|delivery.manage'])->group(function () {

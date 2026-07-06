@@ -1,7 +1,7 @@
 import client from '@/api/client'
 import type {
   Account, AccountingOverview, AccountingPeriod, AccountingSettings,
-  Entry, EntryLineInput, FiscalYear, GeneralLedger, Invoice, InvoiceDraftLine, Journal, Tax, TrialBalance,
+  Entry, EntryLineInput, FiscalYear, GeneralLedger, Invoice, InvoiceDraftLine, Journal, LettrageData, Tax, TrialBalance,
 } from '../types'
 
 function normalizePage<T>(d: any): { data: T[]; meta: { current_page: number; last_page: number; total: number } } {
@@ -146,5 +146,18 @@ export const accountingService = {
 
   generalLedger(accountId: string, params?: { from?: string; to?: string }): Promise<GeneralLedger> {
     return client.get('/api/accounting/reports/general-ledger', { params: { ...params, account_id: accountId } }).then(r => r.data.data)
+  },
+
+  // ── Lettrage (RC-39) ──────────────────────────────────────────────────────
+  lettrage(accountId: string, onlyOpen = false): Promise<LettrageData> {
+    return client.get('/api/accounting/reports/lettrage', { params: { account_id: accountId, only_open: onlyOpen } }).then(r => r.data.data)
+  },
+
+  letterLines(accountId: string, lineIds: string[]): Promise<{ code: string; account: LettrageData }> {
+    return client.post('/api/accounting/reports/lettrage', { account_id: accountId, line_ids: lineIds }).then(r => r.data.data)
+  },
+
+  unletterCode(accountId: string, code: string): Promise<{ account: LettrageData }> {
+    return client.post('/api/accounting/reports/lettrage/unletter', { account_id: accountId, code }).then(r => r.data.data)
   },
 }

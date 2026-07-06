@@ -6,6 +6,7 @@ use App\Modules\Demo\Http\Requests\StoreDemoRequestRequest;
 use App\Modules\Demo\Mail\DemoRequestInternalMail;
 use App\Modules\Demo\Mail\DemoRequestReceivedMail;
 use App\Modules\Demo\Models\DemoRequest;
+use App\Modules\Demo\Services\DemoAccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -16,6 +17,8 @@ use Illuminate\Routing\Controller;
  */
 class DemoRequestController extends Controller
 {
+    public function __construct(private readonly DemoAccessService $access) {}
+
     public function store(StoreDemoRequestRequest $request): JsonResponse
     {
         $data = $request->safe()->except(['website']); // honeypot retiré
@@ -43,6 +46,16 @@ class DemoRequestController extends Controller
                 'demo.internal',
                 $demoRequest->id,
             );
+        }
+
+        // Mode automatique : provisioning + envoi immédiat des accès (best-effort ;
+        // un échec laisse la demande en pending_review pour traitement manuel).
+        if (config('demo.mode') === 'auto') {
+            try {
+                $this->access->grant($demoRequest);
+            } catch (\Throwable $e) {
+                Log::warning('[demo] provisioning auto echoue', ['demo_request' => $demoRequest->id, 'error' => $e->getMessage()]);
+            }
         }
 
         return response()->json([

@@ -25,6 +25,7 @@
             >Tableau de bord →</RouterLink>
           </template>
           <template v-else>
+            <RouterLink to="/contact" class="nav-login">Demander une démo</RouterLink>
             <RouterLink to="/login" class="nav-login">Connexion</RouterLink>
             <RouterLink to="/register" class="cta-primary">Démarrer gratuitement</RouterLink>
           </template>
@@ -60,6 +61,7 @@
               >Tableau de bord →</RouterLink>
             </template>
             <template v-else>
+              <RouterLink to="/contact"  class="drawer-login"  @click="mobileOpen = false">Demander une démo</RouterLink>
               <RouterLink to="/login"    class="drawer-login"  @click="mobileOpen = false">Connexion</RouterLink>
               <RouterLink to="/register" class="cta-primary drawer-cta" @click="mobileOpen = false">
                 Démarrer gratuitement
@@ -106,6 +108,7 @@
                   <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </RouterLink>
+              <RouterLink to="/contact" class="cta-ghost cta-xl">Demander une démo</RouterLink>
               <a href="#pricing" class="cta-ghost cta-xl">Voir les tarifs</a>
             </template>
           </div>
@@ -447,6 +450,7 @@
             <RouterLink to="/register" class="cta-primary cta-xl">
               Créer mon espace gratuitement
             </RouterLink>
+            <RouterLink to="/contact" class="cta-ghost cta-xl">Demander une démo</RouterLink>
             <RouterLink to="/login" class="fc-login">Déjà inscrit ? Connexion →</RouterLink>
           </template>
         </div>

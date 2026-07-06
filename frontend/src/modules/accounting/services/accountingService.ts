@@ -75,6 +75,11 @@ export const accountingService = {
     return client.post(`/api/accounting/periods/${id}/unlock`, { reason }).then(r => r.data.data)
   },
 
+  /** RC-41 — clôture d'exercice : bascule le résultat sur 13 + poste le report-à-nouveau. */
+  closeFiscalYear(id: string): Promise<{ fiscal_year: FiscalYear; next_year: FiscalYear; carry_forward_entry: Entry; result_minor: number }> {
+    return client.post(`/api/accounting/fiscal-years/${id}/close`).then(r => r.data.data)
+  },
+
   // ── Écritures (RC-25/26) ─────────────────────────────────────────────────
   entries(params?: { journal_id?: string; status?: string; source_type?: string; page?: number; per_page?: number }) {
     return client.get('/api/accounting/entries', { params }).then(r => normalizePage<Entry>(r.data))

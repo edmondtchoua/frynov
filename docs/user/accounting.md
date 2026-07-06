@@ -1,9 +1,9 @@
 # Guide utilisateur — Comptabilité (référentiel SYSCOHADA)
 
-> **Dernière mise à jour :** 2026-07-05 · Périmètre actuel : plan comptable, journaux, taxes,
+> **Dernière mise à jour :** 2026-07-06 · Périmètre actuel : plan comptable, journaux, taxes,
 > exercices & périodes, paramètres, écritures & moteur d'imputation, **facturation client**,
-> **avoirs**, **balance générale & grand livre**, **lettrage**. Les états financiers (bilan, résultat)
-> et le rapprochement bancaire arrivent dans les prochaines versions.
+> **avoirs**, **balance générale & grand livre**, **lettrage**, **clôture d'exercice**. Les états
+> financiers (bilan, résultat) et le rapprochement bancaire arrivent dans les prochaines versions.
 
 ## Accès et droits
 
@@ -109,6 +109,22 @@ rapprochez ce qui se solde de ce qui reste dû :
 
 > Le **solde ouvert** est ce qui n'est pas encore lettré : les factures non réglées et les règlements
 > non affectés. Filtrez sur *Non lettrées seulement* pour ne voir que l'ouvert.
+
+## 10. Clôture d'exercice
+
+Menu **Comptabilité → Exercices & périodes** → bouton **Clôturer l'exercice** :
+
+1. Frynov calcule le **résultat** de l'exercice (produits − charges) et le porte au compte **13**
+   (bénéfice au crédit, perte au débit).
+2. Une écriture de **report-à-nouveau** est générée à l'ouverture de l'**exercice suivant** : elle
+   reprend les soldes de vos comptes de bilan (trésorerie, clients, fournisseurs, capitaux…) pour
+   qu'ils repartent avec les bons soldes d'ouverture. L'exercice suivant est **créé automatiquement**
+   s'il n'existe pas encore.
+3. L'exercice clôturé et ses périodes passent en **Clos** : plus aucune écriture ne peut y être datée.
+
+> La clôture est **définitive**. Un bandeau confirme le bénéfice/perte, le n° du report-à-nouveau et
+> l'exercice suivant ouvert. Assurez-vous d'avoir saisi et comptabilisé toutes les écritures de
+> l'exercice (les brouillons non comptabilisés ne sont pas repris) avant de clôturer.
 
 ## FAQ
 

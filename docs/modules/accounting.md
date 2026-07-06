@@ -175,6 +175,22 @@ Colonnes `accounting_entry_lines.lettrage_code` + `lettered_at`. Endpoints : `GE
 Front : `LettrageView` (`/accounting/lettrage`) — sélection multi-lignes avec contrôle d'équilibre en
 direct, badge de code cliquable pour délettrer. i18n FR/EN.
 
+## Clôture d'exercice + report-à-nouveau (RC-41 — P4.4)
+
+`ClosingService.close(fiscalYear)` : opération **transactionnelle** de fin d'exercice.
+- **Détermination du résultat** : les soldes des comptes de gestion (classes 6-8) sont sommés et
+  basculés sur le compte **13** (résultat net) — bénéfice au crédit, perte au débit.
+- **Report-à-nouveau** : une écriture est postée à l'ouverture de l'exercice **N+1** (journal OD, 1er
+  jour) reprenant les soldes des comptes **permanents** (bilan, classes 1-5) augmentés du résultat sur
+  13. Équilibrée par construction (Σ soldes permanents = −Σ soldes de gestion). L'exercice N+1 est
+  **ouvert automatiquement** (12 périodes mensuelles) s'il n'existe pas.
+- **Verrouillage** : l'exercice N passe `closed`, ses périodes `closed`, et `carry_forward_entry_id`
+  pointe le RAN. Une clôture est définitive (ré-clôture refusée).
+
+Endpoint : `POST fiscal-years/{id}/close` (`chief-accountant|admin|accounting.manage`). Front :
+`PeriodsView` — bouton **Clôturer l'exercice** avec confirmation + bandeau de résultat (bénéfice/perte,
+n° du RAN, exercice suivant). i18n FR/EN.
+
 ## Tests
 
 Backend : `AccountingReferentialTest` (8) · `AccountingEntryTest` (7 — équilibre, post/numéro,
@@ -187,6 +203,8 @@ application bornée cumulative, statuts, brouillon non applicable, cycle HTTP, R
 `AccountingLedgerTest` (6 — balance équilibrée, à-nouveau, écritures extournées incluses, brouillons
 exclus, grand livre à solde progressif, RBAC lecture viewer/caissier) · `AccountingLettrageTest`
 (6 — groupe équilibré → code, refus déséquilibré, délettrage, codes A/B par compte, re-lettrage
-interdit, HTTP `only_open` + RBAC). Front : `ChartOfAccountsView.spec.ts` (3) +
+interdit, HTTP `only_open` + RBAC) · `AccountingClosingTest` (5 — résultat bénéfice/perte → 13, RAN
+équilibré, exercice+périodes fermés & N+1 ouvert, ré-clôture refusée, RBAC HTTP). Front :
+`ChartOfAccountsView.spec.ts` (3) +
 `InvoicesView.spec.ts` (3) + `CreditNotesView.spec.ts` (3) + `BalanceView.spec.ts` (2) +
-`LettrageView.spec.ts` (2) + garde i18n.
+`LettrageView.spec.ts` (2) + `PeriodsView.spec.ts` (2) + garde i18n.

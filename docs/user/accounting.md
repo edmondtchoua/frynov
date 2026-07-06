@@ -2,7 +2,8 @@
 
 > **Dernière mise à jour :** 2026-07-05 · Périmètre actuel : plan comptable, journaux, taxes,
 > exercices & périodes, paramètres, écritures & moteur d'imputation, **facturation client**,
-> **avoirs**. Les états financiers arrivent dans les prochaines versions.
+> **avoirs**, **balance générale & grand livre**. Les états financiers (bilan, résultat) et le
+> lettrage/rapprochement arrivent dans les prochaines versions.
 
 ## Accès et droits
 
@@ -80,6 +81,20 @@ Menu **Comptabilité → Avoirs** — un avoir corrige ou rembourse une facture 
 4. **PDF** : téléchargez l'avoir.
 
 > Le libellé du statut d'un avoir suit son application : *Émis → Partiellement appliqué → Appliqué*.
+
+## 8. Balance & grand livre
+
+Menu **Comptabilité → Balance** — vos états de lecture, calculés sur les écritures **comptabilisées** :
+
+- **Balance générale** : la liste de vos comptes mouvementés avec, sur la période choisie (dates *Du*
+  / *Au*), l'**à-nouveau**, les mouvements **débit** / **crédit** et le **solde**. La ligne de total
+  affiche ✓ quand débits = crédits (contrôle d'équilibre).
+- **Grand livre** : cliquez une ligne de compte pour ouvrir son détail — chaque écriture (date,
+  journal, n°, libellé, débit, crédit) avec le **solde progressif**, l'à-nouveau et le solde final.
+
+> Un solde négatif est **créditeur** (affiché avec un signe −), un solde positif est **débiteur**.
+> Les brouillons non comptabilisés n'apparaissent pas ; une écriture extournée et son extourne
+> figurent toutes deux (elles s'annulent).
 
 ## FAQ
 

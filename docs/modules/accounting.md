@@ -145,6 +145,21 @@ paid = entièrement appliqué). Endpoints saisie (`accounting.entries.create`) :
 `POST invoices/{id}/credit-notes`, `credit-notes/{id}/issue`, `credit-notes/{id}/apply` ; lecture via
 `GET invoices?kind=credit_note`. Frontend : `CreditNotesView` (`/accounting/credit-notes`).
 
+## États de lecture — balance & grand livre (RC-38 — P4.1)
+
+`LedgerService` agrège les **écritures `posted` ET `reversed`** (une écriture extournée reste un
+mouvement réel, contre-passée par son extourne également postée — les exclure fausserait les soldes ;
+les brouillons sont ignorés). Montants signés (débit positif).
+- **Balance générale** (`trialBalance(tenant, ?from, to)`) : par compte mouvementé — à-nouveau (net
+  avant `from`), mouvements débit/crédit de la période, solde. Invariants garantis par la partie
+  double : Σ débits = Σ crédits **et** Σ soldes débiteurs = Σ soldes créditeurs.
+- **Grand livre** (`generalLedger(tenant, accountId, ?from, to)`) : à-nouveau + lignes ordonnées
+  (date, journal) avec **solde progressif**, mouvements et solde de clôture.
+
+Endpoints lecture (`accounting.view`) : `GET reports/trial-balance?from=&to=`,
+`GET reports/general-ledger?account_id=&from=&to=`. Front : `BalanceView`
+(`/accounting/balance`) — balance filtrable par dates, **drill-down** vers le grand livre d'un compte.
+
 ## Tests
 
 Backend : `AccountingReferentialTest` (8) · `AccountingEntryTest` (7 — équilibre, post/numéro,
@@ -153,5 +168,8 @@ période verrouillée, immutabilité, extourne miroir) · `AccountingImputationT
 tenant sans module = 0 écriture) · `AccountingInvoiceTest` (7 — TVA/remise, émission → 411/701/4431,
 allocation partielle/multiple bornée, encaissement, cycle HTTP, RBAC caissier) ·
 `AccountingCreditNoteTest` (8 — reprise de lignes, émission → écriture inverse 701/4431/411,
-application bornée cumulative, statuts, brouillon non applicable, cycle HTTP, RBAC). Front :
-`ChartOfAccountsView.spec.ts` (3) + `InvoicesView.spec.ts` (3) + `CreditNotesView.spec.ts` (3) + garde i18n.
+application bornée cumulative, statuts, brouillon non applicable, cycle HTTP, RBAC) ·
+`AccountingLedgerTest` (6 — balance équilibrée, à-nouveau, écritures extournées incluses, brouillons
+exclus, grand livre à solde progressif, RBAC lecture viewer/caissier). Front :
+`ChartOfAccountsView.spec.ts` (3) + `InvoicesView.spec.ts` (3) + `CreditNotesView.spec.ts` (3) +
+`BalanceView.spec.ts` (2) + garde i18n.

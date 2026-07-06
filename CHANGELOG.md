@@ -3,6 +3,22 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 📒 RC-38 : Comptabilité — balance générale & grand livre (P4.1) (2026-07-05)
+
+Premiers **états de lecture** du module Comptabilité, calculés sur les écritures comptabilisées
+(`LedgerService`, `posted` **et** `reversed` — une extourne reste un mouvement réel ; brouillons
+ignorés). Montants signés (débit positif).
+
+- **Balance générale** (`GET reports/trial-balance?from=&to=`) : par compte mouvementé — à-nouveau
+  (net avant `from`), mouvements débit/crédit de la période, solde. Invariants garantis par la partie
+  double : **Σ débits = Σ crédits** et **Σ soldes débiteurs = Σ soldes créditeurs**.
+- **Grand livre** (`GET reports/general-ledger?account_id=&from=&to=`) : à-nouveau + lignes ordonnées
+  (date, journal) avec **solde progressif**, mouvements et solde de clôture.
+- **Front** : `BalanceView` (`/accounting/balance`) — balance filtrable par dates + **drill-down** vers
+  le grand livre d'un compte. i18n FR/EN. Lecture ouverte au rôle `accounting-viewer` (caissier 403).
+- **Tests** : `AccountingLedgerTest` (6) + `BalanceView.spec.ts` (2). Vérifié en preview sur données
+  réelles (TechZone) : balance de 5 comptes **équilibrée** (débit = crédit = 1 136 300).
+
 ## [Non publié] — 🧾 RC-33 : Comptabilité — avoirs (notes de crédit) & application aux factures (P3.2) (2026-07-05)
 
 Extension de la facturation (RC-30) : les **avoirs** réutilisent la table `invoices`

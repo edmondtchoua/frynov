@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Accounting\Http\Controllers\BankReconciliationController;
 use App\Modules\Accounting\Http\Controllers\EntryController;
 use App\Modules\Accounting\Http\Controllers\InvoiceController;
 use App\Modules\Accounting\Http\Controllers\LettrageController;
@@ -41,6 +42,8 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
             // États financiers SYSCOHADA — bilan & compte de résultat (RC-42)
             Route::get('reports/income-statement', [ReportController::class, 'incomeStatement']);
             Route::get('reports/balance-sheet',    [ReportController::class, 'balanceSheet']);
+            // Rapprochement bancaire — état de pointage d'un compte de banque (RC-43)
+            Route::get('reports/bank-reconciliation', [BankReconciliationController::class, 'index']);
         });
 
         Route::middleware('role_or_permission:chief-accountant|admin|accounting.manage')->group(function () {
@@ -71,6 +74,8 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
             // Lettrage — rapprocher / délettrer un groupe (RC-39).
             Route::post('reports/lettrage',            [LettrageController::class, 'letter']);
             Route::post('reports/lettrage/unletter',   [LettrageController::class, 'unletter']);
+            // Rapprochement bancaire — pointer / dépointer (RC-43).
+            Route::post('reports/bank-reconciliation/point', [BankReconciliationController::class, 'point']);
         });
         // Comptabilisation / extourne : chef comptable / admin (permissions dédiées).
         Route::middleware('role_or_permission:chief-accountant|admin|accounting.entries.post')->group(function () {

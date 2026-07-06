@@ -2,8 +2,8 @@
 
 > **Dernière mise à jour :** 2026-07-06 · Périmètre actuel : plan comptable, journaux, taxes,
 > exercices & périodes, paramètres, écritures & moteur d'imputation, **facturation client**,
-> **avoirs**, **balance générale & grand livre**, **lettrage**, **clôture d'exercice**, **états
-> financiers (bilan & compte de résultat)**. Le rapprochement bancaire arrive dans une prochaine version.
+> **avoirs**, **balance générale & grand livre**, **lettrage**, **rapprochement bancaire**, **clôture
+> d'exercice**, **états financiers (bilan & compte de résultat)**. Module comptable complet.
 
 ## Accès et droits
 
@@ -139,6 +139,20 @@ Menu **Comptabilité → États financiers** — vos deux états de synthèse, c
 
 > Ces états se recalculent à chaque consultation : nul besoin de clôturer pour les voir. La clôture
 > (section précédente) fige le résultat sur le compte 13 et ouvre l'exercice suivant.
+
+## 12. Rapprochement bancaire
+
+Menu **Comptabilité → Rapprochement** — vérifiez que votre comptabilité concorde avec votre relevé :
+
+1. **Choisissez le compte de banque** (ex. `521 Banque`) et **saisissez le solde du relevé**.
+2. **Cochez** chaque écriture qui figure sur le relevé (**pointage**). Les écritures **non cochées**
+   sont les **en-cours** : les **dépôts en transit** (encaissés en compta, pas encore sur le relevé)
+   et les **chèques en circulation** (émis, pas encore débités par la banque).
+3. Le tableau de synthèse affiche l'**écart** : quand *solde comptable = solde relevé + dépôts en
+   transit − chèques en circulation*, l'écart est **nul (✓)** — vos comptes sont rapprochés.
+
+> Le pointage est conservé : une écriture pointée le reste. Un écart non nul signale soit un pointage
+> incomplet, soit une opération manquante (frais bancaires, virement non enregistré…) à comptabiliser.
 
 ## FAQ
 

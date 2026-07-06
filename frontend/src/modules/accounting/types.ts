@@ -188,3 +188,27 @@ export interface GeneralLedger {
   closing_minor: number
   lines: LedgerLine[]
 }
+
+/** RC-39 — lettrage d'un compte de tiers. */
+export interface LettrageLine {
+  id: string
+  date: string
+  number: string | null
+  journal: string
+  label: string | null
+  debit_minor: number
+  credit_minor: number
+  lettrage_code: string | null
+}
+
+export interface LettrageData {
+  account: { id: string; code: string; name: string }
+  lines: LettrageLine[]
+  summary: {
+    lettered_debit_minor: number
+    lettered_credit_minor: number
+    open_debit_minor: number
+    open_credit_minor: number
+    open_balance_minor: number
+  }
+}

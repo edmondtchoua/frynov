@@ -2,6 +2,7 @@
 
 use App\Modules\Accounting\Http\Controllers\EntryController;
 use App\Modules\Accounting\Http\Controllers\InvoiceController;
+use App\Modules\Accounting\Http\Controllers\LettrageController;
 use App\Modules\Accounting\Http\Controllers\PeriodController;
 use App\Modules\Accounting\Http\Controllers\ReferentialController;
 use App\Modules\Accounting\Http\Controllers\ReportController;
@@ -35,6 +36,8 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
             // États de lecture — balance & grand livre (RC-38)
             Route::get('reports/trial-balance',  [ReportController::class, 'trialBalance']);
             Route::get('reports/general-ledger', [ReportController::class, 'generalLedger']);
+            // Lettrage — consultation des lignes d'un compte (RC-39)
+            Route::get('reports/lettrage',       [LettrageController::class, 'index']);
         });
 
         Route::middleware('role_or_permission:chief-accountant|admin|accounting.manage')->group(function () {
@@ -60,6 +63,9 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
             Route::post('invoices/{id}/credit-notes',  [InvoiceController::class, 'creditNoteFromInvoice']);
             Route::post('credit-notes/{id}/issue',     [InvoiceController::class, 'issueCreditNote']);
             Route::post('credit-notes/{id}/apply',     [InvoiceController::class, 'applyCreditNote']);
+            // Lettrage — rapprocher / délettrer un groupe (RC-39).
+            Route::post('reports/lettrage',            [LettrageController::class, 'letter']);
+            Route::post('reports/lettrage/unletter',   [LettrageController::class, 'unletter']);
         });
         // Comptabilisation / extourne : chef comptable / admin (permissions dédiées).
         Route::middleware('role_or_permission:chief-accountant|admin|accounting.entries.post')->group(function () {

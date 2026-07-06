@@ -3,6 +3,24 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔗 RC-39 : Comptabilité — lettrage des comptes de tiers (P4.2) (2026-07-05)
+
+Rapprochement des lignes d'un compte de tiers (411 clients, 401 fournisseurs) en groupes équilibrés.
+
+- **Lettrage** (`LettrageService.letter`) : rapproche des lignes d'un **même compte** formant un groupe
+  **soldé** (Σ débits = Σ crédits) sous un `lettrage_code` (A, B… par compte). Refuse un groupe
+  déséquilibré ou < 2 lignes ; n'accepte que des lignes d'écritures comptabilisées/extournées non déjà
+  lettrées. Le **non-lettré = le solde réellement ouvert** (factures non réglées, règlements non affectés).
+- **Délettrage** (`unletter`) : rouvre les lignes d'un code. **Synthèse** par compte : lettré / ouvert
+  / solde ouvert signé.
+- **Front** : `LettrageView` (`/accounting/lettrage`) — sélection multi-lignes avec **contrôle
+  d'équilibre en direct**, badge de code cliquable pour délettrer, filtre « non lettrées seulement ».
+  i18n FR/EN.
+- **Migration** : `accounting_entry_lines.lettrage_code` + `lettered_at`. Endpoints
+  `GET reports/lettrage` (lecture), `POST reports/lettrage[/unletter]` (`accounting.entries.create`).
+- **Tests** : `AccountingLettrageTest` (6) + `LettrageView.spec.ts` (2). Bug `only_open` (chaîne
+  "false" rejetée par la règle `boolean`) **détecté en preview** et corrigé + couvert.
+
 ## [Non publié] — 🧩 RC-40 : Mise à niveau — taxes/frais, PSP auto, correction admin, analytics (2026-07-05)
 
 - **Taxes & frais d'installation** : `plans.tax_rate_bps` + `setup_fee_minor` ; devis + net + demande

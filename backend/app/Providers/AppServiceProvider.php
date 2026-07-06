@@ -2,10 +2,18 @@
 
 namespace App\Providers;
 
+use App\Modules\Catalog\Models\Product;
+use App\Modules\Catalog\Policies\ProductPolicy;
 use App\Modules\Customers\Models\Customer;
 use App\Modules\Customers\Policies\CustomerPolicy;
 use App\Modules\Delivery\Models\Delivery;
 use App\Modules\Delivery\Policies\DeliveryPolicy;
+use App\Modules\ImportExport\Models\ImportSession;
+use App\Modules\ImportExport\Policies\ImportSessionPolicy;
+use App\Modules\Orders\Models\Order;
+use App\Modules\Orders\Policies\OrderPolicy;
+use App\Modules\Payments\Models\Payment;
+use App\Modules\Payments\Policies\PaymentPolicy;
 use App\Modules\Suppliers\Models\Supplier;
 use App\Modules\Suppliers\Policies\SupplierPolicy;
 use Illuminate\Database\Schema\Builder;
@@ -22,6 +30,10 @@ class AppServiceProvider extends ServiceProvider
         Supplier::class => SupplierPolicy::class,
         Customer::class => CustomerPolicy::class,
         Delivery::class => DeliveryPolicy::class,
+        Product::class => ProductPolicy::class,
+        Order::class => OrderPolicy::class,
+        Payment::class => PaymentPolicy::class,
+        ImportSession::class => ImportSessionPolicy::class,
     ];
 
     /**

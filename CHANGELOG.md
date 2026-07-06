@@ -19,12 +19,19 @@ fail-closed, Spatie teams, self-service RBAC borné, anti-escalade). Correctifs 
   enregistrées dans `AppServiceProvider`) + `Gate::authorize()` sur les écritures (2ᵉ ligne après le
   middleware). Quota `max_imports_per_month` enforced (`quota:imports`). `max_branches`/`storage_mb`/
   `max_api_calls` documentés comme non applicables/différés.
+- **P2 (suite) — Policies étendues** aux modules à fort volume d'écriture : `ProductPolicy` (catalog),
+  `OrderPolicy`, `PaymentPolicy`, `ImportSessionPolicy` — `Gate::authorize()` sur catalog
+  store/update/archive, orders store, payments store, import upload/mapping/cancel. **Miroir exact des
+  routes** (aucun durcissement d'accès) : per-action pour payments/orders/import ; OR grossier reproduit
+  pour catalog (groupe de routes partagé). `inventory` laissé au niveau route (taxonomie granulaire).
 - **P5 outillage** : garde-fou CI `RouteAccessGuardTest` (toute écriture de module doit être gardée) —
   a révélé **5 écritures non gardées supplémentaires**, toutes fermées (inventory adjustments, payments
   delete, import upload/mapping/cancel). Endpoint `GET /me/subscription/usage` (usage vs quota par
   ressource) + **jauge d'usage** dans l'onglet Abonnement (barres colorées : vert / orange ≥80 % / rouge ≥100 %).
-- **Tests** : `WriteEndpointGuardsTest`, `CustomerQuotaTest`, `ModulePolicyTest`, `ImportQuotaTest`,
-  `RouteAccessGuardTest`, `UsageReportTest`. Suite feature **49/49**.
+- **Tests** : `WriteEndpointGuardsTest`, `CustomerQuotaTest`, `ModulePolicyTest` (+ couverture
+  Product/Order/Payment/ImportSession, miroir catalog & anti-durcissement par permission granulaire),
+  `ImportQuotaTest`, `RouteAccessGuardTest`, `UsageReportTest`, `ImportApiTest` (viewer → 403 sur les
+  écritures import). Revue multi-agent adversariale : parité d'accès confirmée exacte sur les 8 gardes.
 
 ## [Non publié] — 🧩 RC-40 : Mise à niveau — taxes/frais, PSP auto, correction admin, analytics (2026-07-05)
 

@@ -214,6 +214,24 @@ Les seeders existants sont **déjà idempotents** (`updateOrCreate`, slugs stabl
   `CustomerPolicy` / `DeliveryPolicy`, enregistrées dans `AppServiceProvider`. `Gate::authorize(...)`
   ajouté sur les écritures des 3 contrôleurs (create/update/delete) → 2ᵉ ligne de défense si un
   middleware de route venait à manquer. Test `ModulePolicyTest` (viewer refusé, admin/manager autorisés).
+- **Policies étendues aux modules à fort volume d'écriture** : `ProductPolicy` (catalog),
+  `OrderPolicy`, `PaymentPolicy`, `ImportSessionPolicy`, enregistrées dans `AppServiceProvider`.
+  `Gate::authorize()` posé sur : catalog `store`/`update`/`archive`, orders `store`, payments `store`
+  (le `destroy` a déjà sa garde contrôleur `payments.delete`), import `upload`/`updateMapping`/`cancel`.
+  **Miroir exact des routes** — aucune divulgation ni durcissement d'accès :
+  - modules à permissions *per-action* (payments/orders/import) → policy `<module>.<action>` ;
+  - **catalog** : le groupe de routes partage un unique middleware OR
+    (`products.create|update|delete|archive`) ; `ProductPolicy` **reproduit** ce OR grossier sur toutes
+    les écritures pour ne pas durcir l'accès d'un rôle custom mono-permission. Test dédié
+    `product_policy_mirrors_the_coarse_catalog_route_group`.
+  - **inventory** volontairement laissé au niveau route : taxonomie granulaire distincte
+    (`inventory.adjust|receive|audit`) non mappable sur `module.action` ; couvert par le garde-fou CI.
+  - **Anti-régression de durcissement** (revue adversariale) : `ModulePolicyTest` vérifie aussi qu'un
+    rôle custom portant *exactement* la permission granulaire attendue (`orders.create`,
+    `payments.create/delete`, `import_export.create/update`) est autorisé — ce cas exerce la branche
+    `can("<module>.<action>")` qu'admin/manager ne touchent jamais, donc tout décalage de slug/action
+    ferait échouer la CI. Test HTTP négatif ajouté (`ImportApiTest` : un `viewer` reçoit 403 sur
+    upload/mapping/cancel) pour aligner import_export sur Payments/Catalog/Orders.
 - **Quota imports** : `max_imports_per_month` enforced (`assertCanCreateImport` + `quota:imports` sur
   `POST /import/upload`). Test `ImportQuotaTest`.
 - **`max_branches`** : **aucun modèle Branch** en base → quota **redondant avec `max_warehouses`**.
@@ -236,5 +254,7 @@ Les seeders existants sont **déjà idempotents** (`updateOrCreate`, slugs stabl
   `UsageReportTest`. **Jauge d'usage** affichée dans l'onglet Abonnement (barres vert / orange ≥80 % /
   rouge ≥100 %) — vérifiée en navigateur (Découverte : « Utilisateurs 4/1 » en rouge, « Commandes 40/50 »).
 
-**⏳ Reste (optionnel)** : extension des Policies aux autres modules (products/orders…) — le garde-fou CI
-couvre déjà le risque de régression.
+**⏳ Reste (optionnel)** : `inventory` conserve son enforcement route-only (taxonomie granulaire
+`adjust/receive/audit`) — le garde-fou CI couvre déjà le risque de régression ; une `InventoryPolicy`
+dédiée (mapping vers ces permissions granulaires) reste envisageable si une 2ᵉ ligne contrôleur y devient
+souhaitable.

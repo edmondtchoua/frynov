@@ -11,10 +11,12 @@ use App\Modules\Orders\Exceptions\OrderNotFoundException;
 use App\Modules\Orders\Exceptions\OrderStateException;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Modules\Orders\Http\Requests\CreateOrderRequest;
+use App\Modules\Orders\Models\Order;
 use App\Modules\Orders\Services\OrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Gate;
 
 class OrderController extends Controller
 {
@@ -61,6 +63,8 @@ class OrderController extends Controller
     // POST /api/orders
     public function store(CreateOrderRequest $request): JsonResponse
     {
+        Gate::authorize('create', Order::class); // défense en profondeur (audit RBAC P2)
+
         $order = $this->orderService->create(
             $request->validated(),
             $request->user()->tenant_id,

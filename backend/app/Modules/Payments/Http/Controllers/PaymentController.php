@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Gate;
 
 class PaymentController extends Controller
 {
@@ -36,6 +37,8 @@ class PaymentController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        Gate::authorize('create', Payment::class); // défense en profondeur (audit RBAC P2)
+
         $idempotencyKey = $request->header('X-Idempotency-Key');
 
         if ($idempotencyKey) {

@@ -4,6 +4,7 @@ use App\Modules\Accounting\Http\Controllers\EntryController;
 use App\Modules\Accounting\Http\Controllers\InvoiceController;
 use App\Modules\Accounting\Http\Controllers\PeriodController;
 use App\Modules\Accounting\Http\Controllers\ReferentialController;
+use App\Modules\Accounting\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -31,6 +32,9 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
             Route::get('invoices',          [InvoiceController::class, 'index']);
             Route::get('invoices/{id}',     [InvoiceController::class, 'show']);
             Route::get('invoices/{id}/pdf', [InvoiceController::class, 'pdf']);
+            // États de lecture — balance & grand livre (RC-38)
+            Route::get('reports/trial-balance',  [ReportController::class, 'trialBalance']);
+            Route::get('reports/general-ledger', [ReportController::class, 'generalLedger']);
         });
 
         Route::middleware('role_or_permission:chief-accountant|admin|accounting.manage')->group(function () {

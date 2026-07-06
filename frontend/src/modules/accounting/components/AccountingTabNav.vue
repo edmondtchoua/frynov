@@ -23,6 +23,7 @@ const tabs = computed(() => [
   { to: '/accounting/invoices', label: t('accounting.tabInvoices') },
   { to: '/accounting/credit-notes', label: t('accounting.tabCreditNotes') },
   { to: '/accounting/entries', label: t('accounting.tabEntries') },
+  { to: '/accounting/balance', label: t('accounting.tabBalance') },
   { to: '/accounting/chart', label: t('accounting.tabChart') },
   { to: '/accounting/taxes', label: t('accounting.tabTaxes') },
   { to: '/accounting/periods', label: t('accounting.tabPeriods') },

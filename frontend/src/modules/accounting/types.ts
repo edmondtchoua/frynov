@@ -149,3 +149,42 @@ export interface InvoiceDraftLine {
   discount_bp?: number
   tax_id?: string | null
 }
+
+/** RC-38 — balance générale. */
+export interface TrialBalanceRow {
+  account_id: string
+  code: string
+  name: string
+  kind: string
+  opening_minor: number
+  debit_minor: number
+  credit_minor: number
+  closing_minor: number
+}
+
+export interface TrialBalance {
+  rows: TrialBalanceRow[]
+  totals: { debit_minor: number; credit_minor: number; closing_debit_minor: number; closing_credit_minor: number }
+  from: string | null
+  to: string
+}
+
+/** RC-38 — grand livre d'un compte. */
+export interface LedgerLine {
+  date: string
+  number: string | null
+  journal: string
+  label: string | null
+  debit_minor: number
+  credit_minor: number
+  running_minor: number
+}
+
+export interface GeneralLedger {
+  account: { id: string; code: string; name: string; kind: string }
+  opening_minor: number
+  debit_total_minor: number
+  credit_total_minor: number
+  closing_minor: number
+  lines: LedgerLine[]
+}

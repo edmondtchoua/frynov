@@ -1,7 +1,7 @@
 import client from '@/api/client'
 import type {
   Account, AccountingOverview, AccountingPeriod, AccountingSettings,
-  Entry, EntryLineInput, FiscalYear, Invoice, InvoiceDraftLine, Journal, Tax,
+  Entry, EntryLineInput, FiscalYear, GeneralLedger, Invoice, InvoiceDraftLine, Journal, Tax, TrialBalance,
 } from '../types'
 
 function normalizePage<T>(d: any): { data: T[]; meta: { current_page: number; last_page: number; total: number } } {
@@ -137,5 +137,14 @@ export const accountingService = {
 
   applyCreditNote(id: string, payload: { invoice_id: string; amount_minor: number }) {
     return client.post(`/api/accounting/credit-notes/${id}/apply`, payload).then(r => r.data.data)
+  },
+
+  // ── États : balance & grand livre (RC-38) ─────────────────────────────────
+  trialBalance(params?: { from?: string; to?: string }): Promise<TrialBalance> {
+    return client.get('/api/accounting/reports/trial-balance', { params }).then(r => r.data.data)
+  },
+
+  generalLedger(accountId: string, params?: { from?: string; to?: string }): Promise<GeneralLedger> {
+    return client.get('/api/accounting/reports/general-ledger', { params: { ...params, account_id: accountId } }).then(r => r.data.data)
   },
 }

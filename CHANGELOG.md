@@ -3,6 +3,35 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔐 RC-41 : Audit RBAC/plans — durcissement accès & quotas (2026-07-06)
+
+Audit complet RBAC/ACL + plans (`docs/audit/rbac-plans-audit.md`) — architecture jugée saine (isolation
+fail-closed, Spatie teams, self-service RBAC borné, anti-escalade). Correctifs P0/P1/P3/P4 appliqués :
+
+- **P0 sécurité** : gardes de permission ajoutées sur 4 écritures non protégées (un rôle `viewer`
+  pouvait écrire) — `PUT /customers/{id}`, `POST` + `PUT /suppliers`, `POST /deliveries`.
+- **P1 quota** : `max_customers` désormais **appliqué** (`QuotaService::assertCanAddCustomer` +
+  `quota:customers`), plus seulement affiché.
+- **P3 traçabilité** : invitation utilisateur auditée (`workspace.user_created`) + transaction atomique.
+- **P4 cohérence offre** : `features` reformulés (fin du tiering trompeur — tous modules inclus, volumes
+  selon plan) ; plan `enterprise` renommé **« Enterprise »** (seeder + i18n). Re-seed requis.
+- **Tests** : `WriteEndpointGuardsTest`, `CustomerQuotaTest`. Suite feature **45/45**.
+
+## [Non publié] — 🧩 RC-40 : Mise à niveau — taxes/frais, PSP auto, correction admin, analytics (2026-07-05)
+
+- **Taxes & frais d'installation** : `plans.tax_rate_bps` + `setup_fee_minor` ; devis + net + demande
+  intègrent taxe (sur brut après promo) et frais unique (changement de plan). Règlement routé vers la
+  branche « net autoritatif » quand taxe/frais présents. Admin éditable. Test `TaxAndFeeTest`.
+- **Paiement automatisé (PSP)** — désactivé par défaut : abstraction `PspGateway` + driver `FakePspGateway`
+  (checkout factice + webhook HMAC). `POST me/subscription/psp/initiate` + `POST webhooks/psp` →
+  activation automatique via l'approbation système. Prêt pour un vrai rail. Test `PspPaymentTest`.
+- **Demande de correction (admin)** : `POST admin/manual-payments/{id}/request-correction` (non
+  destructif) → demande en `pending_payment` + consigne + notification tenant. Bouton « Corriger ».
+  Test `RequestCorrectionTest`.
+- **Analytics (graphes)** : panneau « Statistiques » (barres CSS) sur l'écran admin des plans
+  (revenu/adoption par plan + demandes par statut) via `GET admin/plans/analytics`.
+- **Tests** : suite feature **42/42**. Taxes + analytics vérifiés en navigateur.
+
 ## [Non publié] — 🔗 RC-39 : Comptabilité — lettrage des comptes de tiers (P4.2) (2026-07-05)
 
 Rapprochement des lignes d'un compte de tiers (411 clients, 401 fournisseurs) en groupes équilibrés.
@@ -20,21 +49,6 @@ Rapprochement des lignes d'un compte de tiers (411 clients, 401 fournisseurs) en
   `GET reports/lettrage` (lecture), `POST reports/lettrage[/unletter]` (`accounting.entries.create`).
 - **Tests** : `AccountingLettrageTest` (6) + `LettrageView.spec.ts` (2). Bug `only_open` (chaîne
   "false" rejetée par la règle `boolean`) **détecté en preview** et corrigé + couvert.
-
-## [Non publié] — 🧩 RC-40 : Mise à niveau — taxes/frais, PSP auto, correction admin, analytics (2026-07-05)
-
-- **Taxes & frais d'installation** : `plans.tax_rate_bps` + `setup_fee_minor` ; devis + net + demande
-  intègrent taxe (sur brut après promo) et frais unique (changement de plan). Règlement routé vers la
-  branche « net autoritatif » quand taxe/frais présents. Admin éditable. Test `TaxAndFeeTest`.
-- **Paiement automatisé (PSP)** — désactivé par défaut : abstraction `PspGateway` + driver `FakePspGateway`
-  (checkout factice + webhook HMAC). `POST me/subscription/psp/initiate` + `POST webhooks/psp` →
-  activation automatique via l'approbation système. Prêt pour un vrai rail. Test `PspPaymentTest`.
-- **Demande de correction (admin)** : `POST admin/manual-payments/{id}/request-correction` (non
-  destructif) → demande en `pending_payment` + consigne + notification tenant. Bouton « Corriger ».
-  Test `RequestCorrectionTest`.
-- **Analytics (graphes)** : panneau « Statistiques » (barres CSS) sur l'écran admin des plans
-  (revenu/adoption par plan + demandes par statut) via `GET admin/plans/analytics`.
-- **Tests** : suite feature **42/42**. Taxes + analytics vérifiés en navigateur.
 
 ## [Non publié] — 📒 RC-38 : Comptabilité — balance générale & grand livre (P4.1) (2026-07-05)
 

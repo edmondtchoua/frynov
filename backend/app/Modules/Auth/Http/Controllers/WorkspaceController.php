@@ -66,18 +66,34 @@ class WorkspaceController extends Controller
         }
 
         $tenant = $request->user()->tenant;
+        $role   = $request->input('role');
 
-        // RC-12 F-5 — mot de passe aléatoire NON communiqué : le membre le définira via l'invitation
-        // (code envoyé par email), au lieu d'un mot de passe temporaire transitant par l'API.
-        $user = User::create([
-            'name'      => $request->input('name'),
-            'email'     => strtolower(trim((string) $request->input('email'))),
-            'password'  => Str::random(40),
-            'tenant_id' => $tenant->id,
-        ]);
-        // Scope role assignment to the tenant (Spatie teams)
-        app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
-        $user->assignRole($request->input('role'));
+        // Création utilisateur + attribution de rôle ATOMIQUES : sans transaction, un échec après le
+        // User::create laissait un utilisateur orphelin (sans rôle).
+        // RC-12 F-5 — mot de passe aléatoire NON communiqué : le membre le définira via l'invitation.
+        $user = DB::transaction(function () use ($request, $tenant, $role) {
+            $user = User::create([
+                'name'      => $request->input('name'),
+                'email'     => strtolower(trim((string) $request->input('email'))),
+                'password'  => Str::random(40),
+                'tenant_id' => $tenant->id,
+            ]);
+            // Scope role assignment to the tenant (Spatie teams)
+            app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
+            $user->assignRole($role);
+
+            return $user;
+        });
+
+        // Traçabilité : l'invitation (création utilisateur + rôle) est auditée (best-effort).
+        try {
+            app(\App\Modules\Platform\Services\AuditService::class)->logFromRequest(
+                $request, 'workspace.user_created', $user,
+                null, ['role' => $role, 'invited_by' => $request->user()->id], 'medium',
+            );
+        } catch (\Throwable) {
+            // best-effort : l'audit ne doit jamais bloquer l'invitation
+        }
 
         app(\App\Modules\Auth\Services\InvitationService::class)->invite($user, $request->user());
 

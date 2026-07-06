@@ -5,10 +5,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'tenant', 'module:customers'])->prefix('api/customers')->group(function () {
     Route::get('/',             [CustomerController::class, 'index']);
-    Route::post('/',            [CustomerController::class, 'store'])->middleware('role_or_permission:manager|admin|customers.create');
+    Route::post('/',            [CustomerController::class, 'store'])->middleware(['role_or_permission:manager|admin|customers.create', 'quota:customers']);
     Route::get('/search',       [CustomerController::class, 'search']);
     Route::get('/{id}',         [CustomerController::class, 'show']);
-    Route::put('/{id}',         [CustomerController::class, 'update']);
+    Route::put('/{id}',         [CustomerController::class, 'update'])->middleware('role_or_permission:manager|admin|customers.update');
     Route::delete('/{id}',      [CustomerController::class, 'destroy'])->middleware('role_or_permission:manager|admin|customers.delete');
     Route::get('/{id}/orders',  [CustomerController::class, 'orders']);
 });

@@ -192,6 +192,7 @@
       </header>
 
       <main class="page-content">
+        <DemoModeBanner />
         <slot />
       </main>
     </div>
@@ -206,6 +207,7 @@ import { usePermission } from '@/composables/usePermission'
 import FrynovLogo from '@/shared/components/FrynovLogo.vue'
 import NotificationCenter from '@/shared/components/NotificationCenter.vue'
 import LanguageSwitcher from '@/shared/components/LanguageSwitcher.vue'
+import DemoModeBanner from '@/shared/components/DemoModeBanner.vue'
 
 const route  = useRoute()
 const router = useRouter()

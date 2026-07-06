@@ -72,6 +72,12 @@ export const messages: Record<Locale, Dict> = {
         payments: 'Paiements', accounting: 'Comptabilité', pos: 'Caisse (POS)', reports: 'Rapports',
       },
     },
+    demoBanner: {
+      label: 'Mode démonstration',
+      note: 'Cet espace contient des données fictives à des fins de démonstration.',
+      expires: 'expire le {date}',
+      cta: 'Activer un compte réel',
+    },
     suppliers: {
       title: 'Fournisseurs', itemSingular: 'fournisseur', itemPlural: 'fournisseurs',
       new: 'Nouveau fournisseur', searchPlaceholder: 'Rechercher un fournisseur…',
@@ -1274,6 +1280,12 @@ export const messages: Record<Locale, Dict> = {
         catalog: 'Catalog', inventory: 'Inventory', orders: 'Sales', customers: 'Customers',
         payments: 'Payments', accounting: 'Accounting', pos: 'POS', reports: 'Reports',
       },
+    },
+    demoBanner: {
+      label: 'Demo mode',
+      note: 'This workspace contains fictitious data for demonstration purposes.',
+      expires: 'expires on {date}',
+      cta: 'Activate a real account',
     },
     suppliers: {
       title: 'Suppliers', itemSingular: 'supplier', itemPlural: 'suppliers',

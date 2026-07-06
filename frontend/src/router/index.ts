@@ -500,6 +500,11 @@ const router = createRouter({
           component: () => import('@/modules/admin/views/ManualPaymentView.vue'),
         },
         {
+          path: 'demo-requests',
+          name: 'admin.demo-requests',
+          component: () => import('@/modules/admin/views/DemoRequestListView.vue'),
+        },
+        {
           path: 'audit',
           name: 'admin.audit',
           component: () => import('@/modules/admin/views/AuditLogView.vue'),

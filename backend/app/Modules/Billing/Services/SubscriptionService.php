@@ -131,10 +131,12 @@ class SubscriptionService
         bool $settle = true,
         ?\Carbon\CarbonInterface $periodStart = null,
         ?ProrationResult $proration = null,
+        int $periods = 1,
     ): Subscription {
         $interval = in_array($interval, [Subscription::INTERVAL_MONTHLY, Subscription::INTERVAL_YEARLY], true)
             ? $interval
             : Subscription::INTERVAL_MONTHLY;
+        $periods = max(1, $periods); // P0.1 — nb de périodes payées d'avance (durée × N)
 
         $current   = $this->current($tenant);
         $didCancel = false;
@@ -154,8 +156,9 @@ class SubscriptionService
 
         $start = $periodStart ?? now();
         // La période ne court QU'une fois soldée : un acompte (past_due) n'a pas de fin de période.
+        // Durée = $periods périodes (P0.1) : +N mois ou +N ans.
         $periodEnd = $settle
-            ? ($interval === Subscription::INTERVAL_YEARLY ? (clone $start)->addYear() : (clone $start)->addMonth())
+            ? ($interval === Subscription::INTERVAL_YEARLY ? (clone $start)->addYears($periods) : (clone $start)->addMonthsNoOverflow($periods))
             : null;
 
         $subscription = Subscription::create([

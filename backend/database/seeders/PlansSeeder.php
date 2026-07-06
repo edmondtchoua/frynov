@@ -96,7 +96,8 @@ class PlansSeeder extends Seeder
                 'name' => $data['name'],
                 'description' => $data['description'],
                 'price_monthly_cents' => $data['legacy_price_monthly_cents'],
-                'price_yearly_cents' => $data['legacy_price_monthly_cents'] * 10,
+                // Annuel = 12× le mensuel (décision produit : plus de remise « 2 mois offerts »).
+                'price_yearly_cents' => $data['legacy_price_monthly_cents'] * 12,
                 'currency' => $data['legacy_currency'],
                 'max_users' => $userCap,
                 'max_products' => $data['limits']['max_products'],
@@ -131,15 +132,15 @@ class PlansSeeder extends Seeder
                     ],
                 );
 
-                // Prix ANNUEL = 10× le mensuel (≈ 2 mois offerts, convention legacy). 0 reste 0 (gratuit).
+                // Prix ANNUEL = 12× le mensuel (sans remise — décision produit). 0 reste 0 (gratuit).
                 PlanPrice::updateOrCreate(
                     ['plan_id' => $plan->id, 'market_code' => $marketCode, 'interval' => 'yearly'],
                     [
                         'country_code' => null,
                         'currency' => $currency,
-                        'base_amount_minor' => $monthly * 10,
+                        'base_amount_minor' => $monthly * 12,
                         'included_users' => $data['included_users'],
-                        'extra_user_amount_minor' => $extra !== null ? $extra * 10 : null,
+                        'extra_user_amount_minor' => $extra !== null ? $extra * 12 : null,
                         'is_public' => true,
                         'sort_order' => $data['sort_order'],
                     ],

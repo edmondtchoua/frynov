@@ -30,6 +30,7 @@ class ManualPayment extends Model
     protected $fillable = [
         'tenant_id',
         'plan_id',
+        'change_request_id',
         'amount_cents',
         'currency',
         'market_code',
@@ -41,6 +42,7 @@ class ManualPayment extends Model
         'resolution_status',
         'applied_at',
         'payment_method',
+        'psp_reference',
         'proof_path',
         'proof_original_filename',
         'notes',
@@ -73,6 +75,11 @@ class ManualPayment extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
+    }
+
+    public function changeRequest(): BelongsTo
+    {
+        return $this->belongsTo(SubscriptionChangeRequest::class, 'change_request_id');
     }
 
     public function reviewer(): BelongsTo
@@ -139,11 +146,30 @@ class ManualPayment extends Model
         ];
     }
 
-    /** Admin-facing payload — adds the short-lived signed proof download URL. */
+    /**
+     * Admin-facing payload — ajoute l'URL signée du justificatif ET le contexte de la DEMANDE de
+     * changement (P8 — écran de validation) : plan source/cible, prise d'effet, montant net, et si un
+     * consentement a bien été recueilli. L'admin valide ainsi en connaissance de cause.
+     */
     public function toAdminArray(): array
     {
+        $cr = $this->changeRequest;
+
         return array_merge($this->toApiArray(), [
-            'proof_url' => $this->proofUrl(),
+            'proof_url'      => $this->proofUrl(),
+            'change_request' => $cr ? [
+                'id'                => $cr->id,
+                'status'            => $cr->status,
+                'change_type'       => $cr->change_type,
+                'effective'         => $cr->effective,
+                'interval'          => $cr->interval,
+                'quantity'          => $cr->quantity,
+                'from_plan_code'    => $cr->plan_snapshot['from_plan_code'] ?? null,
+                'to_plan_code'      => $cr->plan_snapshot['plan_code'] ?? null,
+                'net_payable_minor' => $cr->net_payable_minor,
+                'consent_captured'  => \App\Modules\Billing\Models\SubscriptionConsent::withoutTenantScope()
+                    ->where('related_entity_id', $cr->id)->exists(),
+            ] : null,
         ]);
     }
 }

@@ -109,6 +109,36 @@ Le système **reconnaît tout seul** ce que vous payez à partir du **montant** 
 > net — le crédit comble le reste. En cas de **downgrade** ou si le reliquat dépasse le coût, l'excédent
 > devient un **avoir** déduit à votre prochaine échéance (jamais remboursé en espèces).
 
+> 🔒 **Montant calculé et verrouillé (P0).** Dans la demande de mise à niveau, vous choisissez le plan
+> et la **périodicité** (mensuel/annuel) ; le **montant à payer est calculé par nos serveurs** et
+> affiché avec son détail (prix du plan → remise éventuelle → avoir de temps restant → **total**). Vous
+> ne saisissez plus le montant vous-même : il est confirmé côté serveur, donc toujours juste. Un code
+> promo est **revalidé** au moment du calcul (un code invalide est signalé et n'est pas appliqué), et
+> la preuve de paiement est limitée à **5 Mo**.
+
+> 🗓️ **Payer plusieurs périodes d'avance (P0.1).** Vous pouvez choisir une **durée** : de 1 à 12 mois
+> (mensuel) ou de 1 à 5 ans (annuel). Le total se met à jour automatiquement (prix unitaire × durée) et
+> l'abonnement est prolongé d'autant à l'activation. Le **tarif annuel = 12× le mensuel**. Si une
+> **promotion est en cours**, elle est **appliquée automatiquement** (sans code) aux périodes couvertes
+> par sa durée de validité, et affichée dans le détail avec le badge « auto ».
+
+> ✅ **Consentement et notifications (P2).** Avant d'envoyer votre demande, vous devez **cocher la case**
+> confirmant que vous acceptez le changement de plan et le montant affiché : cet accord est **tracé**
+> (date, version du texte). Vous recevez ensuite des **notifications** aux étapes clés : demande reçue,
+> plan activé, ou demande refusée (avec le motif). Un administrateur est aussi alerté de chaque nouvelle
+> demande à valider.
+
+> ⚠️ **Passage à un plan inférieur (P3).** Si le plan choisi est plus petit que votre plan actuel, un
+> **avertissement** récapitule les conséquences **avant** de confirmer : modules retirés et quotas
+> dépassés (ex. « 4 utilisateurs pour 1 inclus »). **Vos données ne sont jamais supprimées** : au-delà
+> des limites, seule la **création** de nouveaux éléments est bloquée tant que vous restez au-dessus du
+> seuil ; tout reste consultable.
+
+> 🧭 **Assistant guidé (P4).** La demande se fait désormais en **5 étapes** : plan → périodicité & durée
+> → paiement → résumé & consentement → confirmation (avec la référence de votre demande). Si vous êtes
+> déjà sur un plan payant, vous pouvez choisir la **prise d'effet** : *immédiate* ou *au prochain cycle*
+> (le nouveau plan démarre alors à la fin de votre période en cours, déjà réglée).
+
 La source backend officielle pour préparer la landing et la page d'upgrade est maintenant l'API publique `GET /api/public/pricing`. La page frontend ne doit plus maintenir durablement une grille de prix séparée.
 
 ## Renouvellement et relance (RC-5J)

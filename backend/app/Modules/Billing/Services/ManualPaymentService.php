@@ -9,6 +9,7 @@ use App\Modules\Billing\Models\MarketPaymentMethod;
 use App\Modules\Billing\Models\Plan;
 use App\Modules\Billing\Models\Promotion;
 use App\Modules\Billing\Models\Subscription;
+use App\Modules\Billing\Models\SubscriptionChangeRequest;
 use App\Modules\Billing\Models\TenantCredit;
 use App\Modules\Tenants\Models\Tenant;
 use Illuminate\Http\UploadedFile;
@@ -22,6 +23,7 @@ class ManualPaymentService
         private readonly PaymentPeriodResolver $resolver,
         private readonly PromotionService $promotions,
         private readonly TenantCreditService $credits,
+        private readonly SubscriptionChangeRequestService $changeRequests,
     ) {}
 
     /**
@@ -44,6 +46,7 @@ class ManualPaymentService
         ?string       $promoCode = null,
         ?string       $marketHint = null,
         ?string       $declaredInterval = null,
+        ?string       $changeRequestId = null,
     ): ManualPayment {
         $proofPath             = null;
         $proofOriginalFilename = null;
@@ -68,6 +71,7 @@ class ManualPaymentService
         return ManualPayment::create([
             'tenant_id'              => $tenant->id,
             'plan_id'                => $plan->id,
+            'change_request_id'      => $changeRequestId,
             'amount_cents'           => $amountCents,
             'currency'               => $currency,
             'market_code'            => $res->marketCode,
@@ -93,10 +97,33 @@ class ManualPaymentService
      */
     public function approve(ManualPayment $payment, User $admin): ManualPayment
     {
-        return DB::transaction(function () use ($payment, $admin) {
+        $result = DB::transaction(function () use ($payment, $admin) {
             // ── Idempotence : ne traiter qu'un paiement EN ATTENTE (évite double changePlan) ──
             if (! $payment->isPending()) {
                 return $payment->fresh(['tenant', 'plan', 'reviewer']);
+            }
+
+            $changeRequest = $payment->changeRequest;
+
+            // ── P4 — changement DIFFÉRÉ (prochain cycle) : si un plan PAYANT est actif à échéance
+            //    future, on encaisse et on PLANIFIE le changement au renouvellement (aucun changement
+            //    de plan immédiat). Sinon (pas de cycle payant en cours) → activation immédiate. ──
+            if ($changeRequest && $changeRequest->effective === SubscriptionChangeRequest::EFFECTIVE_NEXT_CYCLE) {
+                $current = $this->subscriptions->current($payment->tenant);
+                if ($current && $current->status === Subscription::STATUS_ACTIVE
+                    && $current->current_period_end && $current->current_period_end->isFuture()) {
+                    return $this->approveDeferred($payment, $admin, $changeRequest, $current);
+                }
+            }
+
+            // ── Règlement sur le NET AUTORITATIF de la demande dès que le net s'écarte du tarif de base
+            //    du résolveur : prépaiement MULTI-PÉRIODE (P0.1) OU taxe/frais d'installation (le
+            //    résolveur, qui matche le prix de base, les prendrait à tort pour un trop-perçu). Le
+            //    mono simple (sans taxe/frais) reste sur le chemin résolveur historique (inchangé). ──
+            if ($changeRequest && ((int) $changeRequest->quantity > 1
+                || (int) $changeRequest->tax_minor > 0
+                || (int) $changeRequest->setup_fee_minor > 0)) {
+                return $this->approveMultiPeriod($payment, $admin, $changeRequest);
             }
 
             // ── RC-6G (règle 4) — devise ↔ moyen de paiement : un moyen déclaré dans le référentiel
@@ -319,6 +346,125 @@ class ManualPaymentService
 
             return $payment->fresh(['tenant', 'plan', 'reviewer']);
         });
+
+        // P1 — synchronise la demande de changement rattachée (activated/partial/rejected…). Tolérant :
+        // hors transaction, best-effort, sans exception (les paiements legacy n'ont pas de demande).
+        $this->changeRequests->syncFromPayment($result);
+
+        return $result;
+    }
+
+    /**
+     * P4 — Approbation d'un changement DIFFÉRÉ (prochain cycle). On encaisse (paiement approuvé/imputé)
+     * et on PLANIFIE le changement sur l'abonnement courant (`metadata['scheduled_change']`) : il sera
+     * appliqué par `RenewalService` à l'échéance. La demande passe en `approved` (planifiée), pas
+     * `activated` — `syncFromPayment` la laisse en l'état (garde P4).
+     */
+    private function approveDeferred(ManualPayment $payment, User $admin, SubscriptionChangeRequest $cr, Subscription $current): ManualPayment
+    {
+        $payment->update([
+            'status'              => ManualPayment::STATUS_APPROVED,
+            'reviewed_by'         => $admin->id,
+            'reviewed_at'         => now(),
+            'applied_at'          => now(),
+            'market_code'         => $cr->market_code,
+            'detected_interval'   => $cr->interval,
+            'target_amount_minor' => (int) $cr->net_payable_minor,
+            'remaining_due_minor' => 0,
+            'overpaid_minor'      => 0,
+            'resolution_status'   => ManualPayment::RESOLUTION_MATCHED,
+        ]);
+
+        $current->update(['metadata' => array_merge($current->metadata ?? [], [
+            'scheduled_change' => [
+                'plan_id'           => $cr->to_plan_id,
+                'interval'          => $cr->interval,
+                'quantity'          => (int) $cr->quantity,
+                'currency'          => $cr->currency,
+                'market_code'       => $cr->market_code,
+                'amount_paid_minor' => (int) $payment->amount_cents,
+                'change_request_id' => $cr->id,
+                'approved_by'       => $admin->id,
+            ],
+        ])]);
+
+        $this->changeRequests->transition($cr, SubscriptionChangeRequest::STATUS_APPROVED, $admin->id, throwIfInvalid: false);
+        $cr->update(['reviewed_by' => $admin->id, 'reviewed_at' => now()]);
+
+        return $payment->fresh(['tenant', 'plan', 'reviewer']);
+    }
+
+    /**
+     * P0.1 — Approbation d'un prépaiement MULTI-PÉRIODE (quantité > 1). On règle sur le NET AUTORITATIF
+     * figé sur la demande (unité × durée − promo couverte), sans proration ni détection de périodicité :
+     * la demande porte déjà l'intervalle ET la quantité. Paiement complet → N périodes accordées ;
+     * paiement partiel → resté `partial` (acompte, sans activation).
+     */
+    private function approveMultiPeriod(ManualPayment $payment, User $admin, SubscriptionChangeRequest $cr): ManualPayment
+    {
+        $target = (int) $cr->net_payable_minor;
+
+        // Cumul des versements déjà approuvés sur la MÊME demande (acomptes) + versement courant.
+        $already = (int) ManualPayment::withoutTenantScope()
+            ->where('change_request_id', $cr->id)
+            ->where('status', ManualPayment::STATUS_APPROVED)
+            ->where('id', '!=', $payment->id)
+            ->sum('amount_cents');
+        $cumul = $already + (int) $payment->amount_cents;
+
+        $tolerance  = max(1, (int) ceil($target * 0.01)); // ±1 % (bruit mobile money / FX)
+        $isComplete = $cumul >= ($target - $tolerance);
+        $overpaid   = $isComplete ? max(0, $cumul - $target) : 0;
+
+        $payment->update([
+            'status'              => ManualPayment::STATUS_APPROVED,
+            'reviewed_by'         => $admin->id,
+            'reviewed_at'         => now(),
+            'applied_at'          => now(),
+            'market_code'         => $cr->market_code,
+            'detected_interval'   => $cr->interval,
+            'target_amount_minor' => $target,
+            'remaining_due_minor' => max(0, $target - $cumul),
+            'overpaid_minor'      => $overpaid,
+            'resolution_status'   => $isComplete
+                ? ($overpaid > $tolerance ? ManualPayment::RESOLUTION_OVERPAID : ManualPayment::RESOLUTION_MATCHED)
+                : ManualPayment::RESOLUTION_PARTIAL,
+        ]);
+
+        if ($isComplete) {
+            $sub = $this->subscriptions->changePlan(
+                $payment->tenant,
+                $payment->plan,
+                $admin,
+                $cr->interval,
+                settle: true,
+                periods: (int) $cr->quantity,
+            );
+            $sub->update([
+                'currency'          => $cr->currency,
+                'market_code'       => $cr->market_code,
+                'amount_paid_minor' => $cumul,
+            ]);
+
+            if ($overpaid > 0 && config('billing.rules.tenant_credits_table')) {
+                $this->credits->credit(
+                    $payment->tenant_id, $cr->currency, $overpaid,
+                    TenantCredit::SOURCE_OVERPAID, $payment->id, $admin->id,
+                );
+            }
+
+            // Consommer l'usage de la promo figée sur la demande (si toujours valide).
+            if ($cr->promo_code) {
+                try {
+                    $promo = $this->promotions->validate($cr->promo_code, $payment->tenant, $payment->plan->code);
+                    $this->promotions->recordUse($promo, $payment->tenant);
+                } catch (InvalidPromoCodeException) {
+                    // Promo devenue invalide/épuisée entre le devis et l'approbation → on n'échoue pas.
+                }
+            }
+        }
+
+        return $payment->fresh(['tenant', 'plan', 'reviewer']);
     }
 
     /**
@@ -392,7 +538,24 @@ class ManualPaymentService
             'rejection_reason' => $reason,
         ]);
 
+        // P1 — répercute le refus sur la demande de changement rattachée (le cas échéant).
+        $this->changeRequests->syncFromPayment($payment);
+
         return $payment->fresh(['tenant', 'plan']);
+    }
+
+    /**
+     * Demande de CORRECTION au tenant (admin) : le paiement reste EN ATTENTE, la demande liée repasse
+     * en `pending_payment` avec la consigne + notification. Alternative douce au refus.
+     */
+    public function requestCorrection(ManualPayment $payment, User $admin, string $reason): ManualPayment
+    {
+        $cr = $payment->changeRequest;
+        if ($cr && ! $cr->isTerminal()) {
+            $this->changeRequests->requestCorrection($cr, $admin->id, $reason);
+        }
+
+        return $payment->fresh(['tenant', 'plan', 'reviewer']);
     }
 
     /**
@@ -402,7 +565,7 @@ class ManualPaymentService
     {
         // withoutTenantScope: admin operations must see ALL tenants' payments
         $query = ManualPayment::withoutTenantScope()
-            ->with(['tenant:id,name,slug', 'plan:id,code,name'])
+            ->with(['tenant:id,name,slug', 'plan:id,code,name', 'changeRequest'])
             ->latest();
 
         if ($status) {

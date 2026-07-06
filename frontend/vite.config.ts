@@ -14,7 +14,8 @@ export default defineConfig({
   },
 
   server: {
-    port: 5173,
+    // Honore le PORT assigné (preview multi-sessions) ; défaut 5173 en dev local.
+    port: process.env.PORT ? Number(process.env.PORT) : 5173,
     host: '0.0.0.0',
     proxy: {
       // Proxifier les appels API vers le backend Laravel

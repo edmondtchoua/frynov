@@ -49,7 +49,18 @@
                 {{ p.tenant_name }}
               </RouterLink>
             </td>
-            <td><span class="plan-chip">{{ p.plan_code }}</span></td>
+            <td>
+              <span class="plan-chip">{{ p.plan_code }}</span>
+              <div v-if="p.change_request" class="cr-context">
+                <span class="cr-plans">
+                  <template v-if="p.change_request.from_plan_code">{{ p.change_request.from_plan_code }} → </template>{{ p.change_request.to_plan_code }}
+                </span>
+                <span class="cr-meta">{{ p.change_request.interval }} ×{{ p.change_request.quantity }} · {{ p.change_request.effective === 'next_cycle' ? $t('admin.crNextCycle') : $t('admin.crImmediate') }}</span>
+                <span :class="p.change_request.consent_captured ? 'cr-ok' : 'cr-ko'">
+                  {{ p.change_request.consent_captured ? '✓ ' + $t('admin.crConsent') : '⚠ ' + $t('admin.crNoConsent') }}
+                </span>
+              </div>
+            </td>
             <td class="bold">{{ formatAmount(p.amount_cents, p.currency) }}</td>
             <td class="dim">{{ methodLabel(p.payment_method) }}</td>
             <td>
@@ -67,6 +78,7 @@
             <td>
               <div v-if="p.status === 'pending'" class="action-group">
                 <button class="btn-sm btn-sm--ok" @click="doApprove(p)">{{ $t('admin.approve') }}</button>
+                <button class="btn-sm btn-sm--info" @click="openCorrection(p)">{{ $t('admin.requestCorrection') }}</button>
                 <button class="btn-sm btn-sm--warn" @click="openReject(p)">{{ $t('admin.reject') }}</button>
               </div>
               <span v-else class="dim">—</span>
@@ -86,8 +98,8 @@
     </div>
 
     <!-- Reject modal (shared BaseModal — UX-03) -->
-    <BaseModal v-model="rejectModal.open" size="sm" :title="$t('admin.rejectPayment')" :subtitle="rejectModal.payment?.tenant_name">
-      <p class="modal-desc">{{ $t('admin.rejectReasonPrompt') }}</p>
+    <BaseModal v-model="rejectModal.open" size="sm" :title="rejectModal.mode === 'correction' ? $t('admin.requestCorrection') : $t('admin.rejectPayment')" :subtitle="rejectModal.payment?.tenant_name">
+      <p class="modal-desc">{{ rejectModal.mode === 'correction' ? $t('admin.correctionPrompt') : $t('admin.rejectReasonPrompt') }}</p>
       <textarea
         v-model="rejectModal.reason"
         class="form-textarea"
@@ -99,7 +111,7 @@
       <template #footer>
         <button class="btn-cancel" @click="rejectModal.open = false">{{ $t('common.cancel') }}</button>
         <button class="btn-reject" :disabled="rejectModal.saving || !rejectModal.reason" @click="confirmReject">
-          {{ rejectModal.saving ? '…' : $t('admin.confirmReject') }}
+          {{ rejectModal.saving ? '…' : (rejectModal.mode === 'correction' ? $t('admin.confirmCorrection') : $t('admin.confirmReject')) }}
         </button>
       </template>
     </BaseModal>
@@ -139,6 +151,7 @@ const rejectModal = reactive({
   saving:  false,
   error:   '',
   reason:  '',
+  mode:    'reject' as 'reject' | 'correction',
   payment: null as AdminManualPayment | null,
 })
 
@@ -188,6 +201,15 @@ function openReject(p: AdminManualPayment) {
   rejectModal.payment = p
   rejectModal.reason  = ''
   rejectModal.error   = ''
+  rejectModal.mode    = 'reject'
+  rejectModal.open    = true
+}
+
+function openCorrection(p: AdminManualPayment) {
+  rejectModal.payment = p
+  rejectModal.reason  = ''
+  rejectModal.error   = ''
+  rejectModal.mode    = 'correction'
   rejectModal.open    = true
 }
 
@@ -195,7 +217,11 @@ async function confirmReject() {
   if (!rejectModal.reason) { rejectModal.error = t('admin.reasonRequired'); return }
   rejectModal.saving = true
   try {
-    await adminService.rejectManualPayment(rejectModal.payment!.id, rejectModal.reason)
+    if (rejectModal.mode === 'correction') {
+      await adminService.requestCorrectionManualPayment(rejectModal.payment!.id, rejectModal.reason)
+    } else {
+      await adminService.rejectManualPayment(rejectModal.payment!.id, rejectModal.reason)
+    }
     rejectModal.open = false
     await Promise.all([load(), loadPendingCount()])
   } catch (err: any) {
@@ -328,6 +354,11 @@ onMounted(() => Promise.all([load(), loadPendingCount()]))
 .link-tenant:hover { text-decoration: underline; }
 
 .plan-chip { font-size: 0.6875rem; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; text-transform: uppercase; }
+.cr-context { display: flex; flex-direction: column; gap: 1px; margin-top: 4px; font-size: 0.6875rem; line-height: 1.35; }
+.cr-plans { font-weight: 600; color: #334155; }
+.cr-meta { color: #94a3b8; }
+.cr-ok { color: #166534; font-weight: 600; }
+.cr-ko { color: #b45309; font-weight: 600; }
 .bold  { font-weight: 700; color: #0f172a; }
 .dim   { font-size: 0.8125rem; color: #64748b; }
 
@@ -359,6 +390,8 @@ onMounted(() => Promise.all([load(), loadPendingCount()]))
 .btn-sm--warn:hover { background: #fff5f5; }
 .btn-sm--ok     { border-color: #bbf7d0; color: #16a34a; }
 .btn-sm--ok:hover { background: #f0fdf4; }
+.btn-sm--info   { border-color: #bfdbfe; color: #2563eb; }
+.btn-sm--info:hover { background: #eff6ff; }
 
 /* ── Pagination ──────────────────────────────────────────────────────────── */
 .state-msg { padding: 2rem; text-align: center; color: #94a3b8; }

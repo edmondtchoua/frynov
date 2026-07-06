@@ -39,7 +39,7 @@ class AdminManualPaymentController extends Controller
     /** GET /api/admin/manual-payments/:id */
     public function show(ManualPayment $manualPayment): JsonResponse
     {
-        $manualPayment->load(['tenant', 'plan', 'reviewer']);
+        $manualPayment->load(['tenant', 'plan', 'reviewer', 'changeRequest']);
 
         return response()->json($manualPayment->toAdminArray());
     }
@@ -81,6 +81,27 @@ class AdminManualPaymentController extends Controller
         return response()->json([
             'message' => 'Paiement approuvé, abonnement activé.',
             'data'    => $approved->toAdminArray(),
+        ]);
+    }
+
+    /** POST /api/admin/manual-payments/:id/request-correction — consigne de correction (non destructif). */
+    public function requestCorrection(Request $request, string $id): JsonResponse
+    {
+        $payment = ManualPayment::withoutTenantScope()->with(['tenant', 'plan'])->findOrFail($id);
+
+        if (! $payment->isPending()) {
+            return response()->json(['message' => 'Ce paiement n\'est pas en attente.'], 422);
+        }
+
+        $request->validate(['reason' => ['required', 'string', 'max:500']]);
+
+        $updated = $this->payments->requestCorrection($payment, $request->user(), $request->input('reason'));
+        $this->audit->logFromRequest($request, 'manual_payment.correction_requested', $payment,
+            notes: $request->input('reason'));
+
+        return response()->json([
+            'message' => 'Correction demandée au client.',
+            'data'    => $updated->toAdminArray(),
         ]);
     }
 

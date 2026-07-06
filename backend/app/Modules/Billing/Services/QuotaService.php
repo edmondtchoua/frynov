@@ -135,6 +135,47 @@ class QuotaService
         };
     }
 
+    /** Champ de limite (`plans`/`plan_limits`) porté par une ressource. */
+    private const RESOURCE_FIELD = [
+        'users'      => 'max_users',
+        'products'   => 'max_products',
+        'orders'     => 'max_monthly_orders',
+        'warehouses' => 'max_warehouses',
+        'customers'  => 'max_customers',
+        'agents'     => 'max_agents',
+    ];
+
+    /**
+     * P3 — usage courant d'une ressource pour un tenant (indépendant du plan). Best-effort : toute
+     * erreur de schéma renvoie 0 (l'aperçu d'impact est indicatif, jamais bloquant).
+     */
+    public function usage(Tenant $tenant, string $resource): int
+    {
+        try {
+            return match ($resource) {
+                'users'      => User::where('tenant_id', $tenant->id)->count(),
+                'agents'     => User::where('tenant_id', $tenant->id)
+                    ->whereHas('roles', fn ($q) => $q->whereIn('name', ['agent', 'cashier', 'commercial', 'delivery']))->count(),
+                'products'   => DB::table('products')->where('tenant_id', $tenant->id)->whereNull('deleted_at')->count(),
+                'customers'  => DB::table('customers')->where('tenant_id', $tenant->id)->count(),
+                'warehouses' => Warehouse::where('tenant_id', $tenant->id)->count(),
+                'orders'     => DB::table('orders')->where('tenant_id', $tenant->id)
+                    ->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count(),
+                default      => 0,
+            };
+        } catch (\Throwable) {
+            return 0;
+        }
+    }
+
+    /** P3 — limite d'une ressource pour un plan donné (null/0 = illimité). */
+    public function planLimit(Plan $plan, string $resource): ?int
+    {
+        $field = self::RESOURCE_FIELD[$resource] ?? null;
+
+        return $field ? $this->limit($plan, $field) : null;
+    }
+
     private function plan(Tenant $tenant): ?Plan
     {
         return Plan::with('limits')->where('code', $tenant->plan)->first();

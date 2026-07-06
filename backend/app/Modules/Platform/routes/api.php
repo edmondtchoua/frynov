@@ -44,14 +44,18 @@ Route::middleware(['auth:sanctum', RequireAdmin::class])
 
         // Plans
         Route::get('plans',                 [AdminPlanController::class, 'index'])->name('plans.index');
+        Route::get('plans/analytics',       [AdminPlanController::class, 'analytics'])->name('plans.analytics'); // P5 — avant {plan}
+        Route::post('plans',                [AdminPlanController::class, 'store'])->name('plans.store');           // P5
         Route::get('plans/{plan}',          [AdminPlanController::class, 'show'])->name('plans.show');
         Route::patch('plans/{plan}',        [AdminPlanController::class, 'update'])->name('plans.update');
+        Route::delete('plans/{plan}',       [AdminPlanController::class, 'archive'])->name('plans.archive');       // P5 — archive (jamais suppression dure)
 
         // Manual payments (admin review)
         Route::get('manual-payments',                                    [AdminManualPaymentController::class, 'index'])->name('manual-payments.index');
         Route::get('manual-payments/{manualPayment}',                    [AdminManualPaymentController::class, 'show'])->name('manual-payments.show');
         Route::post('manual-payments/{manualPayment}/approve',           [AdminManualPaymentController::class, 'approve'])->name('manual-payments.approve');
         Route::post('manual-payments/{manualPayment}/reject',            [AdminManualPaymentController::class, 'reject'])->name('manual-payments.reject');
+        Route::post('manual-payments/{manualPayment}/request-correction', [AdminManualPaymentController::class, 'requestCorrection'])->name('manual-payments.request-correction');
 
         // Promotions
         Route::get('promotions',            [AdminPromotionController::class, 'index'])->name('promotions.index');

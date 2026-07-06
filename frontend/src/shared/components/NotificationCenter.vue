@@ -115,6 +115,7 @@ function emoji(s: string): string {
 
 function ctxPlatform(n: any): string {
   if (n.type === 'client') return n.severity === 'error' ? 'Accès refusé' : 'Système'
+  if (n.source === 'subscription') return 'Abonnement' // P2b — fil abonnement, pas marketplace
   const p = (n.context?.platform ?? '') as string
   const map: Record<string, string> = {
     facebook: 'Facebook Marketplace',

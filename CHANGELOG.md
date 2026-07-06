@@ -3,6 +3,21 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧩 RC-40 : Mise à niveau — taxes/frais, PSP auto, correction admin, analytics (2026-07-05)
+
+- **Taxes & frais d'installation** : `plans.tax_rate_bps` + `setup_fee_minor` ; devis + net + demande
+  intègrent taxe (sur brut après promo) et frais unique (changement de plan). Règlement routé vers la
+  branche « net autoritatif » quand taxe/frais présents. Admin éditable. Test `TaxAndFeeTest`.
+- **Paiement automatisé (PSP)** — désactivé par défaut : abstraction `PspGateway` + driver `FakePspGateway`
+  (checkout factice + webhook HMAC). `POST me/subscription/psp/initiate` + `POST webhooks/psp` →
+  activation automatique via l'approbation système. Prêt pour un vrai rail. Test `PspPaymentTest`.
+- **Demande de correction (admin)** : `POST admin/manual-payments/{id}/request-correction` (non
+  destructif) → demande en `pending_payment` + consigne + notification tenant. Bouton « Corriger ».
+  Test `RequestCorrectionTest`.
+- **Analytics (graphes)** : panneau « Statistiques » (barres CSS) sur l'écran admin des plans
+  (revenu/adoption par plan + demandes par statut) via `GET admin/plans/analytics`.
+- **Tests** : suite feature **42/42**. Taxes + analytics vérifiés en navigateur.
+
 ## [Non publié] — 📒 RC-38 : Comptabilité — balance générale & grand livre (P4.1) (2026-07-05)
 
 Premiers **états de lecture** du module Comptabilité, calculés sur les écritures comptabilisées
@@ -18,6 +33,48 @@ ignorés). Montants signés (débit positif).
   le grand livre d'un compte. i18n FR/EN. Lecture ouverte au rôle `accounting-viewer` (caissier 403).
 - **Tests** : `AccountingLedgerTest` (6) + `BalanceView.spec.ts` (2). Vérifié en preview sur données
   réelles (TechZone) : balance de 5 comptes **équilibrée** (débit = crédit = 1 136 300).
+
+## [Non publié] — ✔️ RC-37 : Mise à niveau — écran admin de validation contextualisé (2026-07-05)
+
+- La revue admin (`ManualPaymentView`) affiche le **contexte de la demande** liée à chaque paiement :
+  `ManualPayment::toAdminArray()` ajoute un bloc `change_request` (plan source→cible, type, périodicité,
+  durée, prise d'effet, net, **consentement recueilli**). Chargé sans N+1 (`with('changeRequest')`).
+- Front : rappel « plan → plan · périodicité × durée · prise d'effet · ✓/⚠ consentement » sous le plan ;
+  rétro-compatible (paiements legacy sans demande). i18n FR+EN.
+- **Tests** : `AdminReviewContextTest`. Suite feature **37/37**. Vérifié en navigateur (super-admin).
+
+## [Non publié] — 🔔 RC-36 : Mise à niveau — notifications in-app (P2b) (2026-07-05)
+
+- **Fil in-app d'abonnement** (`subscription_notifications` + `SubscriptionNotification`) : le
+  `SubscriptionNotifier` dépose une notification in-app à chaque événement (submitted/activated/rejected),
+  en plus de l'e-mail. Endpoints `GET /api/me/subscription/notifications` + `POST .../{id}/read`.
+- **Cloche unifiée** : `useNotifications` fusionne alertes marketplace + fil abonnement (tri par date,
+  mark-as-read routé par `source`) ; `NotificationCenter` étiquette « Abonnement ».
+- **Tests** : `InAppNotificationTest` (2). Suite feature **36/36**. Vérifié en navigateur.
+
+## [Non publié] — 🗂️ RC-35 : Mise à niveau — back-office des plans (P5) (2026-07-05)
+
+- **Cycle de vie éditorial** des plans : colonnes `status` (active/draft/archived) + `badge`,
+  `Plan::scopeSelectable()`. **Sécurité (Phase 13)** : les points de sélection tenant + le pricing
+  public passent par `selectable()` → un plan brouillon/archivé n'est jamais chiffrable (404).
+- **Endpoints admin** : `POST /api/admin/plans` (créer, brouillon + prix `global` seedés),
+  `DELETE .../{plan}` (archiver, non destructif), `PATCH` (+status/badge),
+  `GET .../plans/analytics` (adoption + revenu par plan + demandes par statut).
+- **Front admin** (`PlanListView`) : badges statut/affichage sur les cartes, sélecteur statut+badge,
+  bouton Archiver, modale Créer un plan. i18n FR+EN.
+- **Tests** : `AdminPlanManagementTest` (4). Suite feature **34/34**. Vérifié en navigateur (super-admin).
+
+## [Non publié] — 🧭 RC-34 : Mise à niveau — assistant multi-étapes + upgrade différé (P4) (2026-07-05)
+
+- **Assistant en 5 étapes** dans le drawer (Plan → Périodicité/durée → Paiement → Résumé/consentement →
+  Confirmation) : stepper, navigation Retour/Suivant validée par étape, récap + référence de demande.
+  i18n FR+EN.
+- **Upgrade différé** (`effective = next_cycle`, proposé si plan payant en cours) : à l'approbation,
+  `approveDeferred` encaisse et **planifie** le changement (`metadata['scheduled_change']`, demande
+  `approved`) ; `RenewalService` l'**applique à l'échéance** (`applyScheduledChange`, demande `activated`,
+  audit `billing.scheduled_change_applied`). `syncFromPayment` garde le différé non activé.
+- **Tests** : `DeferredUpgradeTest` (planifié puis appliqué au renouvellement). Suite feature **30/30**.
+  Assistant vérifié en navigateur (5 étapes jusqu'à la confirmation).
 
 ## [Non publié] — 🧾 RC-33 : Comptabilité — avoirs (notes de crédit) & application aux factures (P3.2) (2026-07-05)
 
@@ -36,6 +93,31 @@ Extension de la facturation (RC-30) : les **avoirs** réutilisent la table `invo
   (`/accounting/credit-notes`) — liste, création depuis facture, émission, application, PDF. i18n FR/EN.
 - **Migration** : `invoices.credit_note_of_id` + `invoices.credited_minor` + table
   `credit_note_applications`. **Tests** : `AccountingCreditNoteTest` (8) + `CreditNotesView.spec.ts` (3).
+
+## [Non publié] — ⚠️ RC-32 : Mise à niveau — aperçu d'impact downgrade (P3) (2026-07-05)
+
+- **Aperçu d'impact avant confirmation** (`DowngradeImpactService`) : modules retirés + quotas dépassés
+  (`users/products/customers/warehouses/orders`) → `{usage, limit, excess}`. Endpoint
+  `POST /api/me/subscription/downgrade-impact`. Aucune donnée supprimée — la restriction reste assurée
+  par l'existant (module gating + `EnforceQuota`).
+- `QuotaService` : ajout de `usage()` + `planLimit()` (additifs, sans toucher l'enforcement).
+- **Front** : encart d'avertissement ambre dans le drawer (modules perdus + dépassements + message
+  rassurant « données conservées »). i18n FR+EN.
+- **Tests** : `DowngradeImpactTest` (2, critère #17). Vérifié en navigateur (pro → Découverte :
+  « 4 utilisateurs pour 1 inclus, 3 en trop »). Suite feature **29/29**.
+
+## [Non publié] — ✅ RC-31 : Mise à niveau — consentement + notifications (P2) (2026-07-05)
+
+- **Consentement obligatoire** (`subscription_consents`) : trace immuable (texte, version, IP,
+  user-agent, source, entité liée) captée à la soumission via `ConsentService`. `submitPayment` exige
+  `consent => accepted` (422 sinon). Endpoint `GET /api/me/subscription/consent-text` (texte serveur).
+  Front : case obligatoire dans le drawer, soumission bloquée sans coche. i18n FR+EN.
+- **Notifications** (réutilisent l'outbox `NotificationService` existant, historisé, best-effort) :
+  `billing.subscription_submitted` (tenant) + `billing.subscription_admin_new` (super-admins) à la
+  soumission ; `billing.subscription_activated` / `billing.subscription_rejected` (tenant) selon
+  l'approbation. Modèles globaux seedés par migration ; câblés dans le cycle de la demande.
+- **Tests** : `ConsentTest` (3), `SubscriptionNotificationTest` (3). Suite feature **27/27**.
+- Note : le centre in-app (cloche) reste couplé aux alertes marketplace — généralisation = P2b optionnel.
 
 ## [Non publié] — 🧾 RC-30 : Comptabilité — facturation client & allocations de paiement (P3) (2026-07-05)
 
@@ -57,6 +139,34 @@ Suite du module Comptabilité SYSCOHADA (après le référentiel P1 et les écri
 - **Sécurité/traçabilité** : saisie sous `accounting.entries.create` (caissier 403) ; toute écriture
   garde le lien vers sa facture source (rejouable). **Migration** `invoices`/`invoice_lines`/
   `payment_allocations`. **Tests** : `AccountingInvoiceTest` (7) + `InvoicesView.spec.ts` (3).
+
+## [Non publié] — 🗓️ RC-29 : Mise à niveau — durée multi-période, annuel ×12, promos auto (P0.1) (2026-07-05)
+
+- **Durée** : payer N périodes d'avance (mensuel 1–12, annuel 1–5) ; total = tarif unitaire × durée.
+  `changePlan(periods: N)` étend la période de N ; branchement dédié `approveMultiPeriod` (règlement
+  sur le net autoritatif de la demande, sans proration). Chemin monoperiode **inchangé**.
+- **Tarif annuel = ×12** (fin de la remise « 2 mois offerts ») — `PlansSeeder` ; badge d'économie de la
+  page pricing masqué automatiquement quand `savings_pct == 0`. ⚠️ Re-seed requis.
+- **Promotions « en cours » auto** (`PromotionService::activeFor`) appliquées sans code, limitées aux
+  **périodes couvertes** par leur fenêtre de validité (pourcentage par période, montant fixe une fois).
+  Devis : `promo.source` + `promo.covered_periods`.
+- **Front** : sélecteur de durée + détail enrichi (unitaire → × durée → remise/badge auto → total), i18n.
+- **Migration** : `subscription_change_requests.quantity`. **Tests** : `MultiPeriodQuoteTest` (5 cas).
+
+## [Non publié] — 🔁 RC-28 : Mise à niveau de plan — demande & machine à états (P1) (2026-07-05)
+
+Pivot **paiement-first → demande-first** (audit G4/G6), non cassant :
+
+- **`SubscriptionChangeRequest`** (`subscription_change_requests`) : objet de premier plan portant le
+  cycle de vie (`draft → submitted → pending_payment|pending_validation → approved → activated`,
+  + `rejected/cancelled/expired/failed`). Transitions **gardées**, historique en `metadata`.
+- **Snapshot immuable** du plan cible (`plan_snapshot`) + montants figés du devis P0 → une modif
+  ultérieure du plan n'altère pas une demande existante.
+- **Rattachement** : `manual_payments.change_request_id` (nullable, rétro-compatible). `approve/reject`
+  synchronisent la demande (`activated/pending_payment/rejected`). Création **atomique** au submit.
+- **Endpoints tenant** : `GET/POST /api/me/subscription/change-requests`, `{id}`, `{id}/submit`,
+  `{id}/cancel` (isolation TenantScope → 404 cross-tenant).
+- **Tests** : `ChangeRequestTest` (6 cas) — critères #12/#13/#14/#21 + garde de transition.
 
 ## [Non publié] — 🔒 RC-27 : Mise à niveau de plan — montant autoritatif (P0) (2026-07-05)
 

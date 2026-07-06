@@ -49,6 +49,8 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
             Route::put('taxes/{id}',            [ReferentialController::class, 'updateTax']);
             Route::put('settings',              [ReferentialController::class, 'updateSettings']);
             Route::post('periods/{id}/lock',    [PeriodController::class, 'lock']);
+            // Clôture d'exercice + report-à-nouveau (RC-41)
+            Route::post('fiscal-years/{id}/close', [PeriodController::class, 'close']);
         });
 
         // Écritures — saisie (RC-25 ; la création exige accounting.entries.create).

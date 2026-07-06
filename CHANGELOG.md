@@ -3,6 +3,21 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 📅 RC-41 : Comptabilité — clôture d'exercice & report-à-nouveau (P4.4) (2026-07-06)
+
+Clôture de fin d'exercice, transactionnelle (`ClosingService`).
+
+- **Détermination du résultat** : les soldes des comptes de gestion (classes 6-8) sont basculés sur le
+  compte **13** (résultat net) — bénéfice au crédit, perte au débit.
+- **Report-à-nouveau** : écriture postée à l'ouverture de l'exercice **N+1** (journal OD, 1er jour)
+  reprenant les soldes des comptes de bilan (classes 1-5) + le résultat sur 13. **Équilibrée par
+  construction**. L'exercice N+1 est **ouvert automatiquement** (12 périodes) s'il n'existe pas.
+- **Verrouillage** : l'exercice N passe `closed`, ses périodes `closed`, `carry_forward_entry_id`
+  pointe le RAN ; ré-clôture refusée.
+- **Front** : `PeriodsView` — bouton **Clôturer l'exercice** (confirmation + bandeau bénéfice/perte,
+  n° du RAN, exercice suivant). Réservé au chef comptable / admin. i18n FR/EN.
+- **Tests** : `AccountingClosingTest` (5) + `PeriodsView.spec.ts` (2).
+
 ## [Non publié] — 🔗 RC-39 : Comptabilité — lettrage des comptes de tiers (P4.2) (2026-07-05)
 
 Rapprochement des lignes d'un compte de tiers (411 clients, 401 fournisseurs) en groupes équilibrés.

@@ -20,6 +20,14 @@ const router = createRouter({
       meta: { public: true },
     },
 
+    // ── Contact / demande de démo (public) ─────────────────────────────────
+    {
+      path: '/contact',
+      name: 'contact',
+      component: () => import('@/pages/ContactView.vue'),
+      meta: { public: true },
+    },
+
     // ── Portail client digital (RC-6C — public : jeton / lien magique / par email) ──
     {
       path: '/portal',

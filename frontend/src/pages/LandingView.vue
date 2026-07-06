@@ -534,7 +534,7 @@
             <div class="footer-col-title">Support</div>
             <a href="#faq">FAQ</a>
             <a href="#">Documentation</a>
-            <a href="#">Contact</a>
+            <router-link to="/contact">Contact</router-link>
           </div>
         </div>
       </div>

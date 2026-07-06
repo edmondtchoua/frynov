@@ -3,6 +3,20 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 📊 RC-42 : Comptabilité — états financiers SYSCOHADA (bilan & compte de résultat) (P5) (2026-07-06)
+
+Les deux états de synthèse, en lecture, bâtis sur la balance générale (`FinancialStatementsService`).
+
+- **Compte de résultat** : charges (classe 6) vs produits (classe 7), classe 8 (HAO) ventilée par
+  sens ; **résultat = produits − charges** (bénéfice/perte).
+- **Bilan** : **actif** = comptes de bilan (classes 1-5) débiteurs ; **passif** = comptes de bilan
+  créditeurs + **résultat de l'exercice**. **Équilibré par construction** (`balanced`) : la balance
+  étant équilibrée, Actif = Passif + Résultat.
+- **Front** : `StatementsView` (`/accounting/statements`) — bascule Bilan / Compte de résultat, filtre
+  par dates, contrôle d'équilibre visuel et bandeau bénéfice/perte. i18n FR/EN.
+- Endpoints lecture (`accounting.view`) : `GET reports/income-statement`, `GET reports/balance-sheet`.
+- **Tests** : `AccountingStatementsTest` (3) + `StatementsView.spec.ts` (2). Aucune migration.
+
 ## [Non publié] — 📅 RC-41 : Comptabilité — clôture d'exercice & report-à-nouveau (P4.4) (2026-07-06)
 
 Clôture de fin d'exercice, transactionnelle (`ClosingService`).

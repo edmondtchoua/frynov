@@ -2,8 +2,8 @@
 
 > **Dernière mise à jour :** 2026-07-06 · Périmètre actuel : plan comptable, journaux, taxes,
 > exercices & périodes, paramètres, écritures & moteur d'imputation, **facturation client**,
-> **avoirs**, **balance générale & grand livre**, **lettrage**, **clôture d'exercice**. Les états
-> financiers (bilan, résultat) et le rapprochement bancaire arrivent dans les prochaines versions.
+> **avoirs**, **balance générale & grand livre**, **lettrage**, **clôture d'exercice**, **états
+> financiers (bilan & compte de résultat)**. Le rapprochement bancaire arrive dans une prochaine version.
 
 ## Accès et droits
 
@@ -125,6 +125,20 @@ Menu **Comptabilité → Exercices & périodes** → bouton **Clôturer l'exerci
 > La clôture est **définitive**. Un bandeau confirme le bénéfice/perte, le n° du report-à-nouveau et
 > l'exercice suivant ouvert. Assurez-vous d'avoir saisi et comptabilisé toutes les écritures de
 > l'exercice (les brouillons non comptabilisés ne sont pas repris) avant de clôturer.
+
+## 11. États financiers
+
+Menu **Comptabilité → États financiers** — vos deux états de synthèse, calculés en direct sur les
+écritures comptabilisées (choisissez la période *Du* / *Au*) :
+
+- **Bilan** : la photo de votre patrimoine à une date — l'**Actif** (ce que vous possédez : trésorerie,
+  clients, stocks…) à gauche, le **Passif** (ce que vous devez + vos capitaux et le **résultat**) à
+  droite. Un contrôle confirme que **Actif = Passif** (le bilan est toujours équilibré).
+- **Compte de résultat** : vos **charges** (classe 6) face à vos **produits** (classe 7) sur la période,
+  et le **résultat** (bénéfice si produits > charges, perte sinon) mis en évidence.
+
+> Ces états se recalculent à chaque consultation : nul besoin de clôturer pour les voir. La clôture
+> (section précédente) fige le résultat sur le compte 13 et ouvre l'exercice suivant.
 
 ## FAQ
 

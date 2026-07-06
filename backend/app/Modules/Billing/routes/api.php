@@ -33,6 +33,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Texte + version du consentement (P2) — affiché verbatim dans la case obligatoire.
     Route::get('me/subscription/consent-text', [BillingController::class, 'consentText'])->name('me.subscription.consent-text');
 
+    // Usage vs quota du plan (P5 outillage) — visibilité tenant.
+    Route::get('me/subscription/usage', [BillingController::class, 'usage'])->name('me.subscription.usage');
+
     // Aperçu d'impact d'un downgrade (P3) — modules retirés + quotas dépassés, avant confirmation.
     Route::post('me/subscription/downgrade-impact', [BillingController::class, 'downgradeImpact'])->name('me.subscription.downgrade-impact');
 

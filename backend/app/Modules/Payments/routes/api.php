@@ -23,7 +23,7 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
         Route::get('/',        [PaymentController::class, 'index']);
         Route::post('/',       [PaymentController::class, 'store'])->middleware('role_or_permission:manager|admin|payments.create');
         Route::get('/{id}',    [PaymentController::class, 'show']);
-        Route::delete('/{id}', [PaymentController::class, 'destroy']);
+        Route::delete('/{id}', [PaymentController::class, 'destroy'])->middleware('role_or_permission:manager|admin|payments.delete');
     });
 
     // Payments scoped to an order

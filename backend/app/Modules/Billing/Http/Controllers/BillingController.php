@@ -9,6 +9,7 @@ use App\Modules\Billing\Services\ConsentService;
 use App\Modules\Billing\Services\DowngradeImpactService;
 use App\Modules\Billing\Services\ManualPaymentService;
 use App\Modules\Billing\Services\PromotionService;
+use App\Modules\Billing\Services\QuotaService;
 use App\Modules\Billing\Services\SubscriptionChangeRequestService;
 use App\Modules\Billing\Services\SubscriptionService;
 use App\Modules\Billing\Services\UpgradeQuoteService;
@@ -27,7 +28,26 @@ class BillingController extends Controller
         private readonly SubscriptionChangeRequestService $changeRequests,
         private readonly ConsentService                   $consents,
         private readonly DowngradeImpactService           $impacts,
+        private readonly QuotaService                     $quotaService,
     ) {}
+
+    /**
+     * GET /api/me/subscription/usage
+     * Synthèse usage vs limite du plan par ressource (utilisateurs, produits, clients, entrepôts,
+     * commandes du mois, imports du mois) — visibilité tenant. `limit` null = illimité.
+     */
+    public function usage(Request $request): JsonResponse
+    {
+        $tenant = $request->user()->tenant;
+        if (! $tenant) {
+            return response()->json(['data' => []]);
+        }
+
+        return response()->json([
+            'plan' => $tenant->plan,
+            'data' => $this->quotaService->usageReport($tenant),
+        ]);
+    }
 
     /**
      * POST /api/me/subscription/downgrade-impact

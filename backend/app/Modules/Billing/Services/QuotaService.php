@@ -217,6 +217,31 @@ class QuotaService
         }
     }
 
+    /**
+     * P5 — synthèse usage vs limite par ressource pour un tenant (visibilité). `limit`/`remaining`/
+     * `percent` = null quand la ressource est illimitée sur le plan.
+     *
+     * @return array<int,array{resource:string,usage:int,limit:?int,remaining:?int,percent:?int}>
+     */
+    public function usageReport(Tenant $tenant): array
+    {
+        $plan = $this->plan($tenant);
+
+        return array_map(function (string $resource) use ($tenant, $plan): array {
+            $limit = $plan ? $this->planLimit($plan, $resource) : null;
+            $usage = $this->usage($tenant, $resource);
+            $unlimited = empty($limit);
+
+            return [
+                'resource'  => $resource,
+                'usage'     => $usage,
+                'limit'     => $unlimited ? null : (int) $limit,
+                'remaining' => $unlimited ? null : max(0, (int) $limit - $usage),
+                'percent'   => $unlimited ? null : min(100, (int) round($usage / (int) $limit * 100)),
+            ];
+        }, ['users', 'products', 'customers', 'warehouses', 'orders', 'imports']);
+    }
+
     /** P3 — limite d'une ressource pour un plan donné (null/0 = illimité). */
     public function planLimit(Plan $plan, string $resource): ?int
     {

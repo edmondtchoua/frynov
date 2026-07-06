@@ -19,8 +19,11 @@ fail-closed, Spatie teams, self-service RBAC borné, anti-escalade). Correctifs 
   enregistrées dans `AppServiceProvider`) + `Gate::authorize()` sur les écritures (2ᵉ ligne après le
   middleware). Quota `max_imports_per_month` enforced (`quota:imports`). `max_branches`/`storage_mb`/
   `max_api_calls` documentés comme non applicables/différés.
-- **Tests** : `WriteEndpointGuardsTest`, `CustomerQuotaTest`, `ModulePolicyTest`, `ImportQuotaTest`.
-  Suite feature **48/48**.
+- **P5 outillage** : garde-fou CI `RouteAccessGuardTest` (toute écriture de module doit être gardée) —
+  a révélé **5 écritures non gardées supplémentaires**, toutes fermées (inventory adjustments, payments
+  delete, import upload/mapping/cancel). Endpoint `GET /me/subscription/usage` (usage vs quota par ressource).
+- **Tests** : `WriteEndpointGuardsTest`, `CustomerQuotaTest`, `ModulePolicyTest`, `ImportQuotaTest`,
+  `RouteAccessGuardTest`, `UsageReportTest`. Suite feature **49/49**.
 
 ## [Non publié] — 🧩 RC-40 : Mise à niveau — taxes/frais, PSP auto, correction admin, analytics (2026-07-05)
 

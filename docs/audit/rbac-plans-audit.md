@@ -224,5 +224,16 @@ Les seeders existants sont **déjà idempotents** (`updateOrCreate`, slugs stabl
 - **`max_api_calls_per_month`** : aucune API tenant réelle → non applicable ; **retirer de l'offre** tant
   qu'il n'y a pas d'API.
 
-**⏳ Reste (P5, hors périmètre)** : tests d'accès automatisés (matrice rôle×endpoint) en CI ; extension
-des Policies aux autres modules (products/orders…) ; reporting d'usage vs quota par tenant.
+**✅ P5 — Outillage (traité)** :
+- **Garde-fou CI** `RouteAccessGuardTest` : toute route d'écriture sous `module:` DOIT porter une garde
+  de permission — une nouvelle route non gardée fait échouer la CI. **Ce test a immédiatement révélé 5
+  écritures non gardées supplémentaires** (au-delà des 4 de l'audit initial), toutes fermées :
+  `POST /inventory/adjustments` (`inventory.adjust`), `DELETE /payments/{id}` (`payments.delete`),
+  `POST /import/upload` (`import_export.create`), `PATCH /import/{id}/mapping` +
+  `DELETE /import/{id}` (`import_export.update`).
+- **Reporting usage vs quota** : `GET /api/me/subscription/usage` (`QuotaService::usageReport`) →
+  usage/limite/reste/% par ressource (users/products/customers/warehouses/orders/imports). Test
+  `UsageReportTest`.
+
+**⏳ Reste (optionnel)** : extension des Policies aux autres modules (products/orders…) — le garde-fou CI
+couvre déjà le risque de régression ; affichage front de la jauge d'usage (l'endpoint est prêt).

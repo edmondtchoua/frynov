@@ -209,7 +209,20 @@ Les seeders existants sont **déjà idempotents** (`updateOrCreate`, slugs stabl
 - **P4** — `features` reformulés (« Tous les modules inclus — volumes selon le plan ») ; plan `enterprise`
   renommé **« Enterprise »** (back seeder + i18n FR/EN). Re-seed requis (`db:seed --class=PlansSeeder`).
 
-**⏳ Reste à cadrer (structurel, non traité ici)** :
-- **P2** — Policies + `$this->authorize()` sur les écritures (2ᵉ ligne de défense, moins fragile que le
-  middleware de route seul) ; enforcement `storage_mb`/`max_branches`/`max_imports_per_month` ou retrait.
-- Tests d'accès automatisés (matrice rôle×endpoint) en CI ; reporting d'usage vs quota.
+**✅ P2 — Défense en profondeur & quotas restants (traité)** :
+- **Policies** : `App\Shared\Authorization\ModulePolicy` (base réutilisable) + `SupplierPolicy` /
+  `CustomerPolicy` / `DeliveryPolicy`, enregistrées dans `AppServiceProvider`. `Gate::authorize(...)`
+  ajouté sur les écritures des 3 contrôleurs (create/update/delete) → 2ᵉ ligne de défense si un
+  middleware de route venait à manquer. Test `ModulePolicyTest` (viewer refusé, admin/manager autorisés).
+- **Quota imports** : `max_imports_per_month` enforced (`assertCanCreateImport` + `quota:imports` sur
+  `POST /import/upload`). Test `ImportQuotaTest`.
+- **`max_branches`** : **aucun modèle Branch** en base → quota **redondant avec `max_warehouses`**.
+  Recommandation : le retirer de l'offre/plan_limits (ou l'aliaser sur warehouses). Non enforçable.
+- **`storage_mb`** : pas de compteur d'usage stockage central (fichiers épars sur plusieurs disques).
+  Enforcement fiable = un **tracker d'usage** (compteur incrémenté à l'upload/suppression) → chantier
+  dédié, **différé** (ne pas half-implémenter un calcul inexact).
+- **`max_api_calls_per_month`** : aucune API tenant réelle → non applicable ; **retirer de l'offre** tant
+  qu'il n'y a pas d'API.
+
+**⏳ Reste (P5, hors périmètre)** : tests d'accès automatisés (matrice rôle×endpoint) en CI ; extension
+des Policies aux autres modules (products/orders…) ; reporting d'usage vs quota par tenant.

@@ -15,7 +15,12 @@ fail-closed, Spatie teams, self-service RBAC borné, anti-escalade). Correctifs 
 - **P3 traçabilité** : invitation utilisateur auditée (`workspace.user_created`) + transaction atomique.
 - **P4 cohérence offre** : `features` reformulés (fin du tiering trompeur — tous modules inclus, volumes
   selon plan) ; plan `enterprise` renommé **« Enterprise »** (seeder + i18n). Re-seed requis.
-- **Tests** : `WriteEndpointGuardsTest`, `CustomerQuotaTest`. Suite feature **45/45**.
+- **P2 défense en profondeur** : Policies réutilisables (`ModulePolicy` + Supplier/Customer/Delivery,
+  enregistrées dans `AppServiceProvider`) + `Gate::authorize()` sur les écritures (2ᵉ ligne après le
+  middleware). Quota `max_imports_per_month` enforced (`quota:imports`). `max_branches`/`storage_mb`/
+  `max_api_calls` documentés comme non applicables/différés.
+- **Tests** : `WriteEndpointGuardsTest`, `CustomerQuotaTest`, `ModulePolicyTest`, `ImportQuotaTest`.
+  Suite feature **48/48**.
 
 ## [Non publié] — 🧩 RC-40 : Mise à niveau — taxes/frais, PSP auto, correction admin, analytics (2026-07-05)
 

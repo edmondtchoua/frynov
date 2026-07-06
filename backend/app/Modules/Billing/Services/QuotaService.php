@@ -119,6 +119,28 @@ class QuotaService
         }
     }
 
+    /** Check: monthly import count quota. */
+    public function assertCanCreateImport(Tenant $tenant): void
+    {
+        $plan  = $this->plan($tenant);
+        $limit = $this->limit($plan, 'max_imports_per_month');
+        if (empty($limit)) {
+            return;
+        }  // null/0 = unlimited
+
+        $current = DB::table('import_sessions')
+            ->where('tenant_id', $tenant->id)
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
+
+        if ($current >= $limit) {
+            throw new \DomainException(
+                "Limite mensuelle atteinte : votre plan {$plan->name} autorise {$limit} import(s) par mois.",
+            );
+        }
+    }
+
     /** Check: product count quota. */
     public function assertCanAddProduct(Tenant $tenant): void
     {
@@ -154,6 +176,7 @@ class QuotaService
             'warehouses' => $this->assertCanAddWarehouse($tenant),
             'agents' => $this->assertCanAddAgent($tenant),
             'customers' => $this->assertCanAddCustomer($tenant),
+            'imports' => $this->assertCanCreateImport($tenant),
             default => null, // unknown resource — no-op
         };
     }
@@ -166,6 +189,7 @@ class QuotaService
         'warehouses' => 'max_warehouses',
         'customers'  => 'max_customers',
         'agents'     => 'max_agents',
+        'imports'    => 'max_imports_per_month',
     ];
 
     /**
@@ -183,6 +207,8 @@ class QuotaService
                 'customers'  => DB::table('customers')->where('tenant_id', $tenant->id)->count(),
                 'warehouses' => Warehouse::where('tenant_id', $tenant->id)->count(),
                 'orders'     => DB::table('orders')->where('tenant_id', $tenant->id)
+                    ->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count(),
+                'imports'    => DB::table('import_sessions')->where('tenant_id', $tenant->id)
                     ->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count(),
                 default      => 0,
             };

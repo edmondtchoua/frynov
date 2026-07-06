@@ -12,7 +12,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'module:import_export'])->group(fun
 
     Route::get('import/history',              [ImportExportController::class, 'history']);
     Route::get('import/template/{type}',      [ImportExportController::class, 'downloadTemplate']);
-    Route::post('import/upload',              [ImportExportController::class, 'upload']);
+    Route::post('import/upload',              [ImportExportController::class, 'upload'])->middleware('quota:imports');
     Route::get('import/{id}',                 [ImportExportController::class, 'show']);
     Route::patch('import/{id}/mapping',       [ImportExportController::class, 'updateMapping']);
     Route::delete('import/{id}',              [ImportExportController::class, 'cancel']);

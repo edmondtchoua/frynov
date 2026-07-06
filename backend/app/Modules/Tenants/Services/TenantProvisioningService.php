@@ -29,7 +29,11 @@ class TenantProvisioningService
         $slug = $base;
         $i = 1;
 
-        while (Tenant::where('slug', $slug)->exists()) {
+        // withTrashed : la contrainte UNIQUE `tenants.slug` s'applique aussi aux
+        // tenants soft-supprimés (ex. tenants démo révoqués). Les ignorer provoquait
+        // une UniqueConstraintViolation à la recréation d'un slug déjà pris par une
+        // ligne trashée.
+        while (Tenant::withTrashed()->where('slug', $slug)->exists()) {
             $slug = "{$base}-{$i}";
             $i++;
         }

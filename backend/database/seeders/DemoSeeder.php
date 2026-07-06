@@ -76,6 +76,18 @@ class DemoSeeder extends Seeder
 
     public function run(): void
     {
+        // Garde-fou : ce seeder crée 3 tenants fictifs complets. Il ne DOIT jamais
+        // s'exécuter sur la base de production (risque de pollution des vrais tenants).
+        // Pour un accès démo en prod, provisionnez un tenant éphémère isolé via
+        // App\Modules\Onboarding\Services\DemoProvisioningService. Override explicite
+        // possible via DEMO_SEEDER_FORCE=true (dev/staging chargés en mode prod, CI…).
+        if (app()->environment('production') && ! filter_var(env('DEMO_SEEDER_FORCE', false), FILTER_VALIDATE_BOOL)) {
+            throw new \RuntimeException(
+                'DemoSeeder est bloqué en production. Utilisez DemoProvisioningService '
+                . 'pour un tenant de démo isolé, ou DEMO_SEEDER_FORCE=true pour forcer.'
+            );
+        }
+
         $this->command->info('Seeding demo data...');
 
         // ── Tenant 1 : Boutique Afrik Style (Starter / trialing) ─────────────
@@ -159,10 +171,11 @@ class DemoSeeder extends Seeder
         return Tenant::updateOrCreate(
             ['slug' => $slug],
             [
-                'name'   => $name,
-                'domain' => $domain,
-                'plan'   => 'starter',
-                'status' => 'active',
+                'name'    => $name,
+                'domain'  => $domain,
+                'plan'    => 'starter',
+                'status'  => 'active',
+                'is_demo' => true,
                 'settings' => [
                     'currency'     => $currency,
                     'timezone'     => match($country) {

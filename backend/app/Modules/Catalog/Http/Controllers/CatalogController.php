@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class CatalogController extends Controller
@@ -300,6 +301,8 @@ class CatalogController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        Gate::authorize('create', Product::class); // défense en profondeur (audit RBAC P2)
+
         $tenantId = $request->user()->tenant_id;
 
         $data = $request->validate([
@@ -336,6 +339,8 @@ class CatalogController extends Controller
 
     public function update(Request $request, string $id): JsonResponse
     {
+        Gate::authorize('update', Product::class); // défense en profondeur (audit RBAC P2)
+
         $tenantId = $request->user()->tenant_id;
         $product  = $this->catalog->findProduct($tenantId, $id);
 
@@ -370,6 +375,8 @@ class CatalogController extends Controller
 
     public function archive(Request $request, string $id): JsonResponse
     {
+        Gate::authorize('delete', Product::class); // défense en profondeur (audit RBAC P2)
+
         $tenantId = $request->user()->tenant_id;
         $product  = $this->catalog->findProduct($tenantId, $id);
 

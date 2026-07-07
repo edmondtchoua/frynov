@@ -334,6 +334,27 @@
 
           </div>
 
+          <!-- P5 — jauge d'usage vs quota du plan -->
+          <div class="usage-section" v-if="usage.length">
+            <div class="usage-title">{{ $t('settings.billing.usageTitle') }}</div>
+            <div v-for="row in usage" :key="row.resource" class="usage-row">
+              <div class="usage-row-head">
+                <span>{{ $t(`settings.billing.usage.${row.resource}`) }}</span>
+                <span class="usage-val">
+                  {{ row.usage }}<template v-if="row.limit !== null"> / {{ row.limit }}</template>
+                  <template v-else> · {{ $t('settings.billing.unlimited') }}</template>
+                </span>
+              </div>
+              <div class="usage-track" v-if="row.limit !== null">
+                <div
+                  class="usage-fill"
+                  :class="{ warn: (row.percent ?? 0) >= 80 && (row.percent ?? 0) < 100, over: (row.percent ?? 0) >= 100 }"
+                  :style="{ width: Math.min(100, row.percent ?? 0) + '%' }"
+                ></div>
+              </div>
+            </div>
+          </div>
+
           <!-- Promo code section -->
           <div class="promo-section">
             <div class="promo-section-title">{{ $t('settings.billing.promoTitle') }}</div>
@@ -682,7 +703,7 @@ import { useAuthStore } from '@/stores/auth'
 import { authService } from '@/modules/auth/services/authService'
 import { roleService, type TenantRole } from '@/modules/settings/services/roleService'
 import { fetchPublicPricing, type PublicPlan } from '@/services/publicPricingService'
-import { calculateUpgrade, fetchConsentText, fetchDowngradeImpact, type UpgradeQuote, type ConsentText, type DowngradeImpact } from '@/services/subscriptionService'
+import { calculateUpgrade, fetchConsentText, fetchDowngradeImpact, fetchUsage, type UpgradeQuote, type ConsentText, type DowngradeImpact, type UsageRow } from '@/services/subscriptionService'
 import RolesPanel from '@/modules/settings/components/RolesPanel.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import NotificationSettingsPanel from '../components/NotificationSettingsPanel.vue'
@@ -954,12 +975,23 @@ function teamFmtDate(iso: string | null): string {
 }
 
 // Lazy-load each tab on first activation
+// P5 — jauge d'usage vs quota (chargée à l'ouverture de l'onglet Abonnement).
+const usage = ref<UsageRow[]>([])
+async function loadUsage() {
+  try {
+    usage.value = (await fetchUsage()).data
+  } catch {
+    usage.value = [] // best-effort : la jauge est indicative
+  }
+}
+
 watch(activeTab, tab => {
   if (tab === 'company' && !companyLoaded.value) loadCompanySettings()
   if (tab === 'team') {
     if (!teamLoaded.value) loadTeamUsers()
     if (!tenantRoles.value.length) loadTenantRoles() // custom roles for the role selectors
   }
+  if (tab === 'billing' && !usage.value.length) loadUsage()
 }, { immediate: true })
 
 // ── Promo code ────────────────────────────────────────────────────────────────
@@ -1553,6 +1585,17 @@ const visibleTabs = computed(() => tabs.value.filter(tab => tab.id !== 'roles' |
 }
 
 /* ── Promo code ──────────────────────────────────────────────────────────── */
+/* P5 — jauge d'usage vs quota */
+.usage-section { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--gray-200); }
+.usage-title { font-size: var(--text-sm); font-weight: 700; color: var(--gray-800); margin-bottom: 0.75rem; }
+.usage-row { margin-bottom: 0.7rem; }
+.usage-row-head { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--text-sm); color: var(--gray-700); margin-bottom: 0.25rem; }
+.usage-val { font-variant-numeric: tabular-nums; color: var(--gray-500); font-size: var(--text-xs); }
+.usage-track { height: 8px; background: var(--gray-100); border-radius: 999px; overflow: hidden; }
+.usage-fill { height: 100%; border-radius: 999px; background: var(--brand-primary); transition: width .4s; }
+.usage-fill.warn { background: #f59e0b; }
+.usage-fill.over { background: #ef4444; }
+
 .promo-section {
   margin-top: 1.5rem;
   padding-top: 1.25rem;

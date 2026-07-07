@@ -97,6 +97,50 @@ class QuotaService
         }
     }
 
+    /** Check: customer count quota. */
+    public function assertCanAddCustomer(Tenant $tenant): void
+    {
+        $plan  = $this->plan($tenant);
+        $limit = $this->limit($plan, 'max_customers');
+        if (empty($limit)) {
+            return;
+        }  // null/0 = unlimited
+
+        $current = DB::table('customers')
+            ->where('tenant_id', $tenant->id)
+            ->whereNull('deleted_at')
+            ->count();
+
+        if ($current >= $limit) {
+            throw new \DomainException(
+                "Limite atteinte : votre plan {$plan->name} autorise au maximum {$limit} clients. "
+                .'Mettez à niveau votre abonnement pour en enregistrer davantage.',
+            );
+        }
+    }
+
+    /** Check: monthly import count quota. */
+    public function assertCanCreateImport(Tenant $tenant): void
+    {
+        $plan  = $this->plan($tenant);
+        $limit = $this->limit($plan, 'max_imports_per_month');
+        if (empty($limit)) {
+            return;
+        }  // null/0 = unlimited
+
+        $current = DB::table('import_sessions')
+            ->where('tenant_id', $tenant->id)
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
+
+        if ($current >= $limit) {
+            throw new \DomainException(
+                "Limite mensuelle atteinte : votre plan {$plan->name} autorise {$limit} import(s) par mois.",
+            );
+        }
+    }
+
     /** Check: product count quota. */
     public function assertCanAddProduct(Tenant $tenant): void
     {
@@ -131,6 +175,8 @@ class QuotaService
             'orders' => $this->assertCanCreateOrder($tenant),
             'warehouses' => $this->assertCanAddWarehouse($tenant),
             'agents' => $this->assertCanAddAgent($tenant),
+            'customers' => $this->assertCanAddCustomer($tenant),
+            'imports' => $this->assertCanCreateImport($tenant),
             default => null, // unknown resource — no-op
         };
     }
@@ -143,6 +189,7 @@ class QuotaService
         'warehouses' => 'max_warehouses',
         'customers'  => 'max_customers',
         'agents'     => 'max_agents',
+        'imports'    => 'max_imports_per_month',
     ];
 
     /**
@@ -161,11 +208,38 @@ class QuotaService
                 'warehouses' => Warehouse::where('tenant_id', $tenant->id)->count(),
                 'orders'     => DB::table('orders')->where('tenant_id', $tenant->id)
                     ->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count(),
+                'imports'    => DB::table('import_sessions')->where('tenant_id', $tenant->id)
+                    ->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count(),
                 default      => 0,
             };
         } catch (\Throwable) {
             return 0;
         }
+    }
+
+    /**
+     * P5 — synthèse usage vs limite par ressource pour un tenant (visibilité). `limit`/`remaining`/
+     * `percent` = null quand la ressource est illimitée sur le plan.
+     *
+     * @return array<int,array{resource:string,usage:int,limit:?int,remaining:?int,percent:?int}>
+     */
+    public function usageReport(Tenant $tenant): array
+    {
+        $plan = $this->plan($tenant);
+
+        return array_map(function (string $resource) use ($tenant, $plan): array {
+            $limit = $plan ? $this->planLimit($plan, $resource) : null;
+            $usage = $this->usage($tenant, $resource);
+            $unlimited = empty($limit);
+
+            return [
+                'resource'  => $resource,
+                'usage'     => $usage,
+                'limit'     => $unlimited ? null : (int) $limit,
+                'remaining' => $unlimited ? null : max(0, (int) $limit - $usage),
+                'percent'   => $unlimited ? null : min(100, (int) round($usage / (int) $limit * 100)),
+            ];
+        }, ['users', 'products', 'customers', 'warehouses', 'orders', 'imports']);
     }
 
     /** P3 — limite d'une ressource pour un plan donné (null/0 = illimité). */

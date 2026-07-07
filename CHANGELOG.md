@@ -3,52 +3,50 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
-## [Non publié] — 🏦 RC-43 : Comptabilité — rapprochement bancaire (P4.3) (2026-07-06)
+## [Non publié] — 🔐 RC-41 : Audit RBAC/plans — durcissement accès & quotas (2026-07-06)
 
-Pointage d'un compte de banque contre le relevé (`BankReconciliationService`).
+Audit complet RBAC/ACL + plans (`docs/audit/rbac-plans-audit.md`) — architecture jugée saine (isolation
+fail-closed, Spatie teams, self-service RBAC borné, anti-escalade). Correctifs P0/P1/P3/P4 appliqués :
 
-- **Pointage** : chaque écriture d'un compte de banque (521…) est cochée quand elle figure sur le
-  relevé (`accounting_entry_lines.pointed`). Les non pointées sont les **en-cours** : dépôts en transit
-  (débits) et chèques en circulation (crédits).
-- **État de rapprochement** : avec le solde du relevé, vérifie l'identité **solde comptable = relevé +
-  dépôts en transit − chèques en circulation** → écart et drapeau `reconciled`.
-- **Front** : `BankReconciliationView` (`/accounting/bank-reconciliation`) — choix d'un compte de
-  trésorerie, saisie du solde relevé, cases de pointage, synthèse d'écart en direct. i18n FR/EN.
-- **Migration** `accounting_entry_lines.pointed` + `pointed_at`. Endpoints `GET reports/bank-reconciliation`
-  (lecture), `POST reports/bank-reconciliation/point` (`accounting.entries.create`).
-- **Correctif transverse** : la migration `add_order_fk_to_deliveries` interrogeait
-  `information_schema` (MySQL-only) et **cassait toute la suite de tests sous SQLite** — désormais
-  gardée `mysql` uniquement.
-- **Tests** : `AccountingBankRecTest` (5) + `BankReconciliationView.spec.ts` (2).
+- **P0 sécurité** : gardes de permission ajoutées sur 4 écritures non protégées (un rôle `viewer`
+  pouvait écrire) — `PUT /customers/{id}`, `POST` + `PUT /suppliers`, `POST /deliveries`.
+- **P1 quota** : `max_customers` désormais **appliqué** (`QuotaService::assertCanAddCustomer` +
+  `quota:customers`), plus seulement affiché.
+- **P3 traçabilité** : invitation utilisateur auditée (`workspace.user_created`) + transaction atomique.
+- **P4 cohérence offre** : `features` reformulés (fin du tiering trompeur — tous modules inclus, volumes
+  selon plan) ; plan `enterprise` renommé **« Enterprise »** (seeder + i18n). Re-seed requis.
+- **P2 défense en profondeur** : Policies réutilisables (`ModulePolicy` + Supplier/Customer/Delivery,
+  enregistrées dans `AppServiceProvider`) + `Gate::authorize()` sur les écritures (2ᵉ ligne après le
+  middleware). Quota `max_imports_per_month` enforced (`quota:imports`). `max_branches`/`storage_mb`/
+  `max_api_calls` documentés comme non applicables/différés.
+- **P2 (suite) — Policies étendues** aux modules à fort volume d'écriture : `ProductPolicy` (catalog),
+  `OrderPolicy`, `PaymentPolicy`, `ImportSessionPolicy` — `Gate::authorize()` sur catalog
+  store/update/archive, orders store, payments store, import upload/mapping/cancel. **Miroir exact des
+  routes** (aucun durcissement d'accès) : per-action pour payments/orders/import ; OR grossier reproduit
+  pour catalog (groupe de routes partagé). `inventory` laissé au niveau route (taxonomie granulaire).
+- **P5 outillage** : garde-fou CI `RouteAccessGuardTest` (toute écriture de module doit être gardée) —
+  a révélé **5 écritures non gardées supplémentaires**, toutes fermées (inventory adjustments, payments
+  delete, import upload/mapping/cancel). Endpoint `GET /me/subscription/usage` (usage vs quota par
+  ressource) + **jauge d'usage** dans l'onglet Abonnement (barres colorées : vert / orange ≥80 % / rouge ≥100 %).
+- **Tests** : `WriteEndpointGuardsTest`, `CustomerQuotaTest`, `ModulePolicyTest` (+ couverture
+  Product/Order/Payment/ImportSession, miroir catalog & anti-durcissement par permission granulaire),
+  `ImportQuotaTest`, `RouteAccessGuardTest`, `UsageReportTest`, `ImportApiTest` (viewer → 403 sur les
+  écritures import). Revue multi-agent adversariale : parité d'accès confirmée exacte sur les 8 gardes.
 
-## [Non publié] — 📊 RC-42 : Comptabilité — états financiers SYSCOHADA (bilan & compte de résultat) (P5) (2026-07-06)
+## [Non publié] — 🧩 RC-40 : Mise à niveau — taxes/frais, PSP auto, correction admin, analytics (2026-07-05)
 
-Les deux états de synthèse, en lecture, bâtis sur la balance générale (`FinancialStatementsService`).
-
-- **Compte de résultat** : charges (classe 6) vs produits (classe 7), classe 8 (HAO) ventilée par
-  sens ; **résultat = produits − charges** (bénéfice/perte).
-- **Bilan** : **actif** = comptes de bilan (classes 1-5) débiteurs ; **passif** = comptes de bilan
-  créditeurs + **résultat de l'exercice**. **Équilibré par construction** (`balanced`) : la balance
-  étant équilibrée, Actif = Passif + Résultat.
-- **Front** : `StatementsView` (`/accounting/statements`) — bascule Bilan / Compte de résultat, filtre
-  par dates, contrôle d'équilibre visuel et bandeau bénéfice/perte. i18n FR/EN.
-- Endpoints lecture (`accounting.view`) : `GET reports/income-statement`, `GET reports/balance-sheet`.
-- **Tests** : `AccountingStatementsTest` (3) + `StatementsView.spec.ts` (2). Aucune migration.
-
-## [Non publié] — 📅 RC-41 : Comptabilité — clôture d'exercice & report-à-nouveau (P4.4) (2026-07-06)
-
-Clôture de fin d'exercice, transactionnelle (`ClosingService`).
-
-- **Détermination du résultat** : les soldes des comptes de gestion (classes 6-8) sont basculés sur le
-  compte **13** (résultat net) — bénéfice au crédit, perte au débit.
-- **Report-à-nouveau** : écriture postée à l'ouverture de l'exercice **N+1** (journal OD, 1er jour)
-  reprenant les soldes des comptes de bilan (classes 1-5) + le résultat sur 13. **Équilibrée par
-  construction**. L'exercice N+1 est **ouvert automatiquement** (12 périodes) s'il n'existe pas.
-- **Verrouillage** : l'exercice N passe `closed`, ses périodes `closed`, `carry_forward_entry_id`
-  pointe le RAN ; ré-clôture refusée.
-- **Front** : `PeriodsView` — bouton **Clôturer l'exercice** (confirmation + bandeau bénéfice/perte,
-  n° du RAN, exercice suivant). Réservé au chef comptable / admin. i18n FR/EN.
-- **Tests** : `AccountingClosingTest` (5) + `PeriodsView.spec.ts` (2).
+- **Taxes & frais d'installation** : `plans.tax_rate_bps` + `setup_fee_minor` ; devis + net + demande
+  intègrent taxe (sur brut après promo) et frais unique (changement de plan). Règlement routé vers la
+  branche « net autoritatif » quand taxe/frais présents. Admin éditable. Test `TaxAndFeeTest`.
+- **Paiement automatisé (PSP)** — désactivé par défaut : abstraction `PspGateway` + driver `FakePspGateway`
+  (checkout factice + webhook HMAC). `POST me/subscription/psp/initiate` + `POST webhooks/psp` →
+  activation automatique via l'approbation système. Prêt pour un vrai rail. Test `PspPaymentTest`.
+- **Demande de correction (admin)** : `POST admin/manual-payments/{id}/request-correction` (non
+  destructif) → demande en `pending_payment` + consigne + notification tenant. Bouton « Corriger ».
+  Test `RequestCorrectionTest`.
+- **Analytics (graphes)** : panneau « Statistiques » (barres CSS) sur l'écran admin des plans
+  (revenu/adoption par plan + demandes par statut) via `GET admin/plans/analytics`.
+- **Tests** : suite feature **42/42**. Taxes + analytics vérifiés en navigateur.
 
 ## [Non publié] — 🔗 RC-39 : Comptabilité — lettrage des comptes de tiers (P4.2) (2026-07-05)
 
@@ -67,21 +65,6 @@ Rapprochement des lignes d'un compte de tiers (411 clients, 401 fournisseurs) en
   `GET reports/lettrage` (lecture), `POST reports/lettrage[/unletter]` (`accounting.entries.create`).
 - **Tests** : `AccountingLettrageTest` (6) + `LettrageView.spec.ts` (2). Bug `only_open` (chaîne
   "false" rejetée par la règle `boolean`) **détecté en preview** et corrigé + couvert.
-
-## [Non publié] — 🧩 RC-40 : Mise à niveau — taxes/frais, PSP auto, correction admin, analytics (2026-07-05)
-
-- **Taxes & frais d'installation** : `plans.tax_rate_bps` + `setup_fee_minor` ; devis + net + demande
-  intègrent taxe (sur brut après promo) et frais unique (changement de plan). Règlement routé vers la
-  branche « net autoritatif » quand taxe/frais présents. Admin éditable. Test `TaxAndFeeTest`.
-- **Paiement automatisé (PSP)** — désactivé par défaut : abstraction `PspGateway` + driver `FakePspGateway`
-  (checkout factice + webhook HMAC). `POST me/subscription/psp/initiate` + `POST webhooks/psp` →
-  activation automatique via l'approbation système. Prêt pour un vrai rail. Test `PspPaymentTest`.
-- **Demande de correction (admin)** : `POST admin/manual-payments/{id}/request-correction` (non
-  destructif) → demande en `pending_payment` + consigne + notification tenant. Bouton « Corriger ».
-  Test `RequestCorrectionTest`.
-- **Analytics (graphes)** : panneau « Statistiques » (barres CSS) sur l'écran admin des plans
-  (revenu/adoption par plan + demandes par statut) via `GET admin/plans/analytics`.
-- **Tests** : suite feature **42/42**. Taxes + analytics vérifiés en navigateur.
 
 ## [Non publié] — 📒 RC-38 : Comptabilité — balance générale & grand livre (P4.1) (2026-07-05)
 

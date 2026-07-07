@@ -5,10 +5,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:sanctum', 'tenant', 'module:suppliers'])->prefix('api/suppliers')->group(function () {
     Route::get('/',         [SupplierController::class, 'index']);
-    Route::post('/',        [SupplierController::class, 'store']);
+    Route::post('/',        [SupplierController::class, 'store'])->middleware('role_or_permission:manager|admin|suppliers.create');
     Route::get('/search',   [SupplierController::class, 'search']);
     Route::get('/{id}',     [SupplierController::class, 'show']);
-    Route::put('/{id}',     [SupplierController::class, 'update']);
+    Route::put('/{id}',     [SupplierController::class, 'update'])->middleware('role_or_permission:manager|admin|suppliers.update');
 
     Route::middleware(['role_or_permission:manager|admin|suppliers.delete'])->group(function () {
         Route::delete('/{id}',  [SupplierController::class, 'destroy']);

@@ -34,7 +34,7 @@ class PlansSeeder extends Seeder
                 'extra_user_amounts' => ['XOF' => 0, 'XAF' => 0, 'NGN' => 0, 'GHS' => 0, 'KES' => 0, 'ZAR' => 0, 'EUR' => 0, 'CAD' => 0, 'USD' => 0],
                 'prices' => ['XOF' => 0, 'XAF' => 0, 'NGN' => 0, 'GHS' => 0, 'KES' => 0, 'ZAR' => 0, 'EUR' => 0, 'CAD' => 0, 'USD' => 0],
                 'limits' => ['max_products' => 100, 'max_monthly_orders' => 50, 'max_customers' => 100, 'max_branches' => 1, 'max_warehouses' => 1, 'max_imports_per_month' => 1, 'max_api_calls_per_month' => 0, 'storage_mb' => 250],
-                'features' => ['Tous les modules métier visibles', '1 utilisateur inclus', '100 produits', '50 commandes/mois', 'Support communauté'],
+                'features' => ['Tous les modules inclus', '1 utilisateur', '100 produits · 50 commandes/mois · 100 clients', '1 entrepôt', 'Support communauté'],
                 'trial_days' => 14,
                 'is_public' => true,
                 'sort_order' => 1,
@@ -48,7 +48,7 @@ class PlansSeeder extends Seeder
                 'extra_user_amounts' => ['XOF' => 250000, 'XAF' => 250000, 'NGN' => 300000, 'GHS' => 3000, 'KES' => 50000, 'ZAR' => 7000, 'EUR' => 700, 'CAD' => 1000, 'USD' => 700],
                 'prices' => ['XOF' => 990000, 'XAF' => 990000, 'NGN' => 1500000, 'GHS' => 15000, 'KES' => 250000, 'ZAR' => 34900, 'EUR' => 1900, 'CAD' => 2500, 'USD' => 1900],
                 'limits' => ['max_products' => 500, 'max_monthly_orders' => 300, 'max_customers' => 1000, 'max_branches' => 1, 'max_warehouses' => 1, 'max_imports_per_month' => 5, 'max_api_calls_per_month' => 0, 'storage_mb' => 1024],
-                'features' => ['Tous les modules métier', '2 utilisateurs inclus', '500 produits', '300 commandes/mois', 'Paiements et livraisons', 'Support email'],
+                'features' => ['Tous les modules inclus', '2 utilisateurs', '500 produits · 300 commandes/mois · 1 000 clients', '1 entrepôt', 'Support email'],
                 'trial_days' => 14,
                 'is_public' => true,
                 'sort_order' => 2,
@@ -62,13 +62,13 @@ class PlansSeeder extends Seeder
                 'extra_user_amounts' => ['XOF' => 350000, 'XAF' => 350000, 'NGN' => 500000, 'GHS' => 5000, 'KES' => 80000, 'ZAR' => 12000, 'EUR' => 1200, 'CAD' => 1600, 'USD' => 1200],
                 'prices' => ['XOF' => 2490000, 'XAF' => 2490000, 'NGN' => 3900000, 'GHS' => 39000, 'KES' => 650000, 'ZAR' => 89900, 'EUR' => 4900, 'CAD' => 6500, 'USD' => 4900],
                 'limits' => ['max_products' => 5000, 'max_monthly_orders' => 2000, 'max_customers' => 10000, 'max_branches' => 3, 'max_warehouses' => 3, 'max_imports_per_month' => 25, 'max_api_calls_per_month' => 10000, 'storage_mb' => 10240],
-                'features' => ['Tous les modules métier', '5 utilisateurs inclus', '5 000 produits', '2 000 commandes/mois', 'Rapports avancés', 'Marketplace', 'Support prioritaire'],
+                'features' => ['Tous les modules inclus', '5 utilisateurs', '5 000 produits · 2 000 commandes/mois · 10 000 clients', 'Multi-sites (3 entrepôts)', 'Support prioritaire'],
                 'trial_days' => 14,
                 'is_public' => true,
                 'sort_order' => 3,
             ],
             Plan::CODE_ENTERPRISE => [
-                'name' => 'Business / Enterprise',
+                'name' => 'Enterprise',
                 'description' => 'Pour les groupes, grossistes, franchises et opérations multi-sites.',
                 'legacy_price_monthly_cents' => 5990000,
                 'legacy_currency' => 'XOF',
@@ -76,7 +76,7 @@ class PlansSeeder extends Seeder
                 'extra_user_amounts' => ['XOF' => 500000, 'XAF' => 500000, 'NGN' => 700000, 'GHS' => 7000, 'KES' => 120000, 'ZAR' => 18000, 'EUR' => 1800, 'CAD' => 2400, 'USD' => 1800],
                 'prices' => ['XOF' => 5990000, 'XAF' => 5990000, 'NGN' => 9900000, 'GHS' => 99000, 'KES' => 1690000, 'ZAR' => 239900, 'EUR' => 12900, 'CAD' => 16900, 'USD' => 12900],
                 'limits' => ['max_products' => null, 'max_monthly_orders' => null, 'max_customers' => null, 'max_branches' => null, 'max_warehouses' => null, 'max_imports_per_month' => null, 'max_api_calls_per_month' => null, 'storage_mb' => null],
-                'features' => ['Tous les modules métier', '10 utilisateurs inclus', 'Volumes élevés ou sur devis', 'API & intégrations', 'SLA & support dédié', 'Formation et onboarding'],
+                'features' => ['Tous les modules inclus', '10 utilisateurs inclus (extensibles)', 'Volumes illimités', 'Multi-sites illimité', 'SLA & support dédié', 'Formation et onboarding'],
                 'trial_days' => 30,
                 'is_public' => true,
                 'sort_order' => 4,
@@ -148,6 +148,6 @@ class PlansSeeder extends Seeder
             }
         }
 
-        $this->command->info('Plans seeded: Découverte, Essentiel, Croissance, Business / Enterprise with localized prices.');
+        $this->command->info('Plans seeded: Découverte, Essentiel, Croissance, Enterprise with localized prices.');
     }
 }

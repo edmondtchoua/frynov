@@ -3,11 +3,13 @@
 namespace App\Modules\Suppliers\Http\Controllers;
 
 use App\Modules\Suppliers\Http\Resources\SupplierResource;
+use App\Modules\Suppliers\Models\Supplier;
 use App\Modules\Suppliers\Services\SupplierService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Gate;
 
 class SupplierController extends Controller
 {
@@ -55,6 +57,7 @@ class SupplierController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        Gate::authorize('create', Supplier::class); // défense en profondeur (audit RBAC P2)
         $tenantId = $request->user()->tenant_id;
         $data = $request->validate([
             // RC-15 — unicité applicative scopée tenant (code + email) : 422 au lieu d'un 500 (contrainte).
@@ -90,6 +93,7 @@ class SupplierController extends Controller
             return response()->json(['message' => 'Supplier not found.'], 404);
         }
 
+        Gate::authorize('update', $supplier); // défense en profondeur (audit RBAC P2)
         $tenantId = $request->user()->tenant_id;
         $data = $request->validate([
             'code'          => ['nullable', 'string', 'max:50', \Illuminate\Validation\Rule::unique('suppliers', 'code')->where('tenant_id', $tenantId)->whereNull('deleted_at')->ignore($id)],
@@ -116,6 +120,7 @@ class SupplierController extends Controller
             return response()->json(['message' => 'Supplier not found.'], 404);
         }
 
+        Gate::authorize('delete', $supplier); // défense en profondeur (audit RBAC P2)
         $this->service->delete($supplier);
 
         return response()->json(null, 204);

@@ -3,12 +3,14 @@
 namespace App\Modules\Customers\Http\Controllers;
 
 use App\Modules\Customers\Http\Resources\CustomerResource;
+use App\Modules\Customers\Models\Customer;
 use App\Modules\Customers\Services\CustomerService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Gate;
 
 class CustomerController extends Controller
 {
@@ -60,6 +62,7 @@ class CustomerController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        Gate::authorize('create', Customer::class); // défense en profondeur (audit RBAC P2)
         $tenantId = $request->user()->tenant_id;
         $data = $request->validate([
             'name'              => ['required', 'string', 'max:255'],
@@ -103,6 +106,8 @@ class CustomerController extends Controller
             return response()->json(['message' => 'Client introuvable.'], 404);
         }
 
+        Gate::authorize('update', $customer); // défense en profondeur (audit RBAC P2)
+
         $data = $request->validate([
             'name'              => ['sometimes', 'string', 'max:255'],
             'email'             => ['nullable', 'email', 'max:255', \Illuminate\Validation\Rule::unique('customers', 'email')->where('tenant_id', $request->user()->tenant_id)->whereNull('deleted_at')->ignore($id)],
@@ -143,6 +148,8 @@ class CustomerController extends Controller
         } catch (ModelNotFoundException) {
             return response()->json(['message' => 'Client introuvable.'], 404);
         }
+
+        Gate::authorize('delete', $customer); // défense en profondeur (audit RBAC P2)
 
         $this->service->delete($customer);
 

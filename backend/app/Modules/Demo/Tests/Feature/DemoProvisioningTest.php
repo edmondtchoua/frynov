@@ -62,6 +62,10 @@ class DemoProvisioningTest extends TestCase
         // Utilisateur admin rattaché au tenant démo
         $user = User::find($req->demo_user_id);
         $this->assertSame($tenant->id, $user->tenant_id);
+
+        // Identifiant de connexion court : partie locale <= 10 caractères, préfixe "demo".
+        $this->assertStringStartsWith('demo', $user->email);
+        $this->assertLessThanOrEqual(10, strlen(explode('@', $user->email)[0]));
         app(\Spatie\Permission\PermissionRegistrar::class)->setPermissionsTeamId($tenant->id);
         $this->assertTrue($user->fresh()->hasRole('admin'));
 

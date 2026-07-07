@@ -77,7 +77,7 @@ class DemoProvisioningService
 
             $user = User::create([
                 'name'              => $request->fullName(),
-                'email'             => $this->demoEmail($request, $tenant),
+                'email'             => $this->demoEmail(),
                 'password'          => Hash::make($password),
                 'tenant_id'         => $tenant->id,
                 'email_verified_at' => now(),
@@ -126,13 +126,17 @@ class DemoProvisioningService
         });
     }
 
-    private function demoEmail(DemoRequest $request, Tenant $tenant): string
+    private function demoEmail(): string
     {
-        // Email de connexion isolé au tenant démo (unicité globale garantie par le
-        // suffixe tenant), pour ne jamais entrer en collision avec un vrai compte.
-        $local = Str::of($request->email)->before('@')->slug()->limit(24, '');
+        // Identifiant de connexion COURT (partie locale = 10 caractères : "demo" + 6),
+        // lisible pour le prospect. Unicité globale garantie par une vérification en base
+        // (retry sur collision), la traçabilité tenant/user restant portée par demo_request.
+        do {
+            $local = 'demo'.Str::lower(Str::random(6));
+            $email = "{$local}@demo.frynov.app";
+        } while (User::withoutGlobalScopes()->where('email', $email)->exists());
 
-        return "{$local}+demo-{$tenant->id}@demo.frynov.app";
+        return $email;
     }
 
     private function seedDemoData(Tenant $tenant): void

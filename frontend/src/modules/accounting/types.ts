@@ -212,3 +212,58 @@ export interface LettrageData {
     open_balance_minor: number
   }
 }
+
+/** RC-42 — états financiers SYSCOHADA. */
+export interface StatementLine {
+  code: string
+  name: string
+  class: number
+  amount_minor: number
+}
+
+export interface IncomeStatement {
+  charges: StatementLine[]
+  produits: StatementLine[]
+  total_charges_minor: number
+  total_produits_minor: number
+  result_minor: number
+  from: string | null
+  to: string
+}
+
+export interface BalanceSheet {
+  actif: StatementLine[]
+  passif: StatementLine[]
+  total_actif_minor: number
+  total_passif_minor: number
+  result_minor: number
+  balanced: boolean
+  from: string | null
+  to: string
+}
+
+/** RC-43 — rapprochement bancaire. */
+export interface BankRecLine {
+  id: string
+  date: string
+  number: string | null
+  journal: string
+  label: string | null
+  debit_minor: number
+  credit_minor: number
+  pointed: boolean
+}
+
+export interface BankReconciliation {
+  account: { id: string; code: string; name: string }
+  lines: BankRecLine[]
+  summary: {
+    book_balance_minor: number
+    pointed_balance_minor: number
+    outstanding_debit_minor: number
+    outstanding_credit_minor: number
+    statement_balance_minor?: number
+    difference_minor?: number
+    reconciled?: boolean
+  }
+}

@@ -2,18 +2,22 @@
 
 namespace App\Modules\Accounting\Http\Controllers;
 
+use App\Modules\Accounting\Services\FinancialStatementsService;
 use App\Modules\Accounting\Services\LedgerService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 /**
- * RC-38 (P4.1) — états comptables de lecture : balance générale et grand livre.
- * RBAC lecture porté par les routes ; aucune mutation.
+ * RC-38/42 — états comptables de lecture : balance, grand livre, et états financiers SYSCOHADA
+ * (bilan, compte de résultat). RBAC lecture porté par les routes ; aucune mutation.
  */
 class ReportController extends Controller
 {
-    public function __construct(private readonly LedgerService $ledger) {}
+    public function __construct(
+        private readonly LedgerService $ledger,
+        private readonly FinancialStatementsService $statements,
+    ) {}
 
     /** GET /api/accounting/reports/trial-balance?from=&to= */
     public function trialBalance(Request $request): JsonResponse
@@ -37,6 +41,24 @@ class ReportController extends Controller
         return response()->json(['data' => $this->ledger->generalLedger(
             $request->user()->tenant_id, $request->query('account_id'), $from, $to,
         )]);
+    }
+
+    /** GET /api/accounting/reports/income-statement?from=&to= (compte de résultat) */
+    public function incomeStatement(Request $request): JsonResponse
+    {
+        $request->validate(['from' => ['nullable', 'date'], 'to' => ['nullable', 'date']]);
+        [$from, $to] = $this->range($request);
+
+        return response()->json(['data' => $this->statements->incomeStatement($request->user()->tenant_id, $from, $to)]);
+    }
+
+    /** GET /api/accounting/reports/balance-sheet?from=&to= (bilan) */
+    public function balanceSheet(Request $request): JsonResponse
+    {
+        $request->validate(['from' => ['nullable', 'date'], 'to' => ['nullable', 'date']]);
+        [$from, $to] = $this->range($request);
+
+        return response()->json(['data' => $this->statements->balanceSheet($request->user()->tenant_id, $from, $to)]);
     }
 
     /** @return array{0:?string,1:string} [from (nullable), to (défaut aujourd'hui)] */

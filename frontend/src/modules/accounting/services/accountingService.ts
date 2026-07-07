@@ -1,7 +1,7 @@
 import client from '@/api/client'
 import type {
-  Account, AccountingOverview, AccountingPeriod, AccountingSettings,
-  Entry, EntryLineInput, FiscalYear, GeneralLedger, Invoice, InvoiceDraftLine, Journal, LettrageData, Tax, TrialBalance,
+  Account, AccountingOverview, AccountingPeriod, AccountingSettings, BalanceSheet, BankReconciliation,
+  Entry, EntryLineInput, FiscalYear, GeneralLedger, IncomeStatement, Invoice, InvoiceDraftLine, Journal, LettrageData, Tax, TrialBalance,
 } from '../types'
 
 function normalizePage<T>(d: any): { data: T[]; meta: { current_page: number; last_page: number; total: number } } {
@@ -73,6 +73,11 @@ export const accountingService = {
 
   unlockPeriod(id: string, reason: string): Promise<AccountingPeriod> {
     return client.post(`/api/accounting/periods/${id}/unlock`, { reason }).then(r => r.data.data)
+  },
+
+  /** RC-41 — clôture d'exercice : bascule le résultat sur 13 + poste le report-à-nouveau. */
+  closeFiscalYear(id: string): Promise<{ fiscal_year: FiscalYear; next_year: FiscalYear; carry_forward_entry: Entry; result_minor: number }> {
+    return client.post(`/api/accounting/fiscal-years/${id}/close`).then(r => r.data.data)
   },
 
   // ── Écritures (RC-25/26) ─────────────────────────────────────────────────
@@ -148,6 +153,15 @@ export const accountingService = {
     return client.get('/api/accounting/reports/general-ledger', { params: { ...params, account_id: accountId } }).then(r => r.data.data)
   },
 
+  // ── États financiers SYSCOHADA (RC-42) ────────────────────────────────────
+  incomeStatement(params?: { from?: string; to?: string }): Promise<IncomeStatement> {
+    return client.get('/api/accounting/reports/income-statement', { params }).then(r => r.data.data)
+  },
+
+  balanceSheet(params?: { from?: string; to?: string }): Promise<BalanceSheet> {
+    return client.get('/api/accounting/reports/balance-sheet', { params }).then(r => r.data.data)
+  },
+
   // ── Lettrage (RC-39) ──────────────────────────────────────────────────────
   lettrage(accountId: string, onlyOpen = false): Promise<LettrageData> {
     return client.get('/api/accounting/reports/lettrage', { params: { account_id: accountId, only_open: onlyOpen } }).then(r => r.data.data)
@@ -159,5 +173,16 @@ export const accountingService = {
 
   unletterCode(accountId: string, code: string): Promise<{ account: LettrageData }> {
     return client.post('/api/accounting/reports/lettrage/unletter', { account_id: accountId, code }).then(r => r.data.data)
+  },
+
+  // ── Rapprochement bancaire (RC-43) ────────────────────────────────────────
+  bankReconciliation(accountId: string, statementBalance?: number): Promise<BankReconciliation> {
+    return client.get('/api/accounting/reports/bank-reconciliation', {
+      params: { account_id: accountId, statement_balance: statementBalance ?? undefined },
+    }).then(r => r.data.data)
+  },
+
+  pointBankLines(accountId: string, lineIds: string[], pointed: boolean): Promise<BankReconciliation> {
+    return client.post('/api/accounting/reports/bank-reconciliation/point', { account_id: accountId, line_ids: lineIds, pointed }).then(r => r.data.data)
   },
 }

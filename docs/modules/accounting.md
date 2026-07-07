@@ -175,6 +175,53 @@ Colonnes `accounting_entry_lines.lettrage_code` + `lettered_at`. Endpoints : `GE
 Front : `LettrageView` (`/accounting/lettrage`) — sélection multi-lignes avec contrôle d'équilibre en
 direct, badge de code cliquable pour délettrer. i18n FR/EN.
 
+## Clôture d'exercice + report-à-nouveau (RC-41 — P4.4)
+
+`ClosingService.close(fiscalYear)` : opération **transactionnelle** de fin d'exercice.
+- **Détermination du résultat** : les soldes des comptes de gestion (classes 6-8) sont sommés et
+  basculés sur le compte **13** (résultat net) — bénéfice au crédit, perte au débit.
+- **Report-à-nouveau** : une écriture est postée à l'ouverture de l'exercice **N+1** (journal OD, 1er
+  jour) reprenant les soldes des comptes **permanents** (bilan, classes 1-5) augmentés du résultat sur
+  13. Équilibrée par construction (Σ soldes permanents = −Σ soldes de gestion). L'exercice N+1 est
+  **ouvert automatiquement** (12 périodes mensuelles) s'il n'existe pas.
+- **Verrouillage** : l'exercice N passe `closed`, ses périodes `closed`, et `carry_forward_entry_id`
+  pointe le RAN. Une clôture est définitive (ré-clôture refusée).
+
+Endpoint : `POST fiscal-years/{id}/close` (`chief-accountant|admin|accounting.manage`). Front :
+`PeriodsView` — bouton **Clôturer l'exercice** avec confirmation + bandeau de résultat (bénéfice/perte,
+n° du RAN, exercice suivant). i18n FR/EN.
+
+## États financiers SYSCOHADA (RC-42 — P5)
+
+`FinancialStatementsService` — lecture bâtie sur la balance générale.
+- **Compte de résultat** (`incomeStatement`) : charges (classe 6) vs produits (classe 7), classe 8
+  (HAO) ventilée par sens ; **résultat = produits − charges**.
+- **Bilan** (`balanceSheet`) : **actif** = comptes permanents (classes 1-5) débiteurs ; **passif** =
+  comptes permanents créditeurs + **résultat de l'exercice**. **Équilibré par construction** : la
+  balance étant équilibrée, Σ soldes permanents = −Σ soldes de gestion = résultat, donc
+  **Actif = Passif + Résultat** (drapeau `balanced`).
+
+Endpoints lecture (`accounting.view`) : `GET reports/income-statement?from=&to=`,
+`GET reports/balance-sheet?from=&to=`. Front : `StatementsView` (`/accounting/statements`) — bascule
+Bilan / Compte de résultat, filtre par dates, contrôle d'équilibre + bandeau bénéfice/perte. i18n FR/EN.
+
+## Rapprochement bancaire (RC-43 — P4.3)
+
+`BankReconciliationService` — pointage d'un compte de banque (521…) contre un relevé. Colonnes
+`accounting_entry_lines.pointed` + `pointed_at`.
+- `state(tenant, account, ?statementBalance)` : lignes du compte avec leur pointage + synthèse — solde
+  comptable, mouvements pointés, **en-cours** : dépôts en transit (débits non pointés) et chèques en
+  circulation (crédits non pointés). Si le solde du relevé est fourni, vérifie l'**identité de
+  rapprochement** : `solde comptable = relevé + dépôts en transit − chèques en circulation` → `écart`
+  et drapeau `reconciled`.
+- `setPointed(tenant, account, lineIds, pointed)` : pointe/dépointe (lignes du compte, écritures
+  comptabilisées uniquement).
+
+Endpoints : `GET reports/bank-reconciliation?account_id=&statement_balance=` (lecture),
+`POST reports/bank-reconciliation/point` (`accounting.entries.create`). Front :
+`BankReconciliationView` (`/accounting/bank-reconciliation`) — sélection d'un compte de trésorerie,
+saisie du solde de relevé, cases à cocher de pointage, synthèse d'écart en direct. i18n FR/EN.
+
 ## Tests
 
 Backend : `AccountingReferentialTest` (8) · `AccountingEntryTest` (7 — équilibre, post/numéro,
@@ -187,6 +234,12 @@ application bornée cumulative, statuts, brouillon non applicable, cycle HTTP, R
 `AccountingLedgerTest` (6 — balance équilibrée, à-nouveau, écritures extournées incluses, brouillons
 exclus, grand livre à solde progressif, RBAC lecture viewer/caissier) · `AccountingLettrageTest`
 (6 — groupe équilibré → code, refus déséquilibré, délettrage, codes A/B par compte, re-lettrage
-interdit, HTTP `only_open` + RBAC). Front : `ChartOfAccountsView.spec.ts` (3) +
+interdit, HTTP `only_open` + RBAC) · `AccountingClosingTest` (5 — résultat bénéfice/perte → 13, RAN
+équilibré, exercice+périodes fermés & N+1 ouvert, ré-clôture refusée, RBAC HTTP) ·
+`AccountingStatementsTest` (3 — compte de résultat charges/produits, **bilan équilibré** actif=passif
++ résultat au passif, RBAC lecture) · `AccountingBankRecTest` (5 — solde comptable + en-cours,
+**identité de rapprochement** relevé/comptable, écart non nul si non rapproché, pointage borné au
+compte, HTTP + RBAC). Front :
+`ChartOfAccountsView.spec.ts` (3) +
 `InvoicesView.spec.ts` (3) + `CreditNotesView.spec.ts` (3) + `BalanceView.spec.ts` (2) +
-`LettrageView.spec.ts` (2) + garde i18n.
+`LettrageView.spec.ts` (2) + `PeriodsView.spec.ts` (2) + `StatementsView.spec.ts` (2) + `BankReconciliationView.spec.ts` (2) + garde i18n.

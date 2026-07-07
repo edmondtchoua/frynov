@@ -101,9 +101,20 @@ REDIS_HOST=127.0.0.1
 
 FEATURE_SYNC=false               # module Sync (Phase 3) masqué en prod
 
+# Accès de démonstration (cf. docs/features/demo-access.md)
+DEMO_MODE=manual                 # manual (validation admin) ou auto
+DEMO_ACCESS_TTL_DAYS=14          # durée de validité d'un accès démo
+DEMO_TEAM_EMAIL=contact@<domaine> # notifié à chaque nouvelle demande
+DEMO_APP_URL=https://app.<domaine> # lien de connexion démo
+
 # CORS : autoriser l'origine de la SPA (auth Bearer, pas de cookies cross-site)
 # config/cors.php → 'allowed_origins' => ['https://app.<domaine>']
 ```
+
+> **Données de démo** : ne **jamais** lancer `DemoSeeder` en prod (il est bloqué par
+> garde-fou). Les accès démo prospects passent par le formulaire `/contact` + le
+> back-office ; le scheduler (`demo:revoke-expired`, `demo:send-reminders`) gère
+> l'expiration et les rappels — il tourne via la ligne cron `schedule:run` (§8).
 
 ## 7. Nginx — deux vhosts
 

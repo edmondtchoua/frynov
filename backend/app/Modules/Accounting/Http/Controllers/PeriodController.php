@@ -4,6 +4,7 @@ namespace App\Modules\Accounting\Http\Controllers;
 
 use App\Modules\Accounting\Models\AccountingPeriod;
 use App\Modules\Accounting\Models\FiscalYear;
+use App\Modules\Accounting\Services\ClosingService;
 use App\Modules\Platform\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -81,5 +82,17 @@ class PeriodController extends Controller
         );
 
         return response()->json(['data' => $period->fresh()]);
+    }
+
+    /**
+     * POST /api/accounting/fiscal-years/{id}/close — clôture l'exercice : bascule le résultat sur 13,
+     * poste le report-à-nouveau dans l'exercice suivant (ouvert au besoin), ferme les périodes (RC-41).
+     */
+    public function close(Request $request, ClosingService $closing, string $id): JsonResponse
+    {
+        $year   = FiscalYear::findOrFail($id);
+        $result = $closing->close($year, $request->user()->id);
+
+        return response()->json(['message' => 'Exercice clôturé.', 'data' => $result], 201);
     }
 }

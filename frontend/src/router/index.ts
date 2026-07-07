@@ -20,6 +20,14 @@ const router = createRouter({
       meta: { public: true },
     },
 
+    // ── Contact / demande de démo (public) ─────────────────────────────────
+    {
+      path: '/contact',
+      name: 'contact',
+      component: () => import('@/pages/ContactView.vue'),
+      meta: { public: true },
+    },
+
     // ── Portail client digital (RC-6C — public : jeton / lien magique / par email) ──
     {
       path: '/portal',
@@ -388,6 +396,16 @@ const router = createRouter({
           component: () => import('@/modules/accounting/views/BalanceView.vue'),
         },
         {
+          path: 'statements',
+          name: 'accounting.statements',
+          component: () => import('@/modules/accounting/views/StatementsView.vue'),
+        },
+        {
+          path: 'bank-reconciliation',
+          name: 'accounting.bankReconciliation',
+          component: () => import('@/modules/accounting/views/BankReconciliationView.vue'),
+        },
+        {
           path: 'lettrage',
           name: 'accounting.lettrage',
           component: () => import('@/modules/accounting/views/LettrageView.vue'),
@@ -480,6 +498,11 @@ const router = createRouter({
           path: 'manual-payments',
           name: 'admin.manual-payments',
           component: () => import('@/modules/admin/views/ManualPaymentView.vue'),
+        },
+        {
+          path: 'demo-requests',
+          name: 'admin.demo-requests',
+          component: () => import('@/modules/admin/views/DemoRequestListView.vue'),
         },
         {
           path: 'audit',

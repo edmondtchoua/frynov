@@ -25,6 +25,8 @@ const tabs = computed(() => [
   { to: '/accounting/entries', label: t('accounting.tabEntries') },
   { to: '/accounting/balance', label: t('accounting.tabBalance') },
   { to: '/accounting/lettrage', label: t('accounting.tabLettrage') },
+  { to: '/accounting/bank-reconciliation', label: t('accounting.tabBankRec') },
+  { to: '/accounting/statements', label: t('accounting.tabStatements') },
   { to: '/accounting/chart', label: t('accounting.tabChart') },
   { to: '/accounting/taxes', label: t('accounting.tabTaxes') },
   { to: '/accounting/periods', label: t('accounting.tabPeriods') },

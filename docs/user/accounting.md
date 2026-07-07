@@ -1,9 +1,9 @@
 # Guide utilisateur — Comptabilité (référentiel SYSCOHADA)
 
-> **Dernière mise à jour :** 2026-07-05 · Périmètre actuel : plan comptable, journaux, taxes,
+> **Dernière mise à jour :** 2026-07-06 · Périmètre actuel : plan comptable, journaux, taxes,
 > exercices & périodes, paramètres, écritures & moteur d'imputation, **facturation client**,
-> **avoirs**, **balance générale & grand livre**, **lettrage**. Les états financiers (bilan, résultat)
-> et le rapprochement bancaire arrivent dans les prochaines versions.
+> **avoirs**, **balance générale & grand livre**, **lettrage**, **rapprochement bancaire**, **clôture
+> d'exercice**, **états financiers (bilan & compte de résultat)**. Module comptable complet.
 
 ## Accès et droits
 
@@ -109,6 +109,50 @@ rapprochez ce qui se solde de ce qui reste dû :
 
 > Le **solde ouvert** est ce qui n'est pas encore lettré : les factures non réglées et les règlements
 > non affectés. Filtrez sur *Non lettrées seulement* pour ne voir que l'ouvert.
+
+## 10. Clôture d'exercice
+
+Menu **Comptabilité → Exercices & périodes** → bouton **Clôturer l'exercice** :
+
+1. Frynov calcule le **résultat** de l'exercice (produits − charges) et le porte au compte **13**
+   (bénéfice au crédit, perte au débit).
+2. Une écriture de **report-à-nouveau** est générée à l'ouverture de l'**exercice suivant** : elle
+   reprend les soldes de vos comptes de bilan (trésorerie, clients, fournisseurs, capitaux…) pour
+   qu'ils repartent avec les bons soldes d'ouverture. L'exercice suivant est **créé automatiquement**
+   s'il n'existe pas encore.
+3. L'exercice clôturé et ses périodes passent en **Clos** : plus aucune écriture ne peut y être datée.
+
+> La clôture est **définitive**. Un bandeau confirme le bénéfice/perte, le n° du report-à-nouveau et
+> l'exercice suivant ouvert. Assurez-vous d'avoir saisi et comptabilisé toutes les écritures de
+> l'exercice (les brouillons non comptabilisés ne sont pas repris) avant de clôturer.
+
+## 11. États financiers
+
+Menu **Comptabilité → États financiers** — vos deux états de synthèse, calculés en direct sur les
+écritures comptabilisées (choisissez la période *Du* / *Au*) :
+
+- **Bilan** : la photo de votre patrimoine à une date — l'**Actif** (ce que vous possédez : trésorerie,
+  clients, stocks…) à gauche, le **Passif** (ce que vous devez + vos capitaux et le **résultat**) à
+  droite. Un contrôle confirme que **Actif = Passif** (le bilan est toujours équilibré).
+- **Compte de résultat** : vos **charges** (classe 6) face à vos **produits** (classe 7) sur la période,
+  et le **résultat** (bénéfice si produits > charges, perte sinon) mis en évidence.
+
+> Ces états se recalculent à chaque consultation : nul besoin de clôturer pour les voir. La clôture
+> (section précédente) fige le résultat sur le compte 13 et ouvre l'exercice suivant.
+
+## 12. Rapprochement bancaire
+
+Menu **Comptabilité → Rapprochement** — vérifiez que votre comptabilité concorde avec votre relevé :
+
+1. **Choisissez le compte de banque** (ex. `521 Banque`) et **saisissez le solde du relevé**.
+2. **Cochez** chaque écriture qui figure sur le relevé (**pointage**). Les écritures **non cochées**
+   sont les **en-cours** : les **dépôts en transit** (encaissés en compta, pas encore sur le relevé)
+   et les **chèques en circulation** (émis, pas encore débités par la banque).
+3. Le tableau de synthèse affiche l'**écart** : quand *solde comptable = solde relevé + dépôts en
+   transit − chèques en circulation*, l'écart est **nul (✓)** — vos comptes sont rapprochés.
+
+> Le pointage est conservé : une écriture pointée le reste. Un écart non nul signale soit un pointage
+> incomplet, soit une opération manquante (frais bancaires, virement non enregistré…) à comptabiliser.
 
 ## FAQ
 

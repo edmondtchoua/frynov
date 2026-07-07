@@ -3,6 +3,7 @@
 namespace App\Modules\ImportExport\Http\Controllers;
 
 use App\Modules\ImportExport\Http\Resources\ImportSessionResource;
+use App\Modules\ImportExport\Models\ImportSession;
 use App\Modules\ImportExport\Services\ExcelExporter;
 use App\Modules\ImportExport\Services\ImportService;
 use App\Modules\ImportExport\Services\PdfExporter;
@@ -11,6 +12,7 @@ use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Gate;
 
 class ImportExportController extends Controller
 {
@@ -29,6 +31,8 @@ class ImportExportController extends Controller
      */
     public function upload(Request $request): JsonResponse
     {
+        Gate::authorize('create', ImportSession::class); // défense en profondeur (audit RBAC P2)
+
         $data = $request->validate([
             'file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
             'type' => 'required|in:products,customers,suppliers',
@@ -79,6 +83,8 @@ class ImportExportController extends Controller
      */
     public function updateMapping(Request $request, string $id): JsonResponse
     {
+        Gate::authorize('update', ImportSession::class); // défense en profondeur (audit RBAC P2)
+
         $request->validate([
             'mapping' => 'required|array',
         ]);
@@ -134,6 +140,8 @@ class ImportExportController extends Controller
      */
     public function cancel(Request $request, string $id): JsonResponse
     {
+        Gate::authorize('update', ImportSession::class); // défense en profondeur (audit RBAC P2)
+
         try {
             $session = $this->importService->findOrFail($id, $request->user()->tenant_id);
             $this->importService->cancel($session);

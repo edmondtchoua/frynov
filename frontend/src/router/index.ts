@@ -20,6 +20,14 @@ const router = createRouter({
       meta: { public: true },
     },
 
+    // ── Contact / demande de démo (public) ─────────────────────────────────
+    {
+      path: '/contact',
+      name: 'contact',
+      component: () => import('@/pages/ContactView.vue'),
+      meta: { public: true },
+    },
+
     // ── Portail client digital (RC-6C — public : jeton / lien magique / par email) ──
     {
       path: '/portal',
@@ -275,6 +283,20 @@ const router = createRouter({
       component: () => import('@/modules/pos/views/PosView.vue'),
       meta: { layout: 'app' },
     },
+    {
+      // Caisse Desktop — pavé de paiement mixte, mouvements, remboursement, raccourcis (RC-16).
+      path: '/pos/desktop',
+      name: 'pos.desktop',
+      component: () => import('@/modules/pos/views/PosDesktopView.vue'),
+      meta: { layout: 'app' },
+    },
+    {
+      // POS mobile — tactile, Mobile Money, file hors-ligne (RC-16).
+      path: '/pos/mobile',
+      name: 'pos.mobile',
+      component: () => import('@/modules/pos/views/PosMobileView.vue'),
+      meta: { layout: 'app' },
+    },
 
     // ── Deliveries ────────────────────────────────────────────────────────
     {
@@ -343,6 +365,76 @@ const router = createRouter({
           name: 'reports.stock',
           component: () => import('@/modules/reports/views/StockReportView.vue'),
         },
+        {
+          // RC-17 (M-2) — analyse d'inventaire : ABC, KPIs (DSI/rotation/fill rate), réconciliation.
+          path: 'insights',
+          name: 'reports.insights',
+          component: () => import('@/modules/reports/views/InventoryInsightsView.vue'),
+        },
+      ],
+    },
+
+    // ── Comptabilité (RC-23 — référentiel SYSCOHADA) ──────────────────────
+    {
+      path: '/accounting',
+      meta: { layout: 'app' },
+      children: [
+        { path: '', redirect: { name: 'accounting.invoices' } },
+        {
+          path: 'invoices',
+          name: 'accounting.invoices',
+          component: () => import('@/modules/accounting/views/InvoicesView.vue'),
+        },
+        {
+          path: 'credit-notes',
+          name: 'accounting.creditNotes',
+          component: () => import('@/modules/accounting/views/CreditNotesView.vue'),
+        },
+        {
+          path: 'balance',
+          name: 'accounting.balance',
+          component: () => import('@/modules/accounting/views/BalanceView.vue'),
+        },
+        {
+          path: 'statements',
+          name: 'accounting.statements',
+          component: () => import('@/modules/accounting/views/StatementsView.vue'),
+        },
+        {
+          path: 'bank-reconciliation',
+          name: 'accounting.bankReconciliation',
+          component: () => import('@/modules/accounting/views/BankReconciliationView.vue'),
+        },
+        {
+          path: 'lettrage',
+          name: 'accounting.lettrage',
+          component: () => import('@/modules/accounting/views/LettrageView.vue'),
+        },
+        {
+          path: 'entries',
+          name: 'accounting.entries',
+          component: () => import('@/modules/accounting/views/EntriesView.vue'),
+        },
+        {
+          path: 'chart',
+          name: 'accounting.chart',
+          component: () => import('@/modules/accounting/views/ChartOfAccountsView.vue'),
+        },
+        {
+          path: 'taxes',
+          name: 'accounting.taxes',
+          component: () => import('@/modules/accounting/views/TaxesView.vue'),
+        },
+        {
+          path: 'periods',
+          name: 'accounting.periods',
+          component: () => import('@/modules/accounting/views/PeriodsView.vue'),
+        },
+        {
+          path: 'settings',
+          name: 'accounting.settings',
+          component: () => import('@/modules/accounting/views/AccountingSettingsView.vue'),
+        },
       ],
     },
 
@@ -406,6 +498,11 @@ const router = createRouter({
           path: 'manual-payments',
           name: 'admin.manual-payments',
           component: () => import('@/modules/admin/views/ManualPaymentView.vue'),
+        },
+        {
+          path: 'demo-requests',
+          name: 'admin.demo-requests',
+          component: () => import('@/modules/admin/views/DemoRequestListView.vue'),
         },
         {
           path: 'audit',

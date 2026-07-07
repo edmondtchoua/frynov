@@ -166,4 +166,42 @@ class ProductImportParserTest extends TestCase
         $fields = array_column($result['warnings'], 'field');
         $this->assertContains('category', $fields);
     }
+
+    // ── RC-20 (P-4) — doublons de SKU INTRA-FICHIER détectés dès l'analyse ────────────────────
+
+    #[Test]
+    public function a_duplicate_sku_within_the_same_file_is_skipped_at_analysis(): void
+    {
+        $parser = $this->parser('create_only');
+
+        $row1 = $parser->parseRow(['sku' => 'DUP-1', 'name' => 'Premier', 'price' => '1000'], 1);
+        $row2 = $parser->parseRow(['sku' => 'DUP-1', 'name' => 'Second', 'price' => '2000'], 2);
+        $row3 = $parser->parseRow(['sku' => 'AUTRE', 'name' => 'Autre', 'price' => '500'], 3);
+
+        // 1re occurrence : valide, à créer. Avant correctif, la 2e l'était AUSSI (échec à l'exécution).
+        $this->assertEquals(ImportRow::STATUS_VALID, $row1['status']);
+        $this->assertEquals(ImportRow::ACTION_CREATE, $row1['action']);
+
+        // 2e occurrence : ignorée dès l'analyse, avertissement pointant la ligne d'origine.
+        $this->assertEquals(ImportRow::ACTION_SKIP, $row2['action']);
+        $this->assertEquals(ImportRow::STATUS_WARNING, $row2['status']);
+        $this->assertStringContainsString('ligne 1', $row2['warnings'][0]['message']);
+
+        // Un SKU différent reste valide.
+        $this->assertEquals(ImportRow::STATUS_VALID, $row3['status']);
+    }
+
+    #[Test]
+    public function an_error_row_does_not_reserve_its_sku_for_the_file(): void
+    {
+        $parser = $this->parser('create_only');
+
+        // Ligne 1 en ERREUR (prix manquant) : elle n'écrira rien → ne réserve pas le SKU.
+        $row1 = $parser->parseRow(['sku' => 'ERR-1', 'name' => 'Sans prix'], 1);
+        $row2 = $parser->parseRow(['sku' => 'ERR-1', 'name' => 'Avec prix', 'price' => '1000'], 2);
+
+        $this->assertEquals(ImportRow::STATUS_ERROR, $row1['status']);
+        $this->assertEquals(ImportRow::STATUS_VALID, $row2['status']);   // la ligne corrigée passe
+        $this->assertEquals(ImportRow::ACTION_CREATE, $row2['action']);
+    }
 }

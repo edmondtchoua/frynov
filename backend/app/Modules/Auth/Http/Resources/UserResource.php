@@ -24,6 +24,8 @@ class UserResource extends JsonResource
                 'plan'                => $this->tenant->plan,
                 'status'              => $this->tenant->status,
                 'subscription_status' => $this->tenant->subscription_status,
+                'is_demo'             => (bool) $this->tenant->is_demo,
+                'demo_expires_at'     => $this->tenant->demo_expires_at?->toISOString(),
                 // Include settings so frontend can read session_timeout_minutes
                 'settings'            => $this->tenant->settings ?? [],
             ]),

@@ -25,7 +25,10 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
 
-            $table->foreign('order_id')->references('id')->on('orders')->nullOnDelete();
+            // NB: la FK vers `orders` est posée dans une migration ultérieure
+            // (2026_07_10_100000_add_order_fk_to_deliveries) car ce fichier
+            // trie AVANT create_orders_table (154757 < 300001) et échouerait
+            // sur une base vierge (MySQL 1824 « Failed to open referenced table »).
             $table->index(['tenant_id', 'status']);
         });
     }

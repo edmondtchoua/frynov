@@ -334,6 +334,27 @@
 
           </div>
 
+          <!-- P5 — jauge d'usage vs quota du plan -->
+          <div class="usage-section" v-if="usage.length">
+            <div class="usage-title">{{ $t('settings.billing.usageTitle') }}</div>
+            <div v-for="row in usage" :key="row.resource" class="usage-row">
+              <div class="usage-row-head">
+                <span>{{ $t(`settings.billing.usage.${row.resource}`) }}</span>
+                <span class="usage-val">
+                  {{ row.usage }}<template v-if="row.limit !== null"> / {{ row.limit }}</template>
+                  <template v-else> · {{ $t('settings.billing.unlimited') }}</template>
+                </span>
+              </div>
+              <div class="usage-track" v-if="row.limit !== null">
+                <div
+                  class="usage-fill"
+                  :class="{ warn: (row.percent ?? 0) >= 80 && (row.percent ?? 0) < 100, over: (row.percent ?? 0) >= 100 }"
+                  :style="{ width: Math.min(100, row.percent ?? 0) + '%' }"
+                ></div>
+              </div>
+            </div>
+          </div>
+
           <!-- Promo code section -->
           <div class="promo-section">
             <div class="promo-section-title">{{ $t('settings.billing.promoTitle') }}</div>
@@ -517,63 +538,159 @@
     <!-- ── Upgrade / payment proof modal (shared BaseModal — UX-03) ───────── -->
     <BaseModal v-model="upgradeModal.open" size="lg" :title="$t('settings.upgrade.title')">
       <div class="settings-modal-body">
-          <p class="modal-desc">
-            {{ $t('settings.upgrade.desc') }}
-          </p>
-          <div class="form-row">
-            <label>{{ $t('settings.upgrade.plan') }} *</label>
-            <select v-model="upgradeForm.plan_code" class="form-select" @change="onUpgradePlanChange">
-              <option value="">{{ $t('settings.selectPlaceholder') }}</option>
-              <option v-for="p in upgradePlans" :key="p.code" :value="p.code">
-                {{ p.name }}<template v-if="p.price"> — {{ formatPlanPrice(p) }}</template>
-              </option>
-            </select>
+          <!-- P4 — assistant multi-étapes (stepper) -->
+          <ol class="wizard-steps" v-if="wizardStep < 5">
+            <li v-for="(s, i) in wizardStepsLabels" :key="i"
+                :class="{ active: wizardStep === i + 1, done: wizardStep > i + 1 }">
+              <span class="wiz-num">{{ wizardStep > i + 1 ? '✓' : i + 1 }}</span>
+              <span class="wiz-label">{{ s }}</span>
+            </li>
+          </ol>
+
+          <!-- Étape 1 — Choix du plan -->
+          <div v-show="wizardStep === 1">
+            <p class="modal-desc">{{ $t('settings.upgrade.stepPlanDesc') }}</p>
+            <div class="current-plan" v-if="auth.user?.subscription?.plan_name">
+              {{ $t('settings.upgrade.currentPlan') }} : <strong>{{ auth.user.subscription.plan_name }}</strong>
+            </div>
+            <div class="form-row">
+              <label>{{ $t('settings.upgrade.plan') }} *</label>
+              <select v-model="upgradeForm.plan_code" class="form-select" @change="onUpgradePlanChange">
+                <option value="">{{ $t('settings.selectPlaceholder') }}</option>
+                <option v-for="p in upgradePlans" :key="p.code" :value="p.code">
+                  {{ p.name }}<template v-if="p.price"> — {{ formatPlanPrice(p) }}</template>
+                </option>
+              </select>
+            </div>
+            <div class="impact-box" v-if="impact?.has_impact">
+              <div class="impact-title">⚠️ {{ $t('settings.upgrade.impactTitle') }}</div>
+              <ul class="impact-list">
+                <li v-if="impact.modules_lost.length">{{ $t('settings.upgrade.impactModules', { list: impact.modules_lost.join(', ') }) }}</li>
+                <li v-for="o in impact.quota_overages" :key="o.resource">
+                  {{ $t('settings.upgrade.impactQuota', { resource: resourceLabel(o.resource), usage: o.usage, limit: o.limit, excess: o.excess }) }}
+                </li>
+              </ul>
+              <p class="impact-hint">{{ $t('settings.upgrade.impactReassure') }}</p>
+            </div>
           </div>
-          <div class="form-row">
-            <label>{{ $t('settings.upgrade.method') }} *</label>
-            <select v-model="upgradeForm.payment_method" class="form-select">
-              <option value="">{{ $t('settings.selectPlaceholder') }}</option>
-              <option value="orange_money">Orange Money</option>
-              <option value="wave">Wave</option>
-              <option value="mtn_money">MTN Money</option>
-              <option value="moov_money">Moov Money</option>
-              <option value="bank_transfer">{{ $t('admin.bankTransfer') }}</option>
-            </select>
+
+          <!-- Étape 2 — Périodicité & durée + devis -->
+          <div v-show="wizardStep === 2">
+            <div class="form-row">
+              <label>{{ $t('settings.upgrade.interval') }} *</label>
+              <div class="interval-toggle">
+                <button type="button" class="interval-option" :class="{ active: upgradeForm.interval === 'monthly' }" @click="setUpgradeInterval('monthly')">{{ $t('settings.upgrade.monthly') }}</button>
+                <button type="button" class="interval-option" :class="{ active: upgradeForm.interval === 'yearly' }" @click="setUpgradeInterval('yearly')">{{ $t('settings.upgrade.yearly') }}</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>{{ upgradeForm.interval === 'yearly' ? $t('settings.upgrade.years') : $t('settings.upgrade.months') }} *</label>
+              <select v-model.number="upgradeForm.quantity" class="form-select" @change="refreshQuote">
+                <option v-for="n in maxQuantity" :key="n" :value="n">{{ n }}</option>
+              </select>
+            </div>
+            <div class="quote-box">
+              <div class="quote-loading" v-if="quoteLoading">{{ $t('settings.upgrade.calculating') }}</div>
+              <template v-else-if="quote">
+                <div class="quote-line"><span>{{ $t('settings.upgrade.quoteUnit') }}</span><span>{{ formatMinor(quote.unit_gross_minor, quote.currency, quote.exponent) }}</span></div>
+                <div class="quote-line" v-if="quote.quantity > 1">
+                  <span>{{ $t('settings.upgrade.quoteDuration', { n: quote.quantity, unit: quote.interval === 'yearly' ? $t('settings.upgrade.yearsUnit') : $t('settings.upgrade.monthsUnit') }) }}</span>
+                  <span>{{ formatMinor(quote.subtotal_minor, quote.currency, quote.exponent) }}</span>
+                </div>
+                <div class="quote-line discount" v-if="quote.promo?.valid && quote.promo.discount_minor > 0">
+                  <span>{{ $t('settings.upgrade.quotePromo', { code: quote.promo.code }) }}
+                    <span class="promo-badge" v-if="quote.promo.source === 'auto'">{{ $t('settings.upgrade.promoAuto') }}</span>
+                    <small v-if="(quote.promo.covered_periods ?? 0) > 0 && quote.quantity > 1">({{ $t('settings.upgrade.promoCovered', { n: quote.promo.covered_periods }) }})</small>
+                  </span>
+                  <span>− {{ formatMinor(quote.promo.discount_minor, quote.currency, quote.exponent) }}</span>
+                </div>
+                <div class="quote-line" v-if="quote.setup_fee_minor > 0"><span>{{ $t('settings.upgrade.quoteSetupFee') }}</span><span>{{ formatMinor(quote.setup_fee_minor, quote.currency, quote.exponent) }}</span></div>
+                <div class="quote-line" v-if="quote.tax_minor > 0"><span>{{ $t('settings.upgrade.quoteTax', { rate: (quote.tax_rate_bps / 100).toFixed(quote.tax_rate_bps % 100 ? 2 : 0) }) }}</span><span>{{ formatMinor(quote.tax_minor, quote.currency, quote.exponent) }}</span></div>
+                <div class="quote-line discount" v-if="quote.proration.applied_credit_minor > 0"><span>{{ $t('settings.upgrade.quoteProration') }}</span><span>− {{ formatMinor(quote.proration.applied_credit_minor, quote.currency, quote.exponent) }}</span></div>
+                <div class="quote-line total"><span>{{ $t('settings.upgrade.quoteTotal') }}</span><span>{{ formatMinor(quote.net_payable_minor, quote.currency, quote.exponent) }}</span></div>
+                <p class="quote-hint">{{ $t('settings.upgrade.quoteLocked') }}</p>
+              </template>
+              <div class="quote-error" v-else-if="quoteError">{{ quoteError }}</div>
+            </div>
           </div>
-          <div class="form-row">
-            <label>{{ $t('settings.upgrade.amount', { currency: upgradeCurrency }) }} *</label>
-            <input v-model.number="upgradeForm.amount_fcfa" type="number" min="1" class="form-input" placeholder="ex. 15000" />
-            <span v-if="selectedUpgradePlan?.price" class="input-hint-text">
-              {{ $t('settings.upgrade.priceConfirmed', { plan: selectedUpgradePlan.name, price: formatPlanPrice(selectedUpgradePlan) }) }}
-            </span>
+
+          <!-- Étape 3 — Paiement -->
+          <div v-show="wizardStep === 3">
+            <div class="form-row">
+              <label>{{ $t('settings.upgrade.method') }} *</label>
+              <select v-model="upgradeForm.payment_method" class="form-select">
+                <option value="">{{ $t('settings.selectPlaceholder') }}</option>
+                <option value="orange_money">Orange Money</option>
+                <option value="wave">Wave</option>
+                <option value="mtn_money">MTN Money</option>
+                <option value="moov_money">Moov Money</option>
+                <option value="bank_transfer">{{ $t('admin.bankTransfer') }}</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>{{ $t('settings.upgrade.proof') }} <span class="hint">{{ $t('settings.upgrade.proofHint') }}</span></label>
+              <input type="file" accept=".jpg,.jpeg,.png,.pdf,.webp" class="form-file" @change="onProofFileChange" />
+              <span v-if="upgradeForm.proofFile" class="file-selected">{{ upgradeForm.proofFile.name }}</span>
+            </div>
+            <div class="form-row">
+              <label>{{ $t('settings.upgrade.promo') }} <span class="hint">{{ $t('catalog.productForm.optional') }}</span></label>
+              <input v-model="upgradeForm.promo_code" class="form-input" placeholder="ex. PROMO20" style="text-transform:uppercase" @blur="refreshQuote" @keyup.enter="refreshQuote" />
+              <span v-if="upgradeForm.promo_code && quote?.promo?.valid && quote.promo.source === 'code'" class="input-hint-text promo-ok">✓ {{ $t('settings.upgrade.promoApplied') }}</span>
+              <span v-else-if="upgradeForm.promo_code && quote?.promo && !quote.promo.valid" class="input-hint-text promo-ko">{{ quote.promo.message ?? $t('settings.billing.promoInvalid') }}</span>
+            </div>
+            <div class="form-row">
+              <label>{{ $t('settings.upgrade.notes') }} <span class="hint">{{ $t('catalog.productForm.optional') }}</span></label>
+              <textarea v-model="upgradeForm.notes" class="form-textarea" rows="2" :placeholder="$t('settings.upgrade.notesPlaceholder')"></textarea>
+            </div>
           </div>
-          <div class="form-row">
-            <label>{{ $t('settings.upgrade.proof') }} <span class="hint">{{ $t('settings.upgrade.proofHint') }}</span></label>
-            <input
-              type="file"
-              accept=".jpg,.jpeg,.png,.pdf,.webp"
-              class="form-file"
-              @change="onProofFileChange"
-            />
-            <span v-if="upgradeForm.proofFile" class="file-selected">{{ upgradeForm.proofFile.name }}</span>
+
+          <!-- Étape 4 — Résumé & consentement -->
+          <div v-show="wizardStep === 4">
+            <div class="summary-box" v-if="quote">
+              <div class="summary-line"><span>{{ $t('settings.upgrade.currentPlan') }}</span><span>{{ auth.user?.subscription?.plan_name ?? '—' }}</span></div>
+              <div class="summary-line"><span>{{ $t('settings.upgrade.newPlan') }}</span><span><strong>{{ quote.plan_name }}</strong></span></div>
+              <div class="summary-line"><span>{{ $t('settings.upgrade.interval') }}</span><span>{{ quote.interval === 'yearly' ? $t('settings.upgrade.yearly') : $t('settings.upgrade.monthly') }} × {{ quote.quantity }}</span></div>
+              <div class="summary-line total"><span>{{ $t('settings.upgrade.quoteTotal') }}</span><span>{{ formatMinor(quote.net_payable_minor, quote.currency, quote.exponent) }}</span></div>
+            </div>
+
+            <!-- Prise d'effet (upgrade différé) — seulement si un plan payant est en cours -->
+            <div class="form-row" v-if="canDeferChange">
+              <label>{{ $t('settings.upgrade.effective') }} *</label>
+              <div class="effective-opts">
+                <label><input type="radio" value="immediate" v-model="upgradeForm.effective" /> {{ $t('settings.upgrade.effectiveNow') }}</label>
+                <label><input type="radio" value="next_cycle" v-model="upgradeForm.effective" /> {{ $t('settings.upgrade.effectiveNext') }}</label>
+              </div>
+            </div>
+
+            <label class="consent-row">
+              <input type="checkbox" v-model="upgradeForm.consent" />
+              <span>{{ consentText?.text ?? $t('settings.upgrade.consentFallback') }}</span>
+            </label>
+            <div v-if="upgradeModal.error" class="form-error">{{ upgradeModal.error }}</div>
           </div>
-          <div class="form-row">
-            <label>{{ $t('settings.upgrade.promo') }} <span class="hint">{{ $t('catalog.productForm.optional') }}</span></label>
-            <input v-model="upgradeForm.promo_code" class="form-input" placeholder="ex. PROMO20" style="text-transform:uppercase" />
+
+          <!-- Étape 5 — Confirmation -->
+          <div v-show="wizardStep === 5" class="confirmation">
+            <div class="confirm-check">✓</div>
+            <p class="confirm-title">{{ $t('settings.upgrade.confirmTitle') }}</p>
+            <p class="confirm-ref" v-if="submittedRequestId">{{ $t('settings.upgrade.confirmRef') }} <code>{{ submittedRequestId.slice(0, 8) }}</code></p>
+            <p class="confirm-next">{{ $t('settings.upgrade.confirmNext') }}</p>
           </div>
-          <div class="form-row">
-            <label>{{ $t('settings.upgrade.notes') }} <span class="hint">{{ $t('catalog.productForm.optional') }}</span></label>
-            <textarea v-model="upgradeForm.notes" class="form-textarea" rows="2" :placeholder="$t('settings.upgrade.notesPlaceholder')"></textarea>
-          </div>
-          <div v-if="upgradeModal.error" class="form-error">{{ upgradeModal.error }}</div>
-          <div v-if="upgradeModal.success" class="form-success">{{ upgradeModal.success }}</div>
       </div>
 
       <template #footer>
-        <button class="btn-cancel" @click="upgradeModal.open = false">{{ $t('common.cancel') }}</button>
-        <button class="btn-submit" :disabled="upgradeModal.saving" @click="submitUpgrade">
-          {{ upgradeModal.saving ? $t('settings.upgrade.sending') : $t('settings.upgrade.submit') }}
-        </button>
+        <template v-if="wizardStep === 5">
+          <button class="btn-submit" @click="upgradeModal.open = false">{{ $t('common.close') }}</button>
+        </template>
+        <template v-else>
+          <button class="btn-cancel" @click="wizardStep > 1 ? prevStep() : (upgradeModal.open = false)">
+            {{ wizardStep > 1 ? $t('settings.upgrade.back') : $t('common.cancel') }}
+          </button>
+          <button v-if="wizardStep < 4" class="btn-submit" :disabled="!canProceed" @click="nextStep">{{ $t('settings.upgrade.next') }}</button>
+          <button v-else class="btn-submit" :disabled="upgradeModal.saving" @click="submitUpgrade">
+            {{ upgradeModal.saving ? $t('settings.upgrade.sending') : $t('settings.upgrade.submit') }}
+          </button>
+        </template>
       </template>
     </BaseModal>
 
@@ -586,6 +703,7 @@ import { useAuthStore } from '@/stores/auth'
 import { authService } from '@/modules/auth/services/authService'
 import { roleService, type TenantRole } from '@/modules/settings/services/roleService'
 import { fetchPublicPricing, type PublicPlan } from '@/services/publicPricingService'
+import { calculateUpgrade, fetchConsentText, fetchDowngradeImpact, fetchUsage, type UpgradeQuote, type ConsentText, type DowngradeImpact, type UsageRow } from '@/services/subscriptionService'
 import RolesPanel from '@/modules/settings/components/RolesPanel.vue'
 import BaseModal from '@/shared/ui/BaseModal.vue'
 import NotificationSettingsPanel from '../components/NotificationSettingsPanel.vue'
@@ -857,12 +975,23 @@ function teamFmtDate(iso: string | null): string {
 }
 
 // Lazy-load each tab on first activation
+// P5 — jauge d'usage vs quota (chargée à l'ouverture de l'onglet Abonnement).
+const usage = ref<UsageRow[]>([])
+async function loadUsage() {
+  try {
+    usage.value = (await fetchUsage()).data
+  } catch {
+    usage.value = [] // best-effort : la jauge est indicative
+  }
+}
+
 watch(activeTab, tab => {
   if (tab === 'company' && !companyLoaded.value) loadCompanySettings()
   if (tab === 'team') {
     if (!teamLoaded.value) loadTeamUsers()
     if (!tenantRoles.value.length) loadTenantRoles() // custom roles for the role selectors
   }
+  if (tab === 'billing' && !usage.value.length) loadUsage()
 }, { immediate: true })
 
 // ── Promo code ────────────────────────────────────────────────────────────────
@@ -910,16 +1039,65 @@ const upgradeModal = reactive({
 const upgradeForm = reactive({
   plan_code:      '',
   payment_method: '',
-  amount_fcfa:    '' as number | '',
+  interval:       'monthly' as 'monthly' | 'yearly',
+  quantity:       1,
   promo_code:     '',
   notes:          '',
   proofFile:      null as File | null,
+  consent:        false,
+  effective:      'immediate' as 'immediate' | 'next_cycle',
 })
+
+// P4 — assistant multi-étapes (1: plan, 2: périodicité/durée, 3: paiement, 4: résumé/consentement, 5: confirmation).
+const wizardStep = ref(1)
+const submittedRequestId = ref('')
+const wizardStepsLabels = computed(() => [
+  t('settings.upgrade.stepPlan'),
+  t('settings.upgrade.stepPeriod'),
+  t('settings.upgrade.stepPayment'),
+  t('settings.upgrade.stepReview'),
+])
+// L'upgrade différé n'a de sens que sur un plan PAYANT en cours.
+const canDeferChange = computed(() => {
+  const s = auth.user?.subscription
+  return !!s && s.status === 'active' && s.plan_code !== 'starter'
+})
+const canProceed = computed(() => {
+  if (wizardStep.value === 1) return !!upgradeForm.plan_code
+  if (wizardStep.value === 2) return !!quote.value && !quoteLoading.value
+  if (wizardStep.value === 3) return !!upgradeForm.payment_method
+  return true
+})
+function nextStep() {
+  upgradeModal.error = ''
+  if (canProceed.value && wizardStep.value < 4) wizardStep.value++
+}
+function prevStep() {
+  upgradeModal.error = ''
+  if (wizardStep.value > 1) wizardStep.value--
+}
+
+// P2 — texte + version du consentement (source de vérité serveur), affiché verbatim dans la case.
+const consentText = ref<ConsentText | null>(null)
+
+// P3 — aperçu d'impact (modules retirés + quotas dépassés) d'un downgrade, avant confirmation.
+const impact = ref<DowngradeImpact | null>(null)
+
+// P0.1 — bornes de durée (mensuel 1–12, annuel 1–5) alignées sur le backend.
+const maxQuantity = computed(() => (upgradeForm.interval === 'yearly' ? 5 : 12))
 
 // UX-09 — upgrade prices come from the backend (single source of truth), not hardcoded.
 const upgradePlans   = ref<PublicPlan[]>([])
 const upgradeCurrency = ref('XOF')
-const selectedUpgradePlan = computed(() => upgradePlans.value.find(p => p.code === upgradeForm.plan_code) ?? null)
+const upgradeMarket   = ref('')                     // market_code résolu serveur-side (hint au devis)
+
+// P0 — devis AUTORITATIF renvoyé par le backend (montant verrouillé + détail du calcul).
+const quote        = ref<UpgradeQuote | null>(null)
+const quoteLoading = ref(false)
+const quoteError   = ref('')
+let quoteSeq = 0                                    // garde anti-course : seule la dernière requête gagne
+
+const MAX_PROOF_BYTES = 5 * 1024 * 1024             // 5 Mo (aligné sur la validation backend)
 
 function formatPlanPrice(p: PublicPlan): string {
   if (!p.price) return ''
@@ -927,29 +1105,107 @@ function formatPlanPrice(p: PublicPlan): string {
     .format(p.price.base_amount_minor / 100)
 }
 
+/**
+ * Formate un montant stocké. Convention backend UNIFORME : la valeur est le prix réel × 100 pour
+ * TOUTES les devises (cf. publicPricingService : 990000 → 9 900 XOF ; 2500 → 25,00 CAD). Le diviseur
+ * d'affichage est donc toujours 100 ; l'exposant de la devise ne pilote QUE le nombre de décimales
+ * (XOF/XAF = 0, sinon 2). Aligné sur formatPlanPrice.
+ */
+function formatMinor(minor: number, currency: string, exponent: number): string {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency, maximumFractionDigits: exponent })
+    .format(minor / 100)
+}
+
+async function refreshQuote() {
+  if (!upgradeForm.plan_code) { quote.value = null; return }
+  const seq = ++quoteSeq
+  quoteLoading.value = true
+  quoteError.value = ''
+  try {
+    const q = await calculateUpgrade({
+      plan_code:   upgradeForm.plan_code,
+      interval:    upgradeForm.interval,
+      quantity:    upgradeForm.quantity,
+      promo_code:  upgradeForm.promo_code ? upgradeForm.promo_code.toUpperCase() : undefined,
+      market_code: upgradeMarket.value || undefined,
+    })
+    if (seq !== quoteSeq) return                    // une requête plus récente a déjà répondu
+    quote.value = q
+    upgradeCurrency.value = q.currency
+  } catch (err: any) {
+    if (seq !== quoteSeq) return
+    quote.value = null
+    quoteError.value = err?.response?.data?.message ?? t('settings.upgrade.calcError')
+  } finally {
+    if (seq === quoteSeq) quoteLoading.value = false
+  }
+}
+
 function onUpgradePlanChange() {
-  // Prefill the amount with the plan's confirmed backend price (still editable for promos).
-  const p = selectedUpgradePlan.value
-  if (p?.price) upgradeForm.amount_fcfa = Math.round(p.price.base_amount_minor / 100)
+  refreshQuote()
+  refreshImpact()
+}
+
+async function refreshImpact() {
+  impact.value = null
+  if (!upgradeForm.plan_code) return
+  try {
+    const res = await fetchDowngradeImpact(upgradeForm.plan_code)
+    impact.value = res.has_impact ? res : null
+  } catch {
+    impact.value = null // best-effort : l'aperçu est indicatif
+  }
+}
+
+/** Libellé lisible d'une ressource à quota (P3). */
+function resourceLabel(resource: string): string {
+  return t(`settings.upgrade.resource.${resource}`)
+}
+
+function setUpgradeInterval(interval: 'monthly' | 'yearly') {
+  upgradeForm.interval = interval
+  // Ramener la durée dans les bornes du nouvel intervalle (annuel max 5, mensuel max 12).
+  const max = interval === 'yearly' ? 5 : 12
+  if (upgradeForm.quantity > max) upgradeForm.quantity = max
+  refreshQuote()
 }
 
 async function openUpgrade() {
   upgradeModal.open = true
   upgradeModal.error = ''
   upgradeModal.success = ''
+  quote.value = null
+  quoteError.value = ''
+  impact.value = null
+  wizardStep.value = 1
+  submittedRequestId.value = ''
   try {
     const country = String(auth.user?.tenant?.settings?.country ?? companyForm.country ?? '').trim()
     const res = await fetchPublicPricing(country ? { country } : {})
     upgradeCurrency.value = res.market?.currency ?? 'XOF'
+    upgradeMarket.value   = res.market?.code ?? ''
     upgradePlans.value = res.data.filter(p => p.price).sort((a, b) => a.sort_order - b.sort_order)
   } catch {
-    upgradePlans.value = [] // degrade gracefully — the form still works with manual amount
+    upgradePlans.value = [] // degrade gracefully
+  }
+  try {
+    consentText.value = await fetchConsentText()
+  } catch {
+    consentText.value = null // le libellé de repli i18n prend le relais
   }
 }
 
 function onProofFileChange(e: Event) {
   const input = e.target as HTMLInputElement
-  upgradeForm.proofFile = input.files?.[0] ?? null
+  const file = input.files?.[0] ?? null
+  if (file && file.size > MAX_PROOF_BYTES) {
+    upgradeModal.error = t('settings.upgrade.errFileSize')
+    upgradeForm.proofFile = null
+    input.value = ''
+    return
+  }
+  upgradeModal.error = ''
+  upgradeForm.proofFile = file
 }
 
 async function submitUpgrade() {
@@ -958,33 +1214,44 @@ async function submitUpgrade() {
 
   if (!upgradeForm.plan_code)      { upgradeModal.error = t('settings.upgrade.errPlan'); return }
   if (!upgradeForm.payment_method) { upgradeModal.error = t('settings.upgrade.errMethod'); return }
-  if (!upgradeForm.amount_fcfa)    { upgradeModal.error = t('settings.upgrade.errAmount'); return }
+  if (!quote.value)                { upgradeModal.error = t('settings.upgrade.errQuote'); return }
+  if (!upgradeForm.consent)        { upgradeModal.error = t('settings.upgrade.errConsent'); return }
+  // Une promo saisie mais invalide bloque la soumission (revalidée serveur-side au devis).
+  if (upgradeForm.promo_code && quote.value.promo && !quote.value.promo.valid) {
+    upgradeModal.error = quote.value.promo.message ?? t('settings.billing.promoInvalid')
+    return
+  }
 
   upgradeModal.saving = true
 
+  // P0 — on N'ENVOIE PLUS de montant : le backend impose le net autoritatif du devis (critère #22).
   const fd = new FormData()
   fd.append('plan_code',      upgradeForm.plan_code)
   fd.append('payment_method', upgradeForm.payment_method)
-  // amount_cents convention = value × 100 everywhere (admin & billing views divide
-  // by 100 to display). Sending the raw FCFA value made manual payments show 1/100th.
-  fd.append('amount_cents',   String(Math.round(Number(upgradeForm.amount_fcfa) * 100)))
-  fd.append('currency',       'XOF')
+  fd.append('interval',       upgradeForm.interval)
+  fd.append('quantity',       String(upgradeForm.quantity))
+  fd.append('consent',        '1')
+  fd.append('effective',      canDeferChange.value ? upgradeForm.effective : 'immediate')
+  if (consentText.value)      fd.append('consent_version', consentText.value.version)
+  if (upgradeMarket.value)    fd.append('market_code', upgradeMarket.value)
   if (upgradeForm.promo_code) fd.append('promo_code', upgradeForm.promo_code.toUpperCase())
   if (upgradeForm.notes)      fd.append('notes', upgradeForm.notes)
   if (upgradeForm.proofFile)  fd.append('proof', upgradeForm.proofFile)
 
   try {
-    // Import client for multipart upload
     const client = (await import('@/api/client')).default
-    await client.post('/api/me/manual-payments', fd, {
+    const { data } = await client.post('/api/me/manual-payments', fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     upgradeModal.success = t('settings.upgrade.success')
-    // Reset form
+    submittedRequestId.value = data?.change_request_id ?? data?.id ?? ''
+    wizardStep.value = 5 // → étape de confirmation
     Object.assign(upgradeForm, {
-      plan_code: '', payment_method: '', amount_fcfa: '',
-      promo_code: '', notes: '', proofFile: null,
+      plan_code: '', payment_method: '', interval: 'monthly', quantity: 1,
+      promo_code: '', notes: '', proofFile: null, consent: false, effective: 'immediate',
     })
+    quote.value = null
+    impact.value = null
   } catch (err: any) {
     upgradeModal.error = err?.response?.data?.message ?? t('common.genericError')
   } finally {
@@ -1318,6 +1585,17 @@ const visibleTabs = computed(() => tabs.value.filter(tab => tab.id !== 'roles' |
 }
 
 /* ── Promo code ──────────────────────────────────────────────────────────── */
+/* P5 — jauge d'usage vs quota */
+.usage-section { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--gray-200); }
+.usage-title { font-size: var(--text-sm); font-weight: 700; color: var(--gray-800); margin-bottom: 0.75rem; }
+.usage-row { margin-bottom: 0.7rem; }
+.usage-row-head { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--text-sm); color: var(--gray-700); margin-bottom: 0.25rem; }
+.usage-val { font-variant-numeric: tabular-nums; color: var(--gray-500); font-size: var(--text-xs); }
+.usage-track { height: 8px; background: var(--gray-100); border-radius: 999px; overflow: hidden; }
+.usage-fill { height: 100%; border-radius: 999px; background: var(--brand-primary); transition: width .4s; }
+.usage-fill.warn { background: #f59e0b; }
+.usage-fill.over { background: #ef4444; }
+
 .promo-section {
   margin-top: 1.5rem;
   padding-top: 1.25rem;
@@ -1438,6 +1716,60 @@ const visibleTabs = computed(() => tabs.value.filter(tab => tab.id !== 'roles' |
 .form-textarea:focus { border-color: var(--brand-primary); }
 
 .file-selected { font-size: var(--text-xs); color: var(--brand-primary-dark); }
+
+/* P0 — sélecteur de périodicité + devis autoritatif verrouillé */
+.interval-toggle { display: inline-flex; border: 1px solid var(--gray-300); border-radius: var(--radius-md); overflow: hidden; }
+.interval-option { padding: 0.4rem 1.1rem; border: none; background: white; color: var(--gray-600); font-size: var(--text-sm); cursor: pointer; transition: background .15s, color .15s; }
+.interval-option + .interval-option { border-left: 1px solid var(--gray-300); }
+.interval-option.active { background: var(--brand-primary); color: white; }
+
+.quote-box { margin: 0.25rem 0 1rem; padding: 0.85rem 1rem; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-md); }
+.quote-line { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--text-sm); color: var(--gray-700); padding: 0.15rem 0; }
+.quote-line.discount { color: var(--brand-primary-dark); }
+.quote-line.total { margin-top: 0.4rem; padding-top: 0.5rem; border-top: 1px solid var(--gray-200); font-size: var(--text-base); font-weight: 700; color: var(--gray-900); }
+.quote-hint { margin: 0.5rem 0 0; font-size: var(--text-xs); color: var(--gray-500); }
+.quote-loading { font-size: var(--text-sm); color: var(--gray-500); }
+.quote-error { font-size: var(--text-sm); color: #ef4444; }
+.promo-ok { color: var(--brand-primary-dark); }
+.promo-ko { color: #ef4444; }
+.promo-badge { display: inline-block; margin-left: 0.35rem; padding: 0.05rem 0.4rem; font-size: var(--text-2xs, 0.65rem); text-transform: uppercase; letter-spacing: .03em; background: var(--brand-primary); color: white; border-radius: 999px; vertical-align: middle; }
+.consent-row { display: flex; gap: 0.6rem; align-items: flex-start; margin: 0.25rem 0 0.5rem; padding: 0.75rem; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--gray-700); cursor: pointer; line-height: 1.4; }
+.consent-row input { margin-top: 0.15rem; flex-shrink: 0; }
+
+/* P3 — encart d'impact d'un downgrade (avertissement ambre, non bloquant) */
+.impact-box { margin: 0 0 1rem; padding: 0.85rem 1rem; background: #fffbeb; border: 1px solid #fde68a; border-radius: var(--radius-md); }
+.impact-title { font-weight: 700; font-size: var(--text-sm); color: #92400e; margin-bottom: 0.4rem; }
+.impact-list { margin: 0; padding-left: 1.1rem; font-size: var(--text-sm); color: #92400e; }
+.impact-list li { padding: 0.1rem 0; }
+.impact-hint { margin: 0.5rem 0 0; font-size: var(--text-xs); color: #a16207; }
+
+/* P4 — assistant multi-étapes */
+.wizard-steps { display: flex; list-style: none; margin: 0 0 1.25rem; padding: 0; gap: 0.25rem; }
+.wizard-steps li { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; font-size: var(--text-2xs, 0.65rem); color: var(--gray-400); text-align: center; position: relative; }
+.wizard-steps li::before { content: ''; position: absolute; top: 0.75rem; left: -50%; width: 100%; height: 2px; background: var(--gray-200); z-index: 0; }
+.wizard-steps li:first-child::before { display: none; }
+.wizard-steps li.done::before, .wizard-steps li.active::before { background: var(--brand-primary); }
+.wiz-num { position: relative; z-index: 1; width: 1.6rem; height: 1.6rem; display: flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--gray-100); color: var(--gray-500); font-weight: 700; font-size: var(--text-xs); }
+.wizard-steps li.active .wiz-num { background: var(--brand-primary); color: white; }
+.wizard-steps li.done .wiz-num { background: var(--brand-primary-light, #a7f3d0); color: var(--brand-primary-dark); }
+.wizard-steps li.active .wiz-label { color: var(--gray-800); font-weight: 600; }
+
+.current-plan { font-size: var(--text-sm); color: var(--gray-600); margin-bottom: 0.75rem; }
+.effective-opts { display: flex; gap: 1.25rem; font-size: var(--text-sm); }
+.effective-opts label { display: flex; align-items: center; gap: 0.35rem; cursor: pointer; }
+
+.summary-box { margin-bottom: 1rem; padding: 0.85rem 1rem; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-md); }
+.summary-line { display: flex; justify-content: space-between; padding: 0.2rem 0; font-size: var(--text-sm); color: var(--gray-700); }
+.summary-line.total { margin-top: 0.4rem; padding-top: 0.5rem; border-top: 1px solid var(--gray-200); font-weight: 700; font-size: var(--text-base); color: var(--gray-900); }
+
+.confirmation { text-align: center; padding: 1.5rem 1rem; }
+.confirm-check { width: 3rem; height: 3rem; margin: 0 auto 0.75rem; display: flex; align-items: center; justify-content: center; border-radius: 999px; background: var(--brand-primary); color: white; font-size: 1.5rem; }
+.confirm-title { font-weight: 700; font-size: var(--text-lg); color: var(--gray-900); margin: 0 0 0.5rem; }
+.confirm-ref { font-size: var(--text-sm); color: var(--gray-600); margin: 0 0 0.5rem; }
+.confirm-ref code { background: var(--gray-100); padding: 0.1rem 0.4rem; border-radius: 4px; }
+.confirm-next { font-size: var(--text-sm); color: var(--gray-500); margin: 0; }
+.quote-line small { color: var(--gray-500); font-weight: 400; }
+
 .form-error  { background: #fff5f5; border: 1px solid #fecaca; border-radius: var(--radius-sm, 4px); padding: 0.5rem 0.75rem; font-size: var(--text-sm); color: #ef4444; }
 .form-success { background: var(--brand-primary-bg); border: 1px solid var(--brand-primary-light); border-radius: var(--radius-sm, 4px); padding: 0.5rem 0.75rem; font-size: var(--text-sm); color: var(--brand-primary-dark); }
 

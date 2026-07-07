@@ -51,18 +51,60 @@ class PromotionService
     }
 
     /**
+     * P0.1 — Meilleure promotion « en cours » applicable AUTOMATIQUEMENT (sans code), pour un plan.
+     *
+     * Sélectionne parmi les promotions actives, valides maintenant, applicables au plan, non encore
+     * utilisées par le tenant et sous leur limite d'usage — celle offrant la plus forte remise sur
+     * `$referenceAmountMinor` (un tarif de période sert de référence). Renvoie null si aucune.
+     */
+    public function activeFor(Tenant $tenant, string $planCode, int $referenceAmountMinor): ?Promotion
+    {
+        $now = now();
+
+        $candidates = Promotion::query()
+            ->where('is_active', true)
+            ->where(fn ($q) => $q->whereNull('valid_from')->orWhere('valid_from', '<=', $now))
+            ->where(fn ($q) => $q->whereNull('valid_until')->orWhere('valid_until', '>=', $now))
+            ->get()
+            ->filter(fn (Promotion $p) => $p->appliesToPlan($planCode)
+                && ! $p->isUsageLimitReached()
+                && ! PromoUse::where('promotion_id', $p->id)->where('tenant_id', $tenant->id)->exists());
+
+        if ($candidates->isEmpty()) {
+            return null;
+        }
+
+        // Meilleure remise sur le montant de référence (une période).
+        return $candidates
+            ->sortByDesc(fn (Promotion $p) => $referenceAmountMinor - $p->applyDiscount($referenceAmountMinor))
+            ->first();
+    }
+
+    /**
      * Record usage and increment the counter (call after payment/plan activation).
+     *
+     * RC-20 (B-7) — la ligne promo est verrouillée FOR UPDATE et la limite re-vérifiée DANS la
+     * transaction : deux activations concurrentes ne peuvent plus dépasser `max_uses` (le
+     * `isUsageLimitReached()` de validate() lisait un compteur non verrouillé).
+     *
+     * @throws InvalidPromoCodeException si la limite est atteinte au moment de l'enregistrement.
      */
     public function recordUse(Promotion $promo, Tenant $tenant): PromoUse
     {
         return DB::transaction(function () use ($promo, $tenant) {
+            $locked = Promotion::whereKey($promo->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->isUsageLimitReached()) {
+                throw new InvalidPromoCodeException('La limite d\'utilisation de ce code a été atteinte.');
+            }
+
             $use = PromoUse::create([
-                'promotion_id' => $promo->id,
+                'promotion_id' => $locked->id,
                 'tenant_id'    => $tenant->id,
                 'used_at'      => now(),
             ]);
 
-            $promo->increment('current_uses');
+            $locked->increment('current_uses');
 
             return $use;
         });

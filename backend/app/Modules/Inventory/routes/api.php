@@ -54,7 +54,7 @@ Route::middleware(['auth:sanctum', \App\Modules\Auth\Http\Middleware\EnsureUserB
     // ── Stock adjustment requests (dual-approval workflow) ─────────────
     Route::get('adjustments',                        [StockAdjustmentController::class, 'pending']);
     Route::get('adjustments/history',                [StockAdjustmentController::class, 'history']);
-    Route::post('adjustments',                       [StockAdjustmentController::class, 'request']);
+    Route::post('adjustments',                       [StockAdjustmentController::class, 'request'])->middleware('role_or_permission:manager|admin|inventory.adjust');
     Route::middleware('role_or_permission:manager|admin|inventory.audit')->group(function () {
         Route::post('adjustments/{id}/approve',      [StockAdjustmentController::class, 'approve']);
         Route::post('adjustments/{id}/reject',       [StockAdjustmentController::class, 'reject']);

@@ -3,6 +3,451 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🔐 RC-41 : Audit RBAC/plans — durcissement accès & quotas (2026-07-06)
+
+Audit complet RBAC/ACL + plans (`docs/audit/rbac-plans-audit.md`) — architecture jugée saine (isolation
+fail-closed, Spatie teams, self-service RBAC borné, anti-escalade). Correctifs P0/P1/P3/P4 appliqués :
+
+- **P0 sécurité** : gardes de permission ajoutées sur 4 écritures non protégées (un rôle `viewer`
+  pouvait écrire) — `PUT /customers/{id}`, `POST` + `PUT /suppliers`, `POST /deliveries`.
+- **P1 quota** : `max_customers` désormais **appliqué** (`QuotaService::assertCanAddCustomer` +
+  `quota:customers`), plus seulement affiché.
+- **P3 traçabilité** : invitation utilisateur auditée (`workspace.user_created`) + transaction atomique.
+- **P4 cohérence offre** : `features` reformulés (fin du tiering trompeur — tous modules inclus, volumes
+  selon plan) ; plan `enterprise` renommé **« Enterprise »** (seeder + i18n). Re-seed requis.
+- **P2 défense en profondeur** : Policies réutilisables (`ModulePolicy` + Supplier/Customer/Delivery,
+  enregistrées dans `AppServiceProvider`) + `Gate::authorize()` sur les écritures (2ᵉ ligne après le
+  middleware). Quota `max_imports_per_month` enforced (`quota:imports`). `max_branches`/`storage_mb`/
+  `max_api_calls` documentés comme non applicables/différés.
+- **P2 (suite) — Policies étendues** aux modules à fort volume d'écriture : `ProductPolicy` (catalog),
+  `OrderPolicy`, `PaymentPolicy`, `ImportSessionPolicy` — `Gate::authorize()` sur catalog
+  store/update/archive, orders store, payments store, import upload/mapping/cancel. **Miroir exact des
+  routes** (aucun durcissement d'accès) : per-action pour payments/orders/import ; OR grossier reproduit
+  pour catalog (groupe de routes partagé). `inventory` laissé au niveau route (taxonomie granulaire).
+- **P5 outillage** : garde-fou CI `RouteAccessGuardTest` (toute écriture de module doit être gardée) —
+  a révélé **5 écritures non gardées supplémentaires**, toutes fermées (inventory adjustments, payments
+  delete, import upload/mapping/cancel). Endpoint `GET /me/subscription/usage` (usage vs quota par
+  ressource) + **jauge d'usage** dans l'onglet Abonnement (barres colorées : vert / orange ≥80 % / rouge ≥100 %).
+- **Tests** : `WriteEndpointGuardsTest`, `CustomerQuotaTest`, `ModulePolicyTest` (+ couverture
+  Product/Order/Payment/ImportSession, miroir catalog & anti-durcissement par permission granulaire),
+  `ImportQuotaTest`, `RouteAccessGuardTest`, `UsageReportTest`, `ImportApiTest` (viewer → 403 sur les
+  écritures import). Revue multi-agent adversariale : parité d'accès confirmée exacte sur les 8 gardes.
+
+## [Non publié] — 🧩 RC-40 : Mise à niveau — taxes/frais, PSP auto, correction admin, analytics (2026-07-05)
+
+- **Taxes & frais d'installation** : `plans.tax_rate_bps` + `setup_fee_minor` ; devis + net + demande
+  intègrent taxe (sur brut après promo) et frais unique (changement de plan). Règlement routé vers la
+  branche « net autoritatif » quand taxe/frais présents. Admin éditable. Test `TaxAndFeeTest`.
+- **Paiement automatisé (PSP)** — désactivé par défaut : abstraction `PspGateway` + driver `FakePspGateway`
+  (checkout factice + webhook HMAC). `POST me/subscription/psp/initiate` + `POST webhooks/psp` →
+  activation automatique via l'approbation système. Prêt pour un vrai rail. Test `PspPaymentTest`.
+- **Demande de correction (admin)** : `POST admin/manual-payments/{id}/request-correction` (non
+  destructif) → demande en `pending_payment` + consigne + notification tenant. Bouton « Corriger ».
+  Test `RequestCorrectionTest`.
+- **Analytics (graphes)** : panneau « Statistiques » (barres CSS) sur l'écran admin des plans
+  (revenu/adoption par plan + demandes par statut) via `GET admin/plans/analytics`.
+- **Tests** : suite feature **42/42**. Taxes + analytics vérifiés en navigateur.
+
+## [Non publié] — 🔗 RC-39 : Comptabilité — lettrage des comptes de tiers (P4.2) (2026-07-05)
+
+Rapprochement des lignes d'un compte de tiers (411 clients, 401 fournisseurs) en groupes équilibrés.
+
+- **Lettrage** (`LettrageService.letter`) : rapproche des lignes d'un **même compte** formant un groupe
+  **soldé** (Σ débits = Σ crédits) sous un `lettrage_code` (A, B… par compte). Refuse un groupe
+  déséquilibré ou < 2 lignes ; n'accepte que des lignes d'écritures comptabilisées/extournées non déjà
+  lettrées. Le **non-lettré = le solde réellement ouvert** (factures non réglées, règlements non affectés).
+- **Délettrage** (`unletter`) : rouvre les lignes d'un code. **Synthèse** par compte : lettré / ouvert
+  / solde ouvert signé.
+- **Front** : `LettrageView` (`/accounting/lettrage`) — sélection multi-lignes avec **contrôle
+  d'équilibre en direct**, badge de code cliquable pour délettrer, filtre « non lettrées seulement ».
+  i18n FR/EN.
+- **Migration** : `accounting_entry_lines.lettrage_code` + `lettered_at`. Endpoints
+  `GET reports/lettrage` (lecture), `POST reports/lettrage[/unletter]` (`accounting.entries.create`).
+- **Tests** : `AccountingLettrageTest` (6) + `LettrageView.spec.ts` (2). Bug `only_open` (chaîne
+  "false" rejetée par la règle `boolean`) **détecté en preview** et corrigé + couvert.
+
+## [Non publié] — 📒 RC-38 : Comptabilité — balance générale & grand livre (P4.1) (2026-07-05)
+
+Premiers **états de lecture** du module Comptabilité, calculés sur les écritures comptabilisées
+(`LedgerService`, `posted` **et** `reversed` — une extourne reste un mouvement réel ; brouillons
+ignorés). Montants signés (débit positif).
+
+- **Balance générale** (`GET reports/trial-balance?from=&to=`) : par compte mouvementé — à-nouveau
+  (net avant `from`), mouvements débit/crédit de la période, solde. Invariants garantis par la partie
+  double : **Σ débits = Σ crédits** et **Σ soldes débiteurs = Σ soldes créditeurs**.
+- **Grand livre** (`GET reports/general-ledger?account_id=&from=&to=`) : à-nouveau + lignes ordonnées
+  (date, journal) avec **solde progressif**, mouvements et solde de clôture.
+- **Front** : `BalanceView` (`/accounting/balance`) — balance filtrable par dates + **drill-down** vers
+  le grand livre d'un compte. i18n FR/EN. Lecture ouverte au rôle `accounting-viewer` (caissier 403).
+- **Tests** : `AccountingLedgerTest` (6) + `BalanceView.spec.ts` (2). Vérifié en preview sur données
+  réelles (TechZone) : balance de 5 comptes **équilibrée** (débit = crédit = 1 136 300).
+
+## [Non publié] — ✔️ RC-37 : Mise à niveau — écran admin de validation contextualisé (2026-07-05)
+
+- La revue admin (`ManualPaymentView`) affiche le **contexte de la demande** liée à chaque paiement :
+  `ManualPayment::toAdminArray()` ajoute un bloc `change_request` (plan source→cible, type, périodicité,
+  durée, prise d'effet, net, **consentement recueilli**). Chargé sans N+1 (`with('changeRequest')`).
+- Front : rappel « plan → plan · périodicité × durée · prise d'effet · ✓/⚠ consentement » sous le plan ;
+  rétro-compatible (paiements legacy sans demande). i18n FR+EN.
+- **Tests** : `AdminReviewContextTest`. Suite feature **37/37**. Vérifié en navigateur (super-admin).
+
+## [Non publié] — 🔔 RC-36 : Mise à niveau — notifications in-app (P2b) (2026-07-05)
+
+- **Fil in-app d'abonnement** (`subscription_notifications` + `SubscriptionNotification`) : le
+  `SubscriptionNotifier` dépose une notification in-app à chaque événement (submitted/activated/rejected),
+  en plus de l'e-mail. Endpoints `GET /api/me/subscription/notifications` + `POST .../{id}/read`.
+- **Cloche unifiée** : `useNotifications` fusionne alertes marketplace + fil abonnement (tri par date,
+  mark-as-read routé par `source`) ; `NotificationCenter` étiquette « Abonnement ».
+- **Tests** : `InAppNotificationTest` (2). Suite feature **36/36**. Vérifié en navigateur.
+
+## [Non publié] — 🗂️ RC-35 : Mise à niveau — back-office des plans (P5) (2026-07-05)
+
+- **Cycle de vie éditorial** des plans : colonnes `status` (active/draft/archived) + `badge`,
+  `Plan::scopeSelectable()`. **Sécurité (Phase 13)** : les points de sélection tenant + le pricing
+  public passent par `selectable()` → un plan brouillon/archivé n'est jamais chiffrable (404).
+- **Endpoints admin** : `POST /api/admin/plans` (créer, brouillon + prix `global` seedés),
+  `DELETE .../{plan}` (archiver, non destructif), `PATCH` (+status/badge),
+  `GET .../plans/analytics` (adoption + revenu par plan + demandes par statut).
+- **Front admin** (`PlanListView`) : badges statut/affichage sur les cartes, sélecteur statut+badge,
+  bouton Archiver, modale Créer un plan. i18n FR+EN.
+- **Tests** : `AdminPlanManagementTest` (4). Suite feature **34/34**. Vérifié en navigateur (super-admin).
+
+## [Non publié] — 🧭 RC-34 : Mise à niveau — assistant multi-étapes + upgrade différé (P4) (2026-07-05)
+
+- **Assistant en 5 étapes** dans le drawer (Plan → Périodicité/durée → Paiement → Résumé/consentement →
+  Confirmation) : stepper, navigation Retour/Suivant validée par étape, récap + référence de demande.
+  i18n FR+EN.
+- **Upgrade différé** (`effective = next_cycle`, proposé si plan payant en cours) : à l'approbation,
+  `approveDeferred` encaisse et **planifie** le changement (`metadata['scheduled_change']`, demande
+  `approved`) ; `RenewalService` l'**applique à l'échéance** (`applyScheduledChange`, demande `activated`,
+  audit `billing.scheduled_change_applied`). `syncFromPayment` garde le différé non activé.
+- **Tests** : `DeferredUpgradeTest` (planifié puis appliqué au renouvellement). Suite feature **30/30**.
+  Assistant vérifié en navigateur (5 étapes jusqu'à la confirmation).
+
+## [Non publié] — 🧾 RC-33 : Comptabilité — avoirs (notes de crédit) & application aux factures (P3.2) (2026-07-05)
+
+Extension de la facturation (RC-30) : les **avoirs** réutilisent la table `invoices`
+(`kind = credit_note`, numéro `AV-`).
+
+- **Création depuis une facture émise** : l'avoir reprend les lignes de la facture et pointe vers elle
+  (`credit_note_of_id`, traçabilité).
+- **Émission** : numéro `AV-` + **écriture INVERSE** via le moteur d'imputation (`credit_note.issued`
+  → débit **701** HT + débit **4431** TVA / crédit **411** client, journal **AV**).
+- **Application aux factures** (`credit_note_applications`) : impute l'avoir à une facture émise pour en
+  réduire le reste dû ; borné au reste applicable de l'avoir **et** au reste dû de la facture ;
+  applications cumulables (une ligne par couple avoir↔facture). `remainingMinor()` d'une facture tient
+  compte des paiements **et** des avoirs appliqués.
+- **PDF** avoir (titre AVOIR, libellés adaptés). **Front** : `CreditNotesView`
+  (`/accounting/credit-notes`) — liste, création depuis facture, émission, application, PDF. i18n FR/EN.
+- **Migration** : `invoices.credit_note_of_id` + `invoices.credited_minor` + table
+  `credit_note_applications`. **Tests** : `AccountingCreditNoteTest` (8) + `CreditNotesView.spec.ts` (3).
+
+## [Non publié] — ⚠️ RC-32 : Mise à niveau — aperçu d'impact downgrade (P3) (2026-07-05)
+
+- **Aperçu d'impact avant confirmation** (`DowngradeImpactService`) : modules retirés + quotas dépassés
+  (`users/products/customers/warehouses/orders`) → `{usage, limit, excess}`. Endpoint
+  `POST /api/me/subscription/downgrade-impact`. Aucune donnée supprimée — la restriction reste assurée
+  par l'existant (module gating + `EnforceQuota`).
+- `QuotaService` : ajout de `usage()` + `planLimit()` (additifs, sans toucher l'enforcement).
+- **Front** : encart d'avertissement ambre dans le drawer (modules perdus + dépassements + message
+  rassurant « données conservées »). i18n FR+EN.
+- **Tests** : `DowngradeImpactTest` (2, critère #17). Vérifié en navigateur (pro → Découverte :
+  « 4 utilisateurs pour 1 inclus, 3 en trop »). Suite feature **29/29**.
+
+## [Non publié] — ✅ RC-31 : Mise à niveau — consentement + notifications (P2) (2026-07-05)
+
+- **Consentement obligatoire** (`subscription_consents`) : trace immuable (texte, version, IP,
+  user-agent, source, entité liée) captée à la soumission via `ConsentService`. `submitPayment` exige
+  `consent => accepted` (422 sinon). Endpoint `GET /api/me/subscription/consent-text` (texte serveur).
+  Front : case obligatoire dans le drawer, soumission bloquée sans coche. i18n FR+EN.
+- **Notifications** (réutilisent l'outbox `NotificationService` existant, historisé, best-effort) :
+  `billing.subscription_submitted` (tenant) + `billing.subscription_admin_new` (super-admins) à la
+  soumission ; `billing.subscription_activated` / `billing.subscription_rejected` (tenant) selon
+  l'approbation. Modèles globaux seedés par migration ; câblés dans le cycle de la demande.
+- **Tests** : `ConsentTest` (3), `SubscriptionNotificationTest` (3). Suite feature **27/27**.
+- Note : le centre in-app (cloche) reste couplé aux alertes marketplace — généralisation = P2b optionnel.
+
+## [Non publié] — 🧾 RC-30 : Comptabilité — facturation client & allocations de paiement (P3) (2026-07-05)
+
+Suite du module Comptabilité SYSCOHADA (après le référentiel P1 et les écritures/moteur P2) :
+
+- **Factures client** (`invoices`/`invoice_lines`) : brouillon librement modifiable → **émission**
+  (numéro `FA-` séquentiel, immuable). **TVA calculée côté serveur** par ligne (HT après remise en
+  points de base → `Tax::amountFor`), totaux HT/TVA/TTC recomposés. Création possible **depuis une
+  commande** (`fromOrder`).
+- **Écritures automatiques** via le moteur d'imputation (outbox idempotent) : `invoice.issued` →
+  débit **411** client (TTC) / crédit **701** (HT) + **4431** (TVA collectée) ; `payment.allocated` →
+  débit trésorerie (caisse/banque/mobile) / crédit **411**.
+- **Allocations de paiement N↔N** (`payment_allocations`) : un règlement imputé à une ou plusieurs
+  factures, borné au reste dû **et** au disponible du paiement ; statut facture
+  issued → partially_paid → paid.
+- **PDF** de facture (DomPDF) : `GET /api/accounting/invoices/{id}/pdf`.
+- **Front** : `InvoicesView` (`/accounting/invoices`, onglet par défaut) — liste, création à totaux en
+  direct, émission, encaissement, lien PDF. i18n FR/EN.
+- **Sécurité/traçabilité** : saisie sous `accounting.entries.create` (caissier 403) ; toute écriture
+  garde le lien vers sa facture source (rejouable). **Migration** `invoices`/`invoice_lines`/
+  `payment_allocations`. **Tests** : `AccountingInvoiceTest` (7) + `InvoicesView.spec.ts` (3).
+
+## [Non publié] — 🗓️ RC-29 : Mise à niveau — durée multi-période, annuel ×12, promos auto (P0.1) (2026-07-05)
+
+- **Durée** : payer N périodes d'avance (mensuel 1–12, annuel 1–5) ; total = tarif unitaire × durée.
+  `changePlan(periods: N)` étend la période de N ; branchement dédié `approveMultiPeriod` (règlement
+  sur le net autoritatif de la demande, sans proration). Chemin monoperiode **inchangé**.
+- **Tarif annuel = ×12** (fin de la remise « 2 mois offerts ») — `PlansSeeder` ; badge d'économie de la
+  page pricing masqué automatiquement quand `savings_pct == 0`. ⚠️ Re-seed requis.
+- **Promotions « en cours » auto** (`PromotionService::activeFor`) appliquées sans code, limitées aux
+  **périodes couvertes** par leur fenêtre de validité (pourcentage par période, montant fixe une fois).
+  Devis : `promo.source` + `promo.covered_periods`.
+- **Front** : sélecteur de durée + détail enrichi (unitaire → × durée → remise/badge auto → total), i18n.
+- **Migration** : `subscription_change_requests.quantity`. **Tests** : `MultiPeriodQuoteTest` (5 cas).
+
+## [Non publié] — 🔁 RC-28 : Mise à niveau de plan — demande & machine à états (P1) (2026-07-05)
+
+Pivot **paiement-first → demande-first** (audit G4/G6), non cassant :
+
+- **`SubscriptionChangeRequest`** (`subscription_change_requests`) : objet de premier plan portant le
+  cycle de vie (`draft → submitted → pending_payment|pending_validation → approved → activated`,
+  + `rejected/cancelled/expired/failed`). Transitions **gardées**, historique en `metadata`.
+- **Snapshot immuable** du plan cible (`plan_snapshot`) + montants figés du devis P0 → une modif
+  ultérieure du plan n'altère pas une demande existante.
+- **Rattachement** : `manual_payments.change_request_id` (nullable, rétro-compatible). `approve/reject`
+  synchronisent la demande (`activated/pending_payment/rejected`). Création **atomique** au submit.
+- **Endpoints tenant** : `GET/POST /api/me/subscription/change-requests`, `{id}`, `{id}/submit`,
+  `{id}/cancel` (isolation TenantScope → 404 cross-tenant).
+- **Tests** : `ChangeRequestTest` (6 cas) — critères #12/#13/#14/#21 + garde de transition.
+
+## [Non publié] — 🔒 RC-27 : Mise à niveau de plan — montant autoritatif (P0) (2026-07-05)
+
+Refonte progressive du parcours de changement de plan (audit : `docs/audit/plan-upgrade-audit.md`).
+**P0 — le montant à payer n'est plus une saisie client** :
+
+- **Devis serveur-side** (`UpgradeQuoteService` + `UpgradeQuote`) : brut `plan_prices` du marché résolu
+  → remise d'une promo **validée** → avoir de proration → **net à payer**. Nouvel endpoint
+  `POST /api/me/subscription/calculate-upgrade` (lecture seule).
+- **Durcissement du submit** `POST /api/me/manual-payments` : `amount_cents` devient optionnel ;
+  absent → net autoritatif + devise du marché imposés. La **cible** du plan reste toujours dérivée
+  serveur (un montant client ne peut plus falsifier le plan visé — critère #22).
+- **Front (drawer d'upgrade)** : sélecteur de périodicité, encart **devis verrouillé** avec détail du
+  calcul, revalidation promo, contrôle de taille de fichier (5 Mo), i18n FR+EN.
+- **Tests** : `CalculateUpgradeTest` (7 cas) — critères #3/#4/#5/#6/#22.
+
+## [Non publié] — 📒 RC-25/26 : Comptabilité — écritures + moteur d'imputation (P2) (2026-07-05)
+
+Branche `feature/rc23-accounting-referential` (release `v1.0.0` → `rc.156`). Cœur métier du module
+comptable, branché sur le POS :
+
+- **Écritures en partie double** (`accounting_entries`/`_lines`) : brouillon → comptabilisation
+  (numéro séquentiel par journal + rattachement période) → **extourne** (contre-écriture liée).
+  Équilibre imposé, ≥ 2 lignes, un côté par ligne ; **immutabilité** d'une écriture postée ; refus
+  en période verrouillée. Écran **Écritures** avec saisie manuelle et contrôle d'équilibre en direct.
+- **Moteur d'imputation** (`ImputationEngine`) + **outbox idempotente** (`accounting_outbox`,
+  unique par source) : le module Comptabilité **écoute** les événements POS (dépendance à sens
+  unique). Règles SYSCOHADA seedées : vente POS (débit trésorerie par tender / crédit 701),
+  remboursement (701 / trésorerie), écart de clôture (658/758), mouvements de caisse, paiements.
+  Comptabilisation auto ou brouillon selon `auto_post`. Worker `accounting:process-outbox` (/5 min).
+- **Une vente POS ⇒ exactement une écriture**, même en resync offline (idempotence `pos_reference`
+  RC-22 × unicité outbox). Le POS reste inchangé pour un tenant sans module comptable (0 écriture).
+- **Validé E2E sur la base locale** : une vente mixte (4 000 espèces + 4 000 mobile money) a produit
+  l'écriture postée `VT26-000001` équilibrée (débit 571 Caisse 4 000 + 585 Mobile 4 000 = crédit 701
+  Ventes 8 000), consultable dans l'écran Écritures.
+- +13 tests backend (écritures + imputation) ; POS et suites existantes inchangées (34 verts).
+  i18n FR/EN, docs tech + module.
+
+## [Non publié] — 🧮 RC-23 : module Comptabilité — référentiel SYSCOHADA (P1) (2026-07-05)
+
+Branche `feature/rc23-accounting-referential` (release `v1.0.0` → `rc.155`). Premier incrément du
+module comptable (architecture : docs/architecture/comptabilite-syscohada.md) :
+
+- **Nouveau module `Accounting`** (backend + frontend), gated `module:accounting` (seedé dans
+  `erp_modules`, associé à tous les plans) — menu **Comptabilité** dans le SPA.
+- **Référentiel** : classes SYSCOHADA 1–9 (globales), plan de comptes par tenant (38 comptes seedés,
+  comptes *système* du moteur d'imputation indésactivables, création libre — classe dérivée du code),
+  8 journaux (VT/AC/CA/BQ/OD/ST/AV/RG), taxes en points de base (TVA locale auto selon pays :
+  UEMOA 18 %, CEMAC 19,25 %…), paramètres tenant (`default_accounts` symboliques `@cash`→571,
+  `auto_post`), exercice courant + 12 périodes mensuelles.
+- **Provisionnement idempotent** (`ChartOfAccountsProvisioner`) via `POST /api/accounting/provision`
+  — assistant intégré à l'écran Plan comptable.
+- **Périodes** : verrouillage (chef comptable) et **réouverture contrôlée** (permission dédiée
+  `accounting.periods.reopen`, motif obligatoire, audit) — pattern PeriodLockService.
+- **RBAC** : rôles `accountant` / `chief-accountant` / `accounting-viewer` / `auditor` +
+  permissions `accounting.*` (séparation des pouvoirs).
+- **Frontend** : 4 écrans (Plan comptable, Taxes, Exercices & périodes, Paramètres), i18n FR/EN.
+- **Correctif transverse** : les dates PURES (casts `date`) ne se décalent plus d'un jour à
+  l'affichage dans les fuseaux à l'ouest d'UTC (sérialisation `Y-m-d` + parsing local `toDate`).
+- +8 tests backend, +3 specs front. Validé E2E en preview : menu → provisionnement (38 comptes) →
+  verrouillage 2026-01 → réouverture refusée sans permission.
+
+## [Non publié] — 🔒 RC-22 : idempotence checkout POS (P0 audit intégration) + plans compta (2026-07-05)
+
+Branche `feature/rc22-pos-idempotency` (release `v1.0.0` → `rc.154`). Suite de l'audit
+d'intégration POS/compta (2 revues parallèles + preuves E2E) :
+
+- **Idempotence du checkout POS** (trou CRITIQUE A-1) : le POS génère un id client **avant** la
+  tentative (`X-Idempotency-Key`), réutilisé tel quel par la file offline à chaque retry. Serveur :
+  `orders.pos_reference` (unique par tenant) → une clé déjà vue renvoie la vente existante (même
+  après clôture de session — resync du lendemain) ; course concurrente tranchée par la contrainte
+  unique. Sans clé : comportement historique. **Fin du risque de double vente offline.** +3 tests.
+- **Rapports d'audit** : `docs/architecture/audit-integration-pos-compta.md` (verdict : POS
+  réellement branché, 8 trous hiérarchisés A-1..A-8) et **plan complet du module comptable
+  SYSCOHADA** `docs/architecture/comptabilite-syscohada.md` (architecture, 24 tables, moteur
+  d'imputation, facturation, livres, clôtures, sécurité, UX, roadmap P0→P5).
+- Doc POS : section « Idempotence & synchronisation offline » (mapping des statuts
+  pending_sync/synced/failed_sync ↔ états serveur, lien future écriture comptable).
+
+## [Non publié] — ↩️ RC-21 : revue Retours (RMA) — front + backend (2026-07-05)
+
+Branche `feature/rc21-returns-review` (release `v1.0.0` → `rc.153`). Inspection complète du module
+Retours, validée E2E en preview sur la base locale (cycle créer → approuver → restocker réel).
+
+- **[R-0 CRITIQUE]** `ReturnsView` appelait l'API **sans le préfixe `/api`** (baseURL vide) : l'écran
+  Retours n'a **jamais fonctionné** (liste toujours vide, actions en 404). Réparé et validé en réel.
+- **[R-1 HAUTE]** **Sur-retour borné** : quantité retournable = achetée − déjà demandée/retournée
+  (retours non refusés de la même ligne). Avant : retour de 50 sur une ligne de 2 accepté → stock
+  fantôme au restock + remboursement supérieur au payé. 422 explicite (« N restant(s) sur M »),
+  message affiché dans le modal. +2 tests.
+- **[R-2 HAUTE]** Retour possible uniquement sur commande **honorée** — un brouillon/confirmé n'a
+  jamais décrémenté le stock (restock = stock fantôme). +1 test.
+- **[R-3]** Création de retour placée sous **RBAC** `manager|admin|orders.manage` (un viewer pouvait
+  en créer) ; la caisse garde son propre guard. +1 test.
+- **[R-4]** Listes `condition` **harmonisées** entre Orders et POS (`resalable,damaged,defective,destroyed`).
+- **[R-5]** Le front ne permettait **aucune création de retour hors caisse** : bouton « Retourner des
+  articles » sur les commandes livrées (modal lignes/quantités/état/motif/résolution, erreurs serveur
+  affichées), **pagination** de la liste des retours, résolution absente affichée « — ». i18n FR/EN.
+
+Backend 43 tests retours/POS verts, front 43 specs vertes, typecheck OK. E2E : RET-000002
+créé → approuvé (journal d'audit écrit) → restocké (stock 198→199) ; sur-retour refusé avec message.
+
+## [Non publié] — 🧹 RC-20 : file BASSE (8 correctifs) + validation E2E sur base locale (2026-07-05)
+
+Branche `feature/rc20-basse-fixes` (release `v1.0.0` → `rc.152`). Solde du backlog rc.147 (hors 2
+hypothèses produit) + **première validation preview de bout en bout sur la base MySQL locale**.
+
+**Correctifs**
+- **[C-8]** Journaux d'audit réellement écrits (`return.approved`, `product.created`, `product.archived`) —
+  les appels positionnels en désordre levaient un TypeError avalé.
+- **[C-9/P-3]** Numéros `RET-`/`TRF-`/`SUP-` via un **`SequenceService` partagé** (séquence verrouillée
+  `FOR UPDATE`, seed de continuité pour l'historique) — fin des courses `count()+1`.
+- **[C-10]** `paymentService.record` envoie une **clé d'idempotence** (`X-Idempotency-Key`, UUID client).
+- **[N-6]** Notifications : un message **déjà parti** n'est plus remboursé ni remis en `pending` si le
+  marquage `sent` échoue (fin du double envoi potentiel).
+- **[B-7]** `PromotionService::recordUse` verrouille la promo et re-vérifie `max_uses` en transaction.
+- **[P-4]** Import produits : les doublons de SKU **intra-fichier** sont ignorés dès l'analyse.
+- **[P-5]** `customer_id` validé au tenant dans `OrderService::create` (couvre commandes ET caisse) → 422.
+- **[P-6]** Label « WooCommerce ».
+
+**Environnement local / validation E2E (preview)**
+- **Résolution du faux « blocage sandbox »** : un serveur d'un autre projet squattait le port 8000
+  (423 `app_locked`/404). Port libéré → **API 100 % fonctionnelle en preview**.
+- Base locale : `default_storage_engine=MyISAM` → 78 tables converties **InnoDB** + `engine=InnoDB`
+  forcé dans `config/database.php` (l'app dépend des transactions/`lockForUpdate`). Migrations en
+  retard appliquées, `DemoSeeder` rendu idempotent sous MySQL (`fiscal_periods` DATE).
+- **Parcours validés en conditions réelles** : login → caisse Desktop (vente **paiement mixte**
+  10 000 esp. + 6 000 MM, attendu 50 000→60 000), **ticket de caisse** complet (2 legs affichés),
+  **mouvement de caisse** (sortie 5 000 → 55 000), POS mobile (session partagée), **Analyse
+  d'inventaire** (ABC réel : A=7 produits 77,8 % du CA), commandes (recherche serveur → 1 résultat,
+  **pagination 6 pages** naviguable). +1 correctif de style (cartes KPI insights, styles scopés).
+- `launch.json` : configuration `backend` (php artisan serve :8000) ajoutée.
+
+## [Non publié] — 🖨️ RC-19 : ticket de caisse — génération + impression (2026-07-05)
+
+Branche `feature/rc19-pos-receipt` (release `v1.0.0` → `rc.151`). Suite du chantier caisse :
+
+- **Backend** : `ReceiptService` + `GET /api/pos/orders/{orderId}/receipt` (rôles caisse, scope
+  tenant → 404 hors tenant) — payload structuré : en-tête boutique (nom/adresse/téléphone/devise
+  des settings), lignes, **tous les paiements** (splits RC-16 inclus, référence Mobile Money),
+  totaux, caissier, session. +3 tests (`PosReceiptTest`).
+- **Frontend** : composant `PosReceipt.vue` (rendu ticket **80 mm**, CSS unique aperçu+impression
+  dans `receiptPrint.ts`) ; impression par **iframe cachée** (pas de popup). Caisse Desktop :
+  bouton *Imprimer le ticket* + raccourci **F7** + réimpression de la dernière vente. POS mobile :
+  bouton *Ticket* après une vente (réinitialisé à la clôture). i18n FR/EN (`posReceipt`). +2 specs.
+- Docs tech + guide utilisateur mis à jour.
+
+## [Non publié] — 🧰 RC-18 : file MOYENNE du backlog — 8 correctifs (2026-07-05)
+
+Branche `feature/rc18-moyenne-fixes` (release `v1.0.0` → `rc.150`). Toute la file **MOYENNE** du backlog
+rc.147 :
+
+- **[D-3] Pool de licences** : les clés sont **libérées** à la révocation/retour (RMA) — elles redeviennent
+  `available` et réassignables FIFO (fin de la fuite du pool et des fausses alertes `pool_exhausted`).
+- **[M-4] Renouvellement** : `isFreePlan` lit le **prix localisé** (`PlanPrice` du marché de l'abonnement)
+  avant les colonnes legacy — un plan gratuit en legacy mais payant sur sa grille passe bien `past_due`.
+- **[M-5] Promo** : `POST /api/me/promo/apply` ne **consomme plus l'usage** (validation seule) ; l'usage est
+  enregistré à l'activation du paiement — le paiement légitime n'est plus routé `needs_review`.
+- **[C-3] Commandes (front)** : pagination réparée (normalisation du paginator plat en `{data, meta}`),
+  reset page 1 à chaque changement de filtre.
+- **[C-4] Commandes (API)** : filtres `search` (n° commande / nom client) et `from_date`/`to_date`
+  désormais appliqués côté serveur.
+- **[C-5] Retours (front)** : les actions approve/restock/reject affichent les erreurs (bandeau + message
+  serveur) au lieu d'échouer en silence. i18n FR/EN.
+- **[C-6] Lots/péremption** : à la confirmation d'une commande d'un produit suivi par lot, le **vendable
+  exclut les lots périmés** encore comptés dans l'agrégat → plus de vente « à découvert » contre du stock
+  périmé (422 explicite avec le disponible réel).
+- **[C-7] Import groupé** : `quantity_after` de l'historique des mouvements n'ajoute plus la quantité
+  **deux fois**.
+
++6 tests backend, i18n FR/EN, front vert (43 specs orders+i18n).
+
+## [Non publié] — 🩹 RC-17 : correctifs HAUTE — avoirs réappliqués + rapports d'inventaire exposés (2026-07-05)
+
+Branche `feature/rc17-billing-reports-fixes` (release `v1.0.0` → `rc.149`). Les deux bugs **HAUTE** du
+backlog rc.147 :
+
+- **[M-1] Ledger `tenant_credits` réappliqué** : les avoirs (trop-perçus) n'étaient **jamais consommés**
+  (argent client perdu). Désormais, à l'approbation d'un paiement manuel, le solde d'avoirs (même devise)
+  agit comme **acompte virtuel s'il permet de solder la cible** — puis il est **consommé** (ligne négative
+  référencée au paiement, trace `ledger_credit_applied_minor` dans la metadata). Pas de consommation
+  partielle en dépôt (même règle que la proration). `previewProration` déduit le ledger de l'assiette
+  (le trop-perçu ne compte plus double). +4 tests (`BillingRulesTest`).
+- **[M-2] Rapports d'inventaire exposés** : `abcClassification` (Pareto 80/15/5), `inventoryKpis`
+  (DSI, rotation, fill rate, stock mort) et `stockReconciliation` (valorisation par catégorie) étaient
+  développés+testés **sans route ni vue**. Nouvelles routes `GET /api/reports/abc|inventory-kpis|reconciliation`
+  + onglet **Analyse d'inventaire** (`/reports/insights`) avec sélecteur de période, i18n FR/EN.
+  +3 tests API, +3 specs front.
+
+## [Non publié] — 🧾 RC-16 : caisse approfondie — fondation backend (split · mouvements · remboursement) (2026-07-05)
+
+Branche `feature/rc16-pos` (release `v1.0.0` → `rc.148`). Première tranche du chantier **« caisse
+approfondie »** : la base commune backend des futures caisses **Desktop** et **POS mobile**. Tout est
+**rétrocompatible** — les 10 tests `PosSessionTest` restent verts sans modification.
+
+- **Paiement mixte (split)** : `checkout` accepte désormais `payments: [{method, amount_cents, reference?}]`
+  en plus du `method` unique historique. La somme des legs doit égaler exactement le total (sinon 422 +
+  rollback intégral). Seule la part **espèces** alimente le fond de caisse attendu.
+- **Mouvements de caisse** (nouvelle table `cash_movements` + modèle `CashMovement`) : entrées (pay-in) et
+  sorties (pay-out) d'espèces hors vente — appoint, retrait, dépense. `expectedCashNow()` intègre le net
+  des mouvements ; un pay-out ne peut excéder les espèces disponibles. Endpoints `GET …/movements` et
+  `POST …/cash-movement`.
+- **Remboursement au comptoir** : `POST …/refund` délègue au `OrderReturnService` (create → approve →
+  restock : réintègre le stock revendable et **défait** sérialisés / garanties / accès digitaux) ; le leg
+  **espèces** d'un remboursement est enregistré comme sortie de caisse (l'attendu baisse).
+- **+7 tests** `PosAdvancedTest` (split + non-somme, pay-in/pay-out, plafond retrait, remboursement espèces
+  & non-espèces, session close). Service front `posService.ts` + types étendus. Docs tech + utilisateur MAJ.
+
+> **Suite du chantier** : `PosDesktopView.vue` (grille + panier + pavé de paiement + raccourcis clavier),
+> `PosMobileView.vue` (tactile, Mobile Money, file offline), composable `usePosSession()` partagé — increments RC-17/RC-18.
+
+## [Non publié] — 🐛 RC-15 : audit fonctionnel — bugs consignés + correctifs prioritaires (2026-07-05)
+
+Branche `feature/rc15-qa-pos` (release `v1.0.0` → `rc.147`). Audit fonctionnel par 4 revues parallèles
+(commerce, monétisation, plateforme, couverture de tests) → **~24 bugs consignés** dans
+`docs/recette/rc15-bugs-backlog.md`. Les correctifs **HAUTE/MAJEUR** clairs sont traités ici ; le reste
+est priorisé pour les incréments suivants.
+
+- **[MAJEUR] Doublon email/code → 500** (Customers & Suppliers) : ajout d'une règle `unique` applicative
+  scopée tenant → **422** propre au lieu d'une `QueryException`.
+- **[MAJEUR] Marketplace : réouverture auto morte** : le listener excluait les listings `closed` et ne
+  dispatchait jamais `reopen` → `is_auto_reopen_enabled` était inerte. Corrigé (inclut `closed`, branche
+  reopen quand le stock repasse au-dessus du seuil).
+- **[HAUTE] Inventory : `warehouse_id` ignoré au move-out/adjust** → décrément du **mauvais entrepôt** en
+  multi-site. Résolution de l'entrepôt (comme au move-in) + `warehouse_id` ajouté à `AdjustStockRequest`.
+- **[HAUTE] Transfert : write-off = double décrément** du stock source (les unités ont déjà quitté au
+  ship). Le write-off devient **documentaire** (aucun ajustement de quantité).
+- **+2 tests** (Customers doublon → 422 ; `StockTransferTest` réécrit : source reste 90, pas 88). Backend vert.
+
+> **Backlog restant** (consigné, priorisé) : ledger `tenant_credits` en écriture seule, code mort Reports
+> (ABC/KPI/réconciliation), clés de pool non libérées, pagination/ filtres commandes, ventes contre lots
+> périmés, etc. + **chantier « caisse approfondie »** (POS split/remise/remboursement, Desktop + mobile).
+
 ## [Non publié] — 🧭 RC-14 : cohérence de l'onboarding initial (2026-07-05)
 
 Branche `feature/rc14-onboarding-fixes` (release `v1.0.0` → `rc.146`). Suite à l'évaluation UX/UI de

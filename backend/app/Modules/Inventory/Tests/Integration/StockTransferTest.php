@@ -77,10 +77,15 @@ class StockTransferTest extends TestCase
         $this->assertSame('partial', $transfer->fresh()->status);
         $this->assertSame(2, $transfer->fresh()->lines->first()->quantity_discrepancy);
 
-        // Resolve as write-off
+        // Resolve as write-off — RC-15 BUG-2 : les 2 unités manquantes ont DÉJÀ quitté whA à
+        // l'expédition (whA=90). Le write-off est documentaire : le stock ne doit PAS être
+        // re-décrémenté (avant le correctif : whA tombait à 88, double comptage de la perte).
         $this->svc->resolveDispute($transfer->fresh(), $this->admin->id, 'write_off', 'Colis endommagé');
         $this->assertSame('completed', $transfer->fresh()->status);
-        $this->assertDatabaseHas('stock_movements', ['reason' => 'write_off', 'reference' => $transfer->number]);
+        $this->assertSame(90, $this->stockA->fresh()->quantity);          // 100 − 10 expédiés, PAS 88
+        $stockB = Stock::where(['warehouse_id' => $this->whB->id, 'product_id' => $this->product->id])->first();
+        $this->assertSame(8, $stockB->quantity);                          // total 98 = 100 − 2 perdues
+        $this->assertSame('resolved', $transfer->fresh()->lines->first()->line_status);
     }
 
     #[Test]

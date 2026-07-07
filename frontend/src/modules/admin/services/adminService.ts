@@ -61,7 +61,20 @@ export interface AdminPlan {
   features: string[]
   is_active: boolean
   is_public: boolean
+  /** P5 — cycle de vie éditorial. */
+  status?: 'active' | 'draft' | 'archived'
+  /** P5 — étiquette d'affichage (popular, recommended, enterprise, coming_soon, promo…). */
+  badge?: string | null
   limits?: AdminPlanLimits | null
+}
+
+export interface AdminPlanAnalyticsRow {
+  code: string
+  name: string
+  status: string
+  badge: string | null
+  active_subscriptions: number
+  revenue_minor: number
 }
 
 export interface AdminManualPayment {
@@ -81,6 +94,19 @@ export interface AdminManualPayment {
   rejection_reason?: string | null
   reviewed_at?: string | null
   created_at: string
+  /** Contexte de la demande de changement liée (écran de validation). */
+  change_request?: {
+    id: string
+    status: string
+    change_type: string
+    effective: 'immediate' | 'next_cycle' | string
+    interval: string
+    quantity: number
+    from_plan_code: string | null
+    to_plan_code: string | null
+    net_payable_minor: number
+    consent_captured: boolean
+  } | null
 }
 
 export interface AdminPromotion {
@@ -182,6 +208,22 @@ export const adminService = {
     return data
   },
 
+  // P5 — création (brouillon par défaut), archivage, analytics.
+  async createPlan(payload: Partial<AdminPlan> & { code: string; name: string; price_monthly_cents: number }) {
+    const { data } = await client.post<AdminPlan>('/api/admin/plans', payload)
+    return data
+  },
+
+  async archivePlan(id: string) {
+    const { data } = await client.delete<AdminPlan>(`/api/admin/plans/${id}`)
+    return data
+  },
+
+  async getPlanAnalytics() {
+    const { data } = await client.get<{ plans: AdminPlanAnalyticsRow[]; change_requests_by_status: Record<string, number> }>('/api/admin/plans/analytics')
+    return data
+  },
+
   async getAuditLogs(page = 1) {
     const { data } = await client.get('/api/admin/audit-logs', { params: { page } })
     return data
@@ -201,6 +243,11 @@ export const adminService = {
 
   async rejectManualPayment(id: string, reason: string) {
     const { data } = await client.post(`/api/admin/manual-payments/${id}/reject`, { reason })
+    return data
+  },
+
+  async requestCorrectionManualPayment(id: string, reason: string) {
+    const { data } = await client.post(`/api/admin/manual-payments/${id}/request-correction`, { reason })
     return data
   },
 

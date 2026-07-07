@@ -22,8 +22,8 @@
           @input="debouncedLoad"
         />
       </div>
-      <input v-model="dateFrom" type="date" class="form-input date-input" @change="load" :title="$t('orders.dateFrom')" />
-      <input v-model="dateTo"   type="date" class="form-input date-input" @change="load" :title="$t('orders.dateTo')" />
+      <input v-model="dateFrom" type="date" class="form-input date-input" @change="filtersChanged" :title="$t('orders.dateFrom')" />
+      <input v-model="dateTo"   type="date" class="form-input date-input" @change="filtersChanged" :title="$t('orders.dateTo')" />
       <!-- Site / entrepôt filter (Sprint 20 multi-sites) -->
       <select v-model="warehouseId" class="form-input date-input" :aria-label="$t('common.allWarehouses')">
         <option value="">{{ $t('common.allWarehouses') }}</option>
@@ -156,13 +156,24 @@ async function load() {
   }
 }
 
+// RC-18 (C-4) — un changement de filtre repart TOUJOURS de la page 1 (sinon on demande la
+// page N d'un résultat filtré qui n'en a peut-être qu'une). Si la page change, le watch charge.
+function filtersChanged() {
+  if (page.value !== 1) {
+    page.value = 1
+  } else {
+    load()
+  }
+}
+
 let _searchTimer: ReturnType<typeof setTimeout> | null = null
 function debouncedLoad() {
   if (_searchTimer) clearTimeout(_searchTimer)
-  _searchTimer = setTimeout(() => load(), 280)
+  _searchTimer = setTimeout(() => filtersChanged(), 280)
 }
 
-watch([activeTab, warehouseId, page], () => load())
+watch([activeTab, warehouseId], () => filtersChanged())
+watch(page, () => load())
 onMounted(() => { loadWarehouses(); load() })
 
 function statusLabel(s: string) {

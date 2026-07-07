@@ -112,6 +112,17 @@ class CustomerApiTest extends TestCase
     }
 
     #[Test]
+    public function a_duplicate_email_returns_422_not_500(): void
+    {
+        // RC-15 P-2 — sans règle unique applicative, le doublon levait une QueryException (500).
+        $this->postJson('/api/customers', ['name' => 'Un', 'email' => 'dup@example.com'], $this->auth())->assertCreated();
+
+        $this->postJson('/api/customers', ['name' => 'Deux', 'email' => 'dup@example.com'], $this->auth())
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['email']);
+    }
+
+    #[Test]
     public function it_validates_name_is_required(): void
     {
         $res = $this->postJson('/api/customers', ['email' => 'no-name@test.com'], $this->auth());

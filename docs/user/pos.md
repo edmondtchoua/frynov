@@ -1,6 +1,6 @@
 # Guide utilisateur — Caisse (Point de vente)
 
-> **Dernière mise à jour :** 2026-06-04
+> **Dernière mise à jour :** 2026-07-05
 
 La **Caisse** (POS — *Point Of Sale*) permet d'encaisser des ventes au comptoir :
 ouvrir une session de caisse avec un fond, enregistrer des ventes rapides (scan ou
@@ -56,20 +56,76 @@ Une fois la session ouverte, l'écran de caisse s'affiche en deux zones :
 À l'encaissement, le système, de façon **atomique** :
 - crée la commande et **résout les prix depuis le catalogue** (jamais depuis l'écran) ;
 - **décrémente le stock** (la vente sort immédiatement du magasin) ;
-- enregistre le **paiement** du montant total ;
+- enregistre le/les **paiement(s)** couvrant le montant total ;
 - rattache la vente à la session de caisse.
 
 > ⚠️ Si le **stock est insuffisant**, la vente est **refusée et entièrement annulée** :
 > aucun mouvement de stock ni paiement fantôme n'est créé.
 
+### Paiement mixte (espèces + Mobile Money)
+
+Un client peut régler **en plusieurs fois** dans la même vente — par exemple une partie en
+espèces et le reste en Mobile Money (Wave, Orange Money…). Ajoutez un moyen de paiement par
+ligne et répartissez les montants : **la somme doit être égale au total** de la vente, sinon
+l'encaissement est refusé. Seule la **part en espèces** est ajoutée au fond de caisse attendu.
+
 ---
 
-## 3. Clôturer la caisse (rapprochement)
+## 3. Mouvements de caisse (entrées / sorties d'espèces)
+
+Pendant le service, de l'argent peut entrer ou sortir du tiroir **sans être une vente** :
+appoint de monnaie, dépôt à la banque, petite dépense payée en espèces. Ces **mouvements**
+sont enregistrés à part pour que le rapprochement reste juste :
+
+- **Entrée (pay-in)** : ajout d'espèces au tiroir (ex. appoint de fond). → augmente l'attendu.
+- **Sortie (pay-out)** : retrait d'espèces (ex. dépôt banque, dépense). → diminue l'attendu.
+
+> ⚠️ Une **sortie ne peut pas dépasser** les espèces réellement présentes dans le tiroir.
+
+L'attendu de caisse devient : **fond + ventes espèces + entrées − sorties.**
+
+---
+
+## 4. Rembourser une vente (retour au comptoir)
+
+Pour rembourser un client au comptoir :
+
+1. Retrouvez la vente, sélectionnez les **articles à rendre** et la quantité.
+2. Indiquez l'**état** de chaque article (revendable ou non) et le **motif**.
+3. Choisissez le **mode de remboursement** (espèces par défaut).
+
+Le système, de façon atomique :
+- crée et valide un **retour (RMA)** ;
+- **réintègre en stock** les articles revendables ;
+- **défait les artefacts liés** : unités sérialisées, garanties annulées, accès numériques révoqués ;
+- si le remboursement est **en espèces**, enregistre une **sortie de caisse** du montant remboursé
+  (l'argent quitte le tiroir). Un remboursement Mobile Money/Carte ne touche pas les espèces.
+
+---
+
+## 5. Imprimer le ticket de caisse
+
+Après chaque vente, vous pouvez **imprimer le ticket** (format ticket 80 mm, compatible
+imprimantes thermiques et imprimantes classiques) :
+
+- **Caisse Desktop** : bouton **Imprimer le ticket** (ou touche **F7**) — un aperçu s'affiche,
+  cliquez **Imprimer**. Tant qu'une nouvelle vente n'est pas passée, vous pouvez **réimprimer**
+  le ticket de la dernière vente.
+- **POS mobile** : bouton **Ticket** dans la barre du haut après une vente.
+
+Le ticket comporte : le nom, l'adresse et le téléphone de votre boutique (Paramètres → Entreprise),
+le numéro de vente, la date, le caissier, la caisse, le détail des articles, **tous les moyens de
+paiement utilisés** (y compris un paiement mixte, avec la référence Mobile Money) et le total.
+
+---
+
+## 6. Clôturer la caisse (rapprochement)
 
 En fin de service :
 
 1. Cliquer **Clôturer la caisse**.
-2. Le système affiche les **espèces attendues** = fond de caisse **+** ventes réglées en espèces.
+2. Le système affiche les **espèces attendues** = fond de caisse **+** ventes réglées en espèces
+   **+** entrées **−** sorties (remboursements espèces, retraits).
    *(Les ventes Mobile Money / Carte ne gonflent pas les espèces attendues.)*
 3. Saisir les **espèces réellement comptées** dans le tiroir.
 4. L'**écart** s'affiche en direct :
@@ -102,6 +158,10 @@ peut ensuite ouvrir une nouvelle session.
 |---|---|---|
 | `GET`  | `/api/pos/sessions/current` | session ouverte du caissier |
 | `POST` | `/api/pos/sessions` | ouvrir une session |
-| `POST` | `/api/pos/sessions/{id}/checkout` | encaisser une vente |
+| `POST` | `/api/pos/sessions/{id}/checkout` | encaisser une vente (simple ou mixte) |
+| `GET`  | `/api/pos/sessions/{id}/movements` | mouvements de caisse |
+| `POST` | `/api/pos/sessions/{id}/cash-movement` | entrée / sortie d'espèces |
+| `POST` | `/api/pos/sessions/{id}/refund` | rembourser une vente |
+| `GET`  | `/api/pos/orders/{orderId}/receipt` | ticket de caisse (impression / réimpression) |
 | `POST` | `/api/pos/sessions/{id}/close` | clôturer (rapprochement) |
 | `GET`  | `/api/pos/sessions` | historique des sessions |

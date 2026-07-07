@@ -312,6 +312,48 @@ class OrderApiTest extends TestCase
     }
 
     #[Test]
+    public function it_filters_orders_by_search_and_date_range(): void
+    {
+        // RC-18 (C-4) — search/from_date/to_date étaient ignorés serveur-side (le front les envoyait
+        // pour rien : la liste restait identique quels que soient les filtres).
+        $created = $this->postJson('/api/orders', [
+            'items' => [['product_id' => $this->product->id, 'quantity' => 1]],
+        ], $this->auth())->json();
+        $number = $created['number'];
+
+        // Recherche par numéro exact → 1 résultat ; numéro inexistant → 0.
+        $this->getJson('/api/orders?search=' . urlencode($number), $this->auth())
+            ->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/orders?search=INTROUVABLE-999', $this->auth())
+            ->assertOk()->assertJsonCount(0, 'data');
+
+        // Bornes de dates : aujourd'hui couvre la commande ; une fenêtre passée l'exclut.
+        $this->getJson('/api/orders?from_date=' . now()->toDateString() . '&to_date=' . now()->toDateString(), $this->auth())
+            ->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/orders?to_date=' . now()->subDays(2)->toDateString(), $this->auth())
+            ->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    #[Test]
+    public function a_customer_from_another_tenant_is_rejected(): void
+    {
+        // RC-20 (P-5) — un customer_id inter-tenant (UUID deviné/fuité) était accepté tel quel.
+        $otherTenant   = Tenant::create(['name' => 'Autre', 'slug' => 'autre-cust', 'plan' => 'starter', 'status' => 'active', 'settings' => []]);
+        $otherCustomer = \App\Modules\Customers\Models\Customer::withoutTenantScope()->create([
+            'tenant_id' => $otherTenant->id, 'name' => 'Client Étranger', 'email' => 'etranger@autre.sn',
+        ]);
+
+        $this->postJson('/api/orders', [
+            'customer_id' => $otherCustomer->id,
+            'items'       => [['product_id' => $this->product->id, 'quantity' => 1]],
+        ], $this->auth())
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('customer_id');
+
+        $this->assertDatabaseMissing('orders', ['customer_id' => $otherCustomer->id]);
+    }
+
+    #[Test]
     public function it_requires_authentication(): void
     {
         $this->getJson('/api/orders')->assertStatus(401);

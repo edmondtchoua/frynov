@@ -1,0 +1,245 @@
+# Module Comptabilité (SYSCOHADA) — Documentation technique
+
+> **RC-23 → RC-30** — cette page couvre le **référentiel** (P1), les **écritures & moteur
+> d'imputation** (P2) et la **facturation client** (P3). Les livres/états (P4-P5) arrivent dans les
+> incréments suivants — architecture complète :
+> [docs/architecture/comptabilite-syscohada.md](../architecture/comptabilite-syscohada.md).
+
+## Vue d'ensemble
+
+Module additif `app/Modules/Accounting`, gated par `tenant_modules` (`module:accounting`, seedé dans
+`ErpModulesSeeder`, associé aux plans via `PlanModulesSeeder`). Toutes les tables tenant portent
+`tenant_id` (trait `HasTenant`, TenantScope fail-closed).
+
+## Modèles & tables
+
+| Modèle | Table | Rôle |
+|---|---|---|
+| `AccountClass` | `accounting_account_classes` | Classes SYSCOHADA 1–9 — référentiel **global** (seed `AccountingClassesSeeder`) |
+| `Account` | `accounting_accounts` | Plan de comptes du tenant — `code` unique/tenant, `class_code` dérivé du 1er chiffre, `kind` (asset/liability/equity/revenue/expense), `is_system` (requis moteur, indésactivable), comptes auxiliaires (`auxiliary_type/of_id`) |
+| `Journal` | `accounting_journals` | VT, AC, CA, BQ, OD, ST, AV, RG — `sequence_prefix` pour la numérotation d'écritures (SequenceService) |
+| `Tax` | `accounting_taxes` | Taux en **points de base** (1800 = 18 %), comptes collecté/déductible, `amountFor()` arrondi demi-supérieur entier |
+| `AccountingSettings` | `tenant_accounting_settings` | 1 ligne/tenant : devise, `default_accounts` (références symboliques `@cash`→`571`… du moteur d'imputation), `auto_post` |
+| `FiscalYear` / `AccountingPeriod` | `accounting_fiscal_years` / `accounting_periods` | Exercice + 12 périodes mensuelles, statuts open/locked/closed. Dates **pures** sérialisées `Y-m-d` |
+
+## Provisionnement — `ChartOfAccountsProvisioner`
+
+`provision(Tenant, ?userId)` — **idempotent** (updateOrCreate partout) :
+38 comptes SYSCOHADA (dont les comptes système du moteur : 571, 521, 585, 411, 419, 401, 701, 706,
+601, 603, 4431, 4452, 471, 658, 758, 31, 11, 13), 8 journaux, TVA locale selon le pays du tenant
+(`defaultVatRateBp` : UEMOA 18 %, CEMAC 19,25 %, NE 19 %, CD 16 %…), exercice courant + 12 périodes,
+paramètres avec mapping des comptes par défaut. Audit `accounting.provisioned`.
+
+## Endpoints
+
+Préfixe `/api/accounting` · middlewares : `auth:sanctum` + `EnsureUserBelongsToTenant` + `module:accounting`.
+
+| Méthode | URL | RBAC | Description |
+|---|---|---|---|
+| GET | `overview` | lecture¹ | provisionné ? + compteurs + classes |
+| POST | `provision` | gestion² | initialise le référentiel (idempotent) |
+| GET/POST/PUT | `accounts[/{id}]` | lecture / gestion | plan de comptes (recherche, filtre classe, pagination) ; code immuable, compte système indésactivable (422) |
+| GET/PUT | `journals[/{id}]` | lecture / gestion | journaux (code & type immuables) |
+| GET/POST/PUT | `taxes[/{id}]` | lecture / gestion | taxes |
+| GET/PUT | `settings` | lecture / gestion | paramètres (audit sur update) |
+| GET | `fiscal-years` | lecture | exercices + périodes |
+| POST | `periods/{id}/lock` | gestion | verrouille (audit `accounting.period.locked`) |
+| POST | `periods/{id}/unlock` | **admin \| accounting.periods.reopen** | réouverture contrôlée, motif obligatoire, audité |
+
+¹ `accountant|chief-accountant|accounting-viewer|auditor|admin|manager|accounting.view`
+² `chief-accountant|admin|accounting.manage`
+
+## Rôles (RolesAndPermissionsSeeder)
+
+`accountant` (saisie + lecture + export) · `chief-accountant` (gestion référentiel, post/extourne,
+clôture) · `accounting-viewer` (lecture seule) · `auditor` (lecture + audit trail, aucune écriture).
+La **réouverture de période** est une permission dédiée (`accounting.periods.reopen`) non accordée
+au chef comptable par défaut (séparation des pouvoirs).
+
+## Frontend
+
+`frontend/src/modules/accounting` — routes `/accounting/{chart|taxes|periods|settings}` (entrée menu
+**Comptabilité**, `module: 'accounting'`). Vues : ChartOfAccountsView (assistant de provisionnement
++ plan filtrable + création de compte), TaxesView, PeriodsView (verrouillage/réouverture avec motif),
+AccountingSettingsView (auto-post + comptes par défaut). i18n FR/EN (`accounting.*`).
+
+## Écritures & moteur d'imputation (RC-25/26 — P2)
+
+### Écritures — `EntryService`
+Tables `accounting_entries` / `accounting_entry_lines`. Cycle : **draft → post → reversed**.
+Garde-fous imposés (service + tests) :
+- **Équilibre** : Σ débits = Σ crédits, ≥ 2 lignes, chaque ligne un seul côté > 0 (sinon 422).
+- **Période** : l'`entry_date` doit tomber dans une période OUVERTE (verrouillée/close → 422).
+- **Numérotation** : au POST, n° séquentiel par journal (`SequenceService`, préfixe `VT26…`) +
+  rattachement période/exercice ; audit `accounting.entry.posted`.
+- **Immutabilité** : une écriture `posted` ne se modifie ni se supprime → **extourne** (`reverse`)
+  = contre-écriture (côtés inversés) postée, liée dans les deux sens (`reversal_of_id`/`reversed_by_id`),
+  source marquée `reversed`. Double extourne interdite. Audit `accounting.entry.reversed`.
+- Traçabilité : `source_type`/`source_id`, `rule_code`, `inputs_snapshot` (rejouable/explicable).
+
+Endpoints : `GET entries[/{id}]` (lecture), `POST entries` (create, `accounting.entries.create`),
+`POST entries/{id}/post` (`accounting.entries.post`), `POST entries/{id}/reverse` (`accounting.entries.reverse`).
+
+### Moteur d'imputation — `ImputationEngine` + outbox
+`accounting_outbox` : un événement métier = une ligne **unique par (tenant, event_type, source)**
+→ le rejeu (retry, resync offline) ne produit **jamais** deux écritures. Le module Comptabilité
+**écoute** les événements POS (`PosAccountingSubscriber`, dépendance à sens unique Accounting→Pos ;
+le POS ignore la comptabilité). `record()` est best-effort et ne bloque jamais le flux métier ;
+`accounting:process-outbox` (planifié /5 min) rejoue les `pending`.
+
+Résolution des comptes : références symboliques `@cash`→571… via `settings.default_accounts`.
+Écriture `draft` ou `posted` selon `auto_post`. Règles seedées :
+
+| Événement (source) | Journal | Écriture |
+|---|---|---|
+| `pos.sale` (Order) | VT | débit trésorerie par leg (571/585/521), crédit 701 |
+| `pos.refund` (OrderReturn) | AV | débit 701, crédit trésorerie |
+| `pos.session_gap` (CashRegisterSession) | CA | manquant : 658/571 · surplus : 571/758 |
+| `cash.movement` (CashMovement) | CA | float_add 571/521 · withdrawal 521/571 · expense 471/571 (refund ignoré : porté par pos.refund) |
+| `payment.recorded` (Payment) | CA/BQ | débit trésorerie, crédit 411 |
+
+> L'idempotence `orders.pos_reference` (RC-22) garantit une commande unique par vente ; combinée à
+> l'unicité outbox, **une vente POS ⇒ exactement une écriture**, même en resync offline.
+
+### Frontend
+`EntriesView` (`/accounting/entries`) : liste (n°, date, journal, libellé, montant, **origine**
+= règle auto ou « Manuelle », statut), création manuelle (pavé de lignes avec **contrôle d'équilibre
+en direct**), comptabilisation, extourne. i18n FR/EN.
+
+## Facturation client (RC-30 — P3)
+
+Tables `invoices` / `invoice_lines` / `payment_allocations`. `InvoiceService` :
+- **Brouillon** : lignes avec **TVA calculée serveur-side** (HT après remise en points de base →
+  `Tax::amountFor`), totaux HT/TVA/TTC recomposés. Modifiable librement ; création possible **depuis
+  une commande** (`fromOrder`).
+- **Émission** : numéro `FA-` séquentiel + **écriture d'émission** via le moteur d'imputation
+  (`invoice.issued` → débit **411** client TTC / crédit **701** HT + **4431** TVA). La facture devient
+  immuable.
+- **Allocation de paiement** (N↔N) : un paiement alloué à une (ou plusieurs) facture(s), borné au
+  reste dû ET au disponible du paiement ; met à jour `paid_minor` + statut
+  (issued → partially_paid → paid) ; **écriture d'encaissement** (`payment.allocated` → débit
+  trésorerie / crédit 411).
+- **PDF** : `InvoicePdfRenderer` (DomPDF, réutilise le pattern ImportExport) — `GET …/invoices/{id}/pdf`.
+
+Endpoints : `GET invoices[/{id}][/pdf]` (lecture) · `POST invoices`, `invoices/from-order/{orderId}`,
+`invoices/{id}/issue`, `invoices/{id}/payments` (saisie, `accounting.entries.create`).
+Frontend : `InvoicesView` (`/accounting/invoices`) — liste, création à totaux en direct, émission,
+encaissement, lien PDF. i18n FR/EN.
+
+## Avoirs / notes de crédit (RC-33 — P3.2)
+
+Un avoir **réutilise la table `invoices`** (`kind = credit_note`, numéro `AV-`) : mêmes lignes, même
+moteur PDF. `InvoiceService` :
+- **Création depuis une facture émise** (`createCreditNoteFromInvoice`) : reprend les lignes (ou un
+  sous-ensemble), rattache `credit_note_of_id` → facture d'origine (traçabilité).
+- **Émission** (`issueCreditNote`) : numéro `AV-` + **écriture INVERSE** (`credit_note.issued` →
+  débit **701** HT + débit **4431** TVA / crédit **411** client, journal **AV**).
+- **Application** (`applyCreditNote` → `credit_note_applications`) : impute l'avoir à une facture
+  émise pour en réduire le reste dû ; borné au reste applicable de l'avoir **et** au reste dû de la
+  facture ; une ligne par couple (avoir, facture), les applications s'**accumulent**. Aucune écriture
+  supplémentaire (les deux mouvements sur 411 sont déjà comptabilisés à l'émission) — c'est un
+  lettrage. `remainingMinor()` d'une facture = total − paiements − avoirs appliqués.
+
+Statuts partagés : sur un avoir, `paid_minor` = montant appliqué (draft → issued → partially_paid →
+paid = entièrement appliqué). Endpoints saisie (`accounting.entries.create`) :
+`POST invoices/{id}/credit-notes`, `credit-notes/{id}/issue`, `credit-notes/{id}/apply` ; lecture via
+`GET invoices?kind=credit_note`. Frontend : `CreditNotesView` (`/accounting/credit-notes`).
+
+## États de lecture — balance & grand livre (RC-38 — P4.1)
+
+`LedgerService` agrège les **écritures `posted` ET `reversed`** (une écriture extournée reste un
+mouvement réel, contre-passée par son extourne également postée — les exclure fausserait les soldes ;
+les brouillons sont ignorés). Montants signés (débit positif).
+- **Balance générale** (`trialBalance(tenant, ?from, to)`) : par compte mouvementé — à-nouveau (net
+  avant `from`), mouvements débit/crédit de la période, solde. Invariants garantis par la partie
+  double : Σ débits = Σ crédits **et** Σ soldes débiteurs = Σ soldes créditeurs.
+- **Grand livre** (`generalLedger(tenant, accountId, ?from, to)`) : à-nouveau + lignes ordonnées
+  (date, journal) avec **solde progressif**, mouvements et solde de clôture.
+
+Endpoints lecture (`accounting.view`) : `GET reports/trial-balance?from=&to=`,
+`GET reports/general-ledger?account_id=&from=&to=`. Front : `BalanceView`
+(`/accounting/balance`) — balance filtrable par dates, **drill-down** vers le grand livre d'un compte.
+
+## Lettrage des comptes de tiers (RC-39 — P4.2)
+
+`LettrageService` rapproche des lignes d'un **même compte** formant un groupe **équilibré**
+(Σ débits = Σ crédits) sous un `lettrage_code` (A, B… par compte, bijectif base 26). Le non-lettré =
+le **solde réellement ouvert** (factures non réglées, règlements non affectés).
+- `letter(tenant, account, lineIds)` : refuse un groupe déséquilibré ou < 2 lignes ; n'accepte que des
+  lignes `posted`/`reversed` non déjà lettrées ; assigne le prochain code du compte. Réversible.
+- `unletter(tenant, account, code)` : rouvre les lignes du groupe.
+- `accountLines(tenant, account, ?onlyOpen)` : lignes + synthèse (lettré / ouvert / solde ouvert signé).
+
+Colonnes `accounting_entry_lines.lettrage_code` + `lettered_at`. Endpoints : `GET reports/lettrage`
+(lecture), `POST reports/lettrage`, `POST reports/lettrage/unletter` (`accounting.entries.create`).
+Front : `LettrageView` (`/accounting/lettrage`) — sélection multi-lignes avec contrôle d'équilibre en
+direct, badge de code cliquable pour délettrer. i18n FR/EN.
+
+## Clôture d'exercice + report-à-nouveau (RC-41 — P4.4)
+
+`ClosingService.close(fiscalYear)` : opération **transactionnelle** de fin d'exercice.
+- **Détermination du résultat** : les soldes des comptes de gestion (classes 6-8) sont sommés et
+  basculés sur le compte **13** (résultat net) — bénéfice au crédit, perte au débit.
+- **Report-à-nouveau** : une écriture est postée à l'ouverture de l'exercice **N+1** (journal OD, 1er
+  jour) reprenant les soldes des comptes **permanents** (bilan, classes 1-5) augmentés du résultat sur
+  13. Équilibrée par construction (Σ soldes permanents = −Σ soldes de gestion). L'exercice N+1 est
+  **ouvert automatiquement** (12 périodes mensuelles) s'il n'existe pas.
+- **Verrouillage** : l'exercice N passe `closed`, ses périodes `closed`, et `carry_forward_entry_id`
+  pointe le RAN. Une clôture est définitive (ré-clôture refusée).
+
+Endpoint : `POST fiscal-years/{id}/close` (`chief-accountant|admin|accounting.manage`). Front :
+`PeriodsView` — bouton **Clôturer l'exercice** avec confirmation + bandeau de résultat (bénéfice/perte,
+n° du RAN, exercice suivant). i18n FR/EN.
+
+## États financiers SYSCOHADA (RC-42 — P5)
+
+`FinancialStatementsService` — lecture bâtie sur la balance générale.
+- **Compte de résultat** (`incomeStatement`) : charges (classe 6) vs produits (classe 7), classe 8
+  (HAO) ventilée par sens ; **résultat = produits − charges**.
+- **Bilan** (`balanceSheet`) : **actif** = comptes permanents (classes 1-5) débiteurs ; **passif** =
+  comptes permanents créditeurs + **résultat de l'exercice**. **Équilibré par construction** : la
+  balance étant équilibrée, Σ soldes permanents = −Σ soldes de gestion = résultat, donc
+  **Actif = Passif + Résultat** (drapeau `balanced`).
+
+Endpoints lecture (`accounting.view`) : `GET reports/income-statement?from=&to=`,
+`GET reports/balance-sheet?from=&to=`. Front : `StatementsView` (`/accounting/statements`) — bascule
+Bilan / Compte de résultat, filtre par dates, contrôle d'équilibre + bandeau bénéfice/perte. i18n FR/EN.
+
+## Rapprochement bancaire (RC-43 — P4.3)
+
+`BankReconciliationService` — pointage d'un compte de banque (521…) contre un relevé. Colonnes
+`accounting_entry_lines.pointed` + `pointed_at`.
+- `state(tenant, account, ?statementBalance)` : lignes du compte avec leur pointage + synthèse — solde
+  comptable, mouvements pointés, **en-cours** : dépôts en transit (débits non pointés) et chèques en
+  circulation (crédits non pointés). Si le solde du relevé est fourni, vérifie l'**identité de
+  rapprochement** : `solde comptable = relevé + dépôts en transit − chèques en circulation` → `écart`
+  et drapeau `reconciled`.
+- `setPointed(tenant, account, lineIds, pointed)` : pointe/dépointe (lignes du compte, écritures
+  comptabilisées uniquement).
+
+Endpoints : `GET reports/bank-reconciliation?account_id=&statement_balance=` (lecture),
+`POST reports/bank-reconciliation/point` (`accounting.entries.create`). Front :
+`BankReconciliationView` (`/accounting/bank-reconciliation`) — sélection d'un compte de trésorerie,
+saisie du solde de relevé, cases à cocher de pointage, synthèse d'écart en direct. i18n FR/EN.
+
+## Tests
+
+Backend : `AccountingReferentialTest` (8) · `AccountingEntryTest` (7 — équilibre, post/numéro,
+période verrouillée, immutabilité, extourne miroir) · `AccountingImputationTest` (6 — vente split →
+écriture équilibrée par tender, **idempotence du rejeu**, remboursement, écart de clôture, mouvement,
+tenant sans module = 0 écriture) · `AccountingInvoiceTest` (7 — TVA/remise, émission → 411/701/4431,
+allocation partielle/multiple bornée, encaissement, cycle HTTP, RBAC caissier) ·
+`AccountingCreditNoteTest` (8 — reprise de lignes, émission → écriture inverse 701/4431/411,
+application bornée cumulative, statuts, brouillon non applicable, cycle HTTP, RBAC) ·
+`AccountingLedgerTest` (6 — balance équilibrée, à-nouveau, écritures extournées incluses, brouillons
+exclus, grand livre à solde progressif, RBAC lecture viewer/caissier) · `AccountingLettrageTest`
+(6 — groupe équilibré → code, refus déséquilibré, délettrage, codes A/B par compte, re-lettrage
+interdit, HTTP `only_open` + RBAC) · `AccountingClosingTest` (5 — résultat bénéfice/perte → 13, RAN
+équilibré, exercice+périodes fermés & N+1 ouvert, ré-clôture refusée, RBAC HTTP) ·
+`AccountingStatementsTest` (3 — compte de résultat charges/produits, **bilan équilibré** actif=passif
++ résultat au passif, RBAC lecture) · `AccountingBankRecTest` (5 — solde comptable + en-cours,
+**identité de rapprochement** relevé/comptable, écart non nul si non rapproché, pointage borné au
+compte, HTTP + RBAC). Front :
+`ChartOfAccountsView.spec.ts` (3) +
+`InvoicesView.spec.ts` (3) + `CreditNotesView.spec.ts` (3) + `BalanceView.spec.ts` (2) +
+`LettrageView.spec.ts` (2) + `PeriodsView.spec.ts` (2) + `StatementsView.spec.ts` (2) + `BankReconciliationView.spec.ts` (2) + garde i18n.

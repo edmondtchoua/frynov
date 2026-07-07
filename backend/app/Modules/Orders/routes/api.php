@@ -14,6 +14,9 @@ Route::middleware(['auth:sanctum', 'tenant', 'module:orders'])
             Route::post('returns/{id}/approve',  [OrderReturnController::class, 'approve']);
             Route::post('returns/{id}/restock',  [OrderReturnController::class, 'restock']);
             Route::post('returns/{id}/reject',   [OrderReturnController::class, 'reject']);
+            // RC-21 (R-3) — la CRÉATION d'un retour était hors RBAC : un simple viewer pouvait
+            // ouvrir des retours. Les caissiers passent par le POS (guard rôles caisse dédié).
+            Route::post('{orderId}/returns',     [OrderReturnController::class, 'store']);
         });
 
         // ── Orders CRUD
@@ -26,5 +29,4 @@ Route::middleware(['auth:sanctum', 'tenant', 'module:orders'])
             Route::post('/{id}/fulfill', [OrderController::class, 'fulfill']);
             Route::post('/{id}/cancel',  [OrderController::class, 'cancel']);
         });
-        Route::post('{orderId}/returns', [OrderReturnController::class, 'store']);
     });

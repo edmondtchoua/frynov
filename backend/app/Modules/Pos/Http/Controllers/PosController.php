@@ -3,7 +3,9 @@
 namespace App\Modules\Pos\Http\Controllers;
 
 use App\Modules\Inventory\Exceptions\InsufficientStockException;
+use App\Modules\Orders\Models\Order;
 use App\Modules\Payments\Http\Resources\PaymentResource;
+use App\Modules\Pos\Http\Resources\CashMovementResource;
 use App\Modules\Pos\Http\Resources\CashRegisterSessionResource;
 use App\Modules\Pos\Models\CashRegisterSession;
 use App\Modules\Pos\Services\PosService;
@@ -82,27 +84,147 @@ class PosController extends Controller
         }
 
         $data = $request->validate([
-            'items'              => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'uuid'],
-            'items.*.variant_id' => ['nullable', 'uuid'],
-            'items.*.quantity'   => ['required', 'integer', 'min:1'],
-            'customer_id'        => ['nullable', 'uuid'],
-            'method'             => ['nullable', 'in:cash,mobile_money,card,transfer,cheque'],
-            'reference'          => ['nullable', 'string', 'max:100'],
-            'note'               => ['nullable', 'string'],
+            'items'                   => ['required', 'array', 'min:1'],
+            'items.*.product_id'      => ['required', 'uuid'],
+            'items.*.variant_id'      => ['nullable', 'uuid'],
+            'items.*.quantity'        => ['required', 'integer', 'min:1'],
+            'customer_id'             => ['nullable', 'uuid'],
+            // Legacy single payment…
+            'method'                  => ['nullable', 'in:cash,mobile_money,card,transfer,cheque'],
+            'reference'               => ['nullable', 'string', 'max:100'],
+            // …or RC-16 split payment (amounts must sum to the total).
+            'payments'                => ['nullable', 'array', 'min:1'],
+            'payments.*.method'       => ['required_with:payments', 'in:cash,mobile_money,card,transfer,cheque'],
+            'payments.*.amount_cents' => ['required_with:payments', 'integer', 'min:1'],
+            'payments.*.reference'    => ['nullable', 'string', 'max:100'],
+            'note'                    => ['nullable', 'string'],
         ]);
 
+        // RC-22 — idempotence : la même clé rejouée (retry réseau, resync offline) renvoie la
+        // vente déjà créée. Clé bornée à 64 caractères (colonne) — au-delà, ignorée proprement.
+        $idempotencyKey = $request->header('X-Idempotency-Key');
+        if ($idempotencyKey !== null && strlen($idempotencyKey) > 64) {
+            $idempotencyKey = null;
+        }
+
         try {
-            $result = $this->service->checkout($session, $data, $request->user()->tenant_id, $request->user()->id);
+            $result = $this->service->checkout($session, $data, $request->user()->tenant_id, $request->user()->id, $idempotencyKey);
         } catch (InsufficientStockException $e) {
             return response()->json(['message' => 'Stock insuffisant pour finaliser la vente.'], 422);
         }
 
         return response()->json([
             'data' => [
-                'order'   => $result['order'],   // Order model (lines loaded) — Orders module serializes models directly
-                'payment' => new PaymentResource($result['payment']),
-                'session' => new CashRegisterSessionResource($session->fresh()),
+                'order'    => $result['order'],   // Order model (lines loaded) — Orders module serializes models directly
+                'payment'  => $result['payment'] ? new PaymentResource($result['payment']) : null,
+                'payments' => PaymentResource::collection($result['payments']),
+                'session'  => new CashRegisterSessionResource($session->fresh()),
+            ],
+        ], 201);
+    }
+
+    // ── GET /api/pos/sessions/{id}/movements ──────────────────────────────────
+
+    public function movements(Request $request, string $id): JsonResponse
+    {
+        if ($denied = $this->guard($request)) {
+            return $denied;
+        }
+
+        $session = CashRegisterSession::find($id);
+        if (! $session) {
+            return response()->json(['message' => 'Session de caisse introuvable.'], 404);
+        }
+
+        return response()->json([
+            'data' => CashMovementResource::collection(
+                $session->cashMovements()->latest('created_at')->get()
+            ),
+        ]);
+    }
+
+    // ── POST /api/pos/sessions/{id}/cash-movement ─────────────────────────────
+
+    public function cashMovement(Request $request, string $id): JsonResponse
+    {
+        if ($denied = $this->guard($request)) {
+            return $denied;
+        }
+
+        $session = CashRegisterSession::find($id);
+        if (! $session) {
+            return response()->json(['message' => 'Session de caisse introuvable.'], 404);
+        }
+
+        $data = $request->validate([
+            'direction'    => ['required', 'in:in,out'],
+            'amount_cents' => ['required', 'integer', 'min:1'],
+            'reason'       => ['nullable', 'string', 'max:100'],
+            'note'         => ['nullable', 'string'],
+        ]);
+
+        $movement = $this->service->recordCashMovement($session, $data, $request->user()->tenant_id, $request->user()->id);
+
+        return response()->json([
+            'data' => [
+                'movement' => new CashMovementResource($movement),
+                'session'  => new CashRegisterSessionResource($session->fresh()),
+            ],
+        ], 201);
+    }
+
+    // ── POST /api/pos/sessions/{id}/refund ────────────────────────────────────
+
+    public function refund(Request $request, string $id): JsonResponse
+    {
+        if ($denied = $this->guard($request)) {
+            return $denied;
+        }
+
+        $session = CashRegisterSession::find($id);
+        if (! $session) {
+            return response()->json(['message' => 'Session de caisse introuvable.'], 404);
+        }
+
+        $data = $request->validate([
+            'order_id'              => ['required', 'uuid'],
+            'lines'                 => ['required', 'array', 'min:1'],
+            'lines.*.order_line_id' => ['required', 'uuid'],
+            'lines.*.quantity'      => ['required', 'integer', 'min:1'],
+            'lines.*.condition'     => ['nullable', 'in:resalable,damaged,defective,destroyed'], // RC-21 (R-4) — harmonisé avec Orders
+            'reason'                => ['required', 'string', 'max:255'],
+            'refund_method'         => ['nullable', 'in:cash,mobile_money,card,transfer,cheque'],
+        ]);
+
+        $order = Order::find($data['order_id']);
+        if (! $order) {
+            return response()->json(['message' => 'Commande introuvable.'], 404);
+        }
+
+        try {
+            $result = $this->service->refundSale(
+                $session,
+                $order,
+                $data['lines'],
+                $data['reason'],
+                $request->user()->tenant_id,
+                $request->user()->id,
+                $data['refund_method'] ?? 'cash',
+            );
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'return' => [
+                    'id'                  => $result['return']->id,
+                    'number'              => $result['return']->number,
+                    'status'              => $result['return']->status,
+                    'refund_amount_cents' => $result['return']->refund_amount_cents,
+                ],
+                'movement' => $result['movement'] ? new CashMovementResource($result['movement']) : null,
+                'session'  => new CashRegisterSessionResource($session->fresh()),
             ],
         ], 201);
     }
@@ -128,6 +250,28 @@ class PosController extends Controller
         $session = $this->service->closeSession($session, $data, $request->user()->tenant_id, $request->user()->id);
 
         return response()->json(['data' => new CashRegisterSessionResource($session)]);
+    }
+
+    // ── GET /api/pos/orders/{orderId}/receipt ─────────────────────────────────
+
+    /**
+     * RC-19 — ticket de caisse structuré d'une vente POS (impression / réimpression côté client).
+     * Le TenantScope global cache les commandes des autres tenants → 404 (pas de fuite d'existence).
+     */
+    public function receipt(Request $request, string $orderId): JsonResponse
+    {
+        if ($denied = $this->guard($request)) {
+            return $denied;
+        }
+
+        $order = Order::find($orderId);
+        if (! $order) {
+            return response()->json(['message' => 'Commande introuvable.'], 404);
+        }
+
+        return response()->json([
+            'data' => app(\App\Modules\Pos\Services\ReceiptService::class)->forOrder($order),
+        ]);
     }
 
     // ── Authorization ─────────────────────────────────────────────────────────

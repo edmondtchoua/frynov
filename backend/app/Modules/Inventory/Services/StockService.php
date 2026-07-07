@@ -177,12 +177,16 @@ class StockService
             $movements[] = DB::transaction(function () use ($stock, $quantity, $unitCost, $reference, $performedBy) {
                 $locked = Stock::where('id', $stock->id)->lockForUpdate()->firstOrFail();
                 $before = $locked->quantity;
+                // RC-18 (C-7) — figer l'« après » AVANT l'update : `$locked->quantity` étant rafraîchi
+                // en mémoire par update(), le relire ensuite doublait la quantité dans l'historique
+                // (quantity_after = avant + 2×qté au lieu de avant + qté).
+                $after  = $before + $quantity;
 
                 // Update quantity immediately, CMUP will be recalculated async
                 $locked->update([
-                    'quantity'          => $locked->quantity + $quantity,
+                    'quantity'          => $after,
                     // Keep current CMUP temporarily (will be corrected by job)
-                    'total_value_cents' => ($locked->quantity + $quantity) * $locked->unit_cost_cents,
+                    'total_value_cents' => $after * $locked->unit_cost_cents,
                 ]);
 
                 return StockMovement::create([
@@ -193,7 +197,7 @@ class StockService
                     'type'                     => StockMovement::TYPE_IN,
                     'quantity'                 => $quantity,
                     'quantity_before'          => $before,
-                    'quantity_after'           => $locked->quantity + $quantity,
+                    'quantity_after'           => $after,
                     'reason'                   => StockMovement::REASON_DELIVERY,
                     'reference'                => $reference,
                     'note'                     => 'Import groupé (CMUP différé)',

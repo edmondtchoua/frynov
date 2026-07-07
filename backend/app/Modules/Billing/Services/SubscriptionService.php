@@ -16,6 +16,7 @@ class SubscriptionService
     public function __construct(
         private readonly ModuleRegistryService $moduleRegistry,
         private readonly ProrationCalculator $proration,
+        private readonly TenantCreditService $credits,
     ) {}
 
     /**
@@ -47,9 +48,16 @@ class SubscriptionService
 
         $metadata = $current?->metadata ?? [];
 
+        // RC-17 (M-1) — mode LEDGER : le trop-perçu vit dans tenant_credits (metadata jamais écrite).
+        // Sans cette lecture, l'assiette incluait le trop-perçu (amount_paid_minor = cash intégral)
+        // → crédit de temps calculé sur une base gonflée, en DOUBLE de l'avoir du ledger.
+        $overpaidMinor = config('billing.rules.tenant_credits_table')
+            ? $this->credits->balance($tenant->id, $currentCur)
+            : (int) ($metadata['overpaid_minor'] ?? 0);
+
         return $this->proration->compute(
             (int) ($current?->amount_paid_minor ?? 0),
-            (int) ($metadata['overpaid_minor'] ?? 0),
+            $overpaidMinor,
             $current?->current_period_start,
             $current?->current_period_end,
             $current?->status ?? '',
@@ -123,10 +131,12 @@ class SubscriptionService
         bool $settle = true,
         ?\Carbon\CarbonInterface $periodStart = null,
         ?ProrationResult $proration = null,
+        int $periods = 1,
     ): Subscription {
         $interval = in_array($interval, [Subscription::INTERVAL_MONTHLY, Subscription::INTERVAL_YEARLY], true)
             ? $interval
             : Subscription::INTERVAL_MONTHLY;
+        $periods = max(1, $periods); // P0.1 — nb de périodes payées d'avance (durée × N)
 
         $current   = $this->current($tenant);
         $didCancel = false;
@@ -146,8 +156,9 @@ class SubscriptionService
 
         $start = $periodStart ?? now();
         // La période ne court QU'une fois soldée : un acompte (past_due) n'a pas de fin de période.
+        // Durée = $periods périodes (P0.1) : +N mois ou +N ans.
         $periodEnd = $settle
-            ? ($interval === Subscription::INTERVAL_YEARLY ? (clone $start)->addYear() : (clone $start)->addMonth())
+            ? ($interval === Subscription::INTERVAL_YEARLY ? (clone $start)->addYears($periods) : (clone $start)->addMonthsNoOverflow($periods))
             : null;
 
         $subscription = Subscription::create([

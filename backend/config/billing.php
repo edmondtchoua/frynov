@@ -70,4 +70,17 @@ return [
         // Rejet/remboursement d'un acompte déjà imputé → décrémente le cumul (rétro-action).
         'deposit_reversal'       => env('BILLING_DEPOSIT_REVERSAL', true),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Paiement automatisé (PSP) — option, désactivé par défaut
+    |--------------------------------------------------------------------------
+    | Rail de paiement automatique. Tant qu'aucun vrai PSP n'est branché, le driver `fake` sert de
+    | référence (checkout factice + webhook signé HMAC). Activer via `BILLING_PSP_ENABLED=true`.
+    */
+    'psp' => [
+        'enabled'        => env('BILLING_PSP_ENABLED', false),
+        'driver'         => env('BILLING_PSP_DRIVER', 'fake'), // fake | (flutterwave|paystack|stripe à venir)
+        'webhook_secret' => env('BILLING_PSP_WEBHOOK_SECRET', 'dev-psp-secret'),
+    ],
 ];

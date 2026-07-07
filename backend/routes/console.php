@@ -45,3 +45,21 @@ Schedule::command('inventory:expire-batches')
     ->dailyAt('00:45')
     ->name('inventory:expire-batches')
     ->withoutOverlapping(30);
+
+// ── RC-26 — moteur d'imputation : rejeu de l'outbox comptable (idempotent) ─
+Schedule::command('accounting:process-outbox')
+    ->everyFiveMinutes()
+    ->name('accounting:process-outbox')
+    ->withoutOverlapping();
+
+// ── Demo — révocation des accès démo expirés (tenant éphémère démonté) ─────
+Schedule::command('demo:revoke-expired')
+    ->hourly()
+    ->name('demo:revoke-expired')
+    ->withoutOverlapping();
+
+// ── Demo — rappel avant expiration de l'accès démo ─────────────────────────
+Schedule::command('demo:send-reminders')
+    ->dailyAt('09:00')
+    ->name('demo:send-reminders')
+    ->withoutOverlapping();

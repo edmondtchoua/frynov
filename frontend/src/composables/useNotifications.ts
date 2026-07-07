@@ -20,6 +20,8 @@ export interface AppNotification {
   is_read: boolean
   requires_action: boolean
   created_at: string
+  /** P2b — origine du fil ('marketplace' | 'subscription') → route le mark-as-read. */
+  source?: string
 }
 
 // ── Module-level singleton (shared across all callers) ────────────────────────
@@ -60,8 +62,16 @@ async function poll(): Promise<void> {
     const auth = useAuthStore()
     if (!auth.isAuthenticated) return
 
-    const { data } = await client.get('/api/marketplace/alerts', { params: { per_page: 20 } })
-    const incoming: AppNotification[] = data.data ?? []
+    // P2b — deux sources fusionnées : alertes marketplace + notifications d'abonnement (cloche unique).
+    const [mk, sub] = await Promise.allSettled([
+      client.get('/api/marketplace/alerts', { params: { per_page: 20 } }),
+      client.get('/api/me/subscription/notifications'),
+    ])
+    const marketplace: AppNotification[] = (mk.status === 'fulfilled' ? (mk.value.data.data ?? []) : [])
+      .map((n: AppNotification) => ({ ...n, source: n.source ?? 'marketplace' }))
+    const subscription: AppNotification[] = sub.status === 'fulfilled' ? (sub.value.data.data ?? []) : []
+    const incoming: AppNotification[] = [...marketplace, ...subscription]
+      .sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
 
     // Detect NEW unread alerts → push toast
     incoming.filter(n => !_seenIds.has(n.id) && !n.is_read).forEach(n => {
@@ -110,10 +120,13 @@ export function useNotifications() {
   }
 
   async function markRead(id: string): Promise<void> {
+    const n = _notifications.value.find(n => n.id === id)
+    if (!n) return
     try {
-      await client.patch(`/api/marketplace/alerts/${id}/read`)
-      const n = _notifications.value.find(n => n.id === id)
-      if (n) n.is_read = true
+      // P2b — route selon la source du fil.
+      if (n.source === 'subscription') await client.post(`/api/me/subscription/notifications/${id}/read`)
+      else await client.patch(`/api/marketplace/alerts/${id}/read`)
+      n.is_read = true
       _unreadCount.value = _notifications.value.filter(n => !n.is_read).length
     } catch { /* ignore */ }
   }

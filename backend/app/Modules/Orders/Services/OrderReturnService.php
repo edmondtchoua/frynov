@@ -42,19 +42,50 @@ class OrderReturnService
         ?string $customerNote = null,
         string  $resolution  = OrderReturn::RESOLUTION_REFUND,
     ): OrderReturn {
-        if ($order->status === 'cancelled') {
-            throw new \DomainException('Impossible de créer un retour sur une commande annulée.');
+        // RC-21 (R-2) — seule une commande HONORÉE est retournable : sur un brouillon/confirmé le
+        // stock n'a jamais été décrémenté → un restock créerait du stock fantôme (et un
+        // remboursement sans vente réelle).
+        if ($order->status !== Order::STATUS_FULFILLED) {
+            throw new \DomainException('Seule une commande honorée (livrée) peut faire l\'objet d\'un retour.');
+        }
+
+        // RC-21 (R-1) — borne de sur-retour PAR LIGNE : quantité achetée − déjà demandée/retournée
+        // sur les retours non refusés de la même ligne. Sans cette borne : retour de 50 sur une
+        // ligne de 2 → stock fantôme au restock + remboursement supérieur au payé.
+        foreach ($lines as $l) {
+            $orderLine = $order->lines()->findOrFail($l['order_line_id']);
+
+            $alreadyClaimed = (int) OrderReturnLine::query()
+                ->where('order_line_id', $orderLine->id)
+                ->whereHas('orderReturn', fn ($q) => $q->whereIn('status', [
+                    OrderReturn::STATUS_PENDING,
+                    OrderReturn::STATUS_APPROVED,
+                    OrderReturn::STATUS_PROCESSING,
+                    OrderReturn::STATUS_RESTOCKED,
+                ]))
+                // Retour tranché (approved/restocked) → quantité approuvée fait foi ; en attente →
+                // la demande réserve la quantité (évite deux demandes concurrentes sur le même solde).
+                ->sum(DB::raw('COALESCE(quantity_approved, quantity_requested)'));
+
+            $returnable = max(0, (int) $orderLine->quantity - $alreadyClaimed);
+            if ((int) $l['quantity'] > $returnable) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'lines' => ["Quantité retournable dépassée pour « {$orderLine->name} » : {$returnable} restant(s) sur {$orderLine->quantity} acheté(s)."],
+                ]);
+            }
         }
 
         return DB::transaction(function () use ($order, $lines, $reason, $requestedBy, $customerNote, $resolution) {
-            $count  = OrderReturn::withoutTenantScope()
-                ->where('tenant_id', $order->tenant_id)
-                ->withTrashed()->count();
+            // RC-20 (C-9) — séquence verrouillée (plus de course count()+1 → numéros dupliqués).
+            $number = app(\App\Shared\Services\SequenceService::class)->next(
+                $order->tenant_id, 'RET', 6,
+                fn () => OrderReturn::withoutTenantScope()->where('tenant_id', $order->tenant_id)->withTrashed()->count(),
+            );
 
             $return = OrderReturn::create([
                 'tenant_id'      => $order->tenant_id,
                 'order_id'       => $order->id,
-                'number'         => 'RET-' . str_pad($count + 1, 6, '0', STR_PAD_LEFT),
+                'number'         => $number,
                 'status'         => OrderReturn::STATUS_PENDING,
                 'reason'         => $reason,
                 'resolution'     => $resolution,
@@ -109,12 +140,18 @@ class OrderReturnService
             ]);
         });
 
+        // RC-20 (C-8) — l'appel positionnel était dans le désordre (TypeError avalé par le catch) :
+        // AUCUN journal `return.approved` n'était écrit. Arguments nommés = signature garantie.
         try {
             app(\App\Modules\Platform\Services\AuditService::class)->log(
-                auth()->id() ?? null, "return.approved", "OrderReturn", $return->id,
-                ["status" => OrderReturn::STATUS_PENDING],
-                ["status" => OrderReturn::STATUS_APPROVED, "approved_by" => $approvedBy, "refund_amount_cents" => $return->fresh()->refund_amount_cents],
-                request()?->ip(), request()?->userAgent(), "low"
+                action: 'return.approved',
+                tenantId: $return->tenant_id,
+                userId: $approvedBy,
+                subject: $return,
+                oldValues: ['status' => OrderReturn::STATUS_PENDING],
+                newValues: ['status' => OrderReturn::STATUS_APPROVED, 'approved_by' => $approvedBy, 'refund_amount_cents' => $return->fresh()->refund_amount_cents],
+                ipAddress: request()?->ip(),
+                userAgent: request()?->userAgent(),
             );
         } catch (\Throwable) {}
     }

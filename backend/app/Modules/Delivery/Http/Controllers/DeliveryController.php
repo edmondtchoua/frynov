@@ -3,11 +3,13 @@
 namespace App\Modules\Delivery\Http\Controllers;
 
 use App\Modules\Delivery\Http\Resources\DeliveryResource;
+use App\Modules\Delivery\Models\Delivery;
 use App\Modules\Delivery\Services\DeliveryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Gate;
 
 class DeliveryController extends Controller
 {
@@ -26,6 +28,7 @@ class DeliveryController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        Gate::authorize('create', Delivery::class); // défense en profondeur (audit RBAC P2)
         $data = $request->validate([
             'order_id'        => 'nullable|uuid',
             'address'         => 'nullable|array',

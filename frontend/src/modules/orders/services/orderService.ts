@@ -4,7 +4,21 @@ import type { CreateOrderPayload, Order, OrderUnit, OrderWarranty, OrderEntitlem
 
 export const orderService = {
   list(params?: { status?: string; search?: string; from_date?: string; to_date?: string; warehouse_id?: string; page?: number; per_page?: number }) {
-    return client.get<PaginatedResponse<Order>>('/api/orders', { params }).then(r => r.data)
+    // RC-18 (C-3) — le back renvoie un paginator Laravel À PLAT (current_page/last_page au niveau
+    // racine, pas de bloc `meta`) : on normalise ici pour que la vue lise toujours {data, meta}.
+    // Sans cela, `meta` était undefined → pagination invisible, pages 2+ inaccessibles.
+    return client.get<any>('/api/orders', { params }).then(r => {
+      const d = r.data
+      return {
+        data: d.data ?? [],
+        meta: d.meta ?? {
+          current_page: d.current_page ?? 1,
+          last_page:    d.last_page ?? 1,
+          per_page:     d.per_page ?? 20,
+          total:        d.total ?? (d.data?.length ?? 0),
+        },
+      } as PaginatedResponse<Order>
+    })
   },
 
   get(id: string) {
@@ -50,5 +64,15 @@ export const orderService = {
 
   cancel(id: string) {
     return client.post<Order>(`/api/orders/${id}/cancel`).then(r => r.data)
+  },
+
+  // RC-21 — création d'un retour (RMA) depuis le détail de commande.
+  createReturn(orderId: string, payload: {
+    reason: string
+    resolution: string
+    customer_note?: string
+    lines: { order_line_id: string; quantity: number; condition?: string }[]
+  }) {
+    return client.post<{ data: unknown }>(`/api/orders/${orderId}/returns`, payload).then(r => r.data)
   },
 }

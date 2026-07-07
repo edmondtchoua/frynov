@@ -9,7 +9,7 @@
     </div>
 
     <div class="filter-bar">
-      <select v-model="filterStatus" class="form-input filter-select" @change="load">
+      <select v-model="filterStatus" class="form-input filter-select" @change="statusChanged">
         <option value="">{{ $t('common.allStatuses') }}</option>
         <option value="pending">{{ $t('orders.returns.status.pending') }}</option>
         <option value="approved">{{ $t('orders.returns.status.approved') }}</option>
@@ -17,6 +17,12 @@
         <option value="rejected">{{ $t('orders.returns.status.rejected') }}</option>
         <option value="cancelled">{{ $t('orders.returns.status.cancelled') }}</option>
       </select>
+    </div>
+
+    <!-- RC-18 (C-5) — les échecs d'action ne sont plus muets. -->
+    <div v-if="actionError" class="action-error" data-test="action-error" role="alert">
+      {{ actionError }}
+      <button class="action-error-close" :aria-label="$t('common.cancel')" @click="actionError = ''">×</button>
     </div>
 
     <div class="card table-scroll">
@@ -58,6 +64,13 @@
       </table>
     </div>
 
+    <!-- RC-21 — pagination -->
+    <div v-if="lastPage > 1" class="pagination" data-test="returns-pagination">
+      <button class="btn btn-secondary" :disabled="page <= 1" @click="page--">‹ {{ $t('common.previous') }}</button>
+      <span>{{ $t('common.pageOf', { current: page, total: lastPage }) }}</span>
+      <button class="btn btn-secondary" :disabled="page >= lastPage" @click="page++">{{ $t('common.next') }} ›</button>
+    </div>
+
     <!-- Reject Modal (shared BaseModal — UX-03) -->
     <BaseModal
       :model-value="!!rejectTarget"
@@ -86,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { formatDate } from '@/shared/utils/date'
 import api from '@/services/api'
 import StateBlock from '@/shared/ui/StateBlock.vue'
@@ -112,20 +125,43 @@ const filterStatus  = ref('')
 const rejectTarget  = ref<OrderReturn | null>(null)
 const rejectReason  = ref('')
 const rejecting     = ref(false)
+// RC-21 — pagination (le back renvoie un paginator plat : current_page/last_page à la racine).
+const page          = ref(1)
+const lastPage      = ref(1)
 
 async function load() {
   loading.value = true
   try {
-    const r = await api.get('/orders/returns', {
-      params: { status: filterStatus.value || undefined },
+    const r = await api.get('/api/orders/returns', {
+      params: { status: filterStatus.value || undefined, page: page.value },
     })
     const data = r.data
-    returns.value = data.data ?? data
-    total.value   = data.total ?? returns.value.length
+    returns.value  = data.data ?? data
+    total.value    = data.total ?? returns.value.length
+    lastPage.value = data.last_page ?? 1
   } finally { loading.value = false }
 }
 
+function statusChanged() {
+  if (page.value !== 1) {
+    page.value = 1 // le watch recharge
+  } else {
+    load()
+  }
+}
+
+watch(page, () => load())
+
 const { confirm } = useConfirm()
+
+// RC-18 (C-5) — approve/restock/reject étaient sans try/catch : un 422 (état invalide, stock
+// verrouillé…) partait en « unhandled rejection », l'utilisateur ne voyait RIEN. Toute erreur
+// est désormais affichée (message serveur si présent, sinon libellé générique).
+const actionError = ref('')
+
+function showActionError(e: any, fallbackKey: string) {
+  actionError.value = e?.response?.data?.message ?? t(fallbackKey)
+}
 
 async function approve(r: OrderReturn) {
   if (!(await confirm({
@@ -133,8 +169,13 @@ async function approve(r: OrderReturn) {
     message: t('orders.returns.approveConfirm', { number: r.number }),
     confirmLabel: t('orders.returns.approve'),
   }))) return
-  await api.post(`/orders/returns/${r.id}/approve`, {})
-  await load()
+  actionError.value = ''
+  try {
+    await api.post(`/api/orders/returns/${r.id}/approve`, {})
+    await load()
+  } catch (e: any) {
+    showActionError(e, 'orders.returns.approveError')
+  }
 }
 
 async function restock(r: OrderReturn) {
@@ -143,8 +184,13 @@ async function restock(r: OrderReturn) {
     message: t('orders.returns.restockConfirm', { number: r.number }),
     confirmLabel: t('orders.returns.restock'),
   }))) return
-  await api.post(`/orders/returns/${r.id}/restock`, {})
-  await load()
+  actionError.value = ''
+  try {
+    await api.post(`/api/orders/returns/${r.id}/restock`, {})
+    await load()
+  } catch (e: any) {
+    showActionError(e, 'orders.returns.restockError')
+  }
 }
 
 function openReject(r: OrderReturn) {
@@ -155,20 +201,24 @@ function openReject(r: OrderReturn) {
 async function confirmReject() {
   if (!rejectTarget.value || !rejectReason.value) return
   rejecting.value = true
+  actionError.value = ''
   try {
-    await api.post(`/orders/returns/${rejectTarget.value.id}/reject`, {
+    await api.post(`/api/orders/returns/${rejectTarget.value.id}/reject`, {
       reason: rejectReason.value,
     })
     rejectTarget.value = null
     await load()
+  } catch (e: any) {
+    showActionError(e, 'orders.returns.rejectError')
   } finally { rejecting.value = false }
 }
 
 function reasonLabel(r: string): string {
   return t(`orders.returns.reason.${r}`)
 }
-function resolutionLabel(r: string): string {
-  return t(`orders.returns.resolution.${r}`)
+function resolutionLabel(r: string | null): string {
+  // RC-21 — résolution absente (données historiques) : tiret plutôt qu'une clé i18n brute.
+  return r ? t(`orders.returns.resolution.${r}`) : '—'
 }
 function statusLabel(s: string): string {
   return t(`orders.returns.status.${s}`)
@@ -192,6 +242,9 @@ onMounted(load)
 .page-subtitle  { color: #64748b; margin: 4px 0 0; font-size: 0.875rem; }
 .filter-bar     { margin-bottom: 16px; }
 .filter-select  { max-width: 220px; }
+.action-error   { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: #fee2e2; color: #991b1b; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.875rem; }
+.action-error-close { border: none; background: transparent; color: inherit; font-size: 1.1rem; cursor: pointer; line-height: 1; }
+.pagination     { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.5rem; font-size: 0.875rem; color: #6b7280; }
 .actions-cell   { display: flex; gap: 4px; flex-wrap: wrap; }
 /* Modal chrome now provided by the shared <BaseModal> (UX-03). */
 </style>

@@ -28,4 +28,6 @@ return [
     App\Modules\Warranties\Providers\WarrantiesServiceProvider::class,
     App\Modules\Digital\Providers\DigitalServiceProvider::class,
     App\Modules\Notifications\Providers\NotificationsServiceProvider::class,
+    App\Modules\Accounting\Providers\AccountingServiceProvider::class,
+    App\Modules\Demo\Providers\DemoServiceProvider::class,
 ];

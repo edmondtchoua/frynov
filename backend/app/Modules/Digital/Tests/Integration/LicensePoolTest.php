@@ -101,6 +101,31 @@ class LicensePoolTest extends TestCase
     }
 
     #[Test]
+    public function revoking_an_entitlement_releases_its_pool_key(): void
+    {
+        // RC-18 (D-3) — avant correctif, la clé restait `assigned` après révocation (retour/RMA) :
+        // le pool fuyait → épuisement prématuré + fausses alertes pool_exhausted.
+        $this->postJson("/api/digital/products/{$this->software->id}/license-keys", ['keys' => ['UNIQUE-KEY']], $this->auth())->assertCreated();
+
+        $order = $this->sell();
+        $ent   = DigitalEntitlement::withoutTenantScope()->where('order_id', $order->id)->first();
+        $this->assertSame('UNIQUE-KEY', $ent->license_key);
+
+        app(\App\Modules\Digital\Services\DigitalService::class)
+            ->revokeDownToActive($this->tenant->id, $ent->order_line_id, 0);
+
+        // La clé redevient disponible (réassignable FIFO), plus rattachée à l'accès révoqué.
+        $poolKey = LicensePoolKey::withoutTenantScope()->where('license_key', 'UNIQUE-KEY')->first();
+        $this->assertSame(LicensePoolKey::STATUS_AVAILABLE, $poolKey->status);
+        $this->assertNull($poolKey->entitlement_id);
+
+        // Une nouvelle vente la reconsomme (pas de génération fallback).
+        $order2 = $this->sell();
+        $ent2   = DigitalEntitlement::withoutTenantScope()->where('order_id', $order2->id)->first();
+        $this->assertSame('UNIQUE-KEY', $ent2->license_key);
+    }
+
+    #[Test]
     public function exhausted_pool_falls_back_to_generation_by_default(): void
     {
         // Aucun import : politique par défaut `generate` → clé générée à la volée (RC-5E).

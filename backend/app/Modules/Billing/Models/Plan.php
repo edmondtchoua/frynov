@@ -21,10 +21,19 @@ class Plan extends Model
 
     public const CODE_ENTERPRISE = 'enterprise';   // public name: Business / Enterprise
 
+    // P5 — cycle de vie éditorial (back-office).
+    public const STATUS_ACTIVE   = 'active';
+    public const STATUS_DRAFT    = 'draft';
+    public const STATUS_ARCHIVED = 'archived';
+
     protected $fillable = [
         'code',
         'name',
         'description',
+        'status',
+        'badge',
+        'tax_rate_bps',
+        'setup_fee_minor',
         'price_monthly_cents',
         'price_yearly_cents',
         'currency',
@@ -53,6 +62,8 @@ class Plan extends Model
             'max_branches' => 'integer',
             'max_warehouses' => 'integer',
             'trial_days' => 'integer',
+            'tax_rate_bps' => 'integer',
+            'setup_fee_minor' => 'integer',
             'features' => 'array',
             'is_active' => 'boolean',
             'is_public' => 'boolean',
@@ -63,6 +74,18 @@ class Plan extends Model
     public function isFree(): bool
     {
         return $this->price_monthly_cents === 0;
+    }
+
+    /** P5 — sélectionnable par un tenant : publié, actif ET au statut `active`. */
+    public function isSelectableByTenant(): bool
+    {
+        return $this->is_active && $this->is_public && $this->status === self::STATUS_ACTIVE;
+    }
+
+    /** Scope des plans sélectionnables côté tenant (public pricing / devis). */
+    public function scopeSelectable($query)
+    {
+        return $query->where('is_active', true)->where('is_public', true)->where('status', self::STATUS_ACTIVE);
     }
 
     // ── Relations ─────────────────────────────────────────────────────────────

@@ -192,6 +192,7 @@
       </header>
 
       <main class="page-content">
+        <DemoModeBanner />
         <slot />
       </main>
     </div>
@@ -206,6 +207,7 @@ import { usePermission } from '@/composables/usePermission'
 import FrynovLogo from '@/shared/components/FrynovLogo.vue'
 import NotificationCenter from '@/shared/components/NotificationCenter.vue'
 import LanguageSwitcher from '@/shared/components/LanguageSwitcher.vue'
+import DemoModeBanner from '@/shared/components/DemoModeBanner.vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -307,6 +309,15 @@ const _allNavItems: Array<{ name: string; to: string; label: string; managerOnly
     managerOnly: true,
     module: 'reports',
     icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12V9l3-3 3 3 4-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 15h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+  },
+  {
+    // RC-23 — module Comptabilité SYSCOHADA (gated par tenant_modules + rôles côté API).
+    name: 'accounting',
+    to: '/accounting/invoices',
+    label: 'Comptabilité',
+    managerOnly: true,
+    module: 'accounting',
+    icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M6 2v12M2 6h12M9 9.5h3M9 12h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',
   },
   {
     name: 'import',

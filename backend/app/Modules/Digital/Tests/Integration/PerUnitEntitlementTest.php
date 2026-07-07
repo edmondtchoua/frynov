@@ -40,6 +40,7 @@ class PerUnitEntitlementTest extends TestCase
         Plan::firstOrCreate(['code' => 'starter'], ['name' => 'Starter', 'price_monthly_cents' => 0, 'price_yearly_cents' => 0, 'currency' => 'XOF', 'trial_days' => 14, 'is_active' => true, 'is_public' => true, 'sort_order' => 1]);
 
         $this->tenant = Tenant::create(['name' => 'Unit', 'slug' => 'unit-test', 'plan' => 'starter', 'status' => 'active', 'settings' => []]);
+        $this->seedCustomer(self::CUSTOMER_ID, $this->tenant->id); // RC-20 (P-5) — le customer_id doit exister
         $this->user = User::create(['name' => 'M', 'email' => 'm@unit.sn', 'password' => Hash::make('x'), 'tenant_id' => $this->tenant->id]);
         $this->user->assignTenantRole('manager');
 

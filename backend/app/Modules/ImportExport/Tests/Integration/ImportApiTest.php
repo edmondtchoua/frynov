@@ -5,6 +5,7 @@ namespace App\Modules\ImportExport\Tests\Integration;
 use App\Models\User;
 use App\Modules\ImportExport\Models\ImportSession;
 use App\Modules\Tenants\Models\Tenant;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class ImportApiTest extends TestCase
@@ -25,6 +27,7 @@ class ImportApiTest extends TestCase
     {
         parent::setUp();
         Storage::fake('local');
+        $this->seed(RolesAndPermissionsSeeder::class);
 
         $this->tenant = Tenant::create([
             'name' => 'Test Shop', 'slug' => 'test-shop', 'plan' => 'starter', 'status' => 'active',
@@ -35,6 +38,11 @@ class ImportApiTest extends TestCase
             'password'  => Hash::make('pass'),
             'tenant_id' => $this->tenant->id,
         ]);
+
+        // L'écriture import est gardée (route + policy `import_export.*`) : l'utilisateur doit porter
+        // un rôle d'écriture. On lui donne `admin` dans le contexte team du tenant.
+        app(PermissionRegistrar::class)->setPermissionsTeamId($this->tenant->id);
+        $this->user->assignRole('admin');
     }
 
     private function makeXlsxFile(array $rows): UploadedFile
@@ -175,6 +183,50 @@ class ImportApiTest extends TestCase
             'id'     => $sessionId,
             'status' => ImportSession::STATUS_CANCELLED,
         ]);
+    }
+
+    /**
+     * Audit RBAC P2 — les écritures import sont gardées (route `role_or_permission:` + `ImportSessionPolicy`).
+     * Un `viewer` (lecture seule) reçoit 403 sur upload / mapping / cancel, à travers la vraie pile
+     * route+contrôleur. Ferme l'asymétrie avec Payments/Catalog/Orders (qui ont déjà ce test négatif).
+     */
+    #[Test]
+    public function a_viewer_is_forbidden_on_policy_guarded_import_writes(): void
+    {
+        $viewer = User::create([
+            'name'      => 'Viewer',
+            'email'     => 'viewer@test.com',
+            'password'  => Hash::make('pass'),
+            'tenant_id' => $this->tenant->id,
+        ]);
+        app(PermissionRegistrar::class)->setPermissionsTeamId($this->tenant->id);
+        $viewer->assignRole('viewer');
+
+        $session = ImportSession::create([
+            'tenant_id'         => $this->tenant->id,
+            'performed_by'      => $this->user->id,
+            'type'              => 'products',
+            'status'            => ImportSession::STATUS_DRAFT,
+            'mode'              => 'create_update',
+            'original_filename' => 'x.xlsx',
+            'stored_path'       => 'imports/x.xlsx',
+        ]);
+
+        $this->actingAs($viewer)
+            ->postJson('/api/import/upload', [
+                'file' => $this->makeXlsxFile([['SKU'], ['P-1']]),
+                'type' => 'products',
+                'mode' => 'create_update',
+            ])
+            ->assertStatus(403); // import_export.create
+
+        $this->actingAs($viewer)
+            ->patchJson("/api/import/{$session->id}/mapping", ['mapping' => ['SKU' => 'sku']])
+            ->assertStatus(403); // import_export.update
+
+        $this->actingAs($viewer)
+            ->deleteJson("/api/import/{$session->id}")
+            ->assertStatus(403); // import_export.update
     }
 
     #[Test]

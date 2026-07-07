@@ -21,6 +21,9 @@ class CashRegisterSessionResource extends JsonResource
             'cash_sales_cents'    => $this->cash_sales_cents,
             'sales_count'         => $this->sales_count,
 
+            // Net of pay-ins/pay-outs (refunds, withdrawals, float top-ups). RC-16.
+            'net_cash_movements_cents' => $this->netCashMovementsCents(),
+
             // Live expectation while open; persisted figures once closed.
             'expected_cash_cents' => $this->expected_cash_cents ?? $this->expectedCashNow(),
             'counted_cash_cents'  => $this->counted_cash_cents,

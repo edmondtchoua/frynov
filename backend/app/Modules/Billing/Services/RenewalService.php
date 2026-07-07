@@ -4,6 +4,7 @@ namespace App\Modules\Billing\Services;
 
 use App\Modules\Billing\Models\Plan;
 use App\Modules\Billing\Models\Subscription;
+use App\Modules\Billing\Models\SubscriptionChangeRequest;
 use App\Modules\Notifications\Services\NotificationService;
 use App\Modules\Platform\Services\AuditService;
 use App\Modules\Tenants\Models\Tenant;
@@ -97,11 +98,12 @@ class RenewalService
 
     // ── 2. Échéance dépassée ────────────────────────────────────────────────
 
-    /** @return array{past_due:int,rolled:int} */
+    /** @return array{past_due:int,rolled:int,scheduled:int} */
     private function expirePeriods(): array
     {
-        $pastDue = 0;
-        $rolled  = 0;
+        $pastDue   = 0;
+        $rolled    = 0;
+        $scheduled = 0;
 
         $expired = Subscription::withoutTenantScope()
             ->whereIn('status', [Subscription::STATUS_ACTIVE, Subscription::STATUS_TRIALING])
@@ -111,6 +113,14 @@ class RenewalService
             ->get();
 
         foreach ($expired as $sub) {
+            // P4 — changement DIFFÉRÉ planifié : on l'applique à l'échéance (prioritaire sur roll/past_due).
+            if (! empty($sub->metadata['scheduled_change'])) {
+                if ($this->applyScheduledChange($sub, $sub->metadata['scheduled_change'])) {
+                    $scheduled++;
+                    continue;
+                }
+            }
+
             if ($this->isFreePlan($sub)) {
                 // Plan gratuit : la période roule d'un intervalle, l'accès continue.
                 $end = $sub->current_period_end;
@@ -141,7 +151,60 @@ class RenewalService
             $pastDue++;
         }
 
-        return ['past_due' => $pastDue, 'rolled' => $rolled];
+        return ['past_due' => $pastDue, 'rolled' => $rolled, 'scheduled' => $scheduled];
+    }
+
+    /**
+     * P4 — applique à l'échéance un changement de plan DIFFÉRÉ (déjà payé + approuvé). Enchaîne la
+     * nouvelle période à la fin du cycle courant et active la demande liée. Best-effort : un échec
+     * n'interrompt pas le job (renvoie false → le cycle suit le traitement normal).
+     */
+    private function applyScheduledChange(Subscription $sub, array $scheduled): bool
+    {
+        try {
+            $plan   = Plan::find($scheduled['plan_id'] ?? null);
+            $tenant = Tenant::withoutGlobalScopes()->find($sub->tenant_id);
+            if (! $plan || ! $tenant) {
+                return false;
+            }
+
+            $admin = ! empty($scheduled['approved_by']) ? \App\Models\User::find($scheduled['approved_by']) : null;
+
+            $newSub = $this->subscriptions->changePlan(
+                $tenant,
+                $plan,
+                $admin, // approbateur d'origine → statut actif
+                $scheduled['interval'] ?? Subscription::INTERVAL_MONTHLY,
+                settle: true,
+                periodStart: $sub->current_period_end, // enchaîne au cycle suivant
+                periods: (int) ($scheduled['quantity'] ?? 1),
+            );
+            $newSub->update([
+                'currency'          => $scheduled['currency'] ?? $newSub->currency,
+                'market_code'       => $scheduled['market_code'] ?? $newSub->market_code,
+                'amount_paid_minor' => (int) ($scheduled['amount_paid_minor'] ?? 0),
+            ]);
+
+            // Active la demande différée (approved → activated).
+            if (! empty($scheduled['change_request_id'])) {
+                $cr = SubscriptionChangeRequest::find($scheduled['change_request_id']);
+                if ($cr && ! $cr->isTerminal()) {
+                    $cr->update(['status' => SubscriptionChangeRequest::STATUS_ACTIVATED, 'activated_at' => now()]);
+                }
+            }
+
+            $this->audit->log(
+                action: 'billing.scheduled_change_applied',
+                tenantId: $sub->tenant_id,
+                userId: null,
+                subject: $newSub,
+                newValues: ['plan' => $plan->code, 'interval' => $scheduled['interval'] ?? null],
+            );
+
+            return true;
+        } catch (\Throwable) {
+            return false; // best-effort : on ne bloque jamais le renouvellement
+        }
     }
 
     // ── 3. Grâce expirée → suspension ───────────────────────────────────────
@@ -189,7 +252,21 @@ class RenewalService
             return false;
         }
 
-        $price = $sub->interval === Subscription::INTERVAL_YEARLY
+        $interval = $sub->interval === Subscription::INTERVAL_YEARLY ? 'yearly' : 'monthly';
+
+        // RC-18 (M-4) — prix LOCALISÉ d'abord : le marché de l'abonnement (sinon le marché canonique
+        // de sa devise, sinon 'global') fait foi. Les colonnes legacy ne servent que de repli — les
+        // lire en premier classait mal les plans à grille PlanPrice (facturé à tort / jamais facturé).
+        $market = $sub->market_code
+            ?: ($sub->currency ? \App\Modules\Billing\Support\Markets::canonicalForCurrency($sub->currency) : null)
+            ?: 'global';
+
+        $localized = $plan->priceForMarket($market, $interval);
+        if ($localized !== null) {
+            return (int) $localized->base_amount_minor === 0;
+        }
+
+        $price = $interval === 'yearly'
             ? (int) $plan->price_yearly_cents
             : (int) $plan->price_monthly_cents;
 

@@ -9,7 +9,7 @@ const { accountingService } = vi.hoisted(() => ({
   accountingService: {
     creditNotes: vi.fn(), invoices: vi.fn(), createCreditNote: vi.fn(),
     issueCreditNote: vi.fn(), applyCreditNote: vi.fn(),
-    invoicePdfUrl: vi.fn((id: string) => `/api/accounting/invoices/${id}/pdf`),
+    downloadInvoicePdf: vi.fn(() => Promise.resolve(new Blob())),
   },
 }))
 vi.mock('@/modules/accounting/services/accountingService', () => ({ accountingService }))

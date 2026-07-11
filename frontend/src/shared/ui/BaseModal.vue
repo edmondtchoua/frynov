@@ -48,7 +48,7 @@ withDefaults(
     modelValue: boolean
     title?: string
     subtitle?: string
-    size?: 'sm' | 'md' | 'lg'
+    size?: 'sm' | 'md' | 'lg' | 'xl'
     variant?: 'drawer' | 'center'
   }>(),
   { size: 'md', variant: 'drawer' },

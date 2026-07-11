@@ -118,13 +118,21 @@ export const accountingService = {
     return client.post(`/api/accounting/invoices/${id}/issue`).then(r => r.data.data)
   },
 
-  allocatePayment(id: string, payload: { payment_id: string; amount_minor: number }) {
+  /**
+   * Encaisse une facture. Deux modes :
+   *  - `payment_id` : alloue un règlement existant (compat) ;
+   *  - `reference` + `method` : crée un règlement autonome puis l'alloue (cas courant côté UI).
+   */
+  allocatePayment(id: string, payload: { payment_id?: string; reference?: string; method?: string; amount_minor: number }) {
     return client.post(`/api/accounting/invoices/${id}/payments`, payload).then(r => r.data.data)
   },
 
-  /** URL du PDF (téléchargement direct — le navigateur porte le token via l'app). */
-  invoicePdfUrl(id: string): string {
-    return `/api/accounting/invoices/${id}/pdf`
+  /**
+   * Télécharge le PDF de la facture en portant le Bearer token (l'API n'accepte pas d'accès
+   * anonyme). Un simple <a href> ouvrirait une requête sans token → 401 ; d'où le fetch en blob.
+   */
+  downloadInvoicePdf(id: string): Promise<Blob> {
+    return client.get(`/api/accounting/invoices/${id}/pdf`, { responseType: 'blob' }).then(r => r.data)
   },
 
   // ── Avoirs / notes de crédit (RC-33) ──────────────────────────────────────

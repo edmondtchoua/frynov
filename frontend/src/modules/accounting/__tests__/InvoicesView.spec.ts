@@ -8,7 +8,7 @@ import { vFocusTrap } from '@/directives/focusTrap'
 const { accountingService } = vi.hoisted(() => ({
   accountingService: {
     invoices: vi.fn(), issueInvoice: vi.fn(), createInvoice: vi.fn(), allocatePayment: vi.fn(),
-    taxes: vi.fn(), invoicePdfUrl: vi.fn((id: string) => `/api/accounting/invoices/${id}/pdf`),
+    taxes: vi.fn(), downloadInvoicePdf: vi.fn(() => Promise.resolve(new Blob())),
   },
 }))
 vi.mock('@/modules/accounting/services/accountingService', () => ({ accountingService }))
@@ -58,8 +58,9 @@ describe('InvoicesView', () => {
     await w.find('[data-test="inv-customer"]').setValue('Client SA')
     await w.find('[data-test="inv-label-0"]').setValue('Prestation')
     // qty 2, price 1000 (→ 200 000 cents HT), VAT 18 %
+    // La désignation est un <textarea> (multi-lignes) → exclue de « input » : qty devient le 1er input.
     const line = w.findAll('[data-test="inv-line-0"] input')
-    await line[1].setValue(2)   // quantity
+    await line[0].setValue(2)   // quantity
     await w.find('[data-test="inv-price-0"]').setValue(1000)
     await w.find('[data-test="inv-line-0"] select').setValue('tx1')
     await flushPromises()
@@ -84,7 +85,8 @@ describe('InvoicesView', () => {
     await flushPromises()
 
     await w.find('[data-test="pay-i2"]').trigger('click')
-    await w.find('[data-test="pay-payment-id"]').setValue('pay-uuid')
+    // Référence libre (plus d'UUID exigé) ; le montant est pré-rempli au reste dû.
+    await w.find('[data-test="pay-reference"]').setValue('7888888')
     accountingService.allocatePayment.mockRejectedValue({ response: { data: { message: 'Allocation supérieure au disponible.' } } })
     await w.find('[data-test="pay-submit"]').trigger('click')
     await flushPromises()

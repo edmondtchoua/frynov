@@ -43,7 +43,7 @@
               <button v-if="cn.status === 'draft'" class="btn btn-sm btn-primary" :data-test="`issue-cn-${cn.id}`" @click="issue(cn)">{{ $t('accounting.issue') }}</button>
               <template v-else>
                 <button v-if="cn.status !== 'paid'" class="btn btn-sm btn-ghost" :data-test="`apply-${cn.id}`" @click="openApply(cn)">{{ $t('accounting.applyCn') }}</button>
-                <a class="btn btn-sm btn-ghost" :href="pdfUrl(cn.id)" target="_blank" rel="noopener" :data-test="`pdf-cn-${cn.id}`">PDF</a>
+                <button class="btn btn-sm btn-ghost" :disabled="pdfBusy === cn.id" :data-test="`pdf-cn-${cn.id}`" @click="downloadPdf(cn)">{{ pdfBusy === cn.id ? '…' : 'PDF' }}</button>
               </template>
             </td>
           </tr>
@@ -121,7 +121,30 @@ const meta        = ref({ current_page: 1, last_page: 1, total: 0 })
 const actionError = ref('')
 
 const toCents = (v: number) => Math.round((v || 0) * 100)
-const pdfUrl = (id: string) => accountingService.invoicePdfUrl(id)
+
+// PDF authentifié (Bearer en mémoire) : fetch en blob puis ouverture — cf. InvoicesView.
+const pdfBusy = ref('')
+async function downloadPdf(cn: Invoice) {
+  pdfBusy.value = cn.id
+  actionError.value = ''
+  try {
+    const blob = await accountingService.downloadInvoicePdf(cn.id)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.target = '_blank'
+    a.rel = 'noopener'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  } catch {
+    actionError.value = t('accounting.pdfFailed')
+  } finally {
+    pdfBusy.value = ''
+  }
+}
+
 function statusBadge(s: string) {
   return 'badge ' + ({ draft: 'badge-gray', issued: 'badge-blue', partially_paid: 'badge-warning', paid: 'badge-success', cancelled: 'badge-gray' }[s] ?? 'badge-gray')
 }

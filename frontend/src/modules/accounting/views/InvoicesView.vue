@@ -53,7 +53,7 @@
               <button v-if="inv.status === 'draft'" class="btn btn-sm btn-primary" :data-test="`issue-${inv.id}`" @click="issue(inv)">{{ $t('accounting.issue') }}</button>
               <template v-else>
                 <button v-if="inv.status !== 'paid'" class="btn btn-sm btn-ghost" :data-test="`pay-${inv.id}`" @click="openPay(inv)">{{ $t('accounting.recordPayment') }}</button>
-                <a class="btn btn-sm btn-ghost" :href="pdfUrl(inv.id)" target="_blank" rel="noopener" :data-test="`pdf-${inv.id}`">PDF</a>
+                <button class="btn btn-sm btn-ghost" :disabled="pdfBusy === inv.id" :data-test="`pdf-${inv.id}`" @click="downloadPdf(inv)">{{ pdfBusy === inv.id ? '…' : 'PDF' }}</button>
               </template>
             </td>
           </tr>
@@ -68,7 +68,7 @@
     </div>
 
     <!-- Nouvelle facture -->
-    <BaseModal v-model="createModal.open" :title="$t('accounting.newInvoice')">
+    <BaseModal v-model="createModal.open" :title="$t('accounting.newInvoice')" size="xl">
       <div class="form-row">
         <div class="form-group" style="flex:2">
           <label class="form-label">{{ $t('accounting.customer') }}</label>
@@ -83,27 +83,36 @@
       <table class="inv-lines">
         <thead>
           <tr>
-            <th>{{ $t('accounting.designation') }}</th>
-            <th class="num">{{ $t('accounting.qty') }}</th>
-            <th class="num">{{ $t('accounting.unitPrice') }}</th>
-            <th class="num">{{ $t('accounting.discountPct') }}</th>
-            <th>{{ $t('accounting.tax') }}</th>
-            <th></th>
+            <th class="col-desc">{{ $t('accounting.designation') }}</th>
+            <th class="num col-qty">{{ $t('accounting.qty') }}</th>
+            <th class="num col-price">{{ $t('accounting.unitPrice') }}</th>
+            <th class="num col-disc">{{ $t('accounting.discountPct') }}</th>
+            <th class="col-tax">{{ $t('accounting.tax') }}</th>
+            <th class="col-del"></th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="(l, i) in createModal.lines" :key="i" :data-test="`inv-line-${i}`">
-            <td><input v-model="l.label" class="form-input form-input-sm" :data-test="`inv-label-${i}`" /></td>
-            <td><input v-model.number="l.quantity" type="number" min="1" class="form-input form-input-sm num" style="width:60px" /></td>
-            <td><input v-model.number="l.price" type="number" min="0" step="0.01" class="form-input form-input-sm num" style="width:100px" :data-test="`inv-price-${i}`" /></td>
-            <td><input v-model.number="l.discountPct" type="number" min="0" max="100" step="0.1" class="form-input form-input-sm num" style="width:70px" /></td>
-            <td>
+            <td class="col-desc">
+              <textarea
+                v-model="l.label"
+                rows="1"
+                class="form-input form-input-sm inv-desc"
+                :placeholder="$t('accounting.designationHint')"
+                :data-test="`inv-label-${i}`"
+                @input="autoGrow"
+              />
+            </td>
+            <td class="col-qty"><input v-model.number="l.quantity" type="number" min="1" class="form-input form-input-sm num" /></td>
+            <td class="col-price"><input v-model.number="l.price" type="number" min="0" step="0.01" class="form-input form-input-sm num" :data-test="`inv-price-${i}`" /></td>
+            <td class="col-disc"><input v-model.number="l.discountPct" type="number" min="0" max="100" step="0.1" class="form-input form-input-sm num" /></td>
+            <td class="col-tax">
               <select v-model="l.tax_id" class="form-input form-input-sm">
                 <option value="">{{ $t('accounting.noTax') }}</option>
                 <option v-for="tx in taxes" :key="tx.id" :value="tx.id">{{ tx.code }}</option>
               </select>
             </td>
-            <td><button class="btn-icon-sm" :disabled="createModal.lines.length <= 1" @click="createModal.lines.splice(i, 1)">×</button></td>
+            <td class="col-del"><button class="btn-icon-sm" :disabled="createModal.lines.length <= 1" @click="createModal.lines.splice(i, 1)">×</button></td>
           </tr>
         </tbody>
       </table>
@@ -125,8 +134,14 @@
     <BaseModal v-model="payModal.open" :title="$t('accounting.recordPaymentTitle', { number: payModal.number })" size="sm">
       <p class="acc-hint">{{ $t('accounting.remaining') }} : <strong>{{ fmt(payModal.remaining) }}</strong></p>
       <div class="form-group">
-        <label class="form-label">{{ $t('accounting.paymentId') }}</label>
-        <input v-model="payModal.paymentId" class="form-input" :placeholder="$t('accounting.paymentIdHint')" data-test="pay-payment-id" />
+        <label class="form-label">{{ $t('accounting.payMethod') }}</label>
+        <select v-model="payModal.method" class="form-input" data-test="pay-method">
+          <option v-for="m in payMethods" :key="m" :value="m">{{ $t('accounting.methods.' + m) }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ $t('accounting.paymentReference') }} <span class="lbl-opt">{{ $t('accounting.optional') }}</span></label>
+        <input v-model="payModal.reference" class="form-input" :placeholder="$t('accounting.paymentReferenceHint')" data-test="pay-reference" />
       </div>
       <div class="form-group">
         <label class="form-label">{{ $t('common.amount') }}</label>
@@ -135,7 +150,7 @@
       <p v-if="payModal.error" class="form-error">{{ payModal.error }}</p>
       <template #footer>
         <button class="btn btn-ghost" @click="payModal.open = false">{{ $t('common.cancel') }}</button>
-        <button class="btn btn-primary" :disabled="!payModal.paymentId || !payModal.amount" data-test="pay-submit" @click="submitPay">{{ $t('common.save') }}</button>
+        <button class="btn btn-primary" :disabled="!payModal.amount || payModal.amount <= 0" data-test="pay-submit" @click="submitPay">{{ $t('common.save') }}</button>
       </template>
     </BaseModal>
   </div>
@@ -166,7 +181,40 @@ const page         = ref(1)
 const meta         = ref({ current_page: 1, last_page: 1, total: 0 })
 const actionError  = ref('')
 
-const pdfUrl = (id: string) => accountingService.invoicePdfUrl(id)
+// PDF : l'API est authentifiée par un Bearer token EN MÉMOIRE (pas de cookie), donc un simple
+// <a href> ouvrirait une requête non authentifiée → 401 / page blanche. On récupère le PDF via le
+// client axios (token porté) sous forme de blob, puis on l'ouvre dans un nouvel onglet.
+const pdfBusy = ref('')
+async function downloadPdf(inv: Invoice) {
+  pdfBusy.value = inv.id
+  actionError.value = ''
+  try {
+    const blob = await accountingService.downloadInvoicePdf(inv.id)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.target = '_blank'
+    a.rel = 'noopener'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  } catch {
+    actionError.value = t('accounting.pdfFailed')
+  } finally {
+    pdfBusy.value = ''
+  }
+}
+
+// Désignation : textarea qui démarre sur 1 ligne et grandit avec le contenu (UI soignée).
+function autoGrow(e: Event) {
+  const el = e.target as HTMLTextAreaElement
+  el.style.height = 'auto'
+  el.style.height = `${el.scrollHeight}px`
+}
+
+const payMethods = ['cash', 'mobile_money', 'card', 'transfer', 'cheque'] as const
+
 function statusBadge(s: string) {
   return 'badge ' + ({ draft: 'badge-gray', issued: 'badge-blue', partially_paid: 'badge-warning', paid: 'badge-success', cancelled: 'badge-gray' }[s] ?? 'badge-gray')
 }
@@ -238,17 +286,23 @@ async function submitCreate() {
 }
 
 // ── Paiement ────────────────────────────────────────────────────────────────
-const payModal = reactive({ open: false, error: '', id: '', number: '', remaining: 0, paymentId: '', amount: 0 })
+// L'encaissement CRÉE un règlement (référence libre + méthode) côté serveur puis l'alloue à la
+// facture — l'utilisateur n'a plus à fournir l'UUID d'un paiement préexistant.
+const payModal = reactive({ open: false, error: '', id: '', number: '', remaining: 0, reference: '', method: 'cash', amount: 0 })
 
 function openPay(inv: Invoice) {
   const remaining = inv.total_minor - inv.paid_minor
-  Object.assign(payModal, { open: true, error: '', id: inv.id, number: inv.number ?? '', remaining, paymentId: '', amount: remaining / 100 })
+  Object.assign(payModal, { open: true, error: '', id: inv.id, number: inv.number ?? '', remaining, reference: '', method: 'cash', amount: remaining / 100 })
 }
 
 async function submitPay() {
   payModal.error = ''
   try {
-    await accountingService.allocatePayment(payModal.id, { payment_id: payModal.paymentId.trim(), amount_minor: toCents(payModal.amount) })
+    await accountingService.allocatePayment(payModal.id, {
+      reference: payModal.reference.trim() || undefined,
+      method: payModal.method,
+      amount_minor: toCents(payModal.amount),
+    })
     payModal.open = false
     await load()
   } catch (e: any) {
@@ -271,10 +325,19 @@ onMounted(load)
 .num { text-align: right; }
 .acc-code { background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-size: .8rem; }
 .form-row { display: flex; gap: 12px; }
-.inv-lines { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.inv-lines { width: 100%; border-collapse: collapse; margin-top: 8px; table-layout: fixed; }
 .inv-lines th { font-size: .72rem; color: var(--gray-500); text-transform: uppercase; padding: 4px 6px; text-align: left; }
-.inv-lines td { padding: 3px 4px; }
+.inv-lines td { padding: 4px; vertical-align: top; }
+.inv-lines td .form-input-sm { width: 100%; }
+/* Désignation prend l'espace restant ; les colonnes numériques restent compactes. */
+.col-qty { width: 68px; }
+.col-price { width: 116px; }
+.col-disc { width: 82px; }
+.col-tax { width: 108px; }
+.col-del { width: 34px; text-align: center; }
+.inv-desc { resize: none; overflow: hidden; min-height: 34px; line-height: 1.35; white-space: pre-wrap; word-break: break-word; font-family: inherit; }
 .form-input-sm { padding: 5px 8px; font-size: .85rem; }
+.lbl-opt { color: var(--gray-400); font-weight: 400; font-size: .78rem; }
 .inv-totals { margin-top: 12px; margin-left: auto; width: 260px; }
 .inv-totals > div { display: flex; justify-content: space-between; padding: 3px 0; font-size: .9rem; }
 .inv-grand { border-top: 2px solid var(--gray-300); margin-top: 4px; padding-top: 6px; font-weight: 700; font-size: 1rem; }

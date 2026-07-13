@@ -183,4 +183,74 @@ class AccountingInvoiceTest extends TestCase
             ->postJson('/api/accounting/invoices', ['lines' => [['label' => 'X', 'quantity' => 1, 'unit_price_minor' => 1000]]])
             ->assertStatus(403);
     }
+
+    #[Test]
+    public function recording_a_payment_without_payment_id_creates_a_standalone_settlement(): void
+    {
+        $created = $this->withHeaders($this->auth())->postJson('/api/accounting/invoices', [
+            'customer_name' => 'ACME',
+            'lines' => [['label' => 'Service', 'quantity' => 1, 'unit_price_minor' => 100000]],
+        ])->assertStatus(201)->json('data');
+        $this->withHeaders($this->auth())->postJson("/api/accounting/invoices/{$created['id']}/issue")->assertOk();
+
+        // Encaissement SANS payment_id : le serveur crée le règlement (référence + méthode) puis l'alloue.
+        $this->withHeaders($this->auth())->postJson("/api/accounting/invoices/{$created['id']}/payments", [
+            'method'       => 'mobile_money',
+            'reference'    => 'TX-77',
+            'amount_minor' => 100000,
+        ])->assertStatus(201)->assertJsonPath('data.invoice.status', Invoice::STATUS_PAID);
+
+        $payment = Payment::withoutGlobalScopes()->where('tenant_id', $this->tenant->id)->latest('created_at')->first();
+        $this->assertNotNull($payment);
+        $this->assertSame('TX-77', $payment->reference);
+        $this->assertSame('mobile_money', $payment->method);
+        $this->assertNull($payment->order_id);              // règlement autonome
+        $this->assertSame(100000, (int) $payment->amount_cents);
+    }
+
+    #[Test]
+    public function a_free_text_reference_is_not_rejected_as_a_uuid(): void
+    {
+        // Régression : « 7888888 » (référence libre) doit passer, pas être rejeté « must be a valid UUID ».
+        $created = $this->withHeaders($this->auth())->postJson('/api/accounting/invoices', [
+            'lines' => [['label' => 'X', 'quantity' => 1, 'unit_price_minor' => 50000]],
+        ])->json('data');
+        $this->withHeaders($this->auth())->postJson("/api/accounting/invoices/{$created['id']}/issue")->assertOk();
+
+        $this->withHeaders($this->auth())->postJson("/api/accounting/invoices/{$created['id']}/payments", [
+            'method'       => 'cash',
+            'reference'    => '7888888',
+            'amount_minor' => 50000,
+        ])->assertStatus(201);
+    }
+
+    #[Test]
+    public function a_long_multiline_designation_is_accepted(): void
+    {
+        // Régression : la désignation UI est multi-lignes ; varchar(191) (defaultStringLength)
+        // refusait au-delà (SQL 1406) — la colonne est désormais TEXT.
+        $label = str_repeat('Prestation d\'accompagnement digital — ', 12) . "\nsuivi mensuel";
+        $this->assertGreaterThan(191, mb_strlen($label));
+
+        $created = $this->withHeaders($this->auth())->postJson('/api/accounting/invoices', [
+            'lines' => [['label' => $label, 'quantity' => 1, 'unit_price_minor' => 10000]],
+        ])->assertStatus(201)->json('data');
+
+        $this->assertSame($label, Invoice::withoutTenantScope()->find($created['id'])->lines()->first()->label);
+    }
+
+    #[Test]
+    public function the_invoice_pdf_endpoint_returns_a_pdf_document(): void
+    {
+        $created = $this->withHeaders($this->auth())->postJson('/api/accounting/invoices', [
+            'customer_name' => 'ACME',
+            'lines' => [['label' => 'Service', 'quantity' => 1, 'unit_price_minor' => 50000]],
+        ])->json('data');
+        $this->withHeaders($this->auth())->postJson("/api/accounting/invoices/{$created['id']}/issue")->assertOk();
+
+        $resp = $this->withHeaders($this->auth())->get("/api/accounting/invoices/{$created['id']}/pdf");
+        $resp->assertOk();
+        $this->assertSame('application/pdf', $resp->headers->get('content-type'));
+        $this->assertStringStartsWith('%PDF', $resp->getContent());
+    }
 }

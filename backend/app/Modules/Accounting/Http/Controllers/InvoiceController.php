@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use Illuminate\Validation\Rule;
 
 /**
  * RC-30 — factures client : liste, détail, brouillon (+ depuis commande), émission, allocation
@@ -56,7 +57,7 @@ class InvoiceController extends Controller
             'order_id'               => ['nullable', 'uuid'],
             'notes'                  => ['nullable', 'string'],
             'lines'                  => ['required', 'array', 'min:1'],
-            'lines.*.label'          => ['required', 'string', 'max:255'],
+            'lines.*.label'          => ['required', 'string', 'max:1000'],
             'lines.*.quantity'       => ['required', 'integer', 'min:1'],
             'lines.*.unit_price_minor' => ['required', 'integer', 'min:0'],
             'lines.*.discount_bp'    => ['nullable', 'integer', 'min:0', 'max:10000'],
@@ -90,16 +91,38 @@ class InvoiceController extends Controller
         return response()->json(['message' => 'Facture émise.', 'data' => $invoice->load('lines')]);
     }
 
-    /** POST /api/accounting/invoices/{id}/payments — alloue un paiement existant à la facture. */
+    /**
+     * POST /api/accounting/invoices/{id}/payments — encaisse la facture.
+     *
+     * Deux modes : si `payment_id` est fourni, on alloue un règlement existant (compat) ; sinon on
+     * CRÉE un règlement autonome (référence libre + méthode) puis on l'alloue. L'UI n'a donc plus à
+     * fournir l'UUID d'un paiement préexistant — elle envoie `method` + `reference` (facultative).
+     */
     public function allocate(Request $request, string $id): JsonResponse
     {
         $data = $request->validate([
-            'payment_id'   => ['required', 'uuid'],
+            'payment_id'   => ['nullable', 'uuid'],
+            'method'       => ['nullable', Rule::in(Payment::METHODS)],
+            'reference'    => ['nullable', 'string', 'max:255'],
             'amount_minor' => ['required', 'integer', 'min:1'],
         ]);
 
         $invoice = Invoice::findOrFail($id);
-        $payment = Payment::where('tenant_id', $request->user()->tenant_id)->findOrFail($data['payment_id']);
+
+        if (! empty($data['payment_id'])) {
+            $payment = Payment::where('tenant_id', $request->user()->tenant_id)->findOrFail($data['payment_id']);
+        } else {
+            // Règlement autonome (order_id null) — cf. table payments : « null = standalone payment ».
+            $payment = Payment::create([
+                'tenant_id'    => $request->user()->tenant_id,
+                'amount_cents' => $data['amount_minor'],
+                'currency'     => $invoice->currency,
+                'method'       => $data['method'] ?? Payment::METHOD_CASH,
+                'reference'    => $data['reference'] ?? null,
+                'paid_at'      => now(),
+                'performed_by' => $request->user()->id,
+            ]);
+        }
 
         $allocation = $this->service->allocatePayment($payment, $invoice, $data['amount_minor'], $request->user()->id);
 
@@ -122,7 +145,7 @@ class InvoiceController extends Controller
     {
         $data = $request->validate([
             'lines'                    => ['nullable', 'array', 'min:1'],
-            'lines.*.label'            => ['required_with:lines', 'string', 'max:255'],
+            'lines.*.label'            => ['required_with:lines', 'string', 'max:1000'],
             'lines.*.quantity'         => ['required_with:lines', 'integer', 'min:1'],
             'lines.*.unit_price_minor' => ['required_with:lines', 'integer', 'min:0'],
             'lines.*.discount_bp'      => ['nullable', 'integer', 'min:0', 'max:10000'],

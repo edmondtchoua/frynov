@@ -3,6 +3,30 @@
 Toutes les évolutions notables. Format inspiré de [Keep a Changelog](https://keepachangelog.com/),
 versionnage [SemVer](https://semver.org/).
 
+## [Non publié] — 🧾 RC-45 : Comptabilité — UX facturation (encaissement, PDF, désignation, largeur) (2026-07-09)
+
+Corrections UX sur le module facturation client (retours d'usage) :
+
+- **Encaissement** : le formulaire « Encaisser » n'exige plus l'UUID d'un paiement préexistant
+  (« The payment id field must be a valid UUID »). Il crée désormais un **règlement autonome** —
+  **méthode** (espèces/mobile money/carte/virement/chèque) + **référence libre** facultative — puis
+  l'alloue à la facture. Backend `InvoiceController::allocate` accepte `payment_id` (compat) **ou**
+  `method`+`reference`.
+- **PDF facture/avoir** : le lien `<a href>` ouvrait une requête non authentifiée (Bearer **en mémoire**,
+  pas de cookie) → page blanche. Récupération désormais en **blob authentifié** via le client axios puis
+  ouverture dans un nouvel onglet. Même correctif appliqué aux avoirs.
+- **Désignation** : le champ de ligne passe en **textarea auto-extensible** (démarre sur 1 ligne,
+  s'agrandit sur plusieurs) — libellés longs lisibles sans rogner l'UI. La colonne
+  `invoice_lines.label` passe de varchar(191) à **TEXT** (migration) : les désignations > 191
+  caractères provoquaient un SQL 1406 « Data too long » alors que la validation autorisait 255 ;
+  borne applicative relevée à 1 000 caractères.
+- **Largeur** : nouvelle taille `xl` pour `BaseModal` (volet 820 px) utilisée par le drawer « Nouvelle
+  facture » → le tableau des lignes ne déborde plus (fin du scroll horizontal) ; colonnes numériques
+  compactes, la désignation prend l'espace restant.
+
+Tests : `AccountingInvoiceTest` (+3 : encaissement autonome, référence libre non-UUID, PDF `%PDF`) ;
+specs front `InvoicesView`/`CreditNotesView` adaptées. i18n FR+EN.
+
 ## [Non publié] — 🔐 RC-41 : Audit RBAC/plans — durcissement accès & quotas (2026-07-06)
 
 Audit complet RBAC/ACL + plans (`docs/audit/rbac-plans-audit.md`) — architecture jugée saine (isolation

@@ -16,7 +16,10 @@ Corrections UX sur le module facturation client (retours d'usage) :
   pas de cookie) → page blanche. Récupération désormais en **blob authentifié** via le client axios puis
   ouverture dans un nouvel onglet. Même correctif appliqué aux avoirs.
 - **Désignation** : le champ de ligne passe en **textarea auto-extensible** (démarre sur 1 ligne,
-  s'agrandit sur plusieurs) — libellés longs lisibles sans rogner l'UI.
+  s'agrandit sur plusieurs) — libellés longs lisibles sans rogner l'UI. La colonne
+  `invoice_lines.label` passe de varchar(191) à **TEXT** (migration) : les désignations > 191
+  caractères provoquaient un SQL 1406 « Data too long » alors que la validation autorisait 255 ;
+  borne applicative relevée à 1 000 caractères.
 - **Largeur** : nouvelle taille `xl` pour `BaseModal` (volet 820 px) utilisée par le drawer « Nouvelle
   facture » → le tableau des lignes ne déborde plus (fin du scroll horizontal) ; colonnes numériques
   compactes, la désignation prend l'espace restant.

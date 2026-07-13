@@ -57,7 +57,7 @@ class InvoiceController extends Controller
             'order_id'               => ['nullable', 'uuid'],
             'notes'                  => ['nullable', 'string'],
             'lines'                  => ['required', 'array', 'min:1'],
-            'lines.*.label'          => ['required', 'string', 'max:255'],
+            'lines.*.label'          => ['required', 'string', 'max:1000'],
             'lines.*.quantity'       => ['required', 'integer', 'min:1'],
             'lines.*.unit_price_minor' => ['required', 'integer', 'min:0'],
             'lines.*.discount_bp'    => ['nullable', 'integer', 'min:0', 'max:10000'],
@@ -145,7 +145,7 @@ class InvoiceController extends Controller
     {
         $data = $request->validate([
             'lines'                    => ['nullable', 'array', 'min:1'],
-            'lines.*.label'            => ['required_with:lines', 'string', 'max:255'],
+            'lines.*.label'            => ['required_with:lines', 'string', 'max:1000'],
             'lines.*.quantity'         => ['required_with:lines', 'integer', 'min:1'],
             'lines.*.unit_price_minor' => ['required_with:lines', 'integer', 'min:0'],
             'lines.*.discount_bp'      => ['nullable', 'integer', 'min:0', 'max:10000'],

@@ -225,6 +225,21 @@ class AccountingInvoiceTest extends TestCase
     }
 
     #[Test]
+    public function a_long_multiline_designation_is_accepted(): void
+    {
+        // Régression : la désignation UI est multi-lignes ; varchar(191) (defaultStringLength)
+        // refusait au-delà (SQL 1406) — la colonne est désormais TEXT.
+        $label = str_repeat('Prestation d\'accompagnement digital — ', 12) . "\nsuivi mensuel";
+        $this->assertGreaterThan(191, mb_strlen($label));
+
+        $created = $this->withHeaders($this->auth())->postJson('/api/accounting/invoices', [
+            'lines' => [['label' => $label, 'quantity' => 1, 'unit_price_minor' => 10000]],
+        ])->assertStatus(201)->json('data');
+
+        $this->assertSame($label, Invoice::withoutTenantScope()->find($created['id'])->lines()->first()->label);
+    }
+
+    #[Test]
     public function the_invoice_pdf_endpoint_returns_a_pdf_document(): void
     {
         $created = $this->withHeaders($this->auth())->postJson('/api/accounting/invoices', [
